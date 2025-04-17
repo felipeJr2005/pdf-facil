@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juntar PDFs</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .drop-zone { 
+            border: 2px dashed #ccc; 
+            padding: 20px; 
+            text-align: center; 
+            cursor: pointer; 
+        }
+        .drop-zone.drag-over { background-color: #f0f0f0; }
+        .hidden { display: none; }
+        .file-list { margin-top: 20px; }
+        .file-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px; 
+            border-bottom: 1px solid #eee; 
+        }
+    </style>
+</head>
+<body>
+    <div class="drop-zone" id="dropZone">
+        <p>Arraste e solte PDFs aqui ou clique para selecionar</p>
+        <input type="file" id="fileInput" accept=".pdf" multiple class="hidden">
+    </div>
+
+    <div id="fileList" class="file-list hidden"></div>
+
+    <button id="mergeButton" class="hidden" disabled>Juntar PDFs</button>
+
+    <div id="resultArea" class="hidden">
+        <a href="#" id="downloadLink">Baixar PDF Unificado</a>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const mergeButton = document.getElementById('mergeButton');
+        const resultArea = document.getElementById('resultArea');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let fileArray = [];
+
+        // Prevenir comportamento padrão de drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Efeitos visuais de drag
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'));
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'));
+        });
+
+        // Evento de drop
+        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+
+        // Clique para selecionar arquivos
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        function handleFiles(files) {
+            fileArray = Array.from(files).filter(file => file.type === 'application/pdf');
+            
+            // Limpar lista anterior
+            fileList.innerHTML = '';
+            fileList.classList.remove('hidden');
+
+            // Mostrar lista de arquivos
+            fileArray.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index})">Remover</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            // Atualizar botão de merge
+            mergeButton.classList.remove('hidden');
+            mergeButton.disabled = fileArray.length < 2;
+        }
+
+        window.removeFile = function(index) {
+            fileArray.splice(index, 1);
+            handleFiles(fileArray);
+        };
+
+        mergeButton.addEventListener('click', async () => {
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                
+                // Adicionar páginas de cada PDF
+                for (const file of fileArray) {
+                    const fileBuffer = await file.arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach(page => mergedPdf.addPage(page));
+                }
+                
+                // Salvar o documento mesclado
+                const mergedPdfBytes = await mergedPdf.save();
+                
+                // Criar link de download
+                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+                const downloadUrl = URL.createObjectURL(blob);
+                
+                // Configurar download
+                downloadLink.href = downloadUrl;
+                downloadLink.download = "documentos_unidos.pdf";
+                resultArea.classList.remove('hidden');
+                
+                // Limpar URL quando o usuário sair da página
+                window.addEventListener('beforeunload', () => {
+                    URL.revokeObjectURL(downloadUrl);
+                });
+                
+            } catch (error) {
+                console.error('Erro ao unir PDFs:', error);
+                alert('Erro ao unir PDFs: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
