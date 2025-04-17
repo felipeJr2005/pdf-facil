@@ -3,755 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PDF FACIL - Ferramenta online gratuita para manipulação de PDFs">
-    <meta name="theme-color" content="#2563eb">
-    <title>PJE & PDF</title>
-    
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" as="script">
-    
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <title>Teste de Carregamento - PDF Facil</title>
     <style>
-        :root {
-            --primary-color: #5c95ce; /* Lighter Blue */
-            --primary-hover: #1976d2; 
-            --gradient-start: #bfdbe4;
-            --gradient-end: #5c95ce;
-            --accent-color: #4CAF50; /* Green */
-            --secondary-bg: #f8f9fa;
-            --text-primary: #333;
-            --text-secondary: #6b7280;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-            --shadow-hover: 0 8px 15px rgba(30,64,175,0.1);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
+        body {
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            background-color: #f0f2f5;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--secondary-bg);
-            color: var(--text-primary);
-            line-height: 1.6;
-            text-rendering: optimizeLegibility;
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
+        #app {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .buttons {
             display: flex;
-            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-
-        .main-header {
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-            box-shadow: var(--shadow-md);
-            padding: 0.75rem 1rem;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .nav-menu {
-            display: flex;
-            gap: 0.5rem;
-            list-style: none;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            letter-spacing: -0.5px;
-        }
-
         button {
-            padding: 0.625rem 1rem;
+            padding: 10px 15px;
+            background: #5c95ce;
+            color: white;
             border: none;
-            border-radius: 0.75rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.375rem;
-            transition: var(--transition);
+            border-radius: 5px;
             cursor: pointer;
-            touch-action: manipulation;
-            -webkit-appearance: none;
-            appearance: none;
-            white-space: nowrap;
-            backdrop-filter: blur(10px);
+            font-weight: bold;
         }
-
-        button i {
-            font-size: 1.125rem;
-            min-width: 1.25rem;
-            text-align: center;
-        }
-
-        button:active {
-            background: var(--primary-color);
-            transform: scale(0.98);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--text-primary);
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-        }
-
-        .btn-green {
-            background: var(--primary-color);
-            color: #5c95ce;
-            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
-        }
-
         button:hover {
-            background-color: var(--primary-hover); /* Ou a cor específica que você prefere */
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
+            background: #1976d2;
         }
-
-        .sidebar {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-sm);
-            padding: 1.5rem;
-            height: auto;
-            max-height: calc(100vh - 4rem);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary-color) transparent;
+        #contentArea {
+            border: 1px solid #ddd;
+            min-height: 300px;
+            padding: 20px;
+            border-radius: 5px;
         }
-
-        .sidebar-header {
-            padding: 0 0.5rem 1.5rem;
-            border-bottom: 2px solid #e5e7eb;
-            margin-bottom: 1.5rem;
-        }
-
-        .sidebar-header h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .sidebar-nav {
-            display: grid;
-            gap: 0.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        }
-
-        .sidebar-nav button {
-            background: white;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            padding: 0.625rem 0.875rem;
-        }
-
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            padding-top: 3.5rem;
-            flex: 1;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 1.5rem;
-        }
-
-        .content-area {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: var(--shadow-md);
-            height: calc(100vh - 10rem);
-            overflow: auto;
-            backdrop-filter: blur(10px);
-        }
-
-        /* Animação de fade-in para o conteúdo */
-        .fade-in {
-            opacity: 0;
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* Rodapé */
-        .main-footer {
-            background: var(--secondary-bg);
-            border-top: 1px solid #e5e7eb;
-            padding: 1rem;
-            text-align: center;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-links a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .footer-links a:hover {
-            text-decoration: underline;
-        }
-
-        /* Loading spinner */
-        .loading-spinner {
-            display: flex;
+        .loading {
+            display: none;
             justify-content: center;
             align-items: center;
-            height: 100%;
-            width: 100%;
+            padding: 20px;
         }
-
         .spinner {
             width: 40px;
             height: 40px;
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-radius: 50%;
-            border-top-color: var(--primary-color);
+            border-top-color: #5c95ce;
             animation: spin 1s ease-in-out infinite;
         }
-
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @media (min-width: 768px) {
-            .app-container {
-                flex-direction: row;
-            }
-
-            .sidebar {
-                width: 320px;
-                height: calc(100vh - 3.5rem);
-                position: fixed;
-            }
-
-            .sidebar-nav {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content {
-                margin-left: 320px;
-                padding: 2rem;
-            }
-        }
-
-        @media (max-width: 767px) {
-            .nav-menu button {
-                padding: 0.5rem;
-                font-size: 0.8125rem;
-            }
-
-            .sidebar-nav button {
-                justify-content: center;
-                padding: 1rem 0.75rem;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 4px;
-        }
-
-        @media print {
-            .sidebar, .main-header, .main-footer {
-                display: none;
-            }
-            .main-content {
-                margin: 0;
-                padding: 0;
-            }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <header class="main-header">
-        <nav class="nav-container">
-            <div class="logo">PDFFACIL.COM</div>
-            <ul class="nav-menu">
-                <button onclick="loadHomePage()" class="btn-secondary">Início</button>
-                <button onclick="loadContent('documentacao', 'Documentação')" class="btn-secondary">Docs</button>
-                <button onclick="loadContent('sobre-nos', 'Sobre Nós')" class="btn-secondary">Sobre</button>
-                <button onclick="loadContent('contato', 'Contato')" class="btn-secondary">Contato</button>
-            </ul>
-        </nav>
-    </header>
-
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>PDF FACIL</h2>
-                <p id="functionDescription">Selecione uma função</p>
+    <div id="app">
+        <h1>Teste de Carregamento Dinâmico - PDF Facil</h1>
+        
+        <div class="buttons">
+            <button onclick="loadContent('comprime', 'Comprimir')">Comprimir</button>
+            <button onclick="loadContent('junte', 'Juntar')">Juntar</button>
+            <button onclick="loadContent('rotacione', 'Rotacionar')">Rotacionar</button>
+        </div>
+        
+        <div id="contentArea">
+            <div id="loadingSpinner" class="loading">
+                <div class="spinner"></div>
             </div>
-            <nav class="sidebar-nav">
-                <button class="btn-secondary" onclick="loadContent('comprime', 'Reduza o tamanho do arquivo mantendo a qualidade')">
-                    <i class="fas fa-compress"></i>Comprimir
-                </button>
-                <button class="btn-secondary" onclick="loadContent('converte', 'Transforme PDF em outros formatos')">
-                    <i class="fas fa-exchange-alt"></i>Converter
-                </button>
-                
-                <button class="btn-secondary" onclick="loadContent('divide', 'Separe um PDF em múltiplos arquivos')">
-                    <i class="fas fa-cut"></i>Dividir
-                </button>
-                <button class="btn-secondary" onclick="loadContent('editar', 'Modifique o conteúdo do PDF')">
-                    <i class="fas fa-edit"></i>Editar
-                </button>
-                <button class="btn-secondary" onclick="loadContent('extracao', 'Extraia páginas do PDF')">
-                    <i class="fas fa-file-export"></i>Extrair Páginas
-                </button>
-                <button class="btn-secondary" onclick="loadContent('extrair_imagens', 'Salve as imagens contidas no PDF')">
-                    <i class="fas fa-image"></i>Extrair Imagens
-                </button>
-                <button class="btn-secondary" onclick="loadContent('filtro', 'Aplique filtros ao PDF')">
-                    <i class="fas fa-filter"></i>Filtro
-                </button>
-                <button class="btn-secondary" onclick="loadContent('junte', 'Una PDFs em só arquivo')">
-                    <i class="fas fa-object-group"></i>Juntar
-                </button>
-                <button class="btn-secondary" onclick="loadContent('otimize_pje', 'Adeque seu PDF às normas do PJE')">
-                    <i class="fas fa-gavel"></i>Otimizar PJE
-                </button>
-                <button class="btn-secondary" onclick="loadContent('apagar', 'Exclua páginas do seu PDF')">
-                    <i class="fas fa-trash-alt"></i>Remover Páginas
-                </button>
-                <button class="btn-secondary" onclick="loadContent('reorganize', 'Mude a ordem das páginas do PDF')">
-                    <i class="fas fa-sort"></i>Reorganizar
-                </button>
-                <button class="btn-secondary" onclick="loadContent('rotacione', 'Gire as páginas do PDF')">
-                    <i class="fas fa-redo"></i>Rotacionar
-                </button>
-                
-                <!-- Botão de erro 404 -->
-                <button id="error404Button" class="btn-secondary" onclick="loadErrorPage()">
-                    <i class="fas fa-exclamation-triangle"></i>Erro 404
-                </button>
-            </nav>
-        </aside>
-
-        <main class="main-content">
-            <div class="content-area" id="contentArea">
-                <!-- Conteúdo carregado dinamicamente virá aqui -->
-                <div class="loading-spinner hidden" id="loadingSpinner">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <footer class="main-footer">
-        <div class="footer-content">
-            <div class="copyright">
-                &copy; 2025 PDFFACIL.COM - Todos os direitos reservados
-            </div>
-            <div class="footer-links">
-                <a href="#" onclick="loadContent('politica-privacidade', 'Política de Privacidade')">Política de Privacidade</a>
-                <a href="#" onclick="loadContent('termos-de-uso', 'Termos de Uso')">Termos de Uso</a>
-                <a href="#" onclick="loadContent('contato', 'Contato')">Contato</a>
+            <div id="initialContent">
+                <h2>Selecione uma ferramenta acima</h2>
+                <p>Este é um teste para verificar o carregamento dinâmico das páginas.</p>
             </div>
         </div>
-    </footer>
+    </div>
 
     <script>
-        // Configurações
-        const config = {
-            basePath: '', // Caminho base para os arquivos HTML (deixe vazio se estiverem na raiz)
-            defaultTitle: 'Selecione uma função',
-            defaultHomePage: 'bem-vindo.html', // Página de boas-vindas padrão
-            cacheTime: 3600000, // Cache de conteúdo por 1 hora (em milissegundos)
-        };
-
-        // Cache para conteúdo
-        const contentCache = new Map();
-
         // Elementos do DOM
         const elements = {
-            functionDescription: document.getElementById('functionDescription'),
             contentArea: document.getElementById('contentArea'),
             loadingSpinner: document.getElementById('loadingSpinner'),
-            error404Button: document.getElementById('error404Button'),
-            allButtons: document.querySelectorAll('.sidebar-nav button')
+            initialContent: document.getElementById('initialContent')
         };
 
-        // Função para exibir o spinner de carregamento
-        function showLoading() {
-            elements.loadingSpinner.classList.remove('hidden');
-        }
-
-        // Função para esconder o spinner de carregamento
-        function hideLoading() {
-            elements.loadingSpinner.classList.add('hidden');
-        }
-
-        // Função para debounce de eventos
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Carrega uma página de conteúdo
+        // Função para carregar conteúdo
         async function loadContent(functionName, description) {
-            // Verifica se já estamos carregando o mesmo conteúdo
-            const currentContent = elements.contentArea.dataset.currentFunction;
-            if (currentContent === functionName) {
-                console.log(`Página ${functionName} já está carregada`);
-                return;
-            }
-            
-            // Atualiza a descrição da função
-            if (elements.functionDescription) {
-                elements.functionDescription.innerText = description || config.defaultTitle;
-            }
-            
-            // Atualiza a UI removendo a classe 'btn-green' de todos os botões
-            elements.allButtons.forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
-            
-            // Adiciona a classe 'btn-green' ao botão ativo
-            const activeButton = Array.from(elements.allButtons)
-                .find(button => button.innerText.includes(functionName.charAt(0).toUpperCase() + functionName.slice(1)));
-            
-            if (activeButton) {
-                activeButton.classList.remove('btn-secondary');
-                activeButton.classList.add('btn-green');
-            }
+            console.log(`Tentando carregar: ${functionName}.html`);
             
             try {
+                // Mostra o spinner de carregamento
                 showLoading();
                 
-                // Verificar se o conteúdo está em cache e ainda é válido
-                const now = Date.now();
-                if (contentCache.has(functionName)) {
-                    const cached = contentCache.get(functionName);
-                    if (now - cached.timestamp < config.cacheTime) {
-                        // Usar conteúdo em cache
-                        elements.contentArea.innerHTML = cached.content;
-                        elements.contentArea.dataset.currentFunction = functionName;
-                        hideLoading();
-                        
-                        // Executar scripts no conteúdo carregado
-                        executeScripts(elements.contentArea);
-                        return;
+                // Constrói o caminho do arquivo
+                const filePath = `${functionName}.html`;
+                console.log(`Caminho completo: ${filePath}`);
+                
+                // Carrega o conteúdo via fetch com cache desabilitado
+                const response = await fetch(filePath, { 
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     }
-                }
+                });
                 
-                // Construir caminho do arquivo
-                const filePath = `${config.basePath}/${functionName}.html`;
-                
-                // Carregar conteúdo via fetch
-                const response = await fetch(filePath, { cache: 'no-store' });
-                
+                // Verifica se a resposta foi bem-sucedida
                 if (!response.ok) {
-                    // Se houver erro (404, etc), carregar página de erro
+                    console.error(`Erro ao carregar ${filePath}: ${response.status}`);
                     throw new Error(`Erro ao carregar ${filePath}: ${response.status}`);
                 }
                 
-                // Obter o HTML do conteúdo
-                let html = await response.text();
+                // Obtém o texto HTML da resposta
+                const html = await response.text();
+                console.log(`Conteúdo carregado com sucesso. Tamanho: ${html.length} bytes`);
                 
-                // Extrair apenas o corpo do HTML, se for um documento completo
-                if (html.includes('<body')) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    html = tempDiv.querySelector('body').innerHTML;
+                // Esconde o conteúdo inicial
+                if (elements.initialContent) {
+                    elements.initialContent.style.display = 'none';
                 }
                 
-                // Atualizar o DOM
-                elements.contentArea.innerHTML = html;
-                elements.contentArea.dataset.currentFunction = functionName;
+                // Cria um contêiner para o novo conteúdo
+                const contentContainer = document.createElement('div');
+                contentContainer.innerHTML = html;
+                contentContainer.id = `${functionName}-content`;
                 
-                // Adicionar ao cache
-                contentCache.set(functionName, {
-                    content: html,
-                    timestamp: now
-                });
+                // Remove outros conteúdos carregados anteriormente
+                Array.from(elements.contentArea.children)
+                    .filter(el => el.id !== 'loadingSpinner' && el.id !== 'initialContent')
+                    .forEach(el => el.remove());
                 
-                // Executar scripts no conteúdo carregado
-                executeScripts(elements.contentArea);
+                // Adiciona o novo conteúdo ao DOM
+                elements.contentArea.appendChild(contentContainer);
+                
+                // Executa scripts contidos no conteúdo
+                executeScripts(contentContainer);
                 
             } catch (error) {
                 console.error('Erro ao carregar conteúdo:', error);
-                loadErrorPage();
+                elements.contentArea.innerHTML = `
+                    <div style="color: red; padding: 20px;">
+                        <h3>Erro ao carregar conteúdo</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
             } finally {
+                // Esconde o spinner de carregamento
                 hideLoading();
             }
         }
-        
-        // Carregar página inicial
-        function loadHomePage() {
-            elements.functionDescription.innerText = config.defaultTitle;
-            
-            // Remover a classe 'btn-green' de todos os botões
-            elements.allButtons.forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
-            
-            // Verificar se existe uma página de boas-vindas
-            fetch(config.defaultHomePage)
-                .then(response => {
-                    if (response.ok) {
-                        return response.text().then(html => {
-                            elements.contentArea.innerHTML = html;
-                            elements.contentArea.dataset.currentFunction = 'welcome';
-                            executeScripts(elements.contentArea);
-                        });
-                    } else {
-                        // Se não houver página de boas-vindas, limpar o conteúdo
-                        elements.contentArea.innerHTML = `
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 2rem;">
-                                <img src="logo.png" alt="PDF FACIL" style="max-width: 200px; margin-bottom: 2rem;">
-                                <h1 style="margin-bottom: 1rem; color: var(--primary-color);">Bem-vindo ao PDF FACIL</h1>
-                                <p style="max-width: 600px; margin-bottom: 2rem;">
-                                    Selecione uma das ferramentas no menu lateral para começar a trabalhar com seus arquivos PDF.
-                                </p>
-                                <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                                    <button onclick="loadContent('comprime', 'Reduza o tamanho do arquivo mantendo a qualidade')" class="btn-secondary">
-                                        <i class="fas fa-compress"></i> Comprimir PDF
-                                    </button>
-                                    <button onclick="loadContent('junte', 'Una PDFs em só arquivo')" class="btn-secondary">
-                                        <i class="fas fa-object-group"></i> Juntar PDFs
-                                    </button>
-                                    <button onclick="loadContent('editar', 'Modifique o conteúdo do PDF')" class="btn-secondary">
-                                        <i class="fas fa-edit"></i> Editar PDF
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        elements.contentArea.dataset.currentFunction = 'home';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao verificar página de boas-vindas:', error);
-                    // Limpar o conteúdo em caso de erro
-                    elements.contentArea.innerHTML = '';
-                    elements.contentArea.dataset.currentFunction = 'home';
-                });
-        }
-        
-        // Carregar página de erro 404
-        function loadErrorPage() {
-            elements.functionDescription.innerText = 'Página não encontrada';
-            
-            // Remover a classe 'btn-green' de todos os botões
-            elements.allButtons.forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
-            
-            // Adicionar a classe 'btn-green' ao botão de erro 404
-            elements.error404Button.classList.remove('btn-secondary');
-            elements.error404Button.classList.add('btn-green');
-            
-            // Carregar o conteúdo da página de erro
-            fetch('404.html')
-                .then(response => {
-                    if (response.ok) {
-                        return response.text();
-                    } else {
-                        // Fallback para conteúdo de erro embutido
-                        return `
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 2rem;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 5rem; color: #ef4444; margin-bottom: 2rem;"></i>
-                                <h1 style="margin-bottom: 1rem;">Erro 404 - Página Não Encontrada</h1>
-                                <p style="max-width: 600px; margin-bottom: 2rem;">
-                                    A página que você está procurando não existe ou foi movida.
-                                </p>
-                                <button onclick="loadHomePage()" class="btn-secondary">
-                                    <i class="fas fa-home"></i> Voltar para a Página Inicial
-                                </button>
-                            </div>
-                        `;
-                    }
-                })
-                .then(html => {
-                    elements.contentArea.innerHTML = html;
-                    elements.contentArea.dataset.currentFunction = '404';
-                    executeScripts(elements.contentArea);
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar página de erro:', error);
-                });
-        }
-        
-        // Executar scripts no conteúdo carregado
+
+        // Função para executar scripts no conteúdo carregado
         function executeScripts(container) {
-            // Encontrar todos os elementos script no conteúdo
             const scripts = container.querySelectorAll('script');
             scripts.forEach(oldScript => {
                 const newScript = document.createElement('script');
                 
-                // Copiar todos os atributos do script original
+                // Copia atributos do script original
                 Array.from(oldScript.attributes).forEach(attr => {
                     newScript.setAttribute(attr.name, attr.value);
                 });
                 
-                // Se o script tiver conteúdo interno, copiá-lo
-                if (oldScript.innerHTML) {
-                    newScript.innerHTML = oldScript.innerHTML;
-                }
+                // Copia o conteúdo do script
+                newScript.textContent = oldScript.textContent;
                 
-                // Substituir o script antigo pelo novo
+                // Substitui o script antigo pelo novo
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
         }
-        
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            // Garantir que os elementos tenham sido encontrados
-            if (!elements.contentArea || !elements.functionDescription) {
-                console.error('Elementos essenciais não encontrados no DOM');
-                return;
-            }
-            
-            // Definir o estado inicial como em branco
-            elements.contentArea.dataset.currentFunction = '';
-            
-            // Verificar se há parâmetros na URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const functionParam = urlParams.get('function');
-            const errorParam = urlParams.get('error');
-            
-            // Se houver um parâmetro de erro, mostrar a página de erro
-            if (errorParam === '404') {
-                loadErrorPage();
-            }
-            // Se houver um parâmetro de função, carregar a função correspondente
-            else if (functionParam) {
-                // Encontrar o botão correspondente para obter a descrição
-                const functionButton = Array.from(elements.allButtons)
-                    .find(button => {
-                        const buttonText = button.innerText.toLowerCase();
-                        return buttonText.includes(functionParam.toLowerCase());
-                    });
-                
-                // Obter a descrição do botão ou usar um valor padrão
-                const description = functionButton ? 
-                    functionButton.getAttribute('onclick').match(/'([^']+)'/)[1] : 
-                    'Ferramenta PDF';
-                
-                loadContent(functionParam, description);
-            }
-            // Caso contrário, carregar a página inicial
-            else {
-                loadHomePage();
-            }
-            
-            // Prefetch de páginas comuns para melhorar performance
-            const commonPages = ['comprime', 'converte', 'junte'];
-            commonPages.forEach(page => {
-                const link = document.createElement('link');
-                link.rel = 'prefetch';
-                link.href = `${config.basePath}/${page}.html`;
-                document.head.appendChild(link);
-            });
-            
-            // Adicionar suporte para navegação via histórico
-            window.addEventListener('popstate', event => {
-                const state = event.state;
-                if (state && state.function) {
-                    loadContent(state.function, state.description);
-                } else {
-                    loadHomePage();
-                }
-            });
-        });
-        
-        // Adicione as seguintes funções para gerenciar o rodapé
-        function loadFooter() {
-            // Verifique se o rodapé já foi inicializado
-            if (document.querySelector('.main-footer')) {
-                return;
-            }
-            
-            // Crie o elemento de rodapé
-            const footer = document.createElement('footer');
-            footer.className = 'main-footer';
-            footer.innerHTML = `
-                <div class="footer-content">
-                    <div class="copyright">
-                        &copy; ${new Date().getFullYear()} PDFFACIL.COM - Todos os direitos reservados
-                    </div>
-                    <div class="footer-links">
-                        <a href="#" onclick="loadContent('politica-privacidade', 'Política de Privacidade')">Política de Privacidade</a>
-                        <a href="#" onclick="loadContent('termos-de-uso', 'Termos de Uso')">Termos de Uso</a>
-                        <a href="#" onclick="loadContent('contato', 'Contato')">Contato</a>
-                    </div>
-                </div>
-            `;
-            
-            // Adicione o rodapé ao final do documento
-            document.body.appendChild(footer);
+
+        // Função para mostrar o spinner de carregamento
+        function showLoading() {
+            elements.loadingSpinner.style.display = 'flex';
+        }
+
+        // Função para esconder o spinner de carregamento
+        function hideLoading() {
+            elements.loadingSpinner.style.display = 'none';
         }
     </script>
 </body>
