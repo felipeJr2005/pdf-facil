@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprimir PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.1.1/dist/compressor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    
+    <style>
+        /* Melhorias de Estilos Inline */
+        .page-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button:hover {
+            background-color: #f0f7ff;
+            border-color: #90c2ff;
+        }
+
+        .page-nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+            border-color: #e0e0e0;
+            box-shadow: none;
+        }
+
+        .page-nav-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            margin: 0 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Botão de voltar melhorado */
+        .btn-back-pages {
+            display: flex;
+            align-items: center;
+            background-color: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-back-pages:hover {
+            background-color: #edf5ff;
+            border-color: #90c2ff;
+            color: #3178c6;
+        }
+
+        .btn-back-pages i {
+            margin-right: 8px;
+        }
+
+     
+        /* Melhorar o estilo da visualização detalhada */
+        .detail-page-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.1);
+        }
+
+        .canvas-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            padding: 10px;
+        }
+    </style>
+</head>
+<body class="converter-pdf">
+    <div class="function-container">
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-compress"></i> Comprimir PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <i class="fas fa-file-pdf upload-icon"></i>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
+                        <input type="file" id="pdfInput" accept="application/pdf,.pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+        
+        <!-- Substituição para o controlPanel com card-header padronizado -->
+<div class="card hidden" id="controlPanel">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-cog"></i> Configuração de Compressão
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="settings-panel">
+            <div class="settings-group">
+                <label class="settings-label">
+                    Nível de compressão: <span id="compressionValue">Médio</span>
+                </label>
+                <input type="range" id="compressionSlider" class="slider" min="1" max="9" step="1" value="5">
+                <div class="slider-labels">
+                    <span>Alta Compressão</span>
+                    <span>Alta Qualidade</span>
+                </div>
+            </div>
+            
+            <button id="compressButton" class="pdf-action-button">
+                <i class="fas fa-compress"></i>
+                Comprimir PDF
+            </button>
+        </div>
+
+        <div id="status" class="hidden status-message"></div>
+        <div id="compressionInfo" class="hidden compression-info"></div>
+        <progress id="progressBar" value="0" max="100" class="hidden w-full"></progress>
+
+        <div id="buttonContainer" class="hidden">
+            <a id="downloadButton" href="#" class="download-link" download>
+                <i class="fas fa-download"></i>
+                Baixar PDF Comprimido
+            </a>
+        </div>
+    </div>
+</div>
+
+        <div class="card hidden" id="previewContainer">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-eye"></i>
+                    Pré-visualização das Páginas
+                </h2>
+            </div>
+            <div class="card-body">
+                <div id="imageList" class="pdf-preview-grid"></div>
+                
+                <div class="page-navigation hidden" id="gridPagination">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card hidden" id="pageDetailView">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-search"></i> Visualização da Compressão
+                </h3>
+            </div>
+            <div class="card-body">
+                <button id="backToGridButton" class="btn-back-pages">
+                    <i class="fas fa-arrow-left"></i> Voltar para Páginas
+                </button>
+                
+                <div class="page-navigation">
+                    <button id="prevPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="pageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="detail-page-container">
+                    <div class="canvas-container">
+                        <canvas id="pageCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3" id="processingText">Processando PDF - 0%</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuração global do PDF.js
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            
+            // Configuração global e utilitários
+            const PDFCompress = {
+                // Constantes e configurações
+                THUMBNAILS_PER_PAGE: 30,
+                
+                // Estado da aplicação
+                state: {
+                    originalFileSize: 0,
+                    currentPdfFile: null,
+                    isProcessing: false,
+                    pdfLoaded: false,
+                    hasCompressedFile: false,
+                    compressedPageImages: [],
+                    currentPageIndex: 0,
+                    currentGridPage: 0,
+                    totalGridPages: 0
+                },
+                
+                // Elementos do DOM
+                elements: {
+                    dropZone: document.getElementById('dropZone'),
+                    pdfInput: document.getElementById('pdfInput'),
+                    fileInfo: document.getElementById('fileInfo'),
+                    statusArea: document.getElementById('status'),
+                    imageList: document.getElementById('imageList'),
+                    progressBar: document.getElementById('progressBar'),
+                    compressionSlider: document.getElementById('compressionSlider'),
+                    controlPanel: document.getElementById('controlPanel'),
+                    buttonContainer: document.getElementById('buttonContainer'),
+                    downloadButton: document.getElementById('downloadButton'),
+                    processingOverlay: document.getElementById('processingOverlay'),
+                    processingText: document.getElementById('processingText'),
+                    previewContainer: document.getElementById('previewContainer'),
+                    compressionValue: document.getElementById('compressionValue'),
+                    compressButton: document.getElementById('compressButton'),
+                    pageDetailView: document.getElementById('pageDetailView'),
+                    pageCanvas: document.getElementById('pageCanvas'),
+                    pageInfo: document.getElementById('pageInfo'),
+                    prevPage: document.getElementById('prevPage'),
+                    nextPage: document.getElementById('nextPage'),
+                    backToGridButton: document.getElementById('backToGridButton'),
+                    gridPagination: document.getElementById('gridPagination'),
+                    prevGridPage: document.getElementById('prevGridPage'),
+                    nextGridPage: document.getElementById('nextGridPage'),
+                    gridPageInfo: document.getElementById('gridPageInfo'),
+                    compressionInfo: document.getElementById('compressionInfo')
+                },
+                
+                // Utilitários
+                utils: {
+                    formatFileSize(bytes) {
+                        if (bytes < 1024) return `${bytes} bytes`;
+                        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+                        return `${(bytes / 1048576).toFixed(2)} MB`;
+                    },
+                    
+                    blobToBase64(blob) {
+                        return new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => reject(new Error('Falha ao converter imagem'));
+                            reader.readAsDataURL(blob);
+                        });
+                    },
+                    
+                    updateCompressionLabel() {
+                        const value = PDFCompress.elements.compressionSlider.value;
+                        let label = 'Médio';
+                        
+                        if (value <= 3) {
+                            label = 'Alta Compressão';
+                        } else if (value > 6) {
+                            label = 'Alta Qualidade';
+                        }
+                        
+                        PDFCompress.elements.compressionValue.textContent = label;
+                    }
+                },
+                
+                // Métodos de visualização
+                view: {
+                    showError(message) {
+                        const { statusArea, processingOverlay } = PDFCompress.elements;
+                        statusArea.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                ${message}
+                            </div>`;
+                        statusArea.classList.remove('hidden');
+                        processingOverlay.style.display = 'none';
+                    },
+                    
+                    showProcessing(show) {
+                        const { processingOverlay, processingText } = PDFCompress.elements;
+                        processingOverlay.style.display = show ? 'flex' : 'none';
+                        if (show) {
+                            processingText.textContent = 'Processando PDF - 0%';
+                        }
+                    },
+                    
+                    updateFileInfo(file) {
+                        const { fileInfo } = PDFCompress.elements;
+                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                        
+                        fileInfo.innerHTML = `
+                            <div class="info-block">
+                                <div class="info-line">
+                                    <i class="fas fa-check-circle"></i>
+                                    Arquivo Selecionado: ${file.name}
+                                </div>
+                                <div class="info-line">
+                                    <i class="fas fa-check-circle"></i>
+                                    Tamanho: ${fileSizeMB} MB
+                                </div>
+                                <div class="info-line">
+                                    <i class="fas fa-check-circle"></i>
+                                    Tipo: ${file.type}
+                                </div>
+                            </div>`;
+                        
+                        fileInfo.classList.remove('hidden');
+                    }
+                },
+                
+                // Métodos de processamento de PDF
+                processing: {
+                    async compressPDF(file) {
+                        const { state, elements, view, processing } = PDFCompress;
+                        
+                        if (!file || !state.pdfLoaded) {
+                            view.showError('Nenhum PDF foi selecionado');
+                            return;
+                        }
+                        
+                        if (state.isProcessing) {
+                            view.showError('Aguarde o processo atual terminar');
+                            return;
+                        }
+                        
+                        try {
+                            state.isProcessing = true;
+                            view.showProcessing(true);
+                            
+                            state.compressedPageImages = [];
+                            
+                            elements.progressBar.classList.remove('hidden');
+                            elements.progressBar.value = 10;
+                            
+                            const arrayBuffer = await file.arrayBuffer();
+                            const pdf = await processing.validatePDF(arrayBuffer);
+                            
+                            elements.progressBar.value = 20;
+                            
+                            const compressedImages = await processing.processPages(pdf);
+                            const outputPdf = await processing.createCompressedPDF(compressedImages);
+                            
+                            processing.updateCompressionInfo(outputPdf.size);
+                            processing.createDownloadLink(outputPdf);
+                            
+                            state.totalGridPages = Math.ceil(state.compressedPageImages.length / PDFCompress.THUMBNAILS_PER_PAGE);
+                            
+                            state.currentGridPage = 0;
+                            processing.renderThumbnailsPage(state.currentGridPage);
+                            
+                            if (state.totalGridPages > 1) {
+                                processing.updateGridPagination();
+                                elements.gridPagination.classList.remove('hidden');
+                            } else {
+                                elements.gridPagination.classList.add('hidden');
+                            }
+                            
+                            elements.previewContainer.classList.remove('hidden');
+                            elements.progressBar.value = 100;
+                            
+                            elements.compressButton.innerHTML = '<i class="fas fa-redo-alt"></i> Refazer Compressão';
+                            elements.compressButton.classList.add('reset-mode');
+                            elements.compressButton.dataset.mode = 'recompress';
+                            state.hasCompressedFile = true;
+                        } catch (error) {
+                            console.error('Erro durante o processamento:', error);
+                            view.showError(`Erro durante a compressão: ${error.message}`);
+                        } finally {
+                            state.isProcessing = false;
+                            view.showProcessing(false);
+                        }
+                    },
+                    
+                    async validatePDF(arrayBuffer) {
+    try {
+        // Opções adicionais para PDF.js para lidar com PDFs problemáticos
+        const loadingOptions = {
+            data: arrayBuffer,
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true,
+            disableAutoFetch: true,
+            disableStream: false,
+            // Opção para tentar ignorar senhas/criptografia
+            password: '',
+            // Tentar reconstruir documentos quebrados/corrompidos
+            verbosity: 0
+        };
+        
+        const pdf = await pdfjsLib.getDocument(loadingOptions).promise;
+        
+        if (pdf.numPages === 0) {
+            throw new Error('PDF sem páginas');
+        }
+        return pdf;
+    } catch (error) {
+        console.error('Erro detalhado ao validar PDF:', error);
+        throw new Error('PDF inválido ou corrompido. Verifique se o arquivo não está protegido por senha.');
+    }
+},
+                    
+                    async convertPDFPageToImage(pdf, pageNumber) {
+                        try {
+                            const page = await pdf.getPage(pageNumber);
+                            const scale = 1.5;
+                            const viewport = page.getViewport({ scale });
+                            
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.floor(viewport.width);
+                            canvas.height = Math.floor(viewport.height);
+                            
+                            const context = canvas.getContext('2d');
+                            context.fillStyle = 'white';
+                            context.fillRect(0, 0, canvas.width, canvas.height);
+
+                            await page.render({
+                                canvasContext: context,
+                                viewport: viewport,
+                                background: 'white'
+                            }).promise;
+
+                            return new Promise((resolve, reject) => {
+                                canvas.toBlob((blob) => {
+                                    if (!blob) {
+                                        reject(new Error('Falha ao converter página para imagem'));
+                                        return;
+                                    }
+                                    resolve(blob);
+                                }, 'image/jpeg', 0.8);
+                            });
+                        } catch (error) {
+                            throw new Error(`Erro ao processar página ${pageNumber}: ${error.message}`);
+                        }
+                    },
+                    
+                    async processPages(pdf) {
+                        const { state, elements } = PDFCompress;
+                        const compressedImages = [];
+                        const quality = parseFloat(elements.compressionSlider.value) / 10;
+                        
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            try {
+                                const blob = await this.convertPDFPageToImage(pdf, i);
+                                const compressed = await this.compressImage(blob, quality);
+                                
+                                compressedImages.push(compressed);
+                                state.compressedPageImages.push(compressed);
+                                
+                                const progress = 20 + Math.floor(60 * (i / pdf.numPages));
+                                elements.progressBar.value = progress;
+                                elements.processingText.textContent = `Processando PDF - ${Math.floor(progress)}%`;
+                            } catch (error) {
+                                throw new Error(`Falha ao processar página ${i}: ${error.message}`);
+                            }
+                        }
+                        
+                        return compressedImages;
+                    },
+                    
+                    async compressImage(blob, quality) {
+                        return new Promise((resolve, reject) => {
+                            new Compressor(blob, {
+                                quality: quality,
+                                success: resolve,
+                                error: reject,
+                                maxWidth: 1500,
+                                maxHeight: 1500,
+                                convertSize: 800000,
+                                checkOrientation: false,
+                            });
+                        });
+                    },
+                    
+                    async createCompressedPDF(compressedImages) {
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'pt',
+                            format: 'a4',
+                            compress: true
+                        });
+
+                        for (let i = 0; i < compressedImages.length; i++) {
+                            try {
+                                const imgData = await PDFCompress.utils.blobToBase64(compressedImages[i]);
+                                if (i > 0) pdf.addPage();
+                                
+                                const pageWidth = pdf.internal.pageSize.getWidth();
+                                const pageHeight = pdf.internal.pageSize.getHeight();
+                                
+                                const imgProps = pdf.getImageProperties(imgData);
+                                const ratio = Math.min(
+                                    pageWidth / imgProps.width,
+                                    pageHeight / imgProps.height
+                                );
+
+                                const imgWidth = imgProps.width * ratio;
+                                const imgHeight = imgProps.height * ratio;
+                                
+                                const x = (pageWidth - imgWidth) / 2;
+                                const y = (pageHeight - imgHeight) / 2;
+                                
+                                pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight, null, 'FAST');
+                                
+                                // Atualizar feedback visual de progresso
+                                const overallProgress = 80 + Math.floor(20 * (i + 1) / compressedImages.length);
+                                PDFCompress.elements.progressBar.value = overallProgress;
+                                PDFCompress.elements.processingText.textContent = `Processando PDF - ${Math.floor(overallProgress)}%`;
+                            } catch (error) {
+                                throw new Error(`Falha ao gerar página ${i + 1} do PDF: ${error.message}`);
+                            }
+                        }
+
+                        try {
+                            return pdf.output('blob');
+                        } catch (error) {
+                            throw new Error('Falha ao gerar PDF final');
+                        }
+                    },
+                    
+                    updateCompressionInfo(compressedSize) {
+                        const { state, elements } = PDFCompress;
+                        const compressionRatio = ((state.originalFileSize - compressedSize) / state.originalFileSize * 100).toFixed(2);
+                        const compressedSizeMB = (compressedSize / (1024 * 1024)).toFixed(2);
+                        const originalSizeMB = (state.originalFileSize / (1024 * 1024)).toFixed(2);
+                        
+                        elements.compressionInfo.innerHTML = `
+                            <div class="status-message success">
+                                <i class="fas fa-compress-alt"></i>
+                                <div>
+                                    <strong>Compressão concluída com sucesso!</strong>
+                                    <div class="mt-2">
+                                        Tamanho original: ${originalSizeMB} MB<br>
+                                        Tamanho após compressão: ${compressedSizeMB} MB<br>
+                                        Redução: ${compressionRatio}%
+                                    </div>
+                                </div>
+                            </div>`;
+                        elements.compressionInfo.classList.remove('hidden');
+                    },
+                    
+                    createDownloadLink(blob) {
+                        const { elements } = PDFCompress;
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                        const url = URL.createObjectURL(blob);
+                        
+                        elements.downloadButton.href = url;
+                        elements.downloadButton.download = `comprimido_${timestamp}.pdf`;
+                        elements.buttonContainer.classList.remove('hidden');
+
+                        const cleanupUrl = () => URL.revokeObjectURL(url);
+                        elements.downloadButton.addEventListener('click', () => {
+                            setTimeout(cleanupUrl, 100);
+                        }, { once: true });
+                    },
+                    
+                    renderThumbnailsPage(page) {
+                        const { state, elements } = PDFCompress;
+                        elements.imageList.innerHTML = '';
+                        
+                        const startIndex = page * PDFCompress.THUMBNAILS_PER_PAGE;
+                        const endIndex = Math.min(startIndex + PDFCompress.THUMBNAILS_PER_PAGE, state.compressedPageImages.length);
+                        
+                        for (let i = startIndex; i < endIndex; i++) {
+                            this.displayCompressedImage(state.compressedPageImages[i], i + 1);
+                        }
+                        
+                        this.updateGridPagination();
+                    },
+                    
+                    updateGridPagination() {
+                        const { state, elements } = PDFCompress;
+                        elements.gridPageInfo.textContent = `Página ${state.currentGridPage + 1} de ${state.totalGridPages}`;
+                        elements.prevGridPage.disabled = state.currentGridPage <= 0;
+                        elements.nextGridPage.disabled = state.currentGridPage >= state.totalGridPages - 1;
+                    },
+                    
+                    displayCompressedImage(blob, pageNumber) {
+                        const { state, elements } = PDFCompress;
+                        const div = document.createElement('div');
+                        div.className = 'page-preview';
+                        div.dataset.pageIndex = pageNumber - 1;
+                        
+                        div.addEventListener('click', () => {
+                            state.currentPageIndex = parseInt(div.dataset.pageIndex);
+                            this.showDetailedView(state.currentPageIndex);
+                        });
+                        
+                        const img = document.createElement('img');
+                        img.src = URL.createObjectURL(blob);
+                        img.className = 'image-preview';
+                        img.alt = `Página ${pageNumber}`;
+                        img.title = `Página ${pageNumber}`;
+                        
+                        const pageNumberEl = document.createElement('div');
+                        pageNumberEl.textContent = `Página ${pageNumber}`;
+                        pageNumberEl.className = 'page-number';
+                        
+                        div.appendChild(img);
+                        div.appendChild(pageNumberEl);
+                        elements.imageList.appendChild(div);
+                    },
+                    
+                    showDetailedView(pageIndex) {
+                        const { state, elements } = PDFCompress;
+                        if (pageIndex < 0 || pageIndex >= state.compressedPageImages.length) {
+                            return;
+                        }
+                        
+                        elements.previewContainer.classList.add('hidden');
+                        this.renderDetailedPage(pageIndex);
+                        elements.pageDetailView.classList.remove('hidden');
+                        window.scrollTo(0, 0);
+                    },
+                    
+                    async renderDetailedPage(pageIndex) {
+    const { state, elements } = PDFCompress;
+    try {
+        this.updatePageControls(pageIndex);
+        
+        const blob = state.compressedPageImages[pageIndex];
+        const img = new Image();
+        
+        // Remover qualquer estilo inline
+        elements.pageCanvas.removeAttribute("style");
+        
+        img.onload = function() {
+            const maxWidth = Math.min(img.width, 800);
+            const ratio = maxWidth / img.width;
+            const newHeight = img.height * ratio;
+            
+            elements.pageCanvas.width = maxWidth;
+            elements.pageCanvas.height = newHeight;
+            
+            const ctx = elements.pageCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, elements.pageCanvas.width, elements.pageCanvas.height);
+            ctx.drawImage(img, 0, 0, maxWidth, newHeight);
+        };
+        
+        img.onerror = function() {
+            PDFCompress.view.showError('Erro ao carregar imagem da página');
+        };
+        
+        img.src = URL.createObjectURL(blob);
+    } catch (error) {
+        console.error('Erro ao renderizar página:', error);
+        PDFCompress.view.showError(`Erro ao renderizar página: ${error.message}`);
+    }
+},
+                    
+                    updatePageControls(pageIndex) {
+                        const { state, elements } = PDFCompress;
+                        elements.prevPage.disabled = pageIndex <= 0;
+                        elements.nextPage.disabled = pageIndex >= state.compressedPageImages.length - 1;
+                        elements.pageInfo.textContent = `Página ${pageIndex + 1} de ${state.compressedPageImages.length}`;
+                    }
+                },
+                
+                // Métodos para resetar e limpar
+                resetState() {
+                    const { state, elements } = this;
+                    const elementsToHide = [
+                        elements.controlPanel,
+                        elements.statusArea,
+                        elements.compressionInfo,
+                        elements.progressBar,
+                        elements.buttonContainer,
+                        elements.previewContainer,
+                        elements.pageDetailView,
+                        elements.gridPagination
+                    ];
+
+                    elementsToHide.forEach(el => el.classList.add('hidden'));
+                    
+                    elements.imageList.innerHTML = '';
+                    elements.statusArea.innerHTML = '';
+                    elements.fileInfo.innerHTML = '';
+                    elements.fileInfo.classList.add('hidden');
+
+                    Object.assign(state, {
+                        originalFileSize: 0,
+                        currentPdfFile: null,
+                        isProcessing: false,
+                        pdfLoaded: false,
+                        hasCompressedFile: false,
+                        compressedPageImages: [],
+                        currentPageIndex: 0,
+                        currentGridPage: 0,
+                        totalGridPages: 0
+                    });
+
+                    if (elements.downloadButton.href && elements.downloadButton.href !== '#') {
+                        URL.revokeObjectURL(elements.downloadButton.href);
+                        elements.downloadButton.href = '#';
+                    }
+
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(img.src);
+                        }
+                    });
+                },
+                
+                resetPreview() {
+                    const { elements, state } = this;
+                    elements.previewContainer.classList.add('hidden');
+                    elements.pageDetailView.classList.add('hidden');
+                    elements.gridPagination.classList.add('hidden');
+                    elements.imageList.innerHTML = '';
+                    elements.compressionInfo.classList.add('hidden');
+                    elements.buttonContainer.classList.add('hidden');
+                    
+                    state.compressedPageImages = [];
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(img.src);
+                        }
+                    });
+                },
+                
+                cleanupResources() {
+                    const { elements } = this;
+                    if (elements.downloadButton.href && elements.downloadButton.href !== '#') {
+                        URL.revokeObjectURL(elements.downloadButton.href);
+                    }
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(img.src);
+                        }
+                    });
+                },
+                
+                handleFileSelection(file) {
+    const { state, view, elements } = this;
+    
+    if (!file) {
+        view.showError('Por favor, selecione um arquivo PDF válido');
+        return;
+    }
+
+    if (state.isProcessing) {
+        view.showError('Aguarde o processo atual terminar');
+        return;
+    }
+    
+    console.log("Tentando processar arquivo:", file.name, "Tipo:", file.type);
+    
+    // Primeiro tenta verificar por tipo MIME
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        // Se não for identificado como PDF pelo tipo MIME ou extensão,
+        // vamos tentar verificar o conteúdo do arquivo
+        this.validateAsPDF(file).then(isValid => {
+            if (isValid) {
+                this.processValidFile(file);
+            } else {
+                view.showError('Por favor, selecione um arquivo PDF válido');
+            }
+        }).catch(error => {
+            console.error('Erro ao validar arquivo:', error);
+            view.showError('Erro ao validar arquivo: ' + error.message);
+        });
+        return;
+    }
+    
+    // Se o tipo MIME ou nome de arquivo indicar que é um PDF, 
+    // processa o arquivo diretamente
+    this.processValidFile(file);
+},
+
+// Função adicional para verificar se um arquivo é um PDF válido
+async validateAsPDF(file) {
+    try {
+        // Tenta carregar o arquivo como PDF usando PDF.js
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        return pdf.numPages > 0;
+    } catch (error) {
+        console.error("Erro na validação do PDF:", error);
+        return false;
+    }
+},
+
+// Função para processar um arquivo após a validação
+processValidFile(file) {
+    const { state, view, elements } = this;
+    
+    try {
+        this.resetState();
+        state.currentPdfFile = file;
+        state.originalFileSize = file.size;
+        
+        view.updateFileInfo(file);
+        elements.controlPanel.classList.remove('hidden');
+        
+        elements.compressButton.innerHTML = '<i class="fas fa-compress"></i> Comprimir PDF';
+        elements.compressButton.classList.remove('reset-mode');
+        elements.compressButton.dataset.mode = 'compress';
+        state.pdfLoaded = true;
+    } catch (error) {
+        console.error('Erro ao selecionar arquivo:', error);
+        view.showError(`Erro ao selecionar arquivo: ${error.message}`);
+    }
+}
+            };
+            
+            // ==== CORREÇÃO PARA EVENTOS DE CLIQUE E SELEÇÃO DE ARQUIVO ====
+            // Esta seção substitui os event listeners problemáticos
+            
+            // Obtenha referências diretas aos elementos críticos
+            const dropZone = document.getElementById('dropZone');
+            const pdfInput = document.getElementById('pdfInput');
+            
+            // Verifique se os elementos foram encontrados
+            console.log("Drop Zone encontrado:", !!dropZone);
+            console.log("PDF Input encontrado:", !!pdfInput);
+            
+            // Evento de clique para a área de upload
+            if (dropZone) {
+                dropZone.onclick = function() {
+                    console.log("Clique na área de drop");
+                    PDFCompress.resetState();
+                    if (pdfInput) {
+                        pdfInput.click();
+                    } else {
+                        console.error("Elemento de input não encontrado");
+                    }
+                };
+            } else {
+                console.error("Área de drop não encontrada");
+            }
+            
+            // Evento para quando um arquivo é selecionado
+            if (pdfInput) {
+                pdfInput.onchange = function(e) {
+                    console.log("Arquivo selecionado via input");
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        PDFCompress.handleFileSelection(file);
+                    }
+                };
+            } else {
+                console.error("Elemento pdfInput não encontrado");
+            }
+            
+            // Eventos de drag and drop
+            if (dropZone) {
+                dropZone.ondragover = function(e) {
+                    e.preventDefault();
+                    dropZone.classList.add('drag-over');
+                };
+                
+                dropZone.ondragleave = function() {
+                    dropZone.classList.remove('drag-over');
+                };
+                
+                dropZone.ondrop = function(e) {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-over');
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        PDFCompress.resetState();
+                        PDFCompress.handleFileSelection(file);
+                    }
+                };
+            }
+            
+            // Evento do botão de compressão
+            const compressButton = document.getElementById('compressButton');
+            if (compressButton) {
+                compressButton.onclick = function() {
+                    if (!PDFCompress.state.isProcessing && PDFCompress.state.currentPdfFile) {
+                        const isRecompressing = compressButton.dataset.mode === 'recompress';
+                        
+                        if (isRecompressing) {
+                            PDFCompress.resetPreview();
+                        }
+                        
+                        PDFCompress.processing.compressPDF(PDFCompress.state.currentPdfFile);
+                    }
+                };
+            }
+            
+            // Eventos de navegação
+            const prevPage = document.getElementById('prevPage');
+const nextPage = document.getElementById('nextPage');
+const prevGridPage = document.getElementById('prevGridPage');
+const nextGridPage = document.getElementById('nextGridPage');
+const backToGridButton = document.getElementById('backToGridButton');
+            
+           
+if (prevPage) {
+    prevPage.onclick = function() {
+        if (PDFCompress.state.currentPageIndex > 0) {
+            PDFCompress.state.currentPageIndex--;
+            PDFCompress.processing.renderDetailedPage(PDFCompress.state.currentPageIndex);
+        }
+    };
+}
+
+if (nextPage) {
+    nextPage.onclick = function() {
+        if (PDFCompress.state.currentPageIndex < PDFCompress.state.compressedPageImages.length - 1) {
+            PDFCompress.state.currentPageIndex++;
+            PDFCompress.processing.renderDetailedPage(PDFCompress.state.currentPageIndex);
+        }
+    };
+}
+            
+            if (prevGridPage) {
+                prevGridPage.onclick = function() {
+                    if (PDFCompress.state.currentGridPage > 0) {
+                        PDFCompress.state.currentGridPage--;
+                        PDFCompress.processing.renderThumbnailsPage(PDFCompress.state.currentGridPage);
+                    }
+                };
+            }
+            
+            if (nextGridPage) {
+                nextGridPage.onclick = function() {
+                    if (PDFCompress.state.currentGridPage < PDFCompress.state.totalGridPages - 1) {
+                        PDFCompress.state.currentGridPage++;
+                        PDFCompress.processing.renderThumbnailsPage(PDFCompress.state.currentGridPage);
+                    }
+                };
+            }
+            
+            if (backToGridButton) {
+                backToGridButton.onclick = function() {
+                    const pageDetailView = document.getElementById('pageDetailView');
+                    const previewContainer = document.getElementById('previewContainer');
+                    
+                    pageDetailView.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                };
+            }
+            
+            // Slider de compressão
+            const compressionSlider = document.getElementById('compressionSlider');
+            if (compressionSlider) {
+                compressionSlider.oninput = function() {
+                    PDFCompress.utils.updateCompressionLabel();
+                };
+            }
+            
+            // Limpeza ao sair da página
+            window.onbeforeunload = function() {
+                PDFCompress.cleanupResources();
+            };
+            
+            // Inicializar o valor do rótulo de compressão
+            PDFCompress.utils.updateCompressionLabel();
+        });
+    </script>
+</body>
+</html>
