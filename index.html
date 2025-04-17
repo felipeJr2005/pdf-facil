@@ -6,13 +6,10 @@
     <meta name="description" content="PDF FACIL - Ferramenta online gratuita para manipulação de PDFs">
     <meta name="theme-color" content="#2563eb">
     <title>PJE & PDF</title>
-    
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" as="script">
-    
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <style>
         :root {
             --primary-color: #5c95ce; /* Lighter Blue */
@@ -28,14 +25,12 @@
             --shadow-hover: 0 8px 15px rgba(30,64,175,0.1);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--secondary-bg);
@@ -47,7 +42,6 @@
             display: flex;
             flex-direction: column;
         }
-
         .main-header {
             background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
             box-shadow: var(--shadow-md);
@@ -57,7 +51,6 @@
             top: 0;
             z-index: 1000;
         }
-
         .nav-container {
             display: flex;
             justify-content: space-between;
@@ -65,13 +58,11 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-
         .nav-menu {
             display: flex;
             gap: 0.5rem;
             list-style: none;
         }
-
         .logo {
             font-size: 1.5rem;
             font-weight: 800;
@@ -79,7 +70,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             letter-spacing: -0.5px;
         }
-
         button {
             padding: 0.625rem 1rem;
             border: none;
@@ -98,46 +88,38 @@
             white-space: nowrap;
             backdrop-filter: blur(10px);
         }
-
         button i {
             font-size: 1.125rem;
             min-width: 1.25rem;
             text-align: center;
         }
-
         button:active {
             transform: scale(0.98);
         }
-
         .btn-secondary {
             background: rgba(255, 255, 255, 0.9);
             color: var(--text-primary);
             box-shadow: var(--shadow-sm);
             transition: var(--transition);
         }
-
         .btn-green {
             background: var(--primary-color);
             color: white; /* Alterado para branco para maior contraste */
             box-shadow: 0 4px 6px rgba(92, 149, 206, 0.3);
         }
-
         /* Estilo específico para texto do botão ativo */
         .btn-green i {
             color: white; /* Ícone em branco para contraste */
         }
-
         button:hover {
             background-color: var(--primary-hover);
             color: white; /* Texto branco ao passar o mouse para maior contraste */
             transform: translateY(-2px);
             box-shadow: var(--shadow-hover);
         }
-
         button:hover i {
             color: white; /* Ícone branco ao passar o mouse */
         }
-
         .sidebar {
             width: 100%;
             background: rgba(255, 255, 255, 0.95);
@@ -150,33 +132,28 @@
             scrollbar-width: thin;
             scrollbar-color: var(--primary-color) transparent;
         }
-
         .sidebar-header {
             padding: 0 0.5rem 1.5rem;
             border-bottom: 2px solid #e5e7eb;
             margin-bottom: 1.5rem;
         }
-
         .sidebar-header h2 {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--primary-color);
             margin-bottom: 0.5rem;
         }
-
         .sidebar-nav {
             display: grid;
             gap: 0.5rem;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
-
         .sidebar-nav button {
             background: white;
             box-shadow: var(--shadow-sm);
             transition: var(--transition);
             padding: 0.625rem 0.875rem;
         }
-
         .app-container {
             display: flex;
             flex-direction: column;
@@ -184,12 +161,10 @@
             padding-top: 3.5rem;
             flex: 1;
         }
-
         .main-content {
             flex: 1;
             padding: 1.5rem;
         }
-
         .content-area {
             background: white;
             border-radius: 1rem;
@@ -198,19 +173,16 @@
             overflow: auto;
             backdrop-filter: blur(10px);
         }
-
         /* Animação de fade-in para o conteúdo */
         .fade-in {
             opacity: 0;
             animation: fadeIn 0.3s ease forwards;
         }
-
         @keyframes fadeIn {
             to {
                 opacity: 1;
             }
         }
-
         /* Rodapé */
         .main-footer {
             background: var(--secondary-bg);
@@ -220,7 +192,6 @@
             font-size: 0.875rem;
             color: var(--text-secondary);
         }
-
         .footer-content {
             max-width: 1400px;
             margin: 0 auto;
@@ -230,22 +201,18 @@
             align-items: center;
             gap: 1rem;
         }
-
         .footer-links {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
         }
-
         .footer-links a {
             color: var(--primary-color);
             text-decoration: none;
         }
-
         .footer-links a:hover {
             text-decoration: underline;
         }
-
         /* Loading spinner */
         .loading-spinner {
             display: none; /* Alterado de hidden para none para maior compatibilidade */
@@ -254,7 +221,6 @@
             height: 100%;
             width: 100%;
         }
-
         .spinner {
             width: 40px;
             height: 40px;
@@ -263,66 +229,54 @@
             border-top-color: var(--primary-color);
             animation: spin 1s ease-in-out infinite;
         }
-
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
-
         @media (min-width: 768px) {
             .app-container {
                 flex-direction: row;
             }
-
             .sidebar {
                 width: 320px;
                 height: calc(100vh - 3.5rem);
                 position: fixed;
             }
-
             .sidebar-nav {
                 grid-template-columns: 1fr;
             }
-
             .main-content {
                 margin-left: 320px;
                 padding: 2rem;
             }
         }
-
         @media (max-width: 767px) {
             .nav-menu button {
                 padding: 0.5rem;
                 font-size: 0.8125rem;
             }
-
             .sidebar-nav button {
                 justify-content: center;
                 padding: 1rem 0.75rem;
             }
         }
-
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation: none !important;
                 transition: none !important;
             }
         }
-
         ::-webkit-scrollbar {
             width: 8px;
         }
-
         ::-webkit-scrollbar-track {
             background: transparent;
         }
-
         ::-webkit-scrollbar-thumb {
             background: var(--primary-color);
             border-radius: 4px;
         }
-
         @media print {
             .sidebar, .main-header, .main-footer {
                 display: none;
@@ -332,7 +286,6 @@
                 padding: 0;
             }
         }
-
         /* Estilo para quando o conteúdo está sendo carregado */
         .content-loading {
             opacity: 0.6;
@@ -352,11 +305,10 @@
             </ul>
         </nav>
     </header>
-
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2>PDF FACIL</h2>
+                <h2> PDF FACIL</h2>
                 <p id="functionDescription">Selecione uma função</p>
             </div>
             <nav class="sidebar-nav">
@@ -366,7 +318,6 @@
                 <button class="btn-secondary" onclick="loadContent('converte', 'Transforme PDF em outros formatos')">
                     <i class="fas fa-exchange-alt"></i>Converter
                 </button>
-                
                 <button class="btn-secondary" onclick="loadContent('divide', 'Separe um PDF em múltiplos arquivos')">
                     <i class="fas fa-cut"></i>Dividir
                 </button>
@@ -397,14 +348,12 @@
                 <button class="btn-secondary" onclick="loadContent('rotacione', 'Gire as páginas do PDF')">
                     <i class="fas fa-redo"></i>Rotacionar
                 </button>
-                
                 <!-- Botão de erro 404 -->
                 <button id="error404Button" class="btn-secondary" onclick="loadErrorPage()">
                     <i class="fas fa-exclamation-triangle"></i>Erro 404
                 </button>
             </nav>
         </aside>
-
         <main class="main-content">
             <div class="content-area" id="contentArea">
                 <!-- Conteúdo carregado dinamicamente virá aqui -->
@@ -414,7 +363,6 @@
             </div>
         </main>
     </div>
-
     <footer class="main-footer">
         <div class="footer-content">
             <div class="copyright">
@@ -427,7 +375,6 @@
             </div>
         </div>
     </footer>
-
     <script>
         // Configurações
         const config = {
@@ -436,7 +383,6 @@
             defaultHomePage: 'bem-vindo.html', // Página de boas-vindas padrão
             cacheTime: 3600000, // Cache de conteúdo por 1 hora (em milissegundos)
         };
-
         // Elementos do DOM
         const elements = {
             functionDescription: document.getElementById('functionDescription'),
@@ -445,19 +391,16 @@
             error404Button: document.getElementById('error404Button'),
             allButtons: document.querySelectorAll('.sidebar-nav button')
         };
-
         // Função para exibir o spinner de carregamento
         function showLoading() {
             elements.contentArea.classList.add('content-loading');
             elements.loadingSpinner.style.display = 'flex';
         }
-
         // Função para esconder o spinner de carregamento
         function hideLoading() {
             elements.contentArea.classList.remove('content-loading');
             elements.loadingSpinner.style.display = 'none';
         }
-
         // Função para debounce de eventos
         function debounce(func, wait) {
             let timeout;
@@ -470,45 +413,36 @@
                 timeout = setTimeout(later, wait);
             };
         }
-
         // Carrega uma página de conteúdo
         async function loadContent(functionName, description) {
             console.log(`Tentando carregar: ${functionName}.html`);
-            
             // Verifica se já estamos carregando o mesmo conteúdo
             const currentContent = elements.contentArea.dataset.currentFunction;
             if (currentContent === functionName) {
                 console.log(`Página ${functionName} já está carregada`);
                 return;
             }
-            
             // Atualiza a descrição da função
             if (elements.functionDescription) {
                 elements.functionDescription.innerText = description || config.defaultTitle;
             }
-            
             // Atualiza a UI removendo a classe 'btn-green' de todos os botões
             elements.allButtons.forEach(button => {
                 button.classList.remove('btn-green');
                 button.classList.add('btn-secondary');
             });
-            
             // Adiciona a classe 'btn-green' ao botão ativo
             const activeButton = Array.from(elements.allButtons)
                 .find(button => button.innerText.includes(functionName.charAt(0).toUpperCase() + functionName.slice(1)));
-            
             if (activeButton) {
                 activeButton.classList.remove('btn-secondary');
                 activeButton.classList.add('btn-green');
             }
-            
             try {
                 showLoading();
-                
                 // Construir caminho do arquivo
                 const filePath = `${config.basePath}/${functionName}.html`;
                 console.log(`Caminho completo: ${filePath}`);
-                
                 // Carregar conteúdo via fetch com cache desabilitado
                 const response = await fetch(filePath, { 
                     cache: 'no-cache',
@@ -517,31 +451,26 @@
                         'Pragma': 'no-cache'
                     }
                 });
-                
                 if (!response.ok) {
                     // Se houver erro (404, etc), carregar página de erro
                     console.error(`Erro ao carregar ${filePath}: ${response.status}`);
                     throw new Error(`Erro ao carregar ${filePath}: ${response.status}`);
                 }
-                
                 // Obter o HTML do conteúdo
                 let html = await response.text();
                 console.log(`Conteúdo carregado com sucesso. Tamanho: ${html.length} bytes`);
-                
                 // Extrair apenas o corpo do HTML, se for um documento completo
-                if (html.includes('<body')) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    html = tempDiv.querySelector('body').innerHTML;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const bodyContent = tempDiv.querySelector('body');
+                if (bodyContent) {
+                    html = bodyContent.innerHTML;
                 }
-                
                 // Atualizar o DOM
                 elements.contentArea.innerHTML = html;
                 elements.contentArea.dataset.currentFunction = functionName;
-                
                 // Executar scripts no conteúdo carregado
                 executeScripts(elements.contentArea);
-                
             } catch (error) {
                 console.error('Erro ao carregar conteúdo:', error);
                 loadErrorPage();
@@ -549,17 +478,14 @@
                 hideLoading();
             }
         }
-        
         // Carregar página inicial
         function loadHomePage() {
             elements.functionDescription.innerText = config.defaultTitle;
-            
             // Remover a classe 'btn-green' de todos os botões
             elements.allButtons.forEach(button => {
                 button.classList.remove('btn-green');
                 button.classList.add('btn-secondary');
             });
-            
             // Verificar se existe uma página de boas-vindas
             fetch(config.defaultHomePage, {
                 cache: 'no-cache',
@@ -571,6 +497,12 @@
                 .then(response => {
                     if (response.ok) {
                         return response.text().then(html => {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = html;
+                            const bodyContent = tempDiv.querySelector('body');
+                            if (bodyContent) {
+                                html = bodyContent.innerHTML;
+                            }
                             elements.contentArea.innerHTML = html;
                             elements.contentArea.dataset.currentFunction = 'welcome';
                             executeScripts(elements.contentArea);
@@ -607,21 +539,17 @@
                     elements.contentArea.dataset.currentFunction = 'home';
                 });
         }
-        
         // Carregar página de erro 404
         function loadErrorPage() {
             elements.functionDescription.innerText = 'Página não encontrada';
-            
             // Remover a classe 'btn-green' de todos os botões
             elements.allButtons.forEach(button => {
                 button.classList.remove('btn-green');
                 button.classList.add('btn-secondary');
             });
-            
             // Adicionar a classe 'btn-green' ao botão de erro 404
             elements.error404Button.classList.remove('btn-secondary');
             elements.error404Button.classList.add('btn-green');
-            
             // Carregar o conteúdo da página de erro
             fetch('404.html', {
                 cache: 'no-cache',
@@ -658,47 +586,38 @@
                     console.error('Erro ao carregar página de erro:', error);
                 });
         }
-        
         // Executar scripts no conteúdo carregado
         function executeScripts(container) {
             // Encontrar todos os elementos script no conteúdo
             const scripts = container.querySelectorAll('script');
             scripts.forEach(oldScript => {
                 const newScript = document.createElement('script');
-                
                 // Copiar todos os atributos do script original
                 Array.from(oldScript.attributes).forEach(attr => {
                     newScript.setAttribute(attr.name, attr.value);
                 });
-                
                 // Se o script tiver conteúdo interno, copiá-lo
                 if (oldScript.innerHTML) {
                     newScript.innerHTML = oldScript.innerHTML;
                 }
-                
                 // Substituir o script antigo pelo novo
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
         }
-        
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM carregado - Inicializando aplicação');
-            
             // Garantir que os elementos tenham sido encontrados
             if (!elements.contentArea || !elements.functionDescription) {
                 console.error('Elementos essenciais não encontrados no DOM');
                 return;
             }
-            
             // Definir o estado inicial como em branco
             elements.contentArea.dataset.currentFunction = '';
-            
             // Verificar se há parâmetros na URL
             const urlParams = new URLSearchParams(window.location.search);
             const functionParam = urlParams.get('function');
             const errorParam = urlParams.get('error');
-            
             // Se houver um parâmetro de erro, mostrar a página de erro
             if (errorParam === '404') {
                 console.log('Parâmetro de erro 404 detectado');
@@ -707,14 +626,12 @@
             // Se houver um parâmetro de função, carregar a função correspondente
             else if (functionParam) {
                 console.log(`Parâmetro de função detectado: ${functionParam}`);
-                
                 // Encontrar o botão correspondente para obter a descrição
                 const functionButton = Array.from(elements.allButtons)
                     .find(button => {
                         const buttonText = button.innerText.toLowerCase();
                         return buttonText.includes(functionParam.toLowerCase());
                     });
-                
                 // Obter a descrição do botão ou usar um valor padrão
                 let description = 'Ferramenta PDF';
                 if (functionButton) {
@@ -724,7 +641,6 @@
                         description = match[1];
                     }
                 }
-                
                 loadContent(functionParam, description);
             }
             // Caso contrário, carregar a página inicial
@@ -732,7 +648,6 @@
                 console.log('Carregando página inicial');
                 loadHomePage();
             }
-            
             // Prefetch de páginas comuns para melhorar performance
             const commonPages = ['comprime', 'converte', 'junte'];
             commonPages.forEach(page => {
@@ -742,7 +657,6 @@
                 link.href = `${config.basePath}/${page}.html`;
                 document.head.appendChild(link);
             });
-            
             // Adicionar suporte para navegação via histórico
             window.addEventListener('popstate', event => {
                 console.log('Evento popstate detectado', event.state);
