@@ -29,9 +29,6 @@ $availableModules = [
     'geral' => 'Geral'
 ];
 
-// Arquivo de armazenamento de sugestões
-$suggestionsFile = __DIR__ . '/sugestoes.json';
-
 // Iniciar sessão
 session_start();
 
@@ -119,33 +116,8 @@ function saveNotes($notes) {
     return $saved !== false;
 }
 
-// Função para ler sugestões do arquivo
-function getSuggestions() {
-    global $suggestionsFile;
-    if (file_exists($suggestionsFile)) {
-        $content = file_get_contents($suggestionsFile);
-        return json_decode($content, true) ?: [];
-    }
-    return [];
-}
-
-// Função para salvar sugestões no arquivo
-function saveSuggestions($suggestions) {
-    global $suggestionsFile, $message;
-    $saved = @file_put_contents($suggestionsFile, json_encode($suggestions, JSON_PRETTY_PRINT));
-    return $saved !== false;
-}
-
-// Criar arquivo de sugestões se não existir
-if (!file_exists($suggestionsFile)) {
-    saveSuggestions([]);
-}
-
 // Obter notas
 $notes = getNotes();
-
-// Obter sugestões
-$suggestions = getSuggestions();
 
 // Processar adição de nova nota
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
@@ -193,7 +165,7 @@ if ($isLoggedIn && isset($_GET['complete']) && !empty($_GET['complete'])) {
     }
     
     // Redirecionar para evitar recargas
-    header("Location: " . $_SERVER['PHP_SELF'] . "?tab=notas");
+    header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
@@ -216,97 +188,7 @@ if ($isLoggedIn && isset($_GET['delete']) && !empty($_GET['delete'])) {
     }
     
     // Redirecionar
-    header("Location: " . $_SERVER['PHP_SELF'] . "?tab=notas");
-    exit;
-}
-
-// Processa sugestões 
-if ($isLoggedIn) {
-    // Marcar sugestão como concluída
-    if (isset($_GET['complete_suggestion']) && !empty($_GET['complete_suggestion'])) {
-        $idToComplete = (int)$_GET['complete_suggestion'];
-        
-        // Encontrar e atualizar a sugestão
-        foreach ($suggestions as $key => $suggestion) {
-            if ($suggestion['id'] == $idToComplete) {
-                $suggestions[$key]['status'] = 'concluído';
-                $suggestions[$key]['date_completed'] = date('Y-m-d H:i:s');
-                break;
-            }
-        }
-        
-        // Salvar sugestões atualizadas
-        if (saveSuggestions($suggestions)) {
-            $message = 'Sugestão marcada como concluída!';
-        }
-        
-        // Redirecionar para a aba correta
-        header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
-        exit;
-    }
-    
-    // Excluir sugestão
-    if (isset($_GET['delete_suggestion']) && !empty($_GET['delete_suggestion'])) {
-        $idToDelete = (int)$_GET['delete_suggestion'];
-        
-        // Remover a sugestão pelo ID
-        foreach ($suggestions as $key => $suggestion) {
-            if ($suggestion['id'] == $idToDelete) {
-                unset($suggestions[$key]);
-                break;
-            }
-        }
-        
-        // Reindexar array e salvar
-        $suggestions = array_values($suggestions);
-        if (saveSuggestions($suggestions)) {
-            $message = 'Sugestão removida com sucesso!';
-        }
-        
-        // Redirecionar para a aba correta
-        header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
-        exit;
-    }
-}
-
-// Preparar o endpoint para receber sugestões via AJAX
-if (isset($_POST['action']) && $_POST['action'] === 'add_suggestion' && !empty($_POST['suggestion_data'])) {
-    $suggestionData = json_decode($_POST['suggestion_data'], true);
-    
-    if (is_array($suggestionData) && isset($suggestionData['title'], $suggestionData['content'], $suggestionData['module'], $suggestionData['type'])) {
-        // Gerar ID único 
-        $id = time() . mt_rand(1000, 9999);
-        
-        // Preparar sugestão
-        $newSuggestion = [
-            'id' => $id,
-            'title' => $suggestionData['title'],
-            'content' => $suggestionData['content'],
-            'module' => $suggestionData['module'],
-            'type' => $suggestionData['type'],
-            'email' => $suggestionData['email'] ?? '',
-            'date' => date('Y-m-d H:i:s'),
-            'status' => 'pendente'
-        ];
-        
-        // Obter sugestões existentes
-        $suggestions = getSuggestions();
-        
-        // Adicionar nova sugestão
-        $suggestions[] = $newSuggestion;
-        
-        // Salvar
-        if (saveSuggestions($suggestions)) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => 'Sugestão recebida com sucesso!']);
-        } else {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Erro ao salvar sugestão.']);
-        }
-    } else {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => 'Dados de sugestão inválidos.']);
-    }
+    header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
@@ -317,15 +199,6 @@ $pendingNotes = array_filter($notes, function($note) {
 
 $completedNotes = array_filter($notes, function($note) {
     return $note['status'] === 'concluído';
-});
-
-// Filtrar sugestões por status
-$pendingSuggestions = array_filter($suggestions, function($suggestion) {
-    return $suggestion['status'] === 'pendente';
-});
-
-$completedSuggestions = array_filter($suggestions, function($suggestion) {
-    return $suggestion['status'] === 'concluído';
 });
 
 // Ordenar notas pendentes por prioridade e depois por data
@@ -348,15 +221,6 @@ usort($completedNotes, function($a, $b) {
     return strtotime($b['date_completed'] ?? $b['date_created']) - strtotime($a['date_completed'] ?? $a['date_created']);
 });
 
-// Ordenar sugestões por data
-usort($pendingSuggestions, function($a, $b) {
-    return strtotime($b['date']) - strtotime($a['date']);
-});
-
-usort($completedSuggestions, function($a, $b) {
-    return strtotime($b['date_completed'] ?? $b['date']) - strtotime($a['date_completed'] ?? $a['date']);
-});
-
 // Atualizar lista de módulos com base nas notas existentes
 foreach ($notes as $note) {
     if (!empty($note['module']) && !isset($availableModules[$note['module']])) {
@@ -367,27 +231,13 @@ foreach ($notes as $note) {
 
 // Ordenar módulos alfabeticamente
 asort($availableModules);
-
-// Lista de tipos de sugestão 
-$typeLabels = [
-    'melhoria' => 'Melhoria',
-    'erro' => 'Correção de erro',
-    'nova_funcao' => 'Nova funcionalidade'
-];
-
-// Determinar qual aba está ativa
-$activeTab = 'dashboard';
-if (isset($_GET['tab'])) {
-    $activeTab = $_GET['tab'];
-}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gargamel - Painel de Administração</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Gargamel - PDFFacil</title>
     <style>
         :root {
             --primary-color: #5c95ce;
@@ -434,7 +284,7 @@ if (isset($_GET['tab'])) {
             margin: 50px auto;
         }
         
-        h1, h2, h3 {
+        h1, h2 {
             color: var(--primary-color);
             margin-bottom: 20px;
         }
@@ -474,15 +324,13 @@ if (isset($_GET['tab'])) {
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s;
             text-decoration: none;
             display: inline-block;
         }
         
         button:hover, .btn:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .error-message {
@@ -498,6 +346,24 @@ if (isset($_GET['tab'])) {
             background-color: rgba(76, 175, 80, 0.1);
             padding: 10px;
             border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-content {
             margin-bottom: 20px;
         }
         
@@ -518,6 +384,12 @@ if (isset($_GET['tab'])) {
             text-decoration: underline;
         }
         
+        .timestamp {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
         .tabs {
             display: flex;
             border-bottom: 1px solid var(--border-color);
@@ -528,8 +400,6 @@ if (isset($_GET['tab'])) {
             padding: 10px 20px;
             cursor: pointer;
             border-bottom: 3px solid transparent;
-            text-decoration: none;
-            color: var(--text-color);
         }
         
         .tab.active {
@@ -546,7 +416,7 @@ if (isset($_GET['tab'])) {
             display: block;
         }
         
-        .note-item, .suggestion-item {
+        .note-item {
             padding: 15px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -555,18 +425,18 @@ if (isset($_GET['tab'])) {
             position: relative;
         }
         
-        .note-header, .suggestion-header {
+        .note-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
         }
         
-        .note-title, .suggestion-title {
+        .note-title {
             font-weight: 600;
             font-size: 18px;
         }
         
-        .note-meta, .suggestion-meta {
+        .note-meta {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -575,18 +445,11 @@ if (isset($_GET['tab'])) {
             color: var(--text-secondary);
         }
         
-        .note-content, .suggestion-content {
+        .note-content {
             background-color: #f9f9f9;
             padding: 12px;
             border-radius: 4px;
             white-space: pre-wrap;
-            margin-bottom: 10px;
-        }
-        
-        .suggestion-email {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-top: 5px;
         }
         
         .tag {
@@ -596,10 +459,6 @@ if (isset($_GET['tab'])) {
             font-size: 12px;
             font-weight: 500;
             color: white;
-        }
-        
-        .tag-module {
-            background-color: #6c757d;
         }
         
         .tag-alta {
@@ -624,20 +483,7 @@ if (isset($_GET['tab'])) {
             background-color: var(--success-color);
         }
         
-        .tag-melhoria {
-            background-color: var(--primary-color);
-        }
-        
-        .tag-erro {
-            background-color: var(--error-color);
-        }
-        
-        .tag-nova_funcao {
-            background-color: var(--warning-color);
-            color: #212529;
-        }
-        
-        .note-actions, .suggestion-actions {
+        .note-actions {
             position: absolute;
             top: 15px;
             right: 15px;
@@ -670,78 +516,14 @@ if (isset($_GET['tab'])) {
             color: var(--text-secondary);
         }
         
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        .card-stats {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            text-align: center;
-            flex: 1;
-        }
-        
-        .stat-box h4 {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .endpoint-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f0f4f8;
-            border-radius: 6px;
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .endpoint-info code {
-            display: block;
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-family: monospace;
-            white-space: pre-wrap;
-            overflow-x: auto;
-        }
-        
         @media (max-width: 768px) {
-            .note-actions, .suggestion-actions {
-                position: static;
-                margin-top: 15px;
-                justify-content: flex-end;
-            }
-            
             .grid {
                 grid-template-columns: 1fr;
             }
             
-            .tabs {
-                flex-wrap: wrap;
-            }
-            
-            .tab {
-                flex: 1;
-                text-align: center;
-                padding: 10px 5px;
+            .note-meta {
+                flex-direction: column;
+                gap: 5px;
             }
         }
     </style>
@@ -790,13 +572,11 @@ if (isset($_GET['tab'])) {
             <?php endif; ?>
             
             <div class="tabs">
-                <a href="?tab=dashboard" class="tab <?php echo $activeTab === 'dashboard' ? 'active' : ''; ?>">Dashboard</a>
-                <a href="?tab=sugestoes" class="tab <?php echo $activeTab === 'sugestoes' ? 'active' : ''; ?>">Sugestões</a>
-                <a href="?tab=notas" class="tab <?php echo $activeTab === 'notas' ? 'active' : ''; ?>">Notas de Manutenção</a>
+                <div class="tab active" data-tab="dashboard">Dashboard</div>
+                <div class="tab" data-tab="notes">Notas de Manutenção</div>
             </div>
             
-            <!-- Dashboard -->
-            <div id="dashboard" class="tab-content <?php echo $activeTab === 'dashboard' ? 'active' : ''; ?>">
+            <div id="dashboard" class="tab-content active">
                 <div class="grid">
                     <!-- Card de Limpeza de Cache -->
                     <div class="card">
@@ -843,172 +623,15 @@ if (isset($_GET['tab'])) {
                         
                         <a href="/" class="btn">Voltar para o site</a>
                     </div>
-                    
-                    <!-- Card de Estatísticas -->
-                    <div class="card">
-                        <div class="card-title">Estatísticas</div>
-                        <div class="card-stats">
-                            <div class="stat-box">
-                                <h4>Notas Pendentes</h4>
-                                <div class="stat-value"><?php echo count($pendingNotes); ?></div>
-    <div class="stat-box">
-                                <h4>Notas Pendentes</h4>
-                                <div class="stat-value"><?php echo count($pendingNotes); ?></div>
-                            </div>
-                            <div class="stat-box">
-                                <h4>Notas Concluídas</h4>
-                                <div class="stat-value"><?php echo count($completedNotes); ?></div>
-                            </div>
-                            <div class="stat-box">
-                                <h4>Sugestões</h4>
-                                <div class="stat-value"><?php echo count($pendingSuggestions) + count($completedSuggestions); ?></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             
-            <!-- Aba de Sugestões -->
-            <div id="sugestoes" class="tab-content <?php echo $activeTab === 'sugestoes' ? 'active' : ''; ?>">
-                <!-- Estatísticas -->
-                <div class="card-stats">
-                    <div class="stat-box">
-                        <h4>Total de Sugestões</h4>
-                        <div class="stat-value"><?php echo count($pendingSuggestions) + count($completedSuggestions); ?></div>
-                    </div>
-                    <div class="stat-box">
-                        <h4>Pendentes</h4>
-                        <div class="stat-value"><?php echo count($pendingSuggestions); ?></div>
-                    </div>
-                    <div class="stat-box">
-                        <h4>Concluídas</h4>
-                        <div class="stat-value"><?php echo count($completedSuggestions); ?></div>
-                    </div>
-                </div>
-                
-                <!-- Info do Endpoint -->
-                <div class="endpoint-info">
-                    <h3>Como receber sugestões</h3>
-                    <p>As sugestões são enviadas via AJAX para este script. Adicione o seguinte código ao seu site para receber sugestões:</p>
-                    
-                    <code>// Código para enviar sugestões
-fetch('manutencao/gargamel.php', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-        'action': 'add_suggestion',
-        'suggestion_data': JSON.stringify({
-            title: 'Título da sugestão',
-            content: 'Conteúdo/descrição da sugestão',
-            module: 'nome-do-modulo',
-            type: 'melhoria', // ou 'erro' ou 'nova_funcao'
-            email: 'email@opcional.com' // opcional
-        })
-    })
-})</code>
-                    <p>Este endpoint pode ser chamado de qualquer lugar no seu site, incluindo o botão flutuante.</p>
-                </div>
-                
-                <div class="grid">
-                    <!-- Sugestões pendentes -->
-                    <div class="card">
-                        <h3>Sugestões Pendentes</h3>
-                        
-                        <?php if (empty($pendingSuggestions)): ?>
-                            <div class="empty-message">
-                                <p>Não há sugestões pendentes.</p>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($pendingSuggestions as $suggestion): ?>
-                                <div class="suggestion-item">
-                                    <div class="suggestion-header">
-                                        <div class="suggestion-title"><?php echo htmlspecialchars($suggestion['title']); ?></div>
-                                    </div>
-                                    <div class="suggestion-meta">
-                                        <span class="tag tag-module">
-                                            <?php echo htmlspecialchars($availableModules[$suggestion['module']] ?? $suggestion['module']); ?>
-                                        </span>
-                                        <span class="tag tag-<?php echo htmlspecialchars($suggestion['type']); ?>">
-                                            <?php echo htmlspecialchars($typeLabels[$suggestion['type']] ?? $suggestion['type']); ?>
-                                        </span>
-                                        <span>
-                                            <i class="far fa-clock"></i> 
-                                            <?php echo date('d/m/Y H:i', strtotime($suggestion['date'])); ?>
-                                        </span>
-                                    </div>
-                                    <div class="suggestion-content"><?php echo htmlspecialchars($suggestion['content']); ?></div>
-                                    <?php if (!empty($suggestion['email'])): ?>
-                                        <div class="suggestion-email">
-                                            <strong>Email:</strong> <?php echo htmlspecialchars($suggestion['email']); ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    <div class="suggestion-actions">
-                                        <a href="?tab=sugestoes&complete_suggestion=<?php echo $suggestion['id']; ?>" class="action-link complete-link" title="Marcar como concluída">
-                                            <i class="fas fa-check-circle"></i>
-                                        </a>
-                                        <a href="?tab=sugestoes&delete_suggestion=<?php echo $suggestion['id']; ?>" class="action-link delete-link" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta sugestão?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <!-- Sugestões concluídas -->
-                    <div class="card">
-                        <h3>Sugestões Concluídas</h3>
-                        
-                        <?php if (empty($completedSuggestions)): ?>
-                            <div class="empty-message">
-                                <p>Não há sugestões concluídas.</p>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($completedSuggestions as $suggestion): ?>
-                                <div class="suggestion-item" style="opacity: 0.8;">
-                                    <div class="suggestion-header">
-                                        <div class="suggestion-title"><?php echo htmlspecialchars($suggestion['title']); ?></div>
-                                    </div>
-                                    <div class="suggestion-meta">
-                                        <span class="tag tag-module">
-                                            <?php echo htmlspecialchars($availableModules[$suggestion['module']] ?? $suggestion['module']); ?>
-                                        </span>
-                                        <span class="tag tag-<?php echo htmlspecialchars($suggestion['type']); ?>">
-                                            <?php echo htmlspecialchars($typeLabels[$suggestion['type']] ?? $suggestion['type']); ?>
-                                        </span>
-                                        <span>
-                                            <i class="far fa-clock"></i> 
-                                            <?php echo date('d/m/Y H:i', strtotime($suggestion['date'])); ?>
-                                        </span>
-                                        <span class="tag tag-concluído">Concluído</span>
-                                    </div>
-                                    <div class="suggestion-content"><?php echo htmlspecialchars($suggestion['content']); ?></div>
-                                    <?php if (!empty($suggestion['email'])): ?>
-                                        <div class="suggestion-email">
-                                            <strong>Email:</strong> <?php echo htmlspecialchars($suggestion['email']); ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    <div class="suggestion-actions">
-                                        <a href="?tab=sugestoes&delete_suggestion=<?php echo $suggestion['id']; ?>" class="action-link delete-link" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta sugestão?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Aba de Notas de Manutenção -->
-            <div id="notas" class="tab-content <?php echo $activeTab === 'notas' ? 'active' : ''; ?>">
+            <div id="notes" class="tab-content">
                 <div class="grid">
                     <!-- Card para adicionar notas -->
                     <div class="card">
                         <div class="card-title">Adicionar Nota de Manutenção</div>
-                        <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>?tab=notas">
+                        <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
                             <input type="hidden" name="action" value="add_note">
                             
                             <div class="form-group">
@@ -1067,11 +690,11 @@ fetch('manutencao/gargamel.php', {
                                     </div>
                                     <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
                                     <div class="note-actions">
-                                        <a href="?tab=notas&complete=<?php echo urlencode($note['id']); ?>" class="action-link complete-link" title="Marcar como concluída">
-                                            <i class="fas fa-check-circle"></i>
+                                        <a href="?complete=<?php echo urlencode($note['id']); ?>" class="action-link complete-link" title="Marcar como concluída">
+                                            <i class="✓">✓</i>
                                         </a>
-                                        <a href="?tab=notas&delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
-                                            <i class="fas fa-trash"></i>
+                                        <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
+                                            <i class="✕">✕</i>
                                         </a>
                                     </div>
                                 </div>
@@ -1095,16 +718,13 @@ fetch('manutencao/gargamel.php', {
                                     </div>
                                     <div class="note-meta">
                                         <span><strong>Módulo:</strong> <?php echo htmlspecialchars($availableModules[$note['module']] ?? $note['module']); ?></span>
-                                        <span class="tag tag-<?php echo htmlspecialchars($note['priority']); ?>">
-                                            <?php echo ucfirst(htmlspecialchars($note['priority'])); ?>
-                                        </span>
-                                        <span><strong>Data:</strong> <?php echo htmlspecialchars($note['date_created']); ?></span>
+                                        <span class="tag tag-concluído">Concluído</span>
                                         <span><strong>Concluído em:</strong> <?php echo htmlspecialchars($note['date_completed'] ?? 'N/A'); ?></span>
                                     </div>
                                     <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
                                     <div class="note-actions">
-                                        <a href="?tab=notas&delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
-                                            <i class="fas fa-trash"></i>
+                                        <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
+                                            <i class="✕">✕</i>
                                         </a>
                                     </div>
                                 </div>
@@ -1117,43 +737,33 @@ fetch('manutencao/gargamel.php', {
     </div>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mostrar a aba correta baseado na URL
-            function showActiveTab() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const tab = urlParams.get('tab');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Controle de abas
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
                 
-                const tabs = ['dashboard', 'sugestoes', 'notas'];
+                // Desativar todas as abas
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
                 
-                // Se não houver aba especificada, mostrar dashboard
-                const activeTab = tabs.includes(tab) ? tab : 'dashboard';
-                
-                // Esconder todas as abas
-                tabs.forEach(t => {
-                    const content = document.getElementById(t);
-                    if (content) {
-                        content.style.display = 'none';
-                    }
-                });
-                
-                // Mostrar a aba ativa
-                const activeContent = document.getElementById(activeTab);
-                if (activeContent) {
-                    activeContent.style.display = 'block';
-                }
-            }
-            
-            // Esconder mensagem de sucesso após 5 segundos
-            const successMessage = document.querySelector('.success-message');
-            if (successMessage) {
-                setTimeout(() => {
-                    successMessage.style.display = 'none';
-                }, 5000);
-            }
-            
-            // Inicializar
-            showActiveTab();
+                // Ativar a aba clicada
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
         });
+        
+        // Esconder mensagem de sucesso após 5 segundos
+        const successMessage = document.querySelector('.success-message');
+        if (successMessage) {
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+    });
     </script>
 </body>
 </html>
