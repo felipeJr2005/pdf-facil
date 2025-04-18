@@ -29,31 +29,8 @@ $availableModules = [
     'geral' => 'Geral'
 ];
 
-// Configurações do banco de dados para sugestões
-$dbPath = __DIR__ . '/sugestoes.db'; // SQLite - Arquivo de banco de dados local
-$dbExists = file_exists($dbPath);
-
-// Conectar ao banco de dados SQLite
-try {
-    $db = new PDO('sqlite:' . $dbPath);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Criar tabela se não existir
-    if (!$dbExists) {
-        $db->exec('CREATE TABLE sugestoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            module TEXT,
-            type TEXT,
-            title TEXT,
-            content TEXT,
-            email TEXT,
-            date TEXT,
-            status TEXT DEFAULT "pendente"
-        )');
-    }
-} catch (PDOException $e) {
-    $dbError = 'Erro ao conectar ao banco de dados: ' . $e->getMessage();
-}
+// Arquivo de armazenamento de sugestões
+$suggestionsFile = __DIR__ . '/sugestoes.json';
 
 // Iniciar sessão
 session_start();
@@ -142,8 +119,33 @@ function saveNotes($notes) {
     return $saved !== false;
 }
 
+// Função para ler sugestões do arquivo
+function getSuggestions() {
+    global $suggestionsFile;
+    if (file_exists($suggestionsFile)) {
+        $content = file_get_contents($suggestionsFile);
+        return json_decode($content, true) ?: [];
+    }
+    return [];
+}
+
+// Função para salvar sugestões no arquivo
+function saveSuggestions($suggestions) {
+    global $suggestionsFile, $message;
+    $saved = @file_put_contents($suggestionsFile, json_encode($suggestions, JSON_PRETTY_PRINT));
+    return $saved !== false;
+}
+
+// Criar arquivo de sugestões se não existir
+if (!file_exists($suggestionsFile)) {
+    saveSuggestions([]);
+}
+
 // Obter notas
 $notes = getNotes();
+
+// Obter sugestões
+$suggestions = getSuggestions();
 
 // Processar adição de nova nota
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
@@ -191,7 +193,7 @@ if ($isLoggedIn && isset($_GET['complete']) && !empty($_GET['complete'])) {
     }
     
     // Redirecionar para evitar recargas
-    header("Location: " . $_SERVER['PHP_SELF']);
+    header("Location: " . $_SERVER['PHP_SELF'] . "?tab=notas");
     exit;
 }
 
@@ -214,7 +216,97 @@ if ($isLoggedIn && isset($_GET['delete']) && !empty($_GET['delete'])) {
     }
     
     // Redirecionar
-    header("Location: " . $_SERVER['PHP_SELF']);
+    header("Location: " . $_SERVER['PHP_SELF'] . "?tab=notas");
+    exit;
+}
+
+// Processa sugestões 
+if ($isLoggedIn) {
+    // Marcar sugestão como concluída
+    if (isset($_GET['complete_suggestion']) && !empty($_GET['complete_suggestion'])) {
+        $idToComplete = (int)$_GET['complete_suggestion'];
+        
+        // Encontrar e atualizar a sugestão
+        foreach ($suggestions as $key => $suggestion) {
+            if ($suggestion['id'] == $idToComplete) {
+                $suggestions[$key]['status'] = 'concluído';
+                $suggestions[$key]['date_completed'] = date('Y-m-d H:i:s');
+                break;
+            }
+        }
+        
+        // Salvar sugestões atualizadas
+        if (saveSuggestions($suggestions)) {
+            $message = 'Sugestão marcada como concluída!';
+        }
+        
+        // Redirecionar para a aba correta
+        header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
+        exit;
+    }
+    
+    // Excluir sugestão
+    if (isset($_GET['delete_suggestion']) && !empty($_GET['delete_suggestion'])) {
+        $idToDelete = (int)$_GET['delete_suggestion'];
+        
+        // Remover a sugestão pelo ID
+        foreach ($suggestions as $key => $suggestion) {
+            if ($suggestion['id'] == $idToDelete) {
+                unset($suggestions[$key]);
+                break;
+            }
+        }
+        
+        // Reindexar array e salvar
+        $suggestions = array_values($suggestions);
+        if (saveSuggestions($suggestions)) {
+            $message = 'Sugestão removida com sucesso!';
+        }
+        
+        // Redirecionar para a aba correta
+        header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
+        exit;
+    }
+}
+
+// Preparar o endpoint para receber sugestões via AJAX
+if (isset($_POST['action']) && $_POST['action'] === 'add_suggestion' && !empty($_POST['suggestion_data'])) {
+    $suggestionData = json_decode($_POST['suggestion_data'], true);
+    
+    if (is_array($suggestionData) && isset($suggestionData['title'], $suggestionData['content'], $suggestionData['module'], $suggestionData['type'])) {
+        // Gerar ID único 
+        $id = time() . mt_rand(1000, 9999);
+        
+        // Preparar sugestão
+        $newSuggestion = [
+            'id' => $id,
+            'title' => $suggestionData['title'],
+            'content' => $suggestionData['content'],
+            'module' => $suggestionData['module'],
+            'type' => $suggestionData['type'],
+            'email' => $suggestionData['email'] ?? '',
+            'date' => date('Y-m-d H:i:s'),
+            'status' => 'pendente'
+        ];
+        
+        // Obter sugestões existentes
+        $suggestions = getSuggestions();
+        
+        // Adicionar nova sugestão
+        $suggestions[] = $newSuggestion;
+        
+        // Salvar
+        if (saveSuggestions($suggestions)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Sugestão recebida com sucesso!']);
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Erro ao salvar sugestão.']);
+        }
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Dados de sugestão inválidos.']);
+    }
     exit;
 }
 
@@ -225,6 +317,15 @@ $pendingNotes = array_filter($notes, function($note) {
 
 $completedNotes = array_filter($notes, function($note) {
     return $note['status'] === 'concluído';
+});
+
+// Filtrar sugestões por status
+$pendingSuggestions = array_filter($suggestions, function($suggestion) {
+    return $suggestion['status'] === 'pendente';
+});
+
+$completedSuggestions = array_filter($suggestions, function($suggestion) {
+    return $suggestion['status'] === 'concluído';
 });
 
 // Ordenar notas pendentes por prioridade e depois por data
@@ -247,6 +348,15 @@ usort($completedNotes, function($a, $b) {
     return strtotime($b['date_completed'] ?? $b['date_created']) - strtotime($a['date_completed'] ?? $a['date_created']);
 });
 
+// Ordenar sugestões por data
+usort($pendingSuggestions, function($a, $b) {
+    return strtotime($b['date']) - strtotime($a['date']);
+});
+
+usort($completedSuggestions, function($a, $b) {
+    return strtotime($b['date_completed'] ?? $b['date']) - strtotime($a['date_completed'] ?? $a['date']);
+});
+
 // Atualizar lista de módulos com base nas notas existentes
 foreach ($notes as $note) {
     if (!empty($note['module']) && !isset($availableModules[$note['module']])) {
@@ -258,92 +368,7 @@ foreach ($notes as $note) {
 // Ordenar módulos alfabeticamente
 asort($availableModules);
 
-// Processar ações nas sugestões
-if ($isLoggedIn && isset($db)) {
-    // Marcar sugestão como concluída
-    if (isset($_GET['complete_suggestion']) && !empty($_GET['complete_suggestion'])) {
-        $id = (int)$_GET['complete_suggestion'];
-        try {
-            $stmt = $db->prepare('UPDATE sugestoes SET status = "concluído" WHERE id = ?');
-            $stmt->execute([$id]);
-            $message = 'Sugestão marcada como concluída!';
-            
-            // Redirecionar para a aba correta
-            header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
-            exit;
-        } catch (PDOException $e) {
-            $message = 'Erro ao atualizar sugestão: ' . $e->getMessage();
-        }
-    }
-    
-    // Excluir sugestão
-    if (isset($_GET['delete_suggestion']) && !empty($_GET['delete_suggestion'])) {
-        $id = (int)$_GET['delete_suggestion'];
-        try {
-            $stmt = $db->prepare('DELETE FROM sugestoes WHERE id = ?');
-            $stmt->execute([$id]);
-            $message = 'Sugestão removida com sucesso!';
-            
-            // Redirecionar para a aba correta
-            header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
-            exit;
-        } catch (PDOException $e) {
-            $message = 'Erro ao remover sugestão: ' . $e->getMessage();
-        }
-    }
-    
-    // Importar sugestões do localStorage se solicitado
-    if (isset($_POST['action']) && $_POST['action'] === 'import_suggestions' && isset($_POST['local_data'])) {
-        $localData = json_decode($_POST['local_data'], true);
-        
-        if (is_array($localData) && !empty($localData)) {
-            $importCount = 0;
-            $stmt = $db->prepare('INSERT INTO sugestoes (module, type, title, content, email, date, status) VALUES (?, ?, ?, ?, ?, ?, "pendente")');
-            
-            foreach ($localData as $item) {
-                if (isset($item['module'], $item['type'], $item['title'], $item['content'])) {
-                    $stmt->execute([
-                        $item['module'],
-                        $item['type'],
-                        $item['title'],
-                        $item['content'],
-                        $item['email'] ?? '',
-                        $item['date'] ?? date('Y-m-d H:i:s')
-                    ]);
-                    $importCount++;
-                }
-            }
-            
-            $message = "Importadas $importCount sugestões do localStorage com sucesso!";
-            
-            // Redirecionar para a aba correta
-            header("Location: " . $_SERVER['PHP_SELF'] . "?tab=sugestoes");
-            exit;
-        } else {
-            $message = 'Dados inválidos ou nenhuma sugestão encontrada no localStorage.';
-        }
-    }
-}
-
-// Obter sugestões do banco de dados
-$pendingSuggestions = [];
-$completedSuggestions = [];
-
-if ($isLoggedIn && isset($db)) {
-    try {
-        // Obter sugestões pendentes
-        $stmt = $db->query('SELECT * FROM sugestoes WHERE status = "pendente" ORDER BY date DESC');
-        $pendingSuggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Obter sugestões concluídas
-        $stmt = $db->query('SELECT * FROM sugestoes WHERE status = "concluído" ORDER BY date DESC');
-        $completedSuggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        $dbError = 'Erro ao carregar sugestões: ' . $e->getMessage();
-    }
-}
-
-// Lista de tipos de sugestão para facilitar a exibição
+// Lista de tipos de sugestão 
 $typeLabels = [
     'melhoria' => 'Melhoria',
     'erro' => 'Correção de erro',
@@ -645,19 +670,6 @@ if (isset($_GET['tab'])) {
             color: var(--text-secondary);
         }
         
-        .import-container {
-            margin-bottom: 30px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .import-container h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-        
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -689,6 +701,26 @@ if (isset($_GET['tab'])) {
             font-size: 24px;
             font-weight: 700;
             color: var(--primary-color);
+        }
+        
+        .endpoint-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f4f8;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .endpoint-info code {
+            display: block;
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
         }
         
         @media (max-width: 768px) {
@@ -757,12 +789,6 @@ if (isset($_GET['tab'])) {
                 </div>
             <?php endif; ?>
             
-            <?php if (!empty($dbError)): ?>
-                <div class="error-message">
-                    <?php echo htmlspecialchars($dbError); ?>
-                </div>
-            <?php endif; ?>
-            
             <div class="tabs">
                 <a href="?tab=dashboard" class="tab <?php echo $activeTab === 'dashboard' ? 'active' : ''; ?>">Dashboard</a>
                 <a href="?tab=sugestoes" class="tab <?php echo $activeTab === 'sugestoes' ? 'active' : ''; ?>">Sugestões</a>
@@ -825,6 +851,9 @@ if (isset($_GET['tab'])) {
                             <div class="stat-box">
                                 <h4>Notas Pendentes</h4>
                                 <div class="stat-value"><?php echo count($pendingNotes); ?></div>
+    <div class="stat-box">
+                                <h4>Notas Pendentes</h4>
+                                <div class="stat-value"><?php echo count($pendingNotes); ?></div>
                             </div>
                             <div class="stat-box">
                                 <h4>Notas Concluídas</h4>
@@ -841,17 +870,6 @@ if (isset($_GET['tab'])) {
             
             <!-- Aba de Sugestões -->
             <div id="sugestoes" class="tab-content <?php echo $activeTab === 'sugestoes' ? 'active' : ''; ?>">
-                <!-- Importar do localStorage -->
-                <div class="import-container">
-                    <h3>Importar sugestões do localStorage</h3>
-                    <p>Se houver sugestões salvas no localStorage deste navegador, você pode importá-las para o banco de dados:</p>
-                    <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>?tab=sugestoes" onsubmit="return prepareImport()">
-                        <input type="hidden" name="action" value="import_suggestions">
-                        <input type="hidden" name="local_data" id="local_data">
-                        <button type="submit" id="importButton" disabled>Importar sugestões do localStorage</button>
-                    </form>
-                </div>
-                
                 <!-- Estatísticas -->
                 <div class="card-stats">
                     <div class="stat-box">
@@ -866,6 +884,31 @@ if (isset($_GET['tab'])) {
                         <h4>Concluídas</h4>
                         <div class="stat-value"><?php echo count($completedSuggestions); ?></div>
                     </div>
+                </div>
+                
+                <!-- Info do Endpoint -->
+                <div class="endpoint-info">
+                    <h3>Como receber sugestões</h3>
+                    <p>As sugestões são enviadas via AJAX para este script. Adicione o seguinte código ao seu site para receber sugestões:</p>
+                    
+                    <code>// Código para enviar sugestões
+fetch('manutencao/gargamel.php', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+        'action': 'add_suggestion',
+        'suggestion_data': JSON.stringify({
+            title: 'Título da sugestão',
+            content: 'Conteúdo/descrição da sugestão',
+            module: 'nome-do-modulo',
+            type: 'melhoria', // ou 'erro' ou 'nova_funcao'
+            email: 'email@opcional.com' // opcional
+        })
+    })
+})</code>
+                    <p>Este endpoint pode ser chamado de qualquer lugar no seu site, incluindo o botão flutuante.</p>
                 </div>
                 
                 <div class="grid">
@@ -1075,44 +1118,6 @@ if (isset($_GET['tab'])) {
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Função para verificar localStorage
-            function checkLocalStorage() {
-                const importButton = document.getElementById('importButton');
-                if (importButton) {
-                    try {
-                        const pendingSuggestions = JSON.parse(localStorage.getItem('pendingSuggestions') || '[]');
-                        if (pendingSuggestions.length > 0) {
-                            importButton.textContent = `Importar ${pendingSuggestions.length} sugestões do localStorage`;
-                            importButton.disabled = false;
-                        }
-                    } catch (e) {
-                        console.error('Erro ao verificar localStorage:', e);
-                    }
-                }
-            }
-            
-            // Preparar dados para importação
-            window.prepareImport = function() {
-                try {
-                    const pendingSuggestions = JSON.parse(localStorage.getItem('pendingSuggestions') || '[]');
-                    if (pendingSuggestions.length === 0) {
-                        alert('Não há sugestões para importar no localStorage.');
-                        return false;
-                    }
-                    
-                    document.getElementById('local_data').value = JSON.stringify(pendingSuggestions);
-                    
-                    // Limpar localStorage após importação bem-sucedida
-                    localStorage.removeItem('pendingSuggestions');
-                    
-                    return true;
-                } catch (e) {
-                    console.error('Erro ao preparar dados para importação:', e);
-                    alert('Erro ao preparar dados para importação: ' + e.message);
-                    return false;
-                }
-            }
-            
             // Mostrar a aba correta baseado na URL
             function showActiveTab() {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1147,7 +1152,6 @@ if (isset($_GET['tab'])) {
             }
             
             // Inicializar
-            checkLocalStorage();
             showActiveTab();
         });
     </script>
