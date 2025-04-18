@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reordenador e Rotacionador PDF</title>
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+</head>
+
+<body class="converter-pdf">
+    <div class="function-container">
+        <!-- Área de upload -->
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-object-group"></i> Reordenador e Rotacionador PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">
+                            <i class="fas fa-file-upload"></i>
+                        </div>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>
+                        <p class="upload-subtext">Arraste seu PDF ou clique para selecionar</p>
+                        <input type="file" id="fileInput" accept=".pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Área de configuração e controles (Posicionada ANTES da visualização de páginas) -->
+        <div class="card configuration-panel" id="configPanel" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cog"></i> Configuração de Rotação
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Contador de rotações -->
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <div id="rotationCounter" class="flex items-center mb-2">
+                            <i class="fas fa-sync-alt mr-2" style="color: var(--color-primary);"></i>
+                            <span>Páginas rotacionadas: <span id="counter" class="font-semibold">0</span></span>
+                        </div>
+                        <div id="deletionCounter" class="flex items-center">
+                            <i class="fas fa-trash mr-2" style="color: var(--color-error);"></i>
+                            <span>Páginas deletadas: <span id="deletedCounter" class="font-semibold">0</span></span>
+                        </div>
+                    </div>
+                    <button id="rotateAllBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                        <i class="fas fa-sync"></i> Rotacionar Todas <span id="rotateAllDegrees">90°</span>
+                    </button>
+                </div>
+                
+                <!-- Botão de download -->
+                <button id="downloadBtn" class="pdf-action-button" style="width: 100%; background: linear-gradient(to right, #4361ee, #3647c9); color: white;">
+                    <i class="fas fa-download"></i> Baixar PDF Modificado
+                </button>
+            </div>
+        </div>
+        
+        <!-- Área de visualização e edição -->
+        <div class="card preview-container" id="previewContainer" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-eye"></i> Clique nas páginas para rotacionar
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="pdfPreviewGrid" class="pdf-preview-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="processing-overlay" id="processingOverlay" style="display: none;">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3">Processando PDF...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const configPanel = document.getElementById('configPanel');
+            const previewContainer = document.getElementById('previewContainer');
+            const pdfPreviewGrid = document.getElementById('pdfPreviewGrid');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const rotationCounter = document.getElementById('rotationCounter');
+            const counter = document.getElementById('counter');
+            const deletedCounter = document.getElementById('deletedCounter');
+            const rotateAllBtn = document.getElementById('rotateAllBtn');
+            const rotateAllDegrees = document.getElementById('rotateAllDegrees');
+            const processingOverlay = document.getElementById('processingOverlay');
+            
+            // Variáveis globais
+            let selectedFile = null;
+            let currentPdfDocument = null;
+            let totalPages = 0;
+            let pageRotations = new Map(); // Mapa para armazenar as rotações das páginas
+            let pageOrder = []; // Array para armazenar a ordem das páginas
+            let deletedPages = new Set(); // Conjunto para armazenar páginas deletadas
+            let sortableInstance = null;
+            let selectedPages = new Set(); // Conjunto para armazenar páginas selecionadas para extração
+            let currentGlobalRotation = 90; // Rotação global atual
+            
+            // Event Listeners para a área de upload
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+            
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+            
+            // Botão de baixar PDF rotacionado
+            downloadBtn.addEventListener('click', async () => {
+                await savePdfWithModifications();
+            });
+            
+            // Botão para rotacionar todas as páginas
+            rotateAllBtn.addEventListener('click', () => {
+                rotateAllPages();
+            });
+            
+            // Função para lidar com o arquivo selecionado
+            async function handleFile(file) {
+                if (file && file.type === 'application/pdf') {
+                    try {
+                        // Mostrar overlay de processamento
+                        processingOverlay.style.display = 'flex';
+                        selectedFile = file;
+                        
+                        // Carregar o PDF para verificar se é válido
+                        const fileURL = URL.createObjectURL(file);
+                        const loadingTask = pdfjsLib.getDocument({url: fileURL});
+                        const pdf = await loadingTask.promise;
+                        totalPages = pdf.numPages;
+                        
+                        // Armazenar como array buffer para PDF-Lib
+                        const arrayBuffer = await file.arrayBuffer();
+                        currentPdfDocument = arrayBuffer;
+                        
+                        // Limpar rotações e páginas anteriores
+                        pageRotations.clear();
+                        pageOrder = [];
+                        deletedPages.clear();
+                        selectedPages.clear();
+                        
+                        // Atualizar contadores
+                        updateRotationCounter();
+                        
+                        // Exibir informações do arquivo
+                        showFileInfo(file, totalPages);
+                        
+                        // Mostrar o painel de configuração
+                        configPanel.style.display = 'block';
+                        
+                        // Renderizar as páginas
+                        await renderPdfPages(pdf);
+                        
+                        // Exibir o contêiner de visualização
+                        previewContainer.style.display = 'block';
+                        
+                        // Inicializar Sortable.js para arrastar e soltar
+                        if (sortableInstance) {
+                            sortableInstance.destroy();
+                        }
+                        
+                        sortableInstance = new Sortable(pdfPreviewGrid, {
+                            animation: 150,
+                            ghostClass: 'sortable-ghost',
+                            dragClass: 'sortable-drag',
+                            handle: '.drag-handle',
+                            onStart: function(evt) {
+                                document.body.style.cursor = 'grabbing';
+                            },
+                            onEnd: function(evt) {
+                                document.body.style.cursor = 'default';
+                            },
+                            onSort: function(evt) {
+                                updatePageOrder();
+                            }
+                        });
+                        
+                        // Resetar rotação global para 90
+                        currentGlobalRotation = 90;
+                        rotateAllDegrees.textContent = '90°';
+                        
+                        // Liberar URL
+                        URL.revokeObjectURL(fileURL);
+                        
+                    } catch (error) {
+                        console.error('Erro ao processar o PDF:', error);
+                        
+                        fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                O arquivo PDF selecionado está corrompido ou é inválido
+                            </div>`;
+                    } finally {
+                        // Esconder overlay de processamento
+                        processingOverlay.style.display = 'none';
+                    }
+                } else {
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Por favor, selecione um arquivo PDF válido
+                        </div>`;
+                }
+            }
+            
+            // Mostrar informações do arquivo
+            function showFileInfo(file, pages) {
+                fileInfo.innerHTML = `
+                    <div class="info-block">
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Arquivo Selecionado: ${file.name}
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Quantidade de páginas: ${pages}
+                        </div>
+                    </div>`;
+            }
+            
+            // Renderizar páginas do PDF
+            async function renderPdfPages(pdf) {
+                // Limpar o grid de previews
+                pdfPreviewGrid.innerHTML = '';
+                
+                // Renderizar cada página
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale });
+                    
+                    const pagePreview = document.createElement('div');
+                    pagePreview.className = 'pdf-page-preview';
+                    pagePreview.dataset.page = i;
+                    
+                    // Adicionar alça de arraste
+                    const dragHandle = document.createElement('div');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+                    dragHandle.style.position = 'absolute';
+                    dragHandle.style.top = '0.5rem';
+                    dragHandle.style.left = '0.5rem';
+                    dragHandle.style.width = '24px';
+                    dragHandle.style.height = '24px';
+                    dragHandle.style.display = 'flex';
+                    dragHandle.style.alignItems = 'center';
+                    dragHandle.style.justifyContent = 'center';
+                    dragHandle.style.background = 'rgba(67, 97, 238, 0.1)';
+                    dragHandle.style.borderRadius = '4px';
+                    dragHandle.style.cursor = 'grab';
+                    dragHandle.style.opacity = '0';
+                    dragHandle.style.transition = 'all 0.2s ease';
+                    dragHandle.style.color = 'var(--color-primary)';
+                    pagePreview.appendChild(dragHandle);
+                    
+                    // Adicionar botão de exclusão
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                    deleteBtn.style.position = 'absolute';
+                    deleteBtn.style.top = '0.5rem';
+                    deleteBtn.style.right = '0.5rem';
+                    deleteBtn.style.width = '24px';
+                    deleteBtn.style.height = '24px';
+                    deleteBtn.style.display = 'flex';
+                    deleteBtn.style.alignItems = 'center';
+                    deleteBtn.style.justifyContent = 'center';
+                    deleteBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+                    deleteBtn.style.borderRadius = '4px';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.opacity = '0';
+                    deleteBtn.style.transition = 'all 0.2s ease';
+                    deleteBtn.style.color = '#ef4444';
+                    deleteBtn.style.border = 'none';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deletePage(i, pagePreview);
+                    };
+                    pagePreview.appendChild(deleteBtn);
+                    
+                    // Adicionar botão de extração
+                    const extractBtn = document.createElement('button');
+                    extractBtn.className = 'extract-btn';
+                    extractBtn.innerHTML = '<i class="fas fa-scissors"></i>';
+                    extractBtn.style.position = 'absolute';
+                    extractBtn.style.bottom = '0.5rem';
+                    extractBtn.style.left = '0.5rem';
+                    extractBtn.style.width = '24px';
+                    extractBtn.style.height = '24px';
+                    extractBtn.style.display = 'flex';
+                    extractBtn.style.alignItems = 'center';
+                    extractBtn.style.justifyContent = 'center';
+                    extractBtn.style.background = 'rgba(14, 165, 233, 0.1)';
+                    extractBtn.style.borderRadius = '4px';
+                    extractBtn.style.cursor = 'pointer';
+                    extractBtn.style.opacity = '0';
+                    extractBtn.style.transition = 'all 0.2s ease';
+                    extractBtn.style.color = '#0ea5e9';
+                    extractBtn.style.border = 'none';
+                    extractBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleExtractMode(i, extractBtn, pagePreview);
+                    };
+                    pagePreview.appendChild(extractBtn);
+                    
+                    // Criar e configurar canvas
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    context.fillStyle = 'white';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                    
+                    // Adicionar botão de rotação
+                    const rotateBtn = document.createElement('button');
+                    rotateBtn.className = 'rotate-page-btn';
+                    rotateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                    rotateBtn.title = 'Clique para rotacionar';
+                    rotateBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        togglePageRotation(i, rotateBtn, pagePreview);
+                    };
+                    
+                    // Adicionar número da página
+                    const pageNumber = document.createElement('div');
+                    pageNumber.className = 'pdf-page-number';
+                    pageNumber.textContent = `Página ${i}`;
+                    
+                    // Adicionar eventos de hover
+                    pagePreview.addEventListener('mouseenter', () => {
+                        dragHandle.style.opacity = '1';
+                        deleteBtn.style.opacity = '1';
+                        extractBtn.style.opacity = '1';
+                    });
+                    
+                    pagePreview.addEventListener('mouseleave', () => {
+                        dragHandle.style.opacity = '0';
+                        deleteBtn.style.opacity = '0';
+                        extractBtn.style.opacity = '0';
+                    });
+                    
+                    // Anexar elementos
+                    pagePreview.appendChild(canvas);
+                    pagePreview.appendChild(rotateBtn);
+                    pagePreview.appendChild(pageNumber);
+                    pdfPreviewGrid.appendChild(pagePreview);
+                    
+                    // Adicionar à ordem de páginas
+                    pageOrder.push(i);
+                }
+            }
+            
+            // Função para alternar a rotação da página
+            function togglePageRotation(pageNum, button, container) {
+                const currentRotation = pageRotations.get(pageNum) || 0;
+                
+                // Remover todas as classes de rotação existentes
+                container.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                button.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                
+                let newRotation;
+                
+                // Definir nova rotação
+                if (currentRotation === 0) {
+                    newRotation = 90;
+                    container.classList.add('rotated-90');
+                    button.classList.add('rotated-90');
+                } else if (currentRotation === 90) {
+                    newRotation = 180;
+                    container.classList.add('rotated-180');
+                    button.classList.add('rotated-180');
+                } else if (currentRotation === 180) {
+                    newRotation = 270;
+                    container.classList.add('rotated-270');
+                    button.classList.add('rotated-270');
+                } else {
+                    newRotation = 0;
+                    // Classes já foram removidas
+                }
+                
+                // Atualizar mapa de rotações
+                if (newRotation === 0) {
+                    pageRotations.delete(pageNum);
+                } else {
+                    pageRotations.set(pageNum, newRotation);
+                }
+                
+                // Atualizar contador
+                updateRotationCounter();
+            }
+            
+            // Função para rotacionar todas as páginas de uma vez
+            function rotateAllPages() {
+                const pages = pdfPreviewGrid.querySelectorAll('.pdf-page-preview');
+                
+                // Aplicar a rotação atual para todas as páginas
+                pages.forEach(page => {
+                    const pageNum = parseInt(page.dataset.page);
+                    const rotateBtn = page.querySelector('.rotate-page-btn');
+                    
+                    // Remover todas as classes de rotação
+                    page.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                    rotateBtn.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                    
+                    // Aplicar rotação atual
+                    if (currentGlobalRotation === 90) {
+                        page.classList.add('rotated-90');
+                        rotateBtn.classList.add('rotated-90');
+                        pageRotations.set(pageNum, 90);
+                    } else if (currentGlobalRotation === 180) {
+                        page.classList.add('rotated-180');
+                        rotateBtn.classList.add('rotated-180');
+                        pageRotations.set(pageNum, 180);
+                    } else if (currentGlobalRotation === 270) {
+                        page.classList.add('rotated-270');
+                        rotateBtn.classList.add('rotated-270');
+                        pageRotations.set(pageNum, 270);
+                    } else {
+                        // 0 graus, remover rotação
+                        pageRotations.delete(pageNum);
+                    }
+                });
+                
+                // Avançar para a próxima rotação global
+                currentGlobalRotation = (currentGlobalRotation + 90) % 360;
+                rotateAllDegrees.textContent = `${currentGlobalRotation}°`;
+                
+                // Atualizar contador
+                updateRotationCounter();
+            }
+            
+            // Atualizar contador de rotações
+            function updateRotationCounter() {
+                counter.textContent = pageRotations.size;
+                deletedCounter.textContent = deletedPages.size;
+                
+                // Habilitar ou desabilitar o botão de download
+                downloadBtn.disabled = pageRotations.size === 0 && deletedPages.size === 0;
+            }
+            
+            // Função para excluir uma página
+            function deletePage(pageNum, container) {
+                deletedPages.add(pageNum);
+                container.classList.add('deleted');
+                
+                // Animação de fade-out
+                container.style.animation = 'fadeOut 0.3s ease forwards';
+                
+                setTimeout(() => {
+                    container.remove();
+                    updatePageOrder();
+                    updateRotationCounter();
+                }, 300);
+            }
+            
+            // Atualizar a ordem das páginas após reordenação
+            function updatePageOrder() {
+                const containers = pdfPreviewGrid.querySelectorAll('.pdf-page-preview');
+                pageOrder = Array.from(containers).map(container => 
+                    parseInt(container.dataset.page)
+                );
+            }
+            
+            // Alternar modo de extração para uma página
+            function toggleExtractMode(pageNum, button, container) {
+                if (selectedPages.has(pageNum)) {
+                    selectedPages.delete(pageNum);
+                    button.classList.remove('active');
+                    container.classList.remove('selected-for-extract');
+                    
+                    // Restaurar o estilo original
+                    button.style.background = 'rgba(14, 165, 233, 0.1)';
+                    button.style.color = '#0ea5e9';
+                    container.style.border = '1px solid var(--color-gray-200)';
+                    container.style.boxShadow = 'var(--shadow-sm)';
+                    
+                    // Remover checkout
+                    const checkMark = container.querySelector('.extract-check');
+                    if (checkMark) {
+                        checkMark.remove();
+                    }
+                } else {
+                    selectedPages.add(pageNum);
+                    button.classList.add('active');
+                    container.classList.add('selected-for-extract');
+                    
+                    // Aplicar estilo de seleção
+                    button.style.background = 'rgba(16, 185, 129, 0.2)';
+                    button.style.color = 'var(--color-success)';
+                    container.style.border = '2px solid var(--color-success)';
+                    container.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)';
+                    
+                    // Adicionar checkout
+                    const checkMark = document.createElement('div');
+                    checkMark.className = 'extract-check';
+                    checkMark.innerHTML = '✓';
+                    checkMark.style.position = 'absolute';
+                    checkMark.style.top = '0.5rem';
+                    checkMark.style.right = '0.5rem';
+                    checkMark.style.width = '24px';
+                    checkMark.style.height = '24px';
+                    checkMark.style.background = 'var(--color-success)';
+                    checkMark.style.color = 'white';
+                    checkMark.style.borderRadius = '50%';
+                    checkMark.style.display = 'flex';
+                    checkMark.style.alignItems = 'center';
+                    checkMark.style.justifyContent = 'center';
+                    checkMark.style.fontWeight = 'bold';
+                    checkMark.style.zIndex = '5';
+                    container.appendChild(checkMark);
+                }
+                
+                // Se temos páginas selecionadas, mostrar botão de extração
+                if (selectedPages.size > 0) {
+                    // Esconder botão de download normal
+                    downloadBtn.style.display = 'none';
+                    
+                    // Criar ou mostrar botão de extração
+                    let extractPagesBtn = document.getElementById('extractPagesBtn');
+                    if (!extractPagesBtn) {
+                        extractPagesBtn = document.createElement('button');
+                        extractPagesBtn.id = 'extractPagesBtn';
+                        extractPagesBtn.className = 'pdf-action-button';
+                        extractPagesBtn.innerHTML = '<i class="fas fa-scissors"></i> Concluir Extração';
+                        extractPagesBtn.style.width = '100%';
+                        extractPagesBtn.style.marginTop = 'var(--spacing-md)';
+                        extractPagesBtn.style.background = 'linear-gradient(to right, #4361ee, #3647c9)';
+                        extractPagesBtn.style.color = 'white';
+                        extractPagesBtn.onclick = extractSelectedPages;
+                        
+                        // Anexar ao painel de configuração em vez do card de visualização
+                        document.querySelector('#configPanel .card-body').appendChild(extractPagesBtn);
+                    } else {
+                        extractPagesBtn.style.display = 'block';
+                    }
+                } else {
+                    // Esconder botão de extração
+                    const extractPagesBtn = document.getElementById('extractPagesBtn');
+                    if (extractPagesBtn) {
+                        extractPagesBtn.style.display = 'none';
+                    }
+                    
+                    // Mostrar botão de download normal
+                    downloadBtn.style.display = 'block';
+                }
+            }
+            
+            // Extrair páginas selecionadas
+            async function extractSelectedPages() {
+                if (selectedPages.size === 0) return;
+                
+                try {
+                    // Mostrar overlay de processamento
+                    processingOverlay.style.display = 'flex';
+                    
+                    // Carregar o PDF com PDFLib
+                    const pdfDoc = await PDFLib.PDFDocument.load(currentPdfDocument);
+                    const newPdf = await PDFLib.PDFDocument.create();
+                    
+                    // Ordenar as páginas selecionadas pela ordem atual
+                    const sortedSelectedPages = Array.from(selectedPages)
+                        .sort((a, b) => pageOrder.indexOf(a) - pageOrder.indexOf(b));
+                    
+                    // Copiar cada página selecionada para o novo documento
+                    for (const pageNum of sortedSelectedPages) {
+                        const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageNum - 1]);
+                        
+                        // Aplicar rotação, se houver
+                        if (pageRotations.has(pageNum)) {
+                            copiedPage.setRotation(PDFLib.degrees(pageRotations.get(pageNum)));
+                        }
+                        
+                        newPdf.addPage(copiedPage);
+                    }
+                    
+                    // Salvar o PDF modificado
+                    const modifiedPdfBytes = await newPdf.save();
+                    
+                    // Criar URL e iniciar download
+                    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'paginas_extraidas.pdf';
+                    a.click();
+                    
+                    // Limpar URL
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    
+                    // Mostrar mensagem de sucesso
+                    showSuccessMessage(`${selectedPages.size} página(s) extraída(s) com sucesso!`);
+                    
+                    // Remover seleção de páginas
+                    selectedPages.clear();
+                    
+                    // Esconder botão de extração
+                    const extractPagesBtn = document.getElementById('extractPagesBtn');
+                    if (extractPagesBtn) {
+                        extractPagesBtn.style.display = 'none';
+                    }
+                    
+                    // Mostrar botão de download normal
+                    downloadBtn.style.display = 'block';
+                    
+                    // Restaurar estilos das páginas
+                    document.querySelectorAll('.selected-for-extract').forEach(el => {
+                        el.classList.remove('selected-for-extract');
+                        el.style.border = '1px solid var(--color-gray-200)';
+                        el.style.boxShadow = 'var(--shadow-sm)';
+                        
+                        // Restaurar botão de extração
+                        const btn = el.querySelector('.extract-btn');
+                        if (btn) {
+                            btn.classList.remove('active');
+                            btn.style.background = 'rgba(14, 165, 233, 0.1)';
+                            btn.style.color = '#0ea5e9';
+                        }
+                        
+                        // Remover checkout
+                        const checkMark = el.querySelector('.extract-check');
+                        if (checkMark) {
+                            checkMark.remove();
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Erro ao extrair páginas:', error);
+                    showErrorMessage(`Erro ao extrair páginas: ${error.message}`);
+                } finally {
+                    // Esconder overlay de processamento
+                    processingOverlay.style.display = 'none';
+                }
+            }
+            
+            // Função para salvar o PDF com rotações e reordenações
+            async function savePdfWithModifications() {
+                if (!currentPdfDocument) {
+                    alert('Nenhum arquivo PDF foi selecionado.');
+                    return;
+                }
+                
+                try {
+                    // Mostrar overlay de processamento
+                    processingOverlay.style.display = 'flex';
+                    
+                    // Carregar o PDF com PDFLib
+                    const pdfDoc = await PDFLib.PDFDocument.load(currentPdfDocument);
+                    const newPdf = await PDFLib.PDFDocument.create();
+                    
+                    // Processar as páginas na ordem atual, pulando as excluídas
+                    for (let i = 0; i < pageOrder.length; i++) {
+                        const pageNum = pageOrder[i];
+                        if (!deletedPages.has(pageNum)) {
+                            // Páginas são 0-indexed no PDF-Lib
+                            const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageNum - 1]);
+                            
+                            // Aplicar rotação se houver
+                            if (pageRotations.has(pageNum)) {
+                                copiedPage.setRotation(PDFLib.degrees(pageRotations.get(pageNum)));
+                            }
+                            
+                            newPdf.addPage(copiedPage);
+                        }
+                    }
+                    
+                    // Salvar o PDF modificado
+                    const modifiedPdfBytes = await newPdf.save();
+                    
+                    // Criar um nome de arquivo baseado no original
+                    const originalName = selectedFile.name.replace('.pdf', '');
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+                    const newFileName = `${originalName}_modificado_${timestamp}.pdf`;
+                    
+                    // Criar URL e iniciar download
+                    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = newFileName;
+                    a.click();
+                    
+                    // Limpar URL após o download
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    
+                    // Mostrar mensagem de sucesso
+                    showSuccessMessage('PDF modificado com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao salvar PDF modificado:', error);
+                    showErrorMessage(`Erro ao processar o PDF: ${error.message}`);
+                } finally {
+                    // Esconder overlay de processamento
+                    processingOverlay.style.display = 'none';
+                }
+            }
+            
+            // Funções de mensagem
+            function showSuccessMessage(message) {
+                const statusArea = document.createElement('div');
+                statusArea.className = 'status-message success';
+                statusArea.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                
+                // Adicionar ao painel de configuração em vez da área de visualização
+                document.querySelector('#configPanel .card-body').appendChild(statusArea);
+                
+                // Remover após alguns segundos
+                setTimeout(() => {
+                    statusArea.remove();
+                }, 3000);
+            }
+            
+            function showErrorMessage(message) {
+                const statusArea = document.createElement('div');
+                statusArea.className = 'status-message error';
+                statusArea.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                
+                // Adicionar ao painel de configuração em vez da área de visualização
+                document.querySelector('#configPanel .card-body').appendChild(statusArea);
+                
+                // Remover após alguns segundos
+                setTimeout(() => {
+                    statusArea.remove();
+                }, 5000);
+            }
+            
+            // Estilos para os componentes
+            addGlobalStyles();
+            
+            function addGlobalStyles() {
+                const styleElement = document.createElement('style');
+                styleElement.textContent = `
+                    /* Animação para fade out ao excluir páginas */
+                    @keyframes fadeOut {
+                        from {
+                            opacity: 1;
+                            transform: scale(1);
+                        }
+                        to {
+                            opacity: 0;
+                            transform: scale(0.9);
+                        }
+                    }
+                    
+                    /* Estilos para a rotação de páginas */
+                    .pdf-page-preview.rotated-90 {
+                        transform: rotate(90deg) scale(0.65);
+                    }
+                    
+                    .pdf-page-preview.rotated-180 {
+                        transform: rotate(180deg);
+                    }
+                    
+                    .pdf-page-preview.rotated-270 {
+                        transform: rotate(270deg) scale(0.65);
+                    }
+                    
+                    /* Estilos para o botão de rotação */
+                    .rotate-page-btn.rotated-90,
+                    .rotate-page-btn.rotated-270 {
+                        opacity: 1;
+                        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+                        color: white;
+                    }
+                    
+                    .rotate-page-btn.rotated-180 {
+                        opacity: 1;
+                        background: linear-gradient(135deg, var(--color-primary-dark), #2a3bba);
+                        color: white;
+                    }
+                    
+                    /* Estilos para elementos arrastáveis */
+                    .sortable-ghost {
+                        opacity: 0.4;
+                        background: var(--color-gray-50);
+                        border: 2px dashed var(--color-primary);
+                    }
+                    
+                    .sortable-drag {
+                        opacity: 0.8;
+                        transform: scale(1.05);
+                    }
+                    
+                    /* Mostrar controles ao passar o mouse */
+                    .pdf-page-preview:hover .drag-handle,
+                    .pdf-page-preview:hover .delete-btn,
+                    .pdf-page-preview:hover .extract-btn,
+                    .pdf-page-preview:hover .rotate-page-btn {
+                        opacity: 1;
+                    }
+                `;
+                document.head.appendChild(styleElement);
+            }
+        });
+    </script>
+</body>
+</html>

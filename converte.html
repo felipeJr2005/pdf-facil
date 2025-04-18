@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de PDF</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Estilos específicos para ícones coloridos */
+        .method-card[data-format="word"] .method-icon {
+            color: #2b5797;
+        }
+        
+        .method-card[data-format="excel"] .method-icon {
+            color: #1D6F42;
+        }
+        
+        .method-card[data-format="image"] .method-icon {
+            color: #7048e8;
+        }
+        
+        .method-card[data-format="txt"] .method-icon {
+            color: #4361ee;
+        }
+        
+        .method-card[data-format="ocr"] .method-icon {
+            color: #e74c3c;
+        }
+        
+        /* Estilos para cards quando selecionados */
+        .method-card.selected[data-format="word"] .method-icon {
+            background-color: #2b5797;
+            color: white;
+        }
+        
+        .method-card.selected[data-format="excel"] .method-icon {
+            background-color: #1D6F42;
+            color: white;
+        }
+        
+        .method-card.selected[data-format="image"] .method-icon {
+            background-color: #7048e8;
+            color: white;
+        }
+        
+        .method-card.selected[data-format="txt"] .method-icon {
+            background-color: #4361ee;
+            color: white;
+        }
+        
+        .method-card.selected[data-format="ocr"] .method-icon {
+            background-color: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body class="converter-pdf">
+    <div class="function-container">
+        <div class="card control-panel" id="formatCard">
+            <div class="card-header">
+                <h2 class="card-title" id="formatTitle">
+                    <i class="fas fa-exchange-alt"></i> Selecione o formato para conversão
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="method-options">
+                    <div class="method-card" id="wordCard" data-format="word" tabindex="0">
+                        <input type="radio" id="word" name="conversionFormat" value="word" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Word (DOCX)</div>
+                            <div class="method-description">Melhor para edição de texto</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="excelCard" data-format="excel" tabindex="0">
+                        <input type="radio" id="excel" name="conversionFormat" value="excel" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Excel (XLSX)</div>
+                            <div class="method-description">Melhor para tabelas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="imageCard" data-format="image" tabindex="0">
+                        <input type="radio" id="image" name="conversionFormat" value="image" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-image"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Imagem</div>
+                            <div class="method-description">JPG ou PNG</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="txtCard" data-format="txt" tabindex="0">
+                        <input type="radio" id="txt" name="conversionFormat" value="txt" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Texto (TXT)</div>
+                            <div class="method-description">Conversão Direta</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="ocrCard" data-format="ocr" tabindex="0">
+                        <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-font"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">OCR</div>
+                            <div class="method-description">Conversão por Reconhecimento</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Área do iframe para mostrar o conversor específico -->
+        <div id="converter-container" style="display: none;">
+            <iframe id="converter-iframe" width="100%" style="border: none; min-height: 600px; border-radius: 8px;"></iframe>
+        </div>
+    </div>
+    
+    <!-- JavaScript para a funcionalidade -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formatCard = document.getElementById('formatCard');
+            const formatTitle = document.getElementById('formatTitle');
+            const methodCards = document.querySelectorAll('.method-card');
+            const radioInputs = document.querySelectorAll('input[type="radio"]');
+            const converterContainer = document.getElementById('converter-container');
+            const converterIframe = document.getElementById('converter-iframe');
+            
+            // Mapeamento de ícones, títulos e páginas para cada formato
+            const formatData = {
+                'word': {
+                    icon: 'file-word',
+                    title: 'Converter PDF para Word',
+                    page: 'pdf_to_docx.html'
+                },
+                'excel': {
+                    icon: 'file-excel',
+                    title: 'Converter PDF para Excel',
+                    page: 'pdf_to_excel.html'
+                },
+                'image': {
+                    icon: 'file-image',
+                    title: 'Converter PDF para Imagem',
+                    page: 'converter_jpg_png.html'
+                },
+                'txt': {
+                    icon: 'file-alt',
+                    title: 'Converter PDF para Texto',
+                    page: 'converter_txt.html'
+                },
+                'ocr': {
+                    icon: 'search',
+                    title: 'Converter PDF com OCR',
+                    page: 'ocr-.html'
+                }
+            };
+
+            // Adicionar interação aos cards de método
+            methodCards.forEach(card => {
+                const formatId = card.getAttribute('data-format');
+                const radio = document.getElementById(formatId);
+                
+                card.addEventListener('click', () => {
+                    radio.checked = true;
+                    
+                    // Atualizar UI dos cards
+                    methodCards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    
+                    // Atualizar título do card
+                    const formatInfo = formatData[formatId];
+                    formatTitle.innerHTML = `
+                        <i class="fas fa-${formatInfo.icon}"></i> ${formatInfo.title}
+                    `;
+                    
+                    // Carrega a página correspondente ao formato selecionado
+                    converterIframe.src = formatInfo.page;
+                    converterContainer.style.display = 'block';
+                    
+                    // Ajustar altura do iframe quando carregado
+                    converterIframe.onload = function() {
+                        adjustIframeHeight();
+                    };
+                });
+                
+                // Navegação por teclado
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        radio.checked = true;
+                        card.click();
+                    }
+                });
+                
+                // Adicionar atributos de acessibilidade
+                card.setAttribute('role', 'radio');
+                card.setAttribute('aria-checked', 'false');
+            });
+
+            // Também manter os event listeners para os radios (backup)
+            radioInputs.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    // Atualizar UI dos cards
+                    methodCards.forEach(card => {
+                        card.classList.remove('selected');
+                        card.setAttribute('aria-checked', 'false');
+                    });
+                    
+                    const selectedCard = document.getElementById(`${e.target.id}Card`);
+                    if (selectedCard) {
+                        selectedCard.classList.add('selected');
+                        selectedCard.setAttribute('aria-checked', 'true');
+                    }
+                    
+                    // Atualizar título do card e carregar iframe
+                    const formatInfo = formatData[e.target.value];
+                    formatTitle.innerHTML = `
+                        <i class="fas fa-${formatInfo.icon}"></i> ${formatInfo.title}
+                    `;
+                    
+                    converterIframe.src = formatInfo.page;
+                    converterContainer.style.display = 'block';
+                    
+                    // Ajustar altura do iframe quando carregado
+                    converterIframe.onload = function() {
+                        adjustIframeHeight();
+                    };
+                });
+            });
+
+            // Função para ajustar a altura do iframe
+            function adjustIframeHeight() {
+                try {
+                    const iframeDoc = converterIframe.contentDocument || converterIframe.contentWindow.document;
+                    
+                    // Verificar o tamanho do conteúdo
+                    const body = iframeDoc.body;
+                    const html = iframeDoc.documentElement;
+                    
+                    const height = Math.max(
+                        body.scrollHeight, body.offsetHeight,
+                        html.clientHeight, html.scrollHeight, html.offsetHeight
+                    );
+                    
+                    // Adicionar margem extra
+                    converterIframe.style.height = (height + 50) + 'px';
+                    
+                    // Re-ajustar quando o conteúdo mudar
+                    const observer = new MutationObserver(() => {
+                        const newHeight = Math.max(
+                            body.scrollHeight, body.offsetHeight,
+                            html.clientHeight, html.scrollHeight, html.offsetHeight
+                        );
+                        converterIframe.style.height = (newHeight + 50) + 'px';
+                    });
+                    
+                    observer.observe(iframeDoc.body, { 
+                        childList: true, 
+                        subtree: true,
+                        attributes: true,
+                        characterData: true
+                    });
+                    
+                } catch (e) {
+                    console.log("Não foi possível acessar o conteúdo do iframe diretamente:", e);
+                    // Definir altura fixa em caso de erro
+                    converterIframe.style.height = '800px';
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

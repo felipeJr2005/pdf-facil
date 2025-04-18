@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotacionar Páginas PDF</title>
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    
+    <style>
+        .page-zoom-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            z-index: 10;
+            opacity: 0;
+        }
+
+        .pdf-page-preview:hover .page-zoom-icon {
+            opacity: 1;
+        }
+
+        .page-zoom-icon:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes zoomModalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .zoom-page-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: 600;
+        }
+
+        .page-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button:hover {
+            background-color: #f0f7ff;
+            border-color: #90c2ff;
+        }
+
+        .page-nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+            border-color: #e0e0e0;
+            box-shadow: none;
+        }
+
+        .page-nav-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            margin: 0 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="converter-rotate">
+    <div class="function-container">
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-sync-alt"></i> Rotacionar Páginas PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <center>  
+                            <i class="fas fa-file-pdf upload-icon"></i>
+                        </center>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
+                        <input type="file" id="fileInput" accept=".pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+        
+        <div id="zoomModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(5px);">
+            <div id="zoomModalContent" style="position: relative; max-width: 90%; max-height: 90%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; animation: zoomModalAppear 0.3s ease-out;">
+                <button id="closeZoomModal" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; transition: background 0.2s ease;" aria-label="Fechar zoom">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status e Controles -->
+        <div class="card rotation-controls-panel" id="controlPanel" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i> Configuração de Rotação
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="rotation-summary">
+                    <div class="rotation-count">
+                        <i class="fas fa-sync-alt"></i>
+                        Páginas rotacionadas: <span id="rotationCounter">0</span>
+                    </div>
+                    <button id="rotateAllBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                        <i class="fas fa-sync"></i> Rotacionar Todas <span id="rotateAllDegrees">90°</span>
+                    </button>
+                </div>
+                <button id="downloadBtn" class="extract-btn" disabled style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white; width: 100%; margin-top: var(--spacing-md);">
+                    <i class="fas fa-download"></i> Baixar PDF Rotacionado
+                </button>
+            </div>
+        </div>
+        
+        <!-- Área de status e download -->
+        <div id="statusArea" style="display: none; margin: 20px 0;"></div>
+        
+        <!-- Visualização das páginas -->
+        <div class="card preview-container" id="previewContainer" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-eye"></i> Clique nas páginas para rotacionar
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="pdfPreviewGrid" class="pdf-preview-grid"></div>
+                
+                <!-- Navegação de páginas do grid -->
+                <div class="page-navigation" id="gridPagination" style="display: none;">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3">Processando PDF...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const previewContainer = document.getElementById('previewContainer');
+            const controlPanel = document.getElementById('controlPanel');
+            const pdfPreviewGrid = document.getElementById('pdfPreviewGrid');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const statusArea = document.getElementById('statusArea');
+            const processingOverlay = document.getElementById('processingOverlay');
+            const rotationCounter = document.getElementById('rotationCounter');
+            const rotateAllBtn = document.getElementById('rotateAllBtn');
+            const rotateAllDegrees = document.getElementById('rotateAllDegrees');
+            const zoomModal = document.getElementById('zoomModal');
+            const zoomModalContent = document.getElementById('zoomModalContent');
+            const closeZoomModal = document.getElementById('closeZoomModal');
+            const gridPagination = document.getElementById('gridPagination');
+            const prevGridPage = document.getElementById('prevGridPage');
+            const nextGridPage = document.getElementById('nextGridPage');
+            const gridPageInfo = document.getElementById('gridPageInfo');
+            
+            // Variáveis globais
+            let selectedFile = null;
+            let totalPages = 0;
+            let pageRotations = new Map(); // Mapa para armazenar as rotações das páginas
+            let currentGlobalRotation = 90; // Começa com 90 graus
+            
+            // Variáveis para paginação
+            const PAGES_PER_VIEW = 36; // Número de páginas exibidas por vez
+            let currentGridPage = 0;
+            let totalGridPages = 0;
+            let pageContainers = []; // Array para armazenar contêineres de todas as páginas
+            
+            // Função para reset completo do estado da aplicação
+            function resetState() {
+                console.log("Resetando estado da aplicação");
+                
+                // Limpar variáveis globais
+                selectedFile = null;
+                totalPages = 0;
+                pageRotations.clear();
+                
+                // Limpar visualização
+                pdfPreviewGrid.innerHTML = '';
+                currentGridPage = 0;
+                totalGridPages = 0;
+                
+                // Esconder elementos
+                previewContainer.style.display = 'none';
+                controlPanel.style.display = 'none';
+                statusArea.style.display = 'none';
+                gridPagination.style.display = 'none';
+                
+                // Limpar conteúdo
+                statusArea.innerHTML = '';
+                fileInfo.innerHTML = '';
+                
+                // Limpar input file para permitir reselecionar o mesmo arquivo
+                fileInput.value = '';
+                
+                // Atualizar contador
+                updateRotationCounter();
+                
+                // Liberar recursos de memória
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    canvas.width = 0;
+                    canvas.height = 0;
+                });
+                
+                // Revogar qualquer URL de objeto
+                document.querySelectorAll('a').forEach(link => {
+                    if (link.href && link.href.startsWith('blob:')) {
+                        URL.revokeObjectURL(link.href);
+                    }
+                });
+                
+                // Resetar rotação global para 90
+                currentGlobalRotation = 90;
+                if (rotateAllDegrees) {
+                    rotateAllDegrees.textContent = '90°';
+                }
+                
+                console.log("Estado resetado com sucesso");
+            }
+            
+            // Event Listeners para a área de upload
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                const file = e.dataTransfer.files[0];
+                resetState(); // Reset antes de processar o novo arquivo
+                handleFile(file);
+            });
+            
+            dropZone.addEventListener('click', () => {
+                resetState(); // Reset antes de processar o novo arquivo
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                handleFile(file);
+            });
+            
+            // Botão de baixar PDF rotacionado
+            downloadBtn.addEventListener('click', async () => {
+                await savePdfWithRotations();
+            });
+            
+            // Botão para rotacionar todas as páginas
+            rotateAllBtn.addEventListener('click', () => {
+                rotateAllPages();
+            });
+            
+            // Navegação do grid de páginas
+            prevGridPage.addEventListener('click', () => {
+                console.log("Navegação: página anterior");
+                if (currentGridPage > 0) {
+                    currentGridPage--;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            nextGridPage.addEventListener('click', () => {
+                console.log("Navegação: próxima página");
+                if (currentGridPage < totalGridPages - 1) {
+                    currentGridPage++;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            // Fechar modal ao clicar fora do conteúdo
+            zoomModal.addEventListener('click', (event) => {
+                if (event.target === zoomModal) {
+                    zoomModal.style.display = 'none';
+                }
+            });
+            
+            // Adicionar suporte a tecla ESC para fechar
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && zoomModal.style.display === 'flex') {
+                    zoomModal.style.display = 'none';
+                }
+            });
+            
+            // Fechar modal com botão
+            closeZoomModal.addEventListener('click', () => {
+                zoomModal.style.display = 'none';
+            });
+            
+            // Função para lidar com o arquivo selecionado
+            async function handleFile(file) {
+                if (!file) {
+                    console.log("Nenhum arquivo fornecido");
+                    return;
+                }
+                
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    try {
+                        // Mostrar overlay de processamento
+                        processingOverlay.style.display = 'flex';
+                        
+                        // Carregar o PDF para verificar se é válido
+                        const fileURL = URL.createObjectURL(file);
+                        const loadingTask = pdfjsLib.getDocument({url: fileURL});
+                        const pdf = await loadingTask.promise;
+                        totalPages = pdf.numPages;
+                        
+                        // Se chegou até aqui, o PDF é válido
+                        selectedFile = file;
+                        
+                        // Limpar rotações anteriores
+                        pageRotations.clear();
+                        updateRotationCounter();
+                        
+                        // Exibir informações do arquivo
+                        showFileInfo(file, totalPages);
+                        
+                        // Mostrar o painel de controle
+                        controlPanel.style.display = 'block';
+                        
+                        // Limpar área de status caso exista
+                        statusArea.style.display = 'none';
+                        statusArea.innerHTML = '';
+                        
+                        // Renderizar as páginas
+                        await renderPdfPages(pdf);
+                        
+                        // Exibir o contêiner de visualização
+                        previewContainer.style.display = 'block';
+                        
+                        // Resetar rotação global para 90
+                        currentGlobalRotation = 90;
+                        rotateAllDegrees.textContent = '90°';
+                        
+                        // Liberar URL
+                        URL.revokeObjectURL(fileURL);
+                        
+                        // Habilitar/desabilitar botão de download
+                        downloadBtn.disabled = true;
+                        
+                    } catch (error) {
+                        console.error('Erro ao processar o PDF:', error);
+                        
+                        fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                O arquivo PDF selecionado está corrompido ou é inválido
+                            </div>`;
+                    } finally {
+                        // Esconder overlay de processamento
+                        processingOverlay.style.display = 'none';
+                    }
+                } else {
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Por favor, selecione um arquivo PDF válido
+                        </div>`;
+                }
+            }
+            
+            // Mostrar informações do arquivo
+            function showFileInfo(file, pages) {
+                fileInfo.innerHTML = `
+                    <div class="info-block">
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Arquivo Selecionado: ${file.name}
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Quantidade de páginas: ${pages}
+                        </div>
+                    </div>`;
+            }
+            
+            // Renderizar páginas do PDF com paginação
+            async function renderPdfPages(pdf) {
+                // Limpar o grid de previews
+                pdfPreviewGrid.innerHTML = '';
+                
+                // Inicializar array de contêineres
+                pageContainers = new Array(pdf.numPages);
+                
+                // Calcular total de páginas do grid
+                totalGridPages = Math.ceil(pdf.numPages / PAGES_PER_VIEW);
+                console.log(`PDF tem ${pdf.numPages} páginas. Exibindo em ${totalGridPages} páginas de grid.`);
+                
+                // Renderizar cada página
+                const renderPromises = [];
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    renderPromises.push(renderPdfPage(pdf, i));
+                }
+                
+                // Aguardar todas as renderizações
+                await Promise.all(renderPromises);
+                
+                // Renderizar a primeira página do grid
+                renderGridPage(0);
+                
+                // Exibir/ocultar paginação conforme necessário
+                if (totalGridPages > 1) {
+                    gridPagination.style.display = 'flex';
+                    updateGridPagination();
+                    console.log(`Paginação configurada: ${totalGridPages} páginas`);
+                } else {
+                    gridPagination.style.display = 'none';
+                }
+            }
+            
+            // Função para renderizar uma página individual
+            async function renderPdfPage(pdf, pageNum) {
+                try {
+                    const page = await pdf.getPage(pageNum);
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale });
+                    
+                    const pagePreview = document.createElement('div');
+                    pagePreview.className = 'pdf-page-preview';
+                    pagePreview.dataset.page = pageNum;
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    context.fillStyle = 'white';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                    
+                    const rotateBtn = document.createElement('button');
+                    rotateBtn.className = 'rotate-page-btn';
+                    rotateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                    rotateBtn.title = 'Clique para rotacionar';
+                    
+                    const pageNumber = document.createElement('div');
+                    pageNumber.className = 'pdf-page-number';
+                    pageNumber.textContent = `Página ${pageNum}`;
+                    
+                    pagePreview.appendChild(canvas);
+                    pagePreview.appendChild(rotateBtn);
+                    pagePreview.appendChild(pageNumber);
+                    
+                    // Adicionar funcionalidade de zoom
+                    addZoomToPage(pagePreview, pageNum);
+                    
+                    rotateBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        togglePageRotation(pageNum, rotateBtn, pagePreview);
+                    };
+                    
+                    // Armazenar o contêiner
+                    pageContainers[pageNum - 1] = pagePreview;
+                    
+                    return true;
+                } catch (error) {
+                    console.error(`Erro ao renderizar página ${pageNum}:`, error);
+                    return false;
+                }
+            }
+            
+            // Função para adicionar zoom nas páginas
+            function addZoomToPage(pageContainer, pageNum) {
+                const zoomIcon = document.createElement('div');
+                zoomIcon.className = 'page-zoom-icon';
+                zoomIcon.innerHTML = '<i class="fas fa-search-plus"></i>';
+                zoomIcon.setAttribute('aria-label', `Ampliar página ${pageNum}`);
+                
+                zoomIcon.addEventListener('click', async (event) => {
+                    event.stopPropagation(); // Prevenir eventos duplicados
+                    console.log(`Zoom solicitado para página ${pageNum}`);
+                    
+                    try {
+                        // Indicador de carregamento
+                        zoomIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        
+                        const fileURL = URL.createObjectURL(selectedFile);
+                        const loadingTask = pdfjsLib.getDocument(fileURL);
+                        const pdf = await loadingTask.promise;
+                        const page = await pdf.getPage(pageNum);
+                        
+                        // Escalas dinâmicas
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const maxWidth = window.innerWidth * 0.9;
+                        const maxHeight = window.innerHeight * 0.9;
+                        const scale = Math.min(
+                            maxWidth / viewport.width, 
+                            maxHeight / viewport.height
+                        ) * 1.5; // Aumentar um pouco mais
+                        
+                        const scaledViewport = page.getViewport({ scale });
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = scaledViewport.width;
+                        canvas.height = scaledViewport.height;
+                        
+                        await page.render({
+                            canvasContext: context,
+                            viewport: scaledViewport
+                        }).promise;
+                        
+                        // Limpar conteúdo anterior
+                        zoomModalContent.innerHTML = '';
+                        
+                        // Botão de fechar
+                        const closeButton = document.createElement('button');
+                        closeButton.id = 'closeZoomModal';
+                        closeButton.innerHTML = '<i class="fas fa-times"></i>';
+                        closeButton.setAttribute('aria-label', 'Fechar zoom');
+                        closeButton.style.position = 'absolute';
+                        closeButton.style.top = '10px';
+                        closeButton.style.right = '10px';
+                        closeButton.style.background = 'rgba(255,255,255,0.2)';
+                        closeButton.style.color = 'white';
+                        closeButton.style.border = 'none';
+                        closeButton.style.borderRadius = '50%';
+                        closeButton.style.width = '40px';
+                        closeButton.style.height = '40px';
+                        closeButton.style.display = 'flex';
+                        closeButton.style.alignItems = 'center';
+                        closeButton.style.justifyContent = 'center';
+                        closeButton.style.cursor = 'pointer';
+                        closeButton.style.zIndex = '20';
+                        closeButton.style.transition = 'background 0.2s ease';
+                        
+                        closeButton.addEventListener('click', () => {
+                            zoomModal.style.display = 'none';
+                        });
+                        
+                        // Informação da página
+                        const pageInfo = document.createElement('div');
+                        pageInfo.className = 'zoom-page-info';
+                        pageInfo.textContent = `Página ${pageNum} de ${pdf.numPages}`;
+                        
+                        // Adicionar elementos
+                        zoomModalContent.appendChild(closeButton);
+                        zoomModalContent.appendChild(canvas);
+                        zoomModalContent.appendChild(pageInfo);
+                        
+                        // Mostrar modal
+                        zoomModal.style.display = 'flex';
+                        
+                        // Liberar URL
+                        URL.revokeObjectURL(fileURL);
+                        
+                        // Restaurar ícone original
+                        zoomIcon.innerHTML = '<i class="fas fa-search-plus"></i>';
+                        
+                        console.log(`Zoom renderizado para página ${pageNum}`);
+                    } catch (error) {
+                        console.error('Erro ao ampliar página:', error);
+                        zoomIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                    }
+                });
+                
+                pageContainer.appendChild(zoomIcon);
+            }
+            
+            // Função para renderizar uma página específica do grid
+            function renderGridPage(pageIndex) {
+                // Limpar grid atual
+                pdfPreviewGrid.innerHTML = '';
+                
+                // Calcular índices inicial e final
+                const startIndex = pageIndex * PAGES_PER_VIEW;
+                const endIndex = Math.min(startIndex + PAGES_PER_VIEW, pageContainers.length);
+                
+                console.log(`Renderizando grid página ${pageIndex}: páginas ${startIndex+1} até ${endIndex}`);
+                
+                // Adicionar contêineres de página para a página atual do grid
+                for (let i = startIndex; i < endIndex; i++) {
+                    if (pageContainers[i]) {
+                        // Aplicar rotações existentes, se houver
+                        const pageNum = i + 1;
+                        const rotation = pageRotations.get(pageNum) || 0;
+                        const container = pageContainers[i];
+                        const rotateBtn = container.querySelector('.rotate-page-btn');
+                        
+                        // Limpar classes de rotação
+                        container.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                        rotateBtn.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                        
+                        // Adicionar classe apropriada de rotação
+                        if (rotation === 90) {
+                            container.classList.add('rotated-90');
+                            rotateBtn.classList.add('rotated-90');
+                        } else if (rotation === 180) {
+                            container.classList.add('rotated-180');
+                            rotateBtn.classList.add('rotated-180');
+                        } else if (rotation === 270) {
+                            container.classList.add('rotated-270');
+                            rotateBtn.classList.add('rotated-270');
+                        }
+                        
+                        pdfPreviewGrid.appendChild(container);
+                    }
+                }
+                
+                // Atualizar controles de paginação
+                updateGridPagination();
+                console.log(`Grid renderizado: ${pdfPreviewGrid.children.length} páginas visíveis`);
+            }
+            
+            // Atualizar informações da paginação
+            function updateGridPagination() {
+                // Garantir que a informação de página atual e total esteja correta
+                gridPageInfo.textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+                
+                // Garantir que os botões sejam habilitados/desabilitados corretamente
+                prevGridPage.disabled = currentGridPage <= 0;
+                nextGridPage.disabled = currentGridPage >= totalGridPages - 1;
+            }
+            
+            // Função para alternar a rotação da página
+            function togglePageRotation(pageNum, button, container) {
+                const currentRotation = pageRotations.get(pageNum) || 0;
+                
+                // Remover todas as classes de rotação existentes
+                container.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                button.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                
+                let newRotation;
+                
+                // Definir nova rotação
+                if (currentRotation === 0) {
+                    newRotation = 90;
+                    container.classList.add('rotated-90');
+                    button.classList.add('rotated-90');
+                } else if (currentRotation === 90) {
+                    newRotation = 180;
+                    container.classList.add('rotated-180');
+                    button.classList.add('rotated-180');
+                } else if (currentRotation === 180) {
+                    newRotation = 270;
+                    container.classList.add('rotated-270');
+                    button.classList.add('rotated-270');
+                } else {
+                    newRotation = 0;
+                    // Classes já foram removidas
+                }
+                
+                // Atualizar mapa de rotações
+                if (newRotation === 0) {
+                    pageRotations.delete(pageNum);
+                } else {
+                    pageRotations.set(pageNum, newRotation);
+                }
+                
+                // Atualizar contador
+                updateRotationCounter();
+            }
+            
+            // Função para rotacionar todas as páginas de uma vez
+            function rotateAllPages() {
+                // Aplicar a rotação atual para todas as páginas
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    // Encontrar o contêiner de página correspondente (pode estar em qualquer página do grid)
+                    const container = pageContainers[pageNum - 1];
+                    if (container) {
+                        const rotateBtn = container.querySelector('.rotate-page-btn');
+                        
+                        // Remover todas as classes de rotação
+                        container.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                        rotateBtn.classList.remove('rotated-90', 'rotated-180', 'rotated-270');
+                        
+                        // Aplicar rotação atual
+                        if (currentGlobalRotation === 90) {
+                            container.classList.add('rotated-90');
+                            rotateBtn.classList.add('rotated-90');
+                            pageRotations.set(pageNum, 90);
+                        } else if (currentGlobalRotation === 180) {
+                            container.classList.add('rotated-180');
+                            rotateBtn.classList.add('rotated-180');
+                            pageRotations.set(pageNum, 180);
+                        } else if (currentGlobalRotation === 270) {
+                            container.classList.add('rotated-270');
+                            rotateBtn.classList.add('rotated-270');
+                            pageRotations.set(pageNum, 270);
+                        } else {
+                            // 0 graus, remover rotação
+                            pageRotations.delete(pageNum);
+                        }
+                    }
+                }
+                
+                // Renderizar a página atual para mostrar as mudanças
+                renderGridPage(currentGridPage);
+                
+                // Avançar para a próxima rotação global
+                currentGlobalRotation = (currentGlobalRotation + 90) % 360;
+                rotateAllDegrees.textContent = `${currentGlobalRotation}°`;
+                
+                // Atualizar contador
+                updateRotationCounter();
+            }
+            
+            // Atualizar contador de rotações
+            function updateRotationCounter() {
+                rotationCounter.textContent = pageRotations.size;
+                
+                // Habilitar ou desabilitar o botão de download
+                downloadBtn.disabled = pageRotations.size === 0;
+            }
+            
+            // Função para salvar o PDF com as rotações aplicadas
+            // Modificações na função savePdfWithRotations():
+            async function savePdfWithRotations() {
+    if (!selectedFile) {
+        alert('Nenhum arquivo PDF foi selecionado.');
+        return;
+    }
+    
+    try {
+        processingOverlay.style.display = 'flex';
+        
+        // Carregar o PDF
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { 
+            ignoreEncryption: true // Tentar ignorar encriptação
+        });
+        
+        // Aplicar rotações
+        pageRotations.forEach((rotation, pageIndex) => {
+            try {
+                // Obter a página (índice 0-based)
+                const page = pdfDoc.getPage(pageIndex - 1);
+                
+                // Aplicar rotação usando PDFLib
+                const pdfLibRotation = PDFLib.degrees(rotation);
+                page.setRotation(pdfLibRotation);
+            } catch (pageError) {
+                console.error(`Erro ao rotacionar página ${pageIndex}:`, pageError);
+            }
+        });
+        
+        // Salvar o PDF modificado
+        const modifiedPdfBytes = await pdfDoc.save();
+        const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+        
+        // Criar link de download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        
+        // Nome de arquivo simplificado
+        const originalName = selectedFile.name.replace(/\.pdf$/i, '');
+        
+        // Formato do nome mais consistente
+        let pagesText = '';
+        if (pageRotations.size > 5) {
+            pagesText = `rot${pageRotations.size}pgs`;
+        } else {
+            const rotatedPages = Array.from(pageRotations.keys()).sort((a, b) => a - b);
+            pagesText = 'rot_pgs' + rotatedPages.join('_');
+        }
+        
+        downloadLink.download = `${originalName}_${pagesText}.pdf`;
+        
+        // Exibir mensagem de sucesso
+        statusArea.innerHTML = `
+            <div class="status-message success">
+                <i class="fas fa-check-circle"></i>
+                Rotação concluída com sucesso! ${pageRotations.size} página(s) rotacionada(s).
+            </div>`;
+        
+        // Adicionar link de download
+        downloadLink.className = 'download-link';
+        downloadLink.innerHTML = `<i class="fas fa-download"></i> Baixar PDF Rotacionado`;
+        statusArea.appendChild(downloadLink);
+        
+        // Mostrar área de status
+        statusArea.style.display = 'block';
+        
+        // Não iniciamos o download automaticamente para evitar bloqueios de pop-up
+        // O usuário deve clicar no botão de download
+        
+    } catch (error) {
+        console.error('Erro ao salvar PDF rotacionado:', error);
+        statusArea.innerHTML = `
+            <div class="status-message error">
+                <i class="fas fa-exclamation-circle"></i>
+                Erro ao salvar PDF: ${error.message}
+            </div>`;
+        statusArea.style.display = 'block';
+    } finally {
+        processingOverlay.style.display = 'none';
+    }
+}
+        });
+    </script>
+</body>
+</html>
