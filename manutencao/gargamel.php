@@ -52,7 +52,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 }
 
 // Processar limpeza de cache
-$cacheMessage = '';
+$message = '';
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'clear_cache') {
     // Atualizar timestamp (se possível)
     $timestampFile = $siteRoot . '/.last_cache_clean';
@@ -74,20 +74,33 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'clear_cache'
     header("Pragma: no-cache");
     header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
     
-    $cacheMessage = 'Cache limpo com sucesso! Cache do PHP e do navegador foram atualizados.';
+    $message = 'Cache limpo com sucesso! Cache do PHP e do navegador foram atualizados.';
 }
 
-// Ler notas de manutenção (se existirem)
+// Arquivo de notas de manutenção
 $notesFile = $siteRoot . '/maintenance_notes.json';
-$notes = [];
-if (file_exists($notesFile)) {
-    $notesContent = file_get_contents($notesFile);
-    if (!empty($notesContent)) {
-        $notes = json_decode($notesContent, true) ?: [];
+
+// Função para ler notas do arquivo
+function getNotes() {
+    global $notesFile;
+    if (file_exists($notesFile)) {
+        $content = file_get_contents($notesFile);
+        return json_decode($content, true) ?: [];
     }
+    return [];
 }
 
-// Processar adição de notas
+// Função para salvar notas no arquivo
+function saveNotes($notes) {
+    global $notesFile, $message;
+    $saved = @file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT));
+    return $saved !== false;
+}
+
+// Obter notas
+$notes = getNotes();
+
+// Processar adição de nova nota
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
     // Gerar ID único baseado no timestamp
     $id = time() . '_' . mt_rand(1000, 9999);
@@ -106,16 +119,88 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
     // Adicionar à lista de notas
     $notes[] = $newNote;
     
-    // Tentar salvar notas
-    $notesSaved = @file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT));
-    
-    // Mensagem de sucesso ou erro
-    if ($notesSaved) {
-        $cacheMessage = 'Nota adicionada com sucesso!';
+    // Salvar notas
+    if (saveNotes($notes)) {
+        $message = 'Nota adicionada com sucesso!';
     } else {
-        $cacheMessage = 'Erro ao salvar nota. Problema de permissão.';
+        $message = 'Erro ao salvar nota. Verifique as permissões de arquivo.';
     }
 }
+
+// Lidar com a conclusão de uma nota
+if ($isLoggedIn && isset($_GET['complete']) && !empty($_GET['complete'])) {
+    $idToComplete = $_GET['complete'];
+    
+    // Encontrar e atualizar a nota
+    foreach ($notes as $key => $note) {
+        if ($note['id'] === $idToComplete) {
+            $notes[$key]['status'] = 'concluído';
+            $notes[$key]['date_completed'] = date('Y-m-d H:i:s');
+            break;
+        }
+    }
+    
+    // Salvar notas atualizadas
+    if (saveNotes($notes)) {
+        $message = 'Tarefa marcada como concluída!';
+    }
+    
+    // Redirecionar para evitar recargas
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Lidar com a exclusão de uma nota
+if ($isLoggedIn && isset($_GET['delete']) && !empty($_GET['delete'])) {
+    $idToDelete = $_GET['delete'];
+    
+    // Remover a nota pelo ID
+    foreach ($notes as $key => $note) {
+        if ($note['id'] === $idToDelete) {
+            unset($notes[$key]);
+            break;
+        }
+    }
+    
+    // Reindexar array e salvar
+    $notes = array_values($notes);
+    if (saveNotes($notes)) {
+        $message = 'Nota removida com sucesso!';
+    }
+    
+    // Redirecionar
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Filtrar notas por status
+$pendingNotes = array_filter($notes, function($note) {
+    return $note['status'] === 'pendente';
+});
+
+$completedNotes = array_filter($notes, function($note) {
+    return $note['status'] === 'concluído';
+});
+
+// Ordenar notas pendentes por prioridade e depois por data
+usort($pendingNotes, function($a, $b) {
+    // Mapear prioridade para valor numérico
+    $priorityMap = ['alta' => 1, 'média' => 2, 'baixa' => 3];
+    
+    // Comparar por prioridade primeiro
+    $priorityCompare = $priorityMap[$a['priority']] - $priorityMap[$b['priority']];
+    if ($priorityCompare !== 0) {
+        return $priorityCompare;
+    }
+    
+    // Se mesma prioridade, ordenar por data (mais recente primeiro)
+    return strtotime($b['date_created']) - strtotime($a['date_created']);
+});
+
+// Ordenar notas concluídas por data de conclusão
+usort($completedNotes, function($a, $b) {
+    return strtotime($b['date_completed'] ?? $b['date_created']) - strtotime($a['date_completed'] ?? $a['date_created']);
+});
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -307,6 +392,7 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
             border-radius: 6px;
             margin-bottom: 15px;
             background-color: var(--card-bg);
+            position: relative;
         }
         
         .note-header {
@@ -336,7 +422,8 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
             white-space: pre-wrap;
         }
         
-        .note-priority {
+        .tag {
+            display: inline-block;
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 12px;
@@ -344,21 +431,69 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
             color: white;
         }
         
-        .priority-alta {
+        .tag-alta {
             background-color: var(--error-color);
         }
         
-        .priority-média {
+        .tag-média {
             background-color: var(--warning-color);
+            color: #212529;
         }
         
-        .priority-baixa {
+        .tag-baixa {
             background-color: var(--primary-color);
+        }
+        
+        .tag-pendente {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+        
+        .tag-concluído {
+            background-color: var(--success-color);
+        }
+        
+        .note-actions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-link {
+            color: var(--text-secondary);
+            font-size: 16px;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .action-link:hover {
+            color: var(--primary-color);
+        }
+        
+        .delete-link:hover {
+            color: var(--error-color);
+        }
+        
+        .complete-link:hover {
+            color: var(--success-color);
+        }
+        
+        .empty-message {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
         }
         
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .note-meta {
+                flex-direction: column;
+                gap: 5px;
             }
         }
     </style>
@@ -400,9 +535,9 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
                 <a href="?action=logout" class="logout-link">Sair</a>
             </div>
             
-            <?php if (!empty($cacheMessage)): ?>
+            <?php if (!empty($message)): ?>
                 <div class="success-message">
-                    <?php echo htmlspecialchars($cacheMessage); ?>
+                    <?php echo htmlspecialchars($message); ?>
                 </div>
             <?php endif; ?>
             
@@ -497,31 +632,68 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
                         </form>
                     </div>
                     
-                    <!-- Card para listar notas -->
+                    <!-- Card para listar notas pendentes -->
                     <div class="card">
-                        <div class="card-title">Notas de Manutenção</div>
+                        <div class="card-title">Tarefas Pendentes</div>
                         
-                        <?php if (empty($notes)): ?>
-                            <p>Nenhuma nota de manutenção encontrada.</p>
-                        <?php else: ?>
-                            <div class="notes-container">
-                                <?php foreach ($notes as $note): ?>
-                                    <div class="note-item">
-                                        <div class="note-header">
-                                            <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
-                                        </div>
-                                        <div class="note-meta">
-                                            <span><strong>Módulo:</strong> <?php echo htmlspecialchars($note['module']); ?></span>
-                                            <span><strong>Status:</strong> <?php echo htmlspecialchars($note['status']); ?></span>
-                                            <span class="note-priority priority-<?php echo htmlspecialchars($note['priority']); ?>">
-                                                <?php echo ucfirst(htmlspecialchars($note['priority'])); ?>
-                                            </span>
-                                            <span><strong>Data:</strong> <?php echo htmlspecialchars($note['date_created']); ?></span>
-                                        </div>
-                                        <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
-                                    </div>
-                                <?php endforeach; ?>
+                        <?php if (empty($pendingNotes)): ?>
+                            <div class="empty-message">
+                                <p>Não há tarefas pendentes.</p>
                             </div>
+                        <?php else: ?>
+                            <?php foreach ($pendingNotes as $note): ?>
+                                <div class="note-item">
+                                    <div class="note-header">
+                                        <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
+                                    </div>
+                                    <div class="note-meta">
+                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($note['module']); ?></span>
+                                        <span class="tag tag-<?php echo htmlspecialchars($note['priority']); ?>">
+                                            <?php echo ucfirst(htmlspecialchars($note['priority'])); ?>
+                                        </span>
+                                        <span><strong>Data:</strong> <?php echo htmlspecialchars($note['date_created']); ?></span>
+                                    </div>
+                                    <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
+                                    <div class="note-actions">
+                                        <a href="?complete=<?php echo urlencode($note['id']); ?>" class="action-link complete-link" title="Marcar como concluída">
+                                            <i class="✓">✓</i>
+                                        </a>
+                                        <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
+                                            <i class="✕">✕</i>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- Card para listar notas concluídas -->
+                    <div class="card">
+                        <div class="card-title">Tarefas Concluídas</div>
+                        
+                        <?php if (empty($completedNotes)): ?>
+                            <div class="empty-message">
+                                <p>Não há tarefas concluídas.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($completedNotes as $note): ?>
+                                <div class="note-item" style="opacity: 0.7;">
+                                    <div class="note-header">
+                                        <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
+                                    </div>
+                                    <div class="note-meta">
+                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($note['module']); ?></span>
+                                        <span class="tag tag-concluído">Concluído</span>
+                                        <span><strong>Concluído em:</strong> <?php echo htmlspecialchars($note['date_completed'] ?? 'N/A'); ?></span>
+                                    </div>
+                                    <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
+                                    <div class="note-actions">
+                                        <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
+                                            <i class="✕">✕</i>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>
