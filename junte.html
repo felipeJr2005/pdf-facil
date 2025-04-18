@@ -4,137 +4,686 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Juntar PDFs</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts PDF -->
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .drop-zone { 
-            border: 2px dashed #ccc; 
-            padding: 20px; 
-            text-align: center; 
-            cursor: pointer; 
-        }
-        .drop-zone.drag-over { background-color: #f0f0f0; }
-        .hidden { display: none; }
-        .file-list { margin-top: 20px; }
-        .file-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px; 
-            border-bottom: 1px solid #eee; 
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 </head>
-<body>
-    <div class="drop-zone" id="dropZone">
-        <p>Arraste e solte PDFs aqui ou clique para selecionar</p>
-        <input type="file" id="fileInput" accept=".pdf" multiple class="hidden">
+<body class="converter-merge">
+    <div class="function-container">
+        <!-- Área de Upload -->
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-object-group"></i> Juntar PDFs
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <i class="fas fa-file-pdf upload-icon"></i>
+                        <div class="upload-text">Selecione os arquivos PDF</div>
+                        <div class="upload-subtext">Arraste aqui ou clique para selecionar</div>
+                        <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Área de Controle -->
+        <div class="card hidden" id="controlPanel">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i> Configuração de Junção
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="settings-panel" style="background-color: transparent;">
+                    <div class="method-options" style="background-color: #ffffff; border-radius: var(--radius-md);">
+                        <div class="method-card" id="addMoreCard">
+                            <div class="method-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="method-details">
+                                <div class="method-title">Adicionar mais arquivos</div>
+                                <div class="method-description">Inclua mais PDFs na junção</div>
+                            </div>
+                        </div>
+                        
+                        <div class="method-card">
+                            <div class="method-icon">
+                                <i class="fas fa-sort"></i>
+                            </div>
+                            <div class="method-details">
+                                <div class="method-title">Organização dos arquivos:</div>
+                                <select id="orderOption" class="input-field mt-2" style="width: 100%;">
+    <option value="manual">Ordenação manual (arraste os arquivos)</option>
+    <option value="name">Ordenar por nome</option>
+    <option value="size">Ordenar por tamanho</option>
+    <option value="date">Ordenar por data (mais recente primeiro)</option>
+    <option value="cartaGuia">Ordenar por Carta Guia (documentos judiciais)</option>
+</select>
+                            </div>
+                        </div>
+                        
+                        <div class="method-card">
+                            <div class="method-icon">
+                                <i class="fas fa-bookmark"></i>
+                            </div>
+                            <div class="method-details">
+                                <div class="method-title">Configuração de saída</div>
+                                <div class="checkbox-wrapper mt-2">
+                                    <input type="checkbox" id="addBookmarks">
+                                    <label for="addBookmarks">Adicionar marcadores</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="mergeButton" class="pdf-action-button mt-4">
+                        <i class="fas fa-object-group"></i>
+                        <span id="mergeButtonText">Juntar PDFs</span>
+                    </button>
+                    
+                    <div id="resultArea" class="hidden compression-info">
+                        <div class="status-message success">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <strong>Junção concluída com sucesso!</strong>
+                                <div class="mt-2">
+                                    <div style="display: flex; justify-content: space-between; max-width: 300px;">
+                                        <span style="color: var(--color-gray-600);">Arquivos unidos:</span>
+                                        <span style="font-weight: 600;" id="mergedFilesCount">0</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; max-width: 300px;">
+                                        <span style="color: var(--color-gray-600);">Páginas totais:</span>
+                                        <span style="font-weight: 600;" id="totalPagesCount">0</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; max-width: 300px;">
+                                        <span style="color: var(--color-gray-600);">Tamanho final:</span>
+                                        <span style="font-weight: 600;" id="finalSize">0 MB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="downloadContainer" class="download-link-container mt-4">
+                            <a id="downloadLink" href="#" class="download-link" download>
+                                <i class="fas fa-download"></i> 
+                                <span id="downloadText">Baixar PDF juntados</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Arquivos -->
+        <div class="card hidden" id="pdfListCard">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list"></i>
+                    Arquivos para juntar (<span id="totalFilesCount">0</span>)
+                </h3>
+            </div>
+            <div class="card-body px-3">
+                <p class="my-2 text-sm text-gray-600">
+                    <i class="fas fa-info-circle mr-2"></i>Arraste para reordenar os arquivos. A ordem determinará como eles serão unidos.
+                </p>
+                <div class="settings-panel" style="background-color: transparent;" id="pdfList">
+                    <!-- Os arquivos PDF serão listados aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de status -->
+        <div id="statusArea" class="mt-4"></div>
     </div>
 
-    <div id="fileList" class="file-list hidden"></div>
-
-    <button id="mergeButton" class="hidden" disabled>Juntar PDFs</button>
-
-    <div id="resultArea" class="hidden">
-        <a href="#" id="downloadLink">Baixar PDF Unificado</a>
+    <!-- Overlay de processamento -->
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3" id="processingText">Processando PDFs - 0%</p>
+        </div>
     </div>
+</body>
+
 
     <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileList = document.getElementById('fileList');
-        const mergeButton = document.getElementById('mergeButton');
-        const resultArea = document.getElementById('resultArea');
-        const downloadLink = document.getElementById('downloadLink');
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        let fileArray = [];
-
-        // Prevenir comportamento padrão de drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        // Efeitos visuais de drag
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'));
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'));
-        });
-
-        // Evento de drop
-        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
-
-        // Clique para selecionar arquivos
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-        function handleFiles(files) {
-            fileArray = Array.from(files).filter(file => file.type === 'application/pdf');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const elements = {
+                dropZone: document.getElementById('dropZone'),
+                fileInput: document.getElementById('fileInput'),
+                pdfList: document.getElementById('pdfList'),
+                mergeButton: document.getElementById('mergeButton'),
+                mergeButtonText: document.getElementById('mergeButtonText'),
+                statusArea: document.getElementById('statusArea'),
+                pdfListCard: document.getElementById('pdfListCard'),
+                fileInfo: document.getElementById('fileInfo'),
+                processingOverlay: document.getElementById('processingOverlay'),
+                resultArea: document.getElementById('resultArea'),
+                downloadLink: document.getElementById('downloadLink'),
+                downloadText: document.getElementById('downloadText'),
+                processingText: document.getElementById('processingText'),
+                controlPanel: document.getElementById('controlPanel'),
+                addMoreCard: document.getElementById('addMoreCard'),
+                orderOption: document.getElementById('orderOption'),
+                totalFilesCount: document.getElementById('totalFilesCount'),
+                addBookmarks: document.getElementById('addBookmarks'),
+                mergedFilesCount: document.getElementById('mergedFilesCount'),
+                totalPagesCount: document.getElementById('totalPagesCount'),
+                finalSize: document.getElementById('finalSize')
+            };
             
-            // Limpar lista anterior
-            fileList.innerHTML = '';
-            fileList.classList.remove('hidden');
-
-            // Mostrar lista de arquivos
-            fileArray.forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <span>${file.name}</span>
-                    <button onclick="removeFile(${index})">Remover</button>
-                `;
-                fileList.appendChild(fileItem);
+            // Estado da aplicação
+            const state = {
+                fileArray: [],
+                isProcessing: false,
+                mergedPdfBlob: null,
+                hasMerged: false,
+                addingMoreFiles: false
+            };
+        
+            // Configurar Sortable para arrastar e reorganizar
+            new Sortable(elements.pdfList, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onStart: function() {
+                    elements.pdfList.classList.add('sortable-drag-active');
+                },
+                onEnd: function(evt) {
+                    const item = state.fileArray[evt.oldIndex];
+                    state.fileArray.splice(evt.oldIndex, 1);
+                    state.fileArray.splice(evt.newIndex, 0, item);
+                    elements.pdfList.classList.remove('sortable-drag-active');
+                    updateListOrder();
+                    
+                    // Atualizar a interface para indicar que a ordem foi alterada manualmente
+                    elements.orderOption.value = 'manual';
+                }
             });
-
-            // Atualizar botão de merge
-            mergeButton.classList.remove('hidden');
-            mergeButton.disabled = fileArray.length < 2;
+        
+            // Funções de utilidade
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' bytes';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else return (bytes / 1048576).toFixed(2) + ' MB';
+            }
+            
+            
+            // 2. Adicionar função para determinar o tipo de documento
+function getDocumentType(fileName) {
+    const lowerName = fileName.toLowerCase();
+    
+    // Definir palavras-chave para cada tipo de documento
+    const keywords = {
+        calculo: ['calculo', 'calculos', 'custas', 'custa', 'valor', 'valores'],
+        cartaGuia: ['carta', 'guia', 'carta guia', 'cartaguia'],
+        transitoJulgado: ['transito', 'julgado', 'transito em julgado', 'transitado', 'certidão', 'certidao', 'trânsito'],
+        acordao: ['acordao', 'acórdão', 'acordão', 'acórdãos', 'acordaos'],
+        sentenca: ['sentença', 'sentenca', 'sentencas', 'sentenças', 'decisao', 'decisão', 'decisoes', 'decisões'],
+        denuncia: ['denuncia', 'denúncia', 'denuncias', 'denúncias']
+    };
+    
+    // Atribuir prioridades (menor = maior prioridade)
+    const documentPriority = {
+        calculo: 1,
+        cartaGuia: 2,
+        transitoJulgado: 3,
+        acordao: 4,
+        sentenca: 5,
+        denuncia: 6,
+        default: 99 // Para documentos que não se encaixam em nenhuma categoria
+    };
+    
+    // Verificar qual tipo de documento corresponde ao nome do arquivo
+    for (const [docType, keywordList] of Object.entries(keywords)) {
+        for (const keyword of keywordList) {
+            if (lowerName.includes(keyword)) {
+                console.log(`Arquivo ${fileName} identificado como: ${docType}`);
+                return { type: docType, priority: documentPriority[docType] };
+            }
         }
-
-        window.removeFile = function(index) {
-            fileArray.splice(index, 1);
-            handleFiles(fileArray);
-        };
-
-        mergeButton.addEventListener('click', async () => {
-            try {
-                const mergedPdf = await PDFLib.PDFDocument.create();
+    }
+    
+    console.log(`Arquivo ${fileName} não identificado, usando prioridade padrão`);
+    return { type: 'default', priority: documentPriority.default };
+}
+            
+            function showProcessing(show, message = 'Processando PDFs...') {
+                state.isProcessing = show;
+                if (show) {
+                    elements.processingText.textContent = message;
+                    elements.processingOverlay.style.display = 'flex';
+                } else {
+                    elements.processingOverlay.style.display = 'none';
+                }
+            }
+            
+            function showMessage(type, message, duration = 5000) {
+                const iconClass = {
+                    'success': 'fa-check-circle',
+                    'error': 'fa-exclamation-circle',
+                    'warning': 'fa-exclamation-triangle',
+                    'info': 'fa-info-circle'
+                };
                 
-                // Adicionar páginas de cada PDF
-                for (const file of fileArray) {
-                    const fileBuffer = await file.arrayBuffer();
-                    const pdf = await PDFLib.PDFDocument.load(fileBuffer);
-                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    pages.forEach(page => mergedPdf.addPage(page));
+                elements.statusArea.innerHTML = `
+                    <div class="status-message ${type}">
+                        <i class="fas ${iconClass[type] || 'fa-info-circle'}"></i>
+                        ${message}
+                    </div>`;
+                
+                if (duration > 0) {
+                    setTimeout(() => {
+                        elements.statusArea.innerHTML = '';
+                    }, duration);
+                }
+            }
+            
+            function resetState() {
+                elements.resultArea.classList.add('hidden');
+                elements.statusArea.innerHTML = '';
+                state.isProcessing = false;
+                state.hasMerged = false;
+                updateMergeButtonText();
+            }
+            
+            function updateMergeButtonText() {
+                elements.mergeButtonText.textContent = state.hasMerged ? 'Refazer Junção' : 'Juntar PDFs';
+            }
+            
+            function cleanupResources() {
+                if (elements.downloadLink.href && elements.downloadLink.href !== '#') {
+                    URL.revokeObjectURL(elements.downloadLink.href);
+                    elements.downloadLink.href = '#';
                 }
                 
-                // Salvar o documento mesclado
-                const mergedPdfBytes = await mergedPdf.save();
+                if (state.mergedPdfBlob) {
+                    URL.revokeObjectURL(state.mergedPdfBlob);
+                    state.mergedPdfBlob = null;
+                }
+            }
+            
+            function cleanupState() {
+                state.fileArray = [];
+                elements.pdfList.innerHTML = '';
+                elements.totalFilesCount.textContent = '0';
+                elements.pdfListCard.classList.add('hidden');
+                elements.controlPanel.classList.add('hidden');
+                elements.resultArea.classList.add('hidden');
+                elements.mergeButton.disabled = true;
+                elements.statusArea.innerHTML = '';
+                state.isProcessing = false;
+                elements.fileInfo.innerHTML = '';
+                cleanupResources();
+                elements.addBookmarks.checked = false;
+                elements.orderOption.value = 'manual';
+                state.hasMerged = false;
+                updateMergeButtonText();
                 
-                // Criar link de download
-                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-                const downloadUrl = URL.createObjectURL(blob);
+                elements.fileInfo.innerHTML = `
+                    <div class="status-message info">
+                        <i class="fas fa-info-circle"></i>
+                        Todos os arquivos foram removidos. Você pode adicionar novos PDFs agora.
+                    </div>`;
+            }
+            
+            function refreshFileList() {
+                elements.pdfList.innerHTML = '';
+                state.fileArray.forEach(file => {
+                    addPdfToList(file);
+                });
+                updateListOrder();
+                elements.totalFilesCount.textContent = state.fileArray.length;
+            }
+            
+            function updateMergeButton() {
+                elements.mergeButton.disabled = state.fileArray.length < 2;
+            }
+            
+            function updateListOrder() {
+                const inputGroups = elements.pdfList.querySelectorAll('.input-group');
+                inputGroups.forEach((item, index) => {
+                    const fileIndex = item.querySelector('.file-index');
+                    if (fileIndex) fileIndex.textContent = `${index + 1}`;
+                });
+            }
+            
+            function getOrderName(orderType) {
+    switch(orderType) {
+        case 'name': return 'nome';
+        case 'size': return 'tamanho';
+        case 'date': return 'data';
+        case 'cartaGuia': return 'Carta Guia (documentos judiciais)';
+        default: return 'ordem manual';
+    }
+}
+            
+            // Manipulação de arquivos PDF
+            async function validatePDF(file) {
+                if (file.type === 'application/pdf') return true;
+                if (file.name.toLowerCase().endsWith('.pdf')) return true;
                 
-                // Configurar download
-                downloadLink.href = downloadUrl;
-                downloadLink.download = "documentos_unidos.pdf";
-                resultArea.classList.remove('hidden');
+                try {
+                    // Verificar assinatura do arquivo (PDF começa com %PDF)
+                    const reader = new FileReader();
+                    const headerPromise = new Promise((resolve, reject) => {
+                        reader.onload = () => {
+                            const arrayBuffer = reader.result;
+                            const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                            const header = new TextDecoder('utf-8').decode(bytes);
+                            resolve(header);
+                        };
+                        reader.onerror = reject;
+                    });
+                    
+                    reader.readAsArrayBuffer(file.slice(0, 10));
+                    const header = await headerPromise;
+                    
+                    if (header.includes('%PDF')) return true;
+                    
+                    // Tentar validar com PDF.js como último recurso
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfJsDoc = await pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)}).promise;
+                    return pdfJsDoc.numPages > 0;
+                } catch (error) {
+                    console.error(`Erro na validação: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            function addPdfToList(file) {
+                const itemGroup = document.createElement('div');
+                itemGroup.className = 'input-group active mb-3';
+                itemGroup.style.borderBottom = '1px solid var(--color-gray-200)';
+                itemGroup.style.paddingBottom = '12px';
                 
-                // Limpar URL quando o usuário sair da página
-                window.addEventListener('beforeunload', () => {
-                    URL.revokeObjectURL(downloadUrl);
+                itemGroup.innerHTML = `
+                    <div class="relative w-full flex items-center">
+                        <span class="file-index absolute left-2 z-10" style="color: var(--color-primary); font-weight: bold;"></span>
+                        <input type="text" class="input-field pl-8" style="border: none; background-color: var(--color-gray-50);" value="${file.name} (${formatFileSize(file.size)})" readonly>
+                        <button class="btn p-1 absolute right-2" onclick="removePdf(this)" title="Remover arquivo">
+                            <i class="fas fa-trash-alt" style="color: var(--color-error);"></i>
+                        </button>
+                    </div>
+                `;
+                
+                elements.pdfList.appendChild(itemGroup);
+            }
+            
+            function applyOrdering() {
+    if (state.fileArray.length <= 1) return;
+    
+    const sortType = elements.orderOption.value;
+    
+    if (sortType === 'name') {
+        state.fileArray.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortType === 'size') {
+        state.fileArray.sort((a, b) => b.size - a.size);
+    } else if (sortType === 'date') {
+        state.fileArray.sort((a, b) => b.lastModified - a.lastModified);
+    } else if (sortType === 'cartaGuia') {
+        // Ordenar por tipo de documento judicial
+        state.fileArray.sort((a, b) => {
+            const typeA = getDocumentType(a.name);
+            const typeB = getDocumentType(b.name);
+            return typeA.priority - typeB.priority;
+        });
+    }
+    
+    refreshFileList();
+    showMessage('info', `Arquivos ordenados por ${getOrderName(sortType)}.`);
+}
+            
+            async function handleFiles(files) {
+                if (files.length === 0) return;
+                
+                resetState();
+                elements.resultArea.classList.add('hidden');
+                const validationPromises = Array.from(files).map(file => validatePDF(file));
+                
+                try {
+                    showProcessing(true, 'Validando arquivos...');
+                    const validationResults = await Promise.all(validationPromises);
+                    
+                    let validPdfs = 0;
+                    let invalidFiles = 0;
+                    
+                    Array.from(files).forEach((file, index) => {
+                        if (validationResults[index]) {
+                            // Evitar duplicatas verificando nome e tamanho
+                            if (!state.fileArray.some(f => f.name === file.name && f.size === file.size)) {
+                                state.fileArray.push(file);
+                                addPdfToList(file);
+                                validPdfs++;
+                            }
+                        } else {
+                            invalidFiles++;
+                        }
+                    });
+                    
+                    elements.totalFilesCount.textContent = state.fileArray.length;
+                    showProcessing(false);
+                    
+                    if (validPdfs > 0) {
+                        elements.pdfListCard.classList.remove('hidden');
+                        elements.controlPanel.classList.remove('hidden');
+                        updateMergeButton();
+                        updateListOrder();
+                        
+                        let message = `${validPdfs} ${validPdfs > 1 ? 'arquivos válidos adicionados' : 'arquivo válido adicionado'} - `;
+                        message += `<span style="color: var(--color-primary); font-weight: 500;">Para resetar insira novamente os arquivos</span>`;
+                        
+                        if (invalidFiles > 0) {
+                            message += ` (${invalidFiles} ${invalidFiles > 1 ? 'arquivos ignorados' : 'arquivo ignorado'} por não serem PDF válidos)`;
+                        }
+                        
+                        elements.fileInfo.innerHTML = `
+                            <div class="status-message success">
+                                <i class="fas fa-check-circle"></i>
+                                ${message}
+                            </div>`;
+                            
+                        if (elements.orderOption.value !== 'manual' && validPdfs > 0) {
+                            applyOrdering();
+                        }
+                    } else if (invalidFiles > 0) {
+                        elements.fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                ${invalidFiles > 1 ? 'Os arquivos selecionados não são PDFs válidos' : 'O arquivo selecionado não é um PDF válido'}
+                            </div>`;
+                    }
+                } catch (error) {
+                    console.error('Erro ao validar arquivos:', error);
+                    showProcessing(false);
+                    
+                    elements.fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Erro ao validar arquivos: ${error.message}
+                        </div>`;
+                }
+            }
+            
+            async function mergePDFs() {
+    if (state.isProcessing) return;
+    
+    if (state.fileArray.length < 2) {
+        showMessage('error', 'É necessário selecionar pelo menos 2 arquivos PDF para juntar.');
+        return;
+    }
+    
+    try {
+        state.isProcessing = true;
+        
+        const mergedPdf = await PDFLib.PDFDocument.create();
+        let totalPages = 0;
+        
+        // Primeiro contamos o total de páginas
+        for (const file of state.fileArray) {
+            const fileBuffer = await file.arrayBuffer();
+            const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+            totalPages += pdf.getPageCount();
+        }
+        
+        // Processo de junção
+        for (let i = 0; i < state.fileArray.length; i++) {
+            const file = state.fileArray[i];
+            const fileBuffer = await file.arrayBuffer();
+            const pdf = await PDFLib.PDFDocument.load(fileBuffer);
+            
+            const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+            
+            for (let j = 0; j < pages.length; j++) {
+                const page = pages[j];
+                mergedPdf.addPage(page);
+                
+                // Lógica de marcadores (bookmarks)
+                if (elements.addBookmarks.checked && j === 0) {
+                    console.log(`Marcador seria adicionado para: ${file.name}`);
+                }
+            }
+        }
+        
+        const mergedPdfBytes = await mergedPdf.save({});
+        
+        state.mergedPdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const downloadUrl = URL.createObjectURL(state.mergedPdfBlob);
+        
+        elements.downloadText.textContent = `Baixar PDF juntados (${formatFileSize(mergedPdfBytes.length)})`;
+        elements.downloadLink.href = downloadUrl;
+        elements.downloadLink.download = "documentos_unidos.pdf";
+        
+        elements.mergedFilesCount.textContent = state.fileArray.length;
+        elements.totalPagesCount.textContent = totalPages;
+        elements.finalSize.textContent = formatFileSize(mergedPdfBytes.length);
+        
+        state.hasMerged = true;
+        updateMergeButtonText();
+        elements.resultArea.classList.remove('hidden');
+        
+        // Scroll para a área de resultado
+        elements.resultArea.scrollIntoView({ behavior: 'smooth' });
+        
+        // Liberar URL após download
+        elements.downloadLink.addEventListener('click', () => {
+            setTimeout(() => {
+                URL.revokeObjectURL(downloadUrl);
+            }, 1000);
+        });
+    } catch (error) {
+        console.error('Erro ao unir PDFs:', error);
+        showMessage('error', `Erro ao unir PDFs: ${error.message || 'Ocorreu um erro inesperado'}`, 0);
+    } finally {
+        state.isProcessing = false;
+    }
+}
+            
+            // Função exposta globalmente para remover PDF
+window.removePdf = function(button) {
+    const itemGroup = button.closest('.input-group');
+    const index = Array.from(elements.pdfList.querySelectorAll('.input-group')).indexOf(itemGroup);
+    
+    if (state.isProcessing) {
+        showMessage('warning', 'Aguarde o processamento atual terminar antes de remover arquivos.');
+        return;
+    }
+    
+    state.fileArray.splice(index, 1);
+    itemGroup.remove();
+    elements.totalFilesCount.textContent = state.fileArray.length;
+    
+    if (state.fileArray.length === 0) {
+        elements.pdfListCard.classList.add('hidden');
+        elements.controlPanel.classList.add('hidden');
+    }
+    
+    updateMergeButton();
+    updateListOrder();
+};
+            
+            // ======== EVENT LISTENERS ========
+            
+            // Event Listeners para Drag and Drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                elements.dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                elements.dropZone.addEventListener(eventName, () => {
+                    elements.dropZone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                elements.dropZone.addEventListener(eventName, () => {
+                    elements.dropZone.classList.remove('drag-over');
+                });
+            });
+        
+            // O drop sempre limpa o estado primeiro (comportamento padrão esperado)
+            elements.dropZone.addEventListener('drop', (e) => {
+                state.addingMoreFiles = false;
+                cleanupState();
+                handleFiles(e.dataTransfer.files);
+            });
+        
+            // O clique na área de drop sempre limpa o estado primeiro
+            elements.dropZone.addEventListener('click', () => {
+                state.addingMoreFiles = false;
+                cleanupState();
+                elements.fileInput.click();
+            });
+            
+            // O card para adicionar mais NÃO limpa o estado
+            elements.addMoreCard.addEventListener('click', () => {
+                state.addingMoreFiles = true;
+                
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.multiple = true;
+                tempInput.accept = 'application/pdf,.pdf';
+                
+                tempInput.addEventListener('change', (e) => {
+                    handleFiles(e.target.files);
                 });
                 
-            } catch (error) {
-                console.error('Erro ao unir PDFs:', error);
-                alert('Erro ao unir PDFs: ' + error.message);
-            }
+                tempInput.click();
+            });
+            
+            // Listener normal do input file
+            elements.fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+            
+            // Aplicar ordenação AUTOMATICAMENTE quando a seleção mudar
+            elements.orderOption.addEventListener('change', () => {
+                applyOrdering();
+            });
+            
+            // Evento para botão de junção
+            elements.mergeButton.addEventListener('click', mergePDFs);
+            
+            // Limpeza de recursos quando a página for fechada
+            window.addEventListener('beforeunload', cleanupResources);
         });
     </script>
 </body>
