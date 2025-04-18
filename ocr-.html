@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR - Reconhecimento Óptico de Caracteres</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts OCR e PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"></script>
+    <!-- Sortable.js para arrastar e soltar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+</head>
+
+<style>
+
+/* Estilos para a navegação de páginas no OCR */
+.page-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 0;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.page-nav-button {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 0 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.page-nav-button:hover {
+    background-color: #f0f7ff;
+    border-color: #90c2ff;
+}
+
+.page-nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f0f0f0;
+    border-color: #e0e0e0;
+    box-shadow: none;
+}
+
+.page-nav-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #505050;
+    margin: 0 15px;
+    min-width: 100px;
+    text-align: center;
+}
+
+
+
+/* Estilos atualizados para o editor-toolbar baseado nas imagens fornecidas */
+.editor-toolbar {
+    display: flex;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Grupos de botões separados com pequenas margens */
+.toolbar-group {
+    display: flex;
+    border-right: 1px solid #dee2e6;
+    padding-right: 0.5rem;
+    margin-right: 0.5rem;
+    gap: 0.25rem;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+/* Botões de formatação */
+.editor-btn {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.editor-btn:hover {
+    background: #f1f3f5;
+    border-color: #ced4da;
+}
+
+.editor-btn.active {
+    background: #4361ee;
+    color: white;
+    border-color: #3b56d9;
+}
+
+/* Botões de cores para destacar */
+.color-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: transform 0.2s;
+    margin: 0 2px;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+}
+
+/* Select para tamanho de fonte */
+.format-select {
+    height: 34px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0 0.5rem;
+    background: white;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    min-width: 100px;
+    color: #495057;
+}
+
+/* Área de edição */
+.editor-content {
+    padding: 1rem;
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin: 0;
+    font-family: inherit;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.editor-content:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+/* Cor específica para os botões de cores de destacar como na imagem */
+.color-btn[data-color="#ffff00"] {
+    background-color: #ffff00;
+}
+
+.color-btn[data-color="#90EE90"] {
+    background-color: #90EE90;
+}
+
+.color-btn[data-color="#ADD8E6"] {
+    background-color: #ADD8E6;
+}
+
+.color-btn[data-color="#FFB6C1"] {
+    background-color: #FFB6C1;
+}
+
+
+</style>
+
+<body class="converter-ocr">
+    <div class="function-container">
+        <!-- Área de Upload -->
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-file-image"></i> OCR - Reconhecimento Óptico de Caracteres
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <center>
+                            <i class="fas fa-file-image upload-icon"></i>
+                        </center>
+                        <div class="upload-text">Selecione ou Arraste o arquivo</div>
+                        <div class="upload-subtext">JPG, JPEG, PNG ou PDF (máx. 10MB)</div>
+                        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf,application/pdf,image/jpeg,image/jpg,image/png" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Área de Controle -->
+        <div class="card control-panel" id="controlPanel" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i> Configuração de OCR
+                </h3>
+                <div id="pagesExtracted" class="mt-2" style="display: none;">
+                    Páginas Excluídas: <span id="excludedPagesList">0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="settings-panel">
+                    <div class="settings-group">
+                        <label class="settings-label" for="languageSelect">Idioma do Texto:</label>
+                        <select id="languageSelect" class="control-input">
+                            <option value="por" selected>Português</option>
+                            <option value="eng">Inglês</option>
+                            <option value="spa">Espanhol</option>
+                            <option value="fra">Francês</option>
+                            <option value="deu">Alemão</option>
+                            <option value="ita">Italiano</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="recognizeBtn" class="extract-btn" disabled style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white; width: 100%;">
+                    <i class="fas fa-magic"></i> Reconhecer Texto
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de status e mensagens -->
+        <div id="statusArea" style="display: none; margin-bottom: 20px;"></div>
+
+        <!-- Área de progresso -->
+        <div class="card hidden" id="progressContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-spinner fa-spin"></i> Processando
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="progress-container">
+                    <progress id="progressBar" class="progress-bar" value="0" max="100"></progress>
+                    <div class="progress-text" id="progressText">Reconhecendo texto...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualização de imagem única -->
+        <div class="card hidden" id="imagePreviewContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-image"></i> Imagem para OCR
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="imagePreview" style="text-align: center;">
+                    <img id="previewImage" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md);">
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualização das páginas do PDF -->
+        <div class="card preview-container hidden" id="pdfPreviewContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-file-pdf"></i> Click para Processar é possivel remover e ordenar!
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="pdfPreview" class="pdf-preview-grid"></div>
+                
+                <!-- Navegação de páginas do grid -->
+                <div class="page-navigation hidden" id="gridPagination">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de ação para texto reconhecido -->
+        <div class="card hidden" id="textActions">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-file-alt"></i> Ações do Texto
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="button-container" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <button id="copyText" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary); flex: 1;">
+                        <i class="fas fa-copy"></i> Copiar Texto
+                    </button>
+                    <button id="downloadText" class="pdf-action-button" style="flex: 1;">
+                        <i class="fas fa-download"></i> Baixar como TXT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor de texto reconhecido -->
+        <div class="card hidden" id="editorContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-edit"></i> Texto Reconhecido
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Barra de ferramentas do editor -->
+                <div class="editor-toolbar">
+                    <!-- Grupo de formatação de texto -->
+                    <div class="toolbar-group text-format">
+                        <button class="editor-btn" data-command="bold" title="Negrito">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button class="editor-btn" data-command="italic" title="Itálico">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button class="editor-btn" data-command="underline" title="Sublinhado">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <button class="editor-btn" data-command="strikethrough" title="Tachado">
+                            <i class="fas fa-strikethrough"></i>
+                        </button>
+                        <select class="format-select" id="formatSize" title="Tamanho da fonte">
+                            <option value="3">Pequeno</option>
+                            <option value="4" selected>Normal</option>
+                            <option value="5">Grande</option>
+                            <option value="6">Maior</option>
+                            <option value="7">Muito grande</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Grupo de alinhamento -->
+                    <div class="toolbar-group alignment">
+                        <button class="editor-btn" data-command="justifyLeft" title="Alinhar à Esquerda">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyCenter" title="Centralizar">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyRight" title="Alinhar à Direita">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyFull" title="Justificar">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de listas -->
+                    <div class="toolbar-group lists">
+                        <button class="editor-btn" data-command="insertUnorderedList" title="Lista com marcadores">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button class="editor-btn" data-command="insertOrderedList" title="Lista numerada">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <button class="editor-btn" data-command="indent" title="Aumentar recuo">
+                            <i class="fas fa-indent"></i>
+                        </button>
+                        <button class="editor-btn" data-command="outdent" title="Diminuir recuo">
+                            <i class="fas fa-outdent"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de destaque -->
+                    <div class="toolbar-group highlight">
+                        <button class="editor-btn" id="textHighlight" title="Destacar texto">
+                            <i class="fas fa-highlighter"></i>
+                        </button>
+                        <div class="color-picker">
+                            <button class="color-btn" data-color="#ffff00" style="background-color: #ffff00;" title="Amarelo"></button>
+                            <button class="color-btn" data-color="#90EE90" style="background-color: #90EE90;" title="Verde"></button>
+                            <button class="color-btn" data-color="#ADD8E6" style="background-color: #ADD8E6;" title="Azul"></button>
+                            <button class="color-btn" data-color="#FFB6C1" style="background-color: #FFB6C1;" title="Rosa"></button>
+                        </div>
+                        <button class="editor-btn" data-command="removeFormat" title="Remover formatação">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de edição avançada -->
+                    <div class="toolbar-group advanced">
+                        <button class="editor-btn" id="findReplaceBtn" title="Localizar e substituir">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="editor-btn" id="spellcheckBtn" title="Verificar ortografia">
+                            <i class="fas fa-spell-check"></i>
+                        </button>
+                        <button class="editor-btn" id="clearSpacesBtn" title="Limpar espaços extras">
+                            <i class="fas fa-broom"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Painel de busca e substituição fixo -->
+                <div id="findReplacePanel" class="find-replace-panel" style="display: none; position: sticky; top: 10px; z-index: 100; margin: 10px 0;">
+                    <div class="panel-header">
+                        <span>Localizar e substituir</span>
+                        <button id="closeFindReplace" class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <!-- Campo de entrada para busca -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="findText" class="control-input" placeholder="Texto a ser localizado" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
+                        </div>
+                        
+                        <!-- Campo para texto de substituição (opcional) -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="replaceText" class="control-input" placeholder="Substituir por" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
+                        </div>
+                        
+                        <!-- Botões de ação -->
+                        <div class="panel-actions">
+                            <button id="findNextBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-search"></i> Localizar próximo
+                            </button>
+                            <button id="replaceBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-exchange-alt"></i> Substituir
+                            </button>
+                            <button id="replaceAllBtn" class="btn" style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white;">
+                                <i class="fas fa-sync-alt"></i> Substituir todos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de edição -->
+                <div id="editorContent" class="editor-content" contenteditable="true"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de processamento -->
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3" id="processingText">Processando OCR...</p>
+        </div>
+    </div>
+
+    <script>
+       // Configuração do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== VARIÁVEIS GLOBAIS SIMPLIFICADAS =====
+    // Configurações
+    const PAGES_PER_VIEW = 12; // Número de páginas por visualização
+
+    // Estado da aplicação
+    let currentFile = null;
+    let pdfDocument = null;
+    let pdfPageCanvases = [];
+    let totalPdfPages = 0;
+    let excludedPages = new Set();
+    let isProcessing = false;
+    let ocrCompleted = false;
+    let currentGridPage = 0;
+    let totalGridPages = 0;
+    let selectedPages = new Set();
+    let sortableInstance = null;
+
+    // ===== FUNÇÕES UTILITÁRIAS =====
+    
+    // Seletor de elemento DOM simplificado
+    function $(selector) {
+        return document.querySelector(selector);
+    }
+    
+    // Seletor múltiplo de DOM
+    function $$(selector) {
+        return document.querySelectorAll(selector);
+    }
+    
+    // Adicionar classe
+    function addClass(selector, className) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.classList.add(className);
+    }
+    
+    // Remover classe
+    function removeClass(selector, className) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.classList.remove(className);
+    }
+    
+    // Mostrar elemento
+    function showElement(selector) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.style.display = 'block';
+    }
+    
+    // Esconder elemento
+    function hideElement(selector) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.style.display = 'none';
+    }
+    
+    // Prevenir padrões de eventos
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Ler cabeçalho de arquivo
+    async function readFileHeader(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const arrayBuffer = reader.result;
+                const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                const header = new TextDecoder('utf-8').decode(bytes);
+                resolve(header);
+            };
+            reader.onerror = reject;
+            const blob = file.slice(0, 10);
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+
+    // Validar arquivo como imagem ou PDF
+    async function validateAsImageOrPDF(file) {
+        // Verificar tipo MIME
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (validTypes.includes(file.type)) return true;
+        
+        // Verificar extensão
+        const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+        if (validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) return true;
+        
+        // Verificar assinatura para PDFs
+        try {
+            const header = await readFileHeader(file);
+            if (header.includes('%PDF')) return true;
+            
+            // Verificar assinaturas de imagens
+            const fileBytes = new Uint8Array(await file.arrayBuffer().slice(0, 8));
+            
+            // JPEG signature
+            if (fileBytes[0] === 0xFF && fileBytes[1] === 0xD8 && fileBytes[2] === 0xFF) {
+                return true;
+            }
+            
+            // PNG signature
+            if (fileBytes[0] === 0x89 && fileBytes[1] === 0x50 && 
+                fileBytes[2] === 0x4E && fileBytes[3] === 0x47) {
+                return true;
+            }
+        } catch (error) {
+            console.error("Erro ao validar arquivo:", error);
+        }
+        
+        return false;
+    }
+
+    // Mostrar mensagens de status
+    function showStatus(message, type, duration = 0) {
+        const statusArea = $('#statusArea');
+        
+        const iconType = type === 'success' ? 'check-circle' : 
+                         type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle';
+        
+        statusArea.innerHTML = `
+            <div class="status-message ${type}">
+                <i class="fas fa-${iconType}"></i>
+                ${message}
+            </div>`;
+        
+        showElement(statusArea);
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                hideElement(statusArea);
+            }, duration);
+        }
+    }
+
+    // Mostrar informações do arquivo
+    function showFileInfo(file) {
+        $('#fileInfo').innerHTML = `
+            <div class="info-block">
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Arquivo Selecionado: ${file.name}
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tipo: ${file.type || 'Arquivo validado'}
+                </div>
+            </div>`;
+    }
+
+    // Resetar a interface
+    function resetUI() {
+        // Esconder contêineres
+        addClass('#imagePreviewContainer', 'hidden');
+        addClass('#pdfPreviewContainer', 'hidden');
+        addClass('#progressContainer', 'hidden');
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        hideElement('#pagesExtracted');
+        
+        // Limpar conteúdo
+        $('#pdfPreview').innerHTML = '';
+        $('#editorContent').innerHTML = '';
+        
+        // Resetar variáveis
+        pdfPageCanvases = [];
+        excludedPages.clear();
+        ocrCompleted = false;
+        selectedPages.clear();
+        
+        // Destruir instância sortable
+        if (sortableInstance) {
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        
+        // Atualizar botão de reconhecimento
+        $('#recognizeBtn').disabled = true;
+        
+        // Limpar mensagens de status
+        hideElement('#statusArea');
+        $('#statusArea').innerHTML = '';
+    }
+
+    // Resetar completamente o estado
+    function resetAllStates() {
+        console.log("Resetando todos os estados...");
+        
+        // Resetar todas as variáveis de estado
+        currentFile = null;
+        pdfDocument = null;
+        pdfPageCanvases = [];
+        totalPdfPages = 0;
+        excludedPages.clear();
+        isProcessing = false;
+        ocrCompleted = false;
+        currentGridPage = 0;
+        totalGridPages = 0;
+        selectedPages.clear();
+        
+        // Resetar input de arquivo
+        $('#fileInput').value = '';
+        
+        // Limpar informações
+        $('#fileInfo').innerHTML = '';
+        
+        // Limpar mensagens de status
+        $('#statusArea').innerHTML = '';
+        hideElement('#statusArea');
+        
+        // Esconder painéis
+        hideElement('#controlPanel');
+        addClass('#progressContainer', 'hidden');
+        addClass('#imagePreviewContainer', 'hidden');
+        addClass('#pdfPreviewContainer', 'hidden');
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        
+        // Limpar pré-visualizações
+        $('#previewImage').src = '';
+        $('#pdfPreview').innerHTML = '';
+        
+        // Limpar editor
+        $('#editorContent').innerHTML = '';
+        
+        // Resetar botões
+        $('#recognizeBtn').disabled = true;
+        
+        // Destruir instância Sortable
+        if (sortableInstance) {
+            console.log("Destruindo instância Sortable...");
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        
+        // Terminar workers do Tesseract
+        if (Tesseract.workers && Tesseract.workers.length > 0) {
+            console.log("Terminando workers do Tesseract...");
+            Tesseract.terminate();
+        }
+        
+        console.log("Estado resetado com sucesso");
+    }
+
+    // Atualizar contador de páginas excluídas
+    function updateExcludedCounter() {
+        $('#excludedPagesList').textContent = excludedPages.size;
+        
+        if (excludedPages.size > 0) {
+            showElement('#pagesExtracted');
+        } else {
+            hideElement('#pagesExtracted');
+        }
+    }
+
+    // Atualizar controles de paginação
+    function updateGridPagination() {
+        $('#gridPageInfo').textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+        $('#prevGridPage').disabled = currentGridPage <= 0;
+        $('#nextGridPage').disabled = currentGridPage >= totalGridPages - 1;
+    }
+
+    // ===== FUNÇÕES DE PROCESSAMENTO DE ARQUIVOS =====
+
+    // Processar arquivo
+    async function handleFile(file) {
+        // Resetar completamente antes de processar novo arquivo
+        resetAllStates();
+        
+        if (!file) {
+            console.log("Nenhum arquivo fornecido");
+            return;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            showStatus('O arquivo excede o limite de 10MB.', 'error');
+            return;
+        }
+        
+        try {
+            console.log("Processando novo arquivo:", file.name);
+            
+            // Mostrar overlay de processamento
+            $('#processingOverlay').style.display = 'flex';
+            $('#processingText').textContent = 'Verificando arquivo...';
+            
+            // Verificar arquivo
+            const isValid = await validateAsImageOrPDF(file);
+            
+            if (!isValid) {
+                showStatus('Por favor, selecione uma imagem (JPG, JPEG, PNG) ou PDF válido.', 'error');
+                $('#processingOverlay').style.display = 'none';
+                return;
+            }
+            
+            currentFile = file;
+            
+            // Exibir informações
+            showFileInfo(file);
+            
+            // Determinar tipo
+            const isPDF = file.type === 'application/pdf' || 
+                         file.name.toLowerCase().endsWith('.pdf') || 
+                         (await readFileHeader(file)).includes('%PDF');
+            
+            if (isPDF) {
+                // Processamento de PDF
+                $('#processingText').textContent = 'Processando PDF...';
+                const arrayBuffer = await file.arrayBuffer();
+                await processPDF(arrayBuffer);
+            } else {
+                // Processamento de imagem
+                processImage(file);
+            }
+            
+            // Mostrar controles
+            showElement('#controlPanel');
+            $('#recognizeBtn').disabled = false;
+            
+            showStatus('Arquivo carregado com sucesso.', 'success');
+            
+        } catch (error) {
+            console.error('Erro ao processar arquivo:', error);
+            showStatus('Erro ao processar o arquivo: ' + error.message, 'error');
+        } finally {
+            // Esconder overlay
+            $('#processingOverlay').style.display = 'none';
+        }
+    }
+
+    // Processar imagem
+    function processImage(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#previewImage').src = e.target.result;
+            removeClass('#imagePreviewContainer', 'hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Processar PDF
+    async function processPDF(arrayBuffer) {
+        try {
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            
+            totalPdfPages = pdf.numPages;
+            pdfDocument = pdf;
+            
+            // Limpar visualizações
+            $('#pdfPreview').innerHTML = '';
+            pdfPageCanvases = [];
+            excludedPages.clear();
+            
+            // Calcular páginas
+            totalGridPages = Math.ceil(totalPdfPages / PAGES_PER_VIEW);
+            currentGridPage = 0;
+            
+            // Renderizar páginas
+            for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+                $('#processingText').textContent = `Processando página ${pageNum} de ${totalPdfPages}...`;
+                
+                // Obter página
+                const page = await pdf.getPage(pageNum);
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
+                
+                // Criar canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Renderizar página
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                // Armazenar canvas
+                pdfPageCanvases.push(canvas);
+            }
+            
+            // Renderizar grid
+            renderGridPage(0);
+            
+            // Mostrar container
+            removeClass('#pdfPreviewContainer', 'hidden');
+            
+            // Exibir/ocultar paginação
+            if (totalGridPages > 1) {
+                removeClass('#gridPagination', 'hidden');
+                updateGridPagination();
+            } else {
+                addClass('#gridPagination', 'hidden');
+            }
+            
+            updateExcludedCounter();
+            
+            // Inicializar drag-and-drop
+            initializeSortable();
+            
+        } catch (error) {
+            console.error('Erro ao processar PDF:', error);
+            throw new Error('Erro ao processar o PDF: ' + error.message);
+        }
+    }
+
+    // Renderizar página específica do grid
+    function renderGridPage(pageIndex) {
+        // Limpar grid atual
+        $('#pdfPreview').innerHTML = '';
+        
+        // Calcular índices
+        const startIndex = pageIndex * PAGES_PER_VIEW;
+        const endIndex = Math.min(startIndex + PAGES_PER_VIEW, totalPdfPages);
+        
+        console.log(`Renderizando grid página ${pageIndex}: páginas ${startIndex+1} até ${endIndex}`);
+        
+        // Adicionar contêineres
+        for (let i = startIndex; i < endIndex; i++) {
+            const pageNum = i + 1;
+            
+            // Pular páginas excluídas
+            if (excludedPages.has(pageNum)) continue;
+            
+            // Obter canvas
+            const canvas = pdfPageCanvases[i];
+            if (!canvas) continue;
+            
+            // Criar contêiner
+            const pagePreview = document.createElement('div');
+            pagePreview.className = 'pdf-page-preview';
+            pagePreview.dataset.page = pageNum;
+            
+            // Adicionar alça de arraste
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'drag-handle';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+            dragHandle.style.position = 'absolute';
+            dragHandle.style.top = '0.5rem';
+            dragHandle.style.left = '0.5rem';
+            dragHandle.style.width = '24px';
+            dragHandle.style.height = '24px';
+            dragHandle.style.display = 'flex';
+            dragHandle.style.alignItems = 'center';
+            dragHandle.style.justifyContent = 'center';
+            dragHandle.style.background = 'rgba(67, 97, 238, 0.1)';
+            dragHandle.style.borderRadius = '4px';
+            dragHandle.style.cursor = 'grab';
+            dragHandle.style.opacity = '0';
+            dragHandle.style.transition = 'all 0.2s ease';
+            dragHandle.style.color = 'var(--color-primary)';
+            dragHandle.style.zIndex = '10';
+            pagePreview.appendChild(dragHandle);
+            
+            // Adicionar botão de exclusão
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '0.5rem';
+            deleteBtn.style.right = '0.5rem';
+            deleteBtn.style.width = '24px';
+            deleteBtn.style.height = '24px';
+            deleteBtn.style.display = 'flex';
+            deleteBtn.style.alignItems = 'center';
+            deleteBtn.style.justifyContent = 'center';
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+            deleteBtn.style.borderRadius = '4px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.opacity = '0';
+            deleteBtn.style.transition = 'all 0.2s ease';
+            deleteBtn.style.color = '#ef4444';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.zIndex = '10';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                togglePageSelection(pageNum, pagePreview);
+            };
+            pagePreview.appendChild(deleteBtn);
+            
+            // Criar container para canvas
+            const canvasContainer = document.createElement('div');
+            canvasContainer.style.width = '100%';
+            canvasContainer.style.display = 'flex';
+            canvasContainer.style.justifyContent = 'center';
+            canvasContainer.style.overflow = 'hidden';
+            
+            // Clonar canvas para visualização
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = canvas.width;
+            displayCanvas.height = canvas.height;
+            displayCanvas.style.maxWidth = '100%';
+            displayCanvas.style.height = 'auto';
+            displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            
+            // Adicionar número da página
+            const pageNumber = document.createElement('div');
+            pageNumber.className = 'pdf-page-number';
+            pageNumber.textContent = `Página ${pageNum}`;
+            
+            // Eventos de hover
+            pagePreview.addEventListener('mouseenter', () => {
+                dragHandle.style.opacity = '1';
+                deleteBtn.style.opacity = '1';
+            });
+            
+            pagePreview.addEventListener('mouseleave', () => {
+                dragHandle.style.opacity = '0';
+                deleteBtn.style.opacity = '0';
+            });
+            
+            // Montar visualização
+            canvasContainer.appendChild(displayCanvas);
+            pagePreview.appendChild(canvasContainer);
+            pagePreview.appendChild(pageNumber);
+            
+            $('#pdfPreview').appendChild(pagePreview);
+        }
+        
+        // Atualizar paginação
+        updateGridPagination();
+        
+        // Reinicializar Sortable
+        initializeSortable();
+    }
+
+    // Alternar seleção de página
+    function togglePageSelection(pageNum, pageElement) {
+        // Adicionar efeito de fade out
+        pageElement.style.animation = 'fadeOut 0.3s ease-out';
+        
+        // Adicionar à lista de páginas excluídas
+        excludedPages.add(pageNum);
+        
+        // Remover elemento após animação
+        setTimeout(() => {
+            if (pageElement.parentNode) {
+                pageElement.parentNode.removeChild(pageElement);
+            }
+            
+            updateExcludedCounter();
+            
+            // Se uma extração foi concluída e usuário modificou seleção
+            if (ocrCompleted) {
+                addClass('#editorContainer', 'hidden');
+                addClass('#textActions', 'hidden');
+                showStatus('A seleção de páginas foi modificada. Clique em "Reconhecer Texto" para processar novamente.', 'warning', 5000);
+                ocrCompleted = false;
+            }
+        }, 300); // Duração da animação
+    }
+
+    // Inicializar o Sortable.js
+    function initializeSortable() {
+        // Destruir instância existente
+        if (sortableInstance) {
+            sortableInstance.destroy();
+        }
+        
+        // Criar nova instância
+        sortableInstance = new Sortable($('#pdfPreview'), {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            handle: '.drag-handle',
+            onStart: function(evt) {
+                document.body.style.cursor = 'grabbing';
+            },
+            onEnd: function(evt) {
+                document.body.style.cursor = 'default';
+                // Atualizar ordem
+                updatePageOrder();
+                
+                // Se extração já concluída
+                if (ocrCompleted) {
+                    addClass('#editorContainer', 'hidden');
+                    addClass('#textActions', 'hidden');
+                    showStatus('A ordem das páginas foi modificada. Clique em "Reconhecer Texto" para processar novamente.', 'warning', 5000);
+                    ocrCompleted = false;
+                }
+            }
+        });
+    }
+
+    // Atualizar ordem das páginas
+    function updatePageOrder() {
+        const pageElements = $('#pdfPreview').querySelectorAll('.pdf-page-preview');
+        const newPageOrder = Array.from(pageElements).map(element => parseInt(element.dataset.page));
+        console.log('Nova ordem de páginas:', newPageOrder);
+    }
+
+    // Processar PDF com OCR - VERSÃO CORRIGIDA
+// Processar PDF com OCR
+// Processar PDF com OCR
+async function processPDFWithOCR(language) {
+    const pagesToProcess = Array.from(
+        { length: totalPdfPages }, 
+        (_, i) => i + 1
+    ).filter(pageNum => !excludedPages.has(pageNum));
+    
+    if (pagesToProcess.length === 0) {
+        throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
+    }
+    
+    let allText = '';
+    const totalPagesToProcess = pagesToProcess.length;
+    
+    for (let i = 0; i < pagesToProcess.length; i++) {
+        const pageNum = pagesToProcess[i];
+        const progressPercent = (i / totalPagesToProcess) * 100;
+        
+        // Atualizar progresso
+        progressBar.value = progressPercent;
+        progressText.textContent = `Reconhecendo texto da página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
+        
+        // Obter o canvas da página
+        const pageCanvas = pdfPageCanvases[pageNum - 1];
+        const imageData = pageCanvas.toDataURL('image/png');
+        
+        try {
+            // Configurações avançadas do Tesseract para português
+            let tessOptions = {
+                logger: progress => {
+                    if (progress.status === 'recognizing text') {
+                        const pageProgress = progress.progress * (100 / totalPagesToProcess);
+                        const totalProgress = progressPercent + pageProgress;
+                        progressBar.value = totalProgress;
+                    }
+                }
+            };
+            
+            javascriptCopiar// Configurações específicas para português
+            if (language === 'por') {
+    tessOptions = {
+        ...tessOptions,
+        tessedit_pageseg_mode: '6', // Bloco único (ideal para documentos formatados)
+        tessedit_char_whitelist: 'A-Za-zÀ-ÖØ-öø-ÿ0-9 .,;:!?()[]{}#$%&*+-=@"\'\\/§ºª°|', // Símbolos jurídicos inclusos
+        preserve_interword_spaces: '1' // Mantém espaçamento entre palavras
+    };
+}
+            
+            // Reconhecer texto da página
+            const result = await Tesseract.recognize(
+                imageData,
+                language,
+                tessOptions
+            );
+            
+            // Adicionar texto reconhecido com separador de página
+            if (result.data.text.trim()) {
+                if (allText) {
+                    allText += '\n\n';
+                }
+                allText += `----- Página ${pageNum} -----\n\n`;
+                allText += result.data.text;
+            }
+        } catch (error) {
+            console.error(`Erro ao processar OCR da página ${pageNum}:`, error);
+            // Continuar com próximas páginas
+            allText += `\n\n----- Página ${pageNum} (erro no processamento) -----\n\n`;
+        }
+    }
+    
+    // Limpar e formatar o texto reconhecido
+    allText = cleanOCRText(allText);
+    
+    // Marcar como concluído
+    progressBar.value = 100;
+    progressText.textContent = 'Processamento concluído!';
+    
+    return allText;
+}
+
+
+// Função para formatar o texto reconhecido de forma mais limpa
+function formatRecognizedText(allText) {
+    if (!allText || allText.trim() === '') {
+        return 'Nenhum texto reconhecido.';
+    }
+
+    // Primeira limpeza geral
+    let formattedText = cleanOCRText(allText);
+
+    // Processar páginas individualmente
+    const pagePattern = /-{5} Página (\d+) -{5}/;
+    const pages = formattedText.split(pagePattern);
+    
+    if (pages[0].trim() === '') {
+        pages.shift();
+    }
+    
+    let finalText = '';
+    
+    for (let i = 0; i < pages.length; i += 2) {
+        if (i + 1 >= pages.length) break;
+        
+        const pageNum = pages[i].trim();
+        let pageContent = pages[i + 1].trim();
+        
+        // Limpeza específica por página
+        pageContent = pageContent
+            .replace(/([^.!?])\n/g, '$1 ')  // Quebras não após pontuação
+            .replace(/ +/g, ' ')            // Espaços múltiplos
+            .replace(/(\n\s*){2,}/g, '\n\n'); // Quebras múltiplas
+
+        finalText += `--- Página ${pageNum} ---\n\n${pageContent}\n\n`;
+    }
+    
+    return finalText;
+}
+
+
+// Função limpar e corrigir texto OCR
+function cleanOCRText(text) {
+    // Limpeza inicial de problemas comuns
+    text = text.replace(/\r\n/g, '\n');
+    text = text.replace(/\t/g, ' ');
+    text = text.replace(/ {2,}/g, ' ');
+    
+    // Correção global de "O" e "0" com base em regras linguísticas
+    
+    // 1. Corrigir "0" isolado que provavelmente é a letra "O" (artigo)
+    text = text.replace(/(\s|^)0(\s)/g, '$1O$2');  // "0" isolado entre espaços ou no início
+    
+    // 2. Corrigir "0" no início de frases (provavelmente letra "O")
+    text = text.replace(/([\.\?\!]\s+|^)0/g, '$1O');
+    
+    // 3. Corrigir casos onde "0" aparece antes de letras minúsculas (provavelmente artigo)
+    text = text.replace(/\b0\s+([a-záàâãéèêíïóôõöúçñ])/g, 'O $1');
+    
+    // 4. Corrigir palavras portuguesas comuns com "0" no lugar de "O"
+    text = text.replace(/açã0/g, 'ação');
+    text = text.replace(/ment0/g, 'mento');
+    text = text.replace(/çã0/g, 'ção');
+    text = text.replace(/nã0/g, 'não');
+    
+    // 5. Corrigir terminações de palavras comuns
+    text = text.replace(/([a-z])0\b/g, '$1o');    // Final de palavra
+    text = text.replace(/([a-z])0s\b/g, '$1os');  // Plural
+    text = text.replace(/([a-z])0r\b/g, '$1or');  // Verbos no infinitivo
+    text = text.replace(/([a-z])0u\b/g, '$1ou');  // Verbos no passado
+    
+    // Correções específicas para OCR de documentos jurídicos
+    const ocr_corrections = {
+        'lJustiça': 'Justiça',
+        'l\'ribunal': 'Tribunal',
+        'Trjbunal': 'Tribunal',
+        'Tribunaj': 'Tribunal',
+        'Julgarnento': 'Julgamento',
+        'juigado': 'julgado',
+        'APEEAÇÃD': 'APELAÇÃO',
+        'artjgo': 'artigo',
+        'paragrato': 'parágrafo',
+        'paragrafo': 'parágrafo',
+        'materialidaide': 'materialidade',
+        'Codigo': 'Código',
+        'Constituicao': 'Constituição',
+        'Lei no': 'Lei nº',
+        'peticao': 'petição',
+        'execucao': 'execução',
+        '\\bl\\b': '1',  // Corrigir "l" reconhecido como "1"
+        '\\bIl\\b': '11' // Corrigir "Il" reconhecido como "11"
+    };
+    
+    // Aplicar correções específicas
+    for (const [incorrect, correct] of Object.entries(ocr_corrections)) {
+        const regex = new RegExp(incorrect, 'gi');
+        text = text.replace(regex, correct);
+    }
+    
+    // Formatar números de processos
+    text = text.replace(/(\d{7})[-\s]?(\d{2})\.?(\d{4})\.?(\d)\.?(\d{2})\.?(\d{4})/g, '$1-$2.$3.$4.$5.$6');
+    
+    // Formatar artigos e referências legais
+    text = text.replace(/art\.?\s*(\d+)[,.]\s*([a-zà-ú])/gi, 'art. $1, $2');
+    text = text.replace(/lei\s+n[°º]?\s*([0-9.]+)\/([0-9]{4})/gi, 'Lei nº $1/$2');
+    text = text.replace(/decreto\s+n[°º]?\s*([0-9.]+)\/([0-9]{4})/gi, 'Decreto nº $1/$2');
+    
+    // Formatar cabeçalhos jurídicos
+    text = text.replace(/ACÓRDÃO/gi, '\n\nACÓRDÃO\n');
+    text = text.replace(/RELATÓRIO/gi, '\n\nRELATÓRIO\n');
+    text = text.replace(/VOTO/gi, '\n\nVOTO\n');
+    text = text.replace(/EMENTA/gi, '\n\nEMENTA\n');
+    text = text.replace(/DECISÃO/gi, '\n\nDECISÃO\n');
+    text = text.replace(/SENTENÇA/gi, '\n\nSENTENÇA\n');
+    
+    // Melhorar quebras de linha
+    text = text.replace(/([a-zà-ú,])(\n)([a-zà-ú])/gi, '$1 $3'); // Juntar palavras quebradas
+    text = text.replace(/([.:;])(\n+)([A-Z])/g, '$1\n\n$3');     // Quebra extra após pontos
+    
+    // Remover múltiplas quebras de linha
+    text = text.replace(/\n{3,}/g, '\n\n');
+    
+    return text.trim();
+}
+
+// Modificar a função processPDFWithOCR para incluir a limpeza
+async function processPDFWithOCR(language) {
+    // Criar lista de páginas para processar (excluindo as removidas)
+    const pagesToProcess = Array.from(
+        { length: totalPdfPages }, 
+        (_, i) => i + 1
+    ).filter(pageNum => !excludedPages.has(pageNum));
+    
+    if (pagesToProcess.length === 0) {
+        throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
+    }
+    
+    let allText = '';
+    const totalPagesToProcess = pagesToProcess.length;
+    
+    for (let i = 0; i < pagesToProcess.length; i++) {
+        const pageNum = pagesToProcess[i];
+        const progressPercent = (i / totalPagesToProcess) * 100;
+        
+        // Atualizar progresso
+        $('#progressBar').value = progressPercent;
+        $('#progressText').textContent = `Reconhecendo texto da página ${pageNum} de ${totalPdfPages}`;
+        $('#processingText').textContent = `Processando página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
+        
+        // Obter o canvas da página
+        const pageCanvas = pdfPageCanvases[pageNum - 1];
+        const imageData = pageCanvas.toDataURL('image/png');
+        
+        // Reconhecer texto com Tesseract
+        const result = await Tesseract.recognize(
+            imageData,
+            language,
+            {
+                logger: progress => {
+                    if (progress.status === 'recognizing text') {
+                        const pageProgress = progress.progress * (100 / totalPagesToProcess);
+                        const totalProgress = progressPercent + pageProgress;
+                        $('#progressBar').value = totalProgress;
+                    }
+                }
+            }
+        );
+        
+        // Aplicar limpeza ao texto reconhecido
+        let pageText = cleanOCRText(result.data.text);
+        
+        // Adicionar à saída final
+        if (pageText.trim()) {
+            if (allText) allText += '\n\n';
+            allText += `--- Página ${pageNum} ---\n\n${pageText}`;
+        }
+    }
+    
+    // Concluído
+    $('#progressBar').value = 100;
+    $('#progressText').textContent = 'Processamento concluído!';
+    
+    return allText;
+}
+
+// Modificar a função startOCR para aplicar limpeza final
+async function startOCR() {
+    if (!currentFile) {
+        showStatus('Nenhum arquivo selecionado.', 'error');
+        return;
+    }
+    
+    if (isProcessing) {
+        showStatus('Já existe um processamento em andamento.', 'warning');
+        return;
+    }
+    
+    try {
+        isProcessing = true;
+        removeClass('#progressContainer', 'hidden');
+        $('#progressBar').value = 0;
+        $('#progressText').textContent = 'Iniciando reconhecimento...';
+        
+        const language = $('#languageSelect').value;
+        let allRecognizedText = '';
+        
+        // Determinar tipo de arquivo
+        const isPDF = currentFile.type === 'application/pdf' || 
+                     currentFile.name.toLowerCase().endsWith('.pdf') || 
+                     (await readFileHeader(currentFile)).includes('%PDF');
+        
+        if (isPDF && pdfPageCanvases.length > 0) {
+            allRecognizedText = await processPDFWithOCR(language);
+        } else {
+            const imageSource = $('#previewImage').src;
+            const result = await Tesseract.recognize(imageSource, language);
+            allRecognizedText = cleanOCRText(result.data.text);
+        }
+        
+        // Formatação final do texto
+        const finalText = formatRecognizedText(allRecognizedText);
+        
+        // Exibir resultado
+        $('#editorContent').textContent = finalText;
+        removeClass('#textActions', 'hidden');
+        removeClass('#editorContainer', 'hidden');
+        ocrCompleted = true;
+        
+    } catch (error) {
+        console.error('Erro no reconhecimento de texto:', error);
+        showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
+    } finally {
+        addClass('#progressContainer', 'hidden');
+        $('#processingOverlay').style.display = 'none';
+        isProcessing = false;
+    }
+}
+
+// Atualizar a função formatRecognizedText para melhor tratamento jurídico
+function formatRecognizedText(allText) {
+    if (!allText || allText.trim() === '') return 'Nenhum texto reconhecido.';
+    
+    // 1. Tratamento especial para citações jurídicas
+    allText = allText.replace(
+        /(PROCESSUAL PENAL\..+?Data de [^\n]+)/gs,
+        '\n\n$1\n\n'
+    );
+    
+    // 2. Formatar cabeçalhos de páginas
+    allText = allText.replace(
+        /-{3,} Página (\d+) -{3,}/g,
+        '\n\n--- Página $1 ---\n\n'
+    );
+    
+    // 3. Corrigir formatação de artigos legais
+    allText = allText.replace(
+        /art\.\s*(\d+),\s*([a-z]+)/gi,
+        'art. $1, $2'
+    );
+    
+    // 4. Normalizar espaçamento em valores
+    allText = allText.replace(
+        /(\d+)\s*\(\s*([^)]+)\s*\)/g,
+        '$1 ($2)'
+    );
+    
+    // 5. Remover múltiplas quebras de linha
+    allText = allText.replace(/\n{3,}/g, '\n\n');
+    
+    return allText;
+}
+
+    // Processar imagem com OCR
+    async function processImageWithOCR(imageSource, language) {
+        // Atualizar progresso
+        $('#progressBar').value = 10;
+        $('#progressText').textContent = 'Iniciando reconhecimento...';
+        $('#processingText').textContent = 'Processando imagem...';
+        
+        // Reconhecer texto
+        const result = await Tesseract.recognize(
+            imageSource,
+            language,
+            {
+                logger: progress => {
+                    if (progress.status === 'recognizing text') {
+                        $('#progressBar').value = 10 + (progress.progress * 90);
+                        $('#progressText').textContent = `Reconhecendo texto: ${Math.round(progress.progress * 100)}%`;
+                    }
+                }
+            }
+        );
+        
+        // Concluído
+        $('#progressBar').value = 100;
+        $('#progressText').textContent = 'Reconhecimento concluído!';
+        
+        return result.data.text;
+    }
+
+    // Iniciar OCR
+   // Iniciar OCR - VERSÃO ATUALIZADA COM FORMATAÇÃO SIMPLES
+async function startOCR() {
+    if (!currentFile) {
+        showStatus('Nenhum arquivo selecionado.', 'error');
+        return;
+    }
+    
+    if (isProcessing) {
+        showStatus('Já existe um processamento em andamento.', 'warning');
+        return;
+    }
+    
+    try {
+        isProcessing = true;
+        
+        // Mostrar progresso
+        removeClass('#progressContainer', 'hidden');
+        $('#progressBar').value = 0;
+        $('#progressText').textContent = 'Iniciando reconhecimento...';
+        
+        // Esconder editor
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        
+        // Mostrar overlay
+        $('#processingOverlay').style.display = 'flex';
+        $('#processingText').textContent = 'Preparando OCR...';
+        
+        // Contar páginas a processar
+        const pagesToProcess = Array.from(
+            { length: totalPdfPages }, 
+            (_, i) => i + 1
+        ).filter(pageNum => !excludedPages.has(pageNum));
+        
+        $('#processingText').textContent = `Preparando OCR para ${pagesToProcess.length} páginas...`;
+        console.log(`Iniciando OCR para ${pagesToProcess.length} páginas`);
+        
+        const language = $('#languageSelect').value;
+        let allRecognizedText = '';
+        
+        // Verificar tipo
+        const isPDF = currentFile.type === 'application/pdf' || 
+                     currentFile.name.toLowerCase().endsWith('.pdf') || 
+                     (await readFileHeader(currentFile)).includes('%PDF');
+        
+        if (isPDF && pdfPageCanvases.length > 0) {
+            // Processar PDF
+            allRecognizedText = await processPDFWithOCR(language);
+        } else {
+            // Processar imagem
+            const imageSource = $('#previewImage').src;
+            allRecognizedText = await processImageWithOCR(imageSource, language);
+        }
+        
+        // Formatar o texto para exibição mais limpa
+        const formattedText = formatRecognizedText(allRecognizedText);
+        
+        // Exibir resultado diretamente no editor
+        $('#editorContent').textContent = formattedText;
+        
+        // Mostrar botões
+        removeClass('#textActions', 'hidden');
+        
+        // Mostrar editor
+        removeClass('#editorContainer', 'hidden');
+        
+        // Concluído
+        ocrCompleted = true;
+        
+    } catch (error) {
+        console.error('Erro no reconhecimento de texto:', error);
+        showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
+        
+        // Resetar estado
+        isProcessing = false;
+    } finally {
+        // Esconder elementos
+        addClass('#progressContainer', 'hidden');
+        $('#processingOverlay').style.display = 'none';
+        isProcessing = false;
+    }
+}
+
+    // ===== AÇÕES DE TEXTO =====
+    
+    // Configurar ações de texto (copiar/baixar)
+    function setupTextActions() {
+        // Copiar texto
+        $('#copyText').addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
+                showStatus('Nenhum texto para copiar!', 'error');
+                return;
+            }
+            
+            // Obter conteúdo HTML do editor (preserva formatação)
+            const htmlContent = $('#editorContent').innerHTML;
+            
+            // Criar elemento temporário
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // Garantir que tags sejam convertidas para quebras de linha
+            const textWithLineBreaks = tempDiv.innerHTML
+                .replace(/<br\s*\/?>/gi, '\n')  // <br> para \n
+                .replace(/<\/p><p>/gi, '\n\n')  // </p><p> para duas quebras
+                .replace(/<div>/gi, '\n')       // <div> para quebra
+                .replace(/<\/div>/gi, '')       // remover </div>
+                .replace(/&nbsp;/gi, ' ');      // &nbsp; para espaço
+            
+            // Obter texto limpo
+            const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
+            
+            // Copiar para área de transferência
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(cleanText)
+                    .then(() => {
+                        showStatus('Texto copiado para a área de transferência!', 'success', 3000);
+                    })
+                    .catch(err => {
+                        showStatus('Erro ao copiar texto: ' + err.message, 'error');
+                    });
+            } else {
+                // Fallback para navegadores sem Clipboard API
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = cleanText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+                showStatus('Texto copiado para a área de transferência!', 'success', 3000);
+            }
+        });
+        
+        // Baixar texto como TXT
+        $('#downloadText').addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
+                showStatus('Nenhum texto para baixar!', 'error');
+                return;
+            }
+            
+            // Mesmo processamento para preservar quebras
+            const htmlContent = $('#editorContent').innerHTML;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            const textWithLineBreaks = tempDiv.innerHTML
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p><p>/gi, '\n\n')
+                .replace(/<div>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/&nbsp;/gi, ' ');
+            
+            const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
+            
+            // Criar e baixar arquivo
+            const blob = new Blob([cleanText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `texto_reconhecido_${new Date().getTime()}.txt`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            
+            showStatus('Arquivo de texto baixado com sucesso!', 'success', 3000);
+        });
+    }
+
+    // ===== EDITOR DE TEXTO =====
+    
+    // Configuração dos botões de formatação
+    function setupEditor() {
+        // Botões de comando
+        const editorButtons = document.querySelectorAll('.editor-btn[data-command]');
+        editorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const command = button.getAttribute('data-command');
+                document.execCommand(command, false, null);
+                
+                // Atualizar estado
+                const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+                if (stateCommands.includes(command)) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+                
+                $('#editorContent').focus();
+            });
+        });
+        
+        // Atualizar estado dos botões
+        $('#editorContent').addEventListener('mouseup', updateButtonStates);
+        $('#editorContent').addEventListener('keyup', updateButtonStates);
+        
+        function updateButtonStates() {
+            const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+            stateCommands.forEach(command => {
+                const button = $(`.editor-btn[data-command="${command}"]`);
+                if (button) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+            });
+        }
+        
+        // Tamanho da fonte
+        const formatSize = $('#formatSize');
+        if (formatSize) {
+            formatSize.addEventListener('change', () => {
+                document.execCommand('fontSize', false, formatSize.value);
+                $('#editorContent').focus();
+            });
+        }
+        
+        // Destacar texto
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const textHighlight = $('#textHighlight');
+        
+        if (textHighlight && colorButtons.length) {
+            colorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const color = button.getAttribute('data-color');
+                    document.execCommand('hiliteColor', false, color);
+                    $('#editorContent').focus();
+                });
+            });
+        }
+        
+        // Painel de busca e substituição
+        const findReplaceBtn = $('#findReplaceBtn');
+        const findReplacePanel = $('#findReplacePanel');
+        const closeFindReplace = $('#closeFindReplace');
+        
+        if (findReplaceBtn && findReplacePanel && closeFindReplace) {
+            findReplaceBtn.addEventListener('click', () => {
+                findReplacePanel.style.display = findReplacePanel.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            closeFindReplace.addEventListener('click', () => {
+                findReplacePanel.style.display = 'none';
+            });
+            
+            // Buscar próxima ocorrência
+            $('#findNextBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                if (!searchText) {
+                    alert('Por favor, digite um texto para buscar.');
+                    $('#findText').focus();
+                    return;
+                }
+                
+                // Usar API de busca do navegador
+                const found = window.find(searchText);
+                
+                if (!found) {
+                    alert('Não foram encontradas mais ocorrências. A busca reiniciará do início.');
+                    // Reiniciar busca
+                    window.getSelection().removeAllRanges();
+                    window.find(searchText);
+                }
+            });
+            
+            // Substituir ocorrência atual
+            $('#replaceBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                if (window.getSelection().toString() === searchText) {
+                    document.execCommand('insertText', false, replacement);
+                    window.find(searchText); // Encontrar próxima
+                } else {
+                    window.find(searchText); // Buscar primeiro
+                }
+            });
+            
+            // Substituir todas as ocorrências
+            $('#replaceAllBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                // Método simples: substituir todo o conteúdo
+                let newContent = $('#editorContent').innerHTML;
+                const regex = new RegExp(searchText, 'g');
+                newContent = newContent.replace(regex, replacement);
+                $('#editorContent').innerHTML = newContent;
+                
+                alert('Substituição concluída!');
+            });
+        }
+        
+        // Verificação ortográfica
+        const spellcheckBtn = $('#spellcheckBtn');
+        if (spellcheckBtn) {
+            spellcheckBtn.addEventListener('click', () => {
+                // Ativar/desativar verificação nativa
+                $('#editorContent').spellcheck = !$('#editorContent').spellcheck;
+                
+                if ($('#editorContent').spellcheck) {
+                    spellcheckBtn.classList.add('active');
+                    alert('Verificação ortográfica ativada. Palavras incorretas serão sublinhadas em vermelho.');
+                } else {
+                    spellcheckBtn.classList.remove('active');
+                    alert('Verificação ortográfica desativada.');
+                }
+            });
+        }
+        
+        // Limpar espaços extras
+        const clearSpacesBtn = $('#clearSpacesBtn');
+        if (clearSpacesBtn) {
+            clearSpacesBtn.addEventListener('click', () => {
+                // Remover espaços extras
+                let content = $('#editorContent').innerHTML;
+                
+                // Remover múltiplos espaços
+                content = content.replace(/[ ]{2,}/g, ' ');
+                
+                // Remover espaços no início/fim das linhas
+                content = content.replace(/^[ \t]+|[ \t]+$/gm, '');
+                
+                // Remover linhas vazias consecutivas
+                content = content.replace(/\n{3,}/g, '\n\n');
+                
+                $('#editorContent').innerHTML = content;
+                alert('Espaços extras removidos com sucesso!');
+            });
+        }
+        
+        // Melhorar tratamento de colagem
+        $('#editorContent').addEventListener('paste', function(e) {
+            e.preventDefault();
+            
+            // Obter texto do clipboard
+            let text = '';
+            if (e.clipboardData || e.originalEvent.clipboardData) {
+                text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            } else if (window.clipboardData) {
+                text = window.clipboardData.getData('Text');
+            }
+            
+            // Preservar quebras de linha
+            text = text.replace(/\n/g, '<br>');
+            
+            // Inserir texto formatado
+            document.execCommand('insertHTML', false, text);
+        });
+    }
+
+    // ===== INICIALIZAÇÃO E EVENTOS =====
+    
+    // Adicionar estilos para o OCR
+    function addStylesForOCR() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        /* Estilos específicos para o editor OCR */
+        .editor-content {
+            padding: 1rem;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+            font-family: inherit;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .editor-content:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        /* Barra de ferramentas do editor - Corrigida conforme imagem */
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 0.375rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Grupos de botões com separação visual */
+        .toolbar-group {
+            display: flex;
+            border-right: 1px solid #dee2e6;
+            padding-right: 0.5rem;
+            margin-right: 0.5rem;
+            gap: 0.25rem;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+            padding-right: 0;
+            margin-right: 0;
+        }
+        
+        /* Botões de formatação com aparência consistente */
+        .editor-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            color: #495057;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .editor-btn:hover {
+            background-color: #f1f3f5;
+            border-color: #ced4da;
+        }
+        
+        .editor-btn.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-dark);
+        }
+        
+        /* Seletor de formato com estilo consistente */
+        .format-select {
+            height: 36px;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 0 0.5rem;
+            background-color: white;
+            color: #495057;
+            cursor: pointer;
+            min-width: 100px;
+        }
+        
+        /* Cores de destaque conforme a imagem */
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 4px;
+        }
+        
+        .color-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
+        }
+        
+        /* Cores específicas conforme a imagem */
+        .color-btn[data-color="#ffff00"] {
+            background-color: #ffff00;
+        }
+        
+        .color-btn[data-color="#90EE90"] {
+            background-color: #90EE90;
+        }
+        
+        .color-btn[data-color="#ADD8E6"] {
+            background-color: #ADD8E6;
+        }
+        
+        .color-btn[data-color="#FFB6C1"] {
+            background-color: #FFB6C1;
+        }
+        
+        /* Painel de busca e substituição */
+        .find-replace-panel {
+            background-color: white;
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .panel-header {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--color-gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--color-gray-50);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--color-gray-500);
+        }
+        
+        .panel-content {
+            padding: 1rem;
+        }
+        
+        /* Animação para remoção de página */
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+    
+    // Configurar eventos da aplicação
+    function setupEventListeners() {
+        // Configurar drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, () => {
+                addClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, () => {
+                removeClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        // Evento de drop de arquivo
+        $('#dropZone').addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                // Pequeno delay para garantir reset completo
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        // Evento de clique na área de drop
+        $('#dropZone').addEventListener('click', () => {
+            // Resetar antes de abrir seletor
+            resetAllStates();
+            $('#fileInput').click();
+        });
+        
+        // Evento de seleção via input
+        $('#fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Pequeno delay para garantir reset
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        // Botão de reconhecimento
+        $('#recognizeBtn').addEventListener('click', () => {
+            startOCR();
+        });
+        
+        // Paginação do grid
+        $('#prevGridPage').addEventListener('click', () => {
+            if (currentGridPage > 0) {
+                currentGridPage--;
+                renderGridPage(currentGridPage);
+            }
+        });
+        
+        $('#nextGridPage').addEventListener('click', () => {
+            if (currentGridPage < totalGridPages - 1) {
+                currentGridPage++;
+                renderGridPage(currentGridPage);
+            }
+        });
+    }
+    
+    // Inicializar a aplicação
+    function initializeApp() {
+        console.log('Inicializando aplicação OCR...');
+        
+        // Configurar editor
+        setupEditor();
+        
+        // Configurar ações de texto
+        setupTextActions();
+        
+        // Configurar eventos
+        setupEventListeners();
+        
+        // Adicionar estilos
+        addStylesForOCR();
+        
+        console.log('Aplicação OCR inicializada com sucesso!');
+    }
+    
+    // Iniciar aplicação
+    initializeApp();
+});
+
+    </script>
+</body>
+</html>
