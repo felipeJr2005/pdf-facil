@@ -10,6 +10,25 @@ $adminPassword = '1364@Fe1980';
 $sessionTimeout = 86400; // 24 horas em segundos
 $siteRoot = dirname(dirname(__FILE__));
 
+// Lista de módulos do PDFFacil
+$availableModules = [
+    'converter' => 'Converter',
+    'juntar' => 'Juntar',
+    'dividir' => 'Dividir',
+    'comprimir' => 'Comprimir',
+    'editar' => 'Editar',
+    'apagar' => 'Apagar',
+    'extrair' => 'Extrair',
+    'rotacionar' => 'Rotacionar',
+    'ocr' => 'OCR',
+    'filtro' => 'Filtro',
+    'reorganizar' => 'Reorganizar',
+    'pdf_to_docx' => 'PDF para DOCX',
+    'pdf_to_text' => 'PDF para Texto',
+    'pdf_to_excel' => 'PDF para Excel',
+    'geral' => 'Geral'
+];
+
 // Iniciar sessão
 session_start();
 
@@ -201,6 +220,17 @@ usort($pendingNotes, function($a, $b) {
 usort($completedNotes, function($a, $b) {
     return strtotime($b['date_completed'] ?? $b['date_created']) - strtotime($a['date_completed'] ?? $a['date_created']);
 });
+
+// Atualizar lista de módulos com base nas notas existentes
+foreach ($notes as $note) {
+    if (!empty($note['module']) && !isset($availableModules[$note['module']])) {
+        // Se um módulo existir nas notas mas não na lista, adicioná-lo
+        $availableModules[$note['module']] = ucfirst($note['module']);
+    }
+}
+
+// Ordenar módulos alfabeticamente
+asort($availableModules);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -611,7 +641,12 @@ usort($completedNotes, function($a, $b) {
                             
                             <div class="form-group">
                                 <label for="note_module">Módulo</label>
-                                <input type="text" id="note_module" name="note_module" required placeholder="Ex: converter, juntar, etc">
+                                <select id="note_module" name="note_module" required>
+                                    <option value="" disabled selected>Selecione um módulo</option>
+                                    <?php foreach ($availableModules as $value => $label): ?>
+                                    <option value="<?php echo htmlspecialchars($value); ?>"><?php echo htmlspecialchars($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             
                             <div class="form-group">
@@ -647,7 +682,7 @@ usort($completedNotes, function($a, $b) {
                                         <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
                                     </div>
                                     <div class="note-meta">
-                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($note['module']); ?></span>
+                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($availableModules[$note['module']] ?? $note['module']); ?></span>
                                         <span class="tag tag-<?php echo htmlspecialchars($note['priority']); ?>">
                                             <?php echo ucfirst(htmlspecialchars($note['priority'])); ?>
                                         </span>
@@ -682,7 +717,7 @@ usort($completedNotes, function($a, $b) {
                                         <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
                                     </div>
                                     <div class="note-meta">
-                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($note['module']); ?></span>
+                                        <span><strong>Módulo:</strong> <?php echo htmlspecialchars($availableModules[$note['module']] ?? $note['module']); ?></span>
                                         <span class="tag tag-concluído">Concluído</span>
                                         <span><strong>Concluído em:</strong> <?php echo htmlspecialchars($note['date_completed'] ?? 'N/A'); ?></span>
                                     </div>
