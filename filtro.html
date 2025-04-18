@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Meta tags e título -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de PDF e Imagens com Filtros</title>
+
+    <!-- Links para bibliotecas externas -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Estilos CSS -->
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls-column {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .preview-column {
+            flex: 2;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area {
+            margin-bottom: 20px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: white; /* Fundo branco */
+        }
+
+        .drop-zone:hover {
+            background-color: #f0f9ff;
+            border-color: #2563eb;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .interaction-area {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .interaction-area p {
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1e293b;
+            font-size: 1.1em;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+
+        .filter-control {
+            margin-bottom: 15px;
+        }
+
+        .filter-control label {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        .btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background-color: #10b981;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .preview-area {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            margin-bottom: 20px;
+            overflow: auto;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .download-area {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .buttons-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .effects-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .watermark-group {
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 0;
+            flex-direction: column;
+        }
+
+        .watermark-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .watermark-controls input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .watermark-controls input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .download-group {
+            justify-content: stretch;
+        }
+
+        .download-group .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .btn-apply {
+            background-color: #3b82f6;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .controls-column, .preview-column {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+
+            .preview-area {
+                min-height: 200px;
+            }
+
+            .effects-group {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .download-group {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .upload-text {
+                font-size: 14px;
+            }
+
+            .filter-control label {
+                font-size: 12px;
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+
+            .effects-group {
+                grid-template-columns: 1fr;
+            }
+
+            .interaction-area {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Estrutura principal -->
+    <div class="main-container">
+        <!-- Coluna de controles -->
+        <div class="controls-column">
+            <!-- Área de upload -->
+            <div class="upload-area">
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-file-upload upload-icon"></i>
+                    <div class="upload-text">Arraste seu PDF ou Imagem ou clique para selecionar</div>
+                    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+                </div>
+            </div>
+
+            <!-- Área de interação com filtros -->
+            <div class="interaction-area">
+                <p>Filtros de Imagem</p>
+                <!-- Controles de filtro -->
+                <div class="filter-control">
+                    <label for="brilho">Brilho: <span id="brilhoValue">100%</span></label>
+                    <input type="range" id="brilho" min="0" max="200" value="100">
+                </div>
+                <div class="filter-control">
+                    <label for="contraste">Contraste: <span id="contrasteValue">100%</span></label>
+                    <input type="range" id="contraste" min="0" max="200" value="100">
+                </div>
+                <div class="filter-control">
+                    <label for="saturacao">Saturação: <span id="saturacaoValue">100%</span></label>
+                    <input type="range" id="saturacao" min="0" max="200" value="100">
+                </div>
+                <div class="filter-control">
+                    <label for="sepia">Sépia: <span id="sepiaValue">0%</span></label>
+                    <input type="range" id="sepia" min="0" max="100" value="0">
+                </div>
+                <div class="filter-control">
+                    <label for="escalaCinza">Escala de Cinza: <span id="escalaCinzaValue">0%</span></label>
+                    <input type="range" id="escalaCinza" min="0" max="100" value="0">
+                </div>
+            </div>
+
+            <!-- Botões de efeitos rápidos -->
+            <div class="buttons-grid">
+                <div class="button-group effects-group">
+                    <button class="btn" id="resetar"><i class="fas fa-undo"></i> Resetar Filtros</button>
+                    <button class="btn" id="inverter"><i class="fas fa-adjust"></i> Inverter</button>
+                    <button class="btn" id="desfocar"><i class="fas fa-blur"></i> Desfocar</button>
+                    <button class="btn" id="aumentarSaturacao"><i class="fas fa-palette"></i> Saturar</button>
+                </div>
+
+                <!-- Grupo de marca d'água -->
+                <div class="button-group watermark-group">
+                    <button class="btn btn-secondary" id="addWatermark">
+                        <i class="fas fa-water"></i> Marca d'água
+                    </button>
+                    <div id="watermarkInput" style="display: none;">
+                        <div class="watermark-controls">
+                            <input type="text" id="watermarkText" placeholder="Digite o texto da marca d'água" value="Rascunho">
+                            <button class="btn btn-apply" id="applyWatermark">
+                                <i class="fas fa-check"></i> Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grupo de download -->
+                <div class="button-group download-group">
+                    <button class="btn btn-success" id="downloadImage">
+                        <i class="fas fa-download"></i> Baixar Imagem
+                    </button>
+                    <button class="btn btn-success" id="downloadPdf">
+                        <i class="fas fa-file-pdf"></i> Baixar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna de visualização -->
+        <div class="preview-column">
+            <div class="preview-area" id="previewArea"></div>
+        </div>
+    </div>
+
+    <!-- Scripts JavaScript -->
+    <script>
+        // Variáveis globais
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const previewArea = document.getElementById('previewArea');
+
+        const brilho = document.getElementById('brilho');
+        const contraste = document.getElementById('contraste');
+        const saturacao = document.getElementById('saturacao');
+        const sepia = document.getElementById('sepia');
+        const escalaCinza = document.getElementById('escalaCinza');
+
+        const brilhoValue = document.getElementById('brilhoValue');
+        const contrasteValue = document.getElementById('contrasteValue');
+        const saturacaoValue = document.getElementById('saturacaoValue');
+        const sepiaValue = document.getElementById('sepiaValue');
+        const escalaCinzaValue = document.getElementById('escalaCinzaValue');
+
+        let currentFileType = null;
+        let originalImages = [];
+        let currentImages = [];
+        let currentSpecialFilter = {
+            type: null,
+            value: null
+        };
+
+        // Event Listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('hover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('hover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('hover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        // Funções principais
+        async function handleFiles(files) {
+            const file = files[0];
+            currentFileType = file.type;
+            previewArea.innerHTML = '';
+            originalImages = [];
+
+            if (file.type === 'application/pdf') {
+                try {
+                    const pdfData = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
+
+                    const pagesContainer = document.createElement('div');
+                    pagesContainer.className = 'pdf-pages';
+                    pagesContainer.style.display = 'flex';
+                    pagesContainer.style.flexDirection = 'column';
+                    pagesContainer.style.gap = '20px';
+                    previewArea.appendChild(pagesContainer);
+
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'pdf-page-container';
+                        pageContainer.style.marginBottom = '20px';
+                        pageContainer.style.display = 'flex';
+                        pageContainer.style.justifyContent = 'center';
+                        pagesContainer.appendChild(pageContainer);
+
+                        const page = await pdfDoc.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 1.5 });
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        await page.render({ canvasContext: context, viewport }).promise;
+
+                        const originalDataUrl = canvas.toDataURL();
+                        originalImages.push(originalDataUrl);
+
+                        const img = document.createElement('img');
+                        img.src = originalDataUrl;
+                        img.className = 'preview-image';
+                        pageContainer.appendChild(img);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar PDF:', error);
+                    alert('Erro ao carregar o PDF. Por favor, tente novamente.');
+                }
+            } else if (file.type.startsWith('image/')) {
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page-container';
+                pageContainer.style.marginBottom = '20px';
+                pageContainer.style.display = 'flex';
+                pageContainer.style.justifyContent = 'center';
+                previewArea.appendChild(pageContainer);
+
+                const img = document.createElement('img');
+                const originalUrl = URL.createObjectURL(file);
+                originalImages.push(originalUrl);
+
+                img.src = originalUrl;
+                img.className = 'preview-image';
+                pageContainer.appendChild(img);
+            }
+
+            resetarFiltros();
+        }
+
+        function addWatermarkToCanvas(canvas, text) {
+            const ctx = canvas.getContext('2d');
+            ctx.save();
+
+            ctx.globalAlpha = 0.1;
+            const fontSize = Math.min(canvas.width, canvas.height) * 0.15;
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.fillStyle = '#FF0000';
+
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-Math.PI / 4);
+
+            const metrics = ctx.measureText(text);
+            const x = -metrics.width / 2;
+            const y = 0;
+
+            ctx.fillText(text, x, y);
+            ctx.restore();
+
+            return canvas;
+        }
+
+        // Modifique o event listener do botão inverter para melhor consistência
+document.getElementById('inverter').addEventListener('click', () => {
+    currentSpecialFilter = { type: 'invert', value: '100%' };
+    const filtros = getCurrentFilters(); // Obter filtros básicos
+    document.querySelectorAll('.preview-image').forEach(img => {
+        img.style.filter = 'invert(100%)'; // Aplica inversão visual
+    });
+});
+        document.getElementById('desfocar').addEventListener('click', () => {
+            currentSpecialFilter = { type: 'blur', value: '5px' };
+            document.querySelectorAll('.preview-image').forEach(img => {
+                img.style.filter = 'blur(5px)';
+            });
+        });
+        document.getElementById('aumentarSaturacao').addEventListener('click', () => {
+            currentSpecialFilter = { type: 'saturate', value: '200%' };
+            document.querySelectorAll('.preview-image').forEach(img => {
+                img.style.filter = 'saturate(200%)';
+            });
+        });
+
+        document.getElementById('addWatermark').addEventListener('click', () => {
+            const watermarkInput = document.getElementById('watermarkInput');
+            watermarkInput.style.display = watermarkInput.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('applyWatermark').addEventListener('click', async () => {
+            const images = document.querySelectorAll('.preview-image');
+            if (images.length === 0) {
+                alert('Por favor, selecione uma imagem primeiro.');
+                return;
+            }
+
+            const watermarkText = document.getElementById('watermarkText').value || 'Rascunho';
+            const currentFilters = getCurrentFilters();
+
+            currentImages = [];
+
+            for (let i = 0; i < images.length; i++) {
+                try {
+                    let canvas = await applyFiltersToCanvas(images[i], currentFilters);
+                    canvas = addWatermarkToCanvas(canvas, watermarkText);
+                    const newImageUrl = canvas.toDataURL('image/png');
+                    currentImages[i] = newImageUrl;
+                    images[i].src = newImageUrl;
+                } catch (error) {
+                    console.error('Erro ao aplicar marca d\'água:', error);
+                    alert('Erro ao aplicar marca d\'água. Por favor, tente novamente.');
+                }
+            }
+
+            const btn = document.getElementById('applyWatermark');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Aplicado!';
+
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                document.getElementById('watermarkInput').style.display = 'none';
+            }, 1500);
+        });
+
+        function getCurrentFilters() {
+    const filtros = {
+        brilho: brilho.value,
+        contraste: contraste.value,
+        saturacao: saturacao.value,
+        sepia: sepia.value,
+        escalaCinza: escalaCinza.value
+    };
+
+    // Para inversão, retornamos apenas os filtros básicos
+    if (currentSpecialFilter.type === 'invert') {
+        return `brightness(${filtros.brilho}%) contrast(${filtros.contraste}%) saturate(${filtros.saturacao}%) sepia(${filtros.sepia}%) grayscale(${filtros.escalaCinza}%)`;
+    }
+
+    // Para outros filtros especiais
+    if (currentSpecialFilter.type) {
+        return `${currentSpecialFilter.type}(${currentSpecialFilter.value})`;
+    }
+
+    return `brightness(${filtros.brilho}%) contrast(${filtros.contraste}%) saturate(${filtros.saturacao}%) sepia(${filtros.sepia}%) grayscale(${filtros.escalaCinza}%)`;
+}
+
+async function applyFiltersToCanvas(sourceImg, filters) {
+    try {
+        const sourceCanvas = await loadImage(sourceImg.src);
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = sourceCanvas.width;
+        finalCanvas.height = sourceCanvas.height;
+        const ctx = finalCanvas.getContext('2d');
+
+        // Primeiro aplica os filtros básicos
+        ctx.filter = filters;
+        ctx.drawImage(sourceCanvas, 0, 0);
+
+        // Se o filtro especial for inversão, aplica manualmente
+        if (currentSpecialFilter.type === 'invert') {
+            const imageData = ctx.getImageData(0, 0, finalCanvas.width, finalCanvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                // Inverte R, G, B, mantém A
+                data[i] = 255 - data[i];         // R
+                data[i + 1] = 255 - data[i + 1]; // G
+                data[i + 2] = 255 - data[i + 2]; // B
+                // data[i + 3] mantém o alpha original
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        return finalCanvas;
+    } catch (error) {
+        console.error('Erro ao processar imagem:', error);
+        throw error;
+    }
+}
+
+        function aplicarFiltros() {
+            const filtros = getCurrentFilters();
+            document.querySelectorAll('.preview-image').forEach(img => {
+                img.style.filter = filtros;
+            });
+
+            brilhoValue.textContent = `${brilho.value}%`;
+            contrasteValue.textContent = `${contraste.value}%`;
+            saturacaoValue.textContent = `${saturacao.value}%`;
+            sepiaValue.textContent = `${sepia.value}%`;
+            escalaCinzaValue.textContent = `${escalaCinza.value}%`;
+        }
+
+        function resetarFiltros() {
+            brilho.value = 100;
+            contraste.value = 100;
+            saturacao.value = 100;
+            sepia.value = 0;
+            escalaCinza.value = 0;
+
+            currentSpecialFilter = { type: null, value: null };
+
+            brilhoValue.textContent = "100%";
+            contrasteValue.textContent = "100%";
+            saturacaoValue.textContent = "100%";
+            sepiaValue.textContent = "0%";
+            escalaCinzaValue.textContent = "0%";
+
+            const watermarkInputContainer = document.getElementById('watermarkInput');
+            if (watermarkInputContainer) {
+                watermarkInputContainer.style.display = 'none';
+            }
+
+            const previewImages = document.querySelectorAll('.preview-image');
+            previewImages.forEach((img, index) => {
+                img.src = originalImages[index];
+                img.style.filter = 'none';
+            });
+
+            currentImages = [];
+        }
+
+        [brilho, contraste, saturacao, sepia, escalaCinza].forEach(control => {
+            if (control) {
+                control.addEventListener('input', aplicarFiltros);
+            }
+        });
+
+        document.getElementById('resetar').addEventListener('click', () => {
+            resetarFiltros();
+            aplicarFiltros();
+            
+            const btn = document.getElementById('resetar');
+            const originalContent = btn.innerHTML;
+            const originalColor = btn.style.backgroundColor;
+            
+            btn.innerHTML = '<i class="fas fa-check"></i> Resetado!';
+            btn.style.backgroundColor = '#10b981';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.style.backgroundColor = originalColor;
+            }, 1500);
+        });
+
+        document.getElementById('downloadImage').addEventListener('click', async () => {
+            try {
+                const images = document.querySelectorAll('.preview-image');
+                if (images.length === 0) return;
+
+                const currentFilters = getCurrentFilters();
+                const watermarkText = document.getElementById('watermarkText').value || 'Rascunho';
+
+                if (images.length === 1) {
+                    let canvas = await applyFiltersToCanvas(images[0], currentFilters);
+                    if (document.getElementById('watermarkInput').style.display !== 'none') {
+                        canvas = addWatermarkToCanvas(canvas, watermarkText);
+                    }
+                    
+                    const link = document.createElement('a');
+                    link.download = 'imagem_processada.png';
+                    
+                    canvas.toBlob((blob) => {
+                        link.href = URL.createObjectURL(blob);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+                    }, 'image/png');
+                } else {
+                    const zip = new JSZip();
+                    
+                    for (let i = 0; i < images.length; i++) {
+                        let canvas = await applyFiltersToCanvas(images[i], currentFilters);
+                        if (document.getElementById('watermarkInput').style.display !== 'none') {
+                            canvas = addWatermarkToCanvas(canvas, watermarkText);
+                        }
+                        
+                        const blob = await new Promise(resolve => {
+                            canvas.toBlob(resolve, 'image/png');
+                        });
+                        
+                        zip.file('pagina_' + (i + 1) + '.png', blob);
+                    }
+                    
+                    const zipBlob = await zip.generateAsync({type: 'blob'});
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(zipBlob);
+                    link.download = 'imagens_processadas.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }
+            } catch (error) {
+                console.error('Erro no download:', error);
+                alert('Ocorreu um erro ao processar o download. Por favor, tente novamente.');
+            }
+        });
+
+        document.getElementById('downloadPdf').addEventListener('click', async () => {
+            try {
+                const images = document.querySelectorAll('.preview-image');
+                if (images.length === 0) return;
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                const currentFilters = getCurrentFilters();
+                const watermarkText = document.getElementById('watermarkText').value || 'Rascunho';
+                
+                for (let i = 0; i < images.length; i++) {
+                    if (i > 0) pdf.addPage();
+                    
+                    let canvas = await applyFiltersToCanvas(images[i], currentFilters);
+                    if (document.getElementById('watermarkInput').style.display !== 'none') {
+                        canvas = addWatermarkToCanvas(canvas, watermarkText);
+                    }
+                    
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    
+                    const imgRatio = canvas.width / canvas.height;
+                    const pageRatio = pageWidth / pageHeight;
+
+                    let finalWidth = pageWidth;
+                    let finalHeight = pageHeight;
+                    
+                    if (imgRatio > pageRatio) {
+                        finalHeight = pageWidth / imgRatio;
+                    } else {
+                        finalWidth = pageHeight * imgRatio;
+                    }
+                    
+                    const x = (pageWidth - finalWidth) / 2;
+                    const y = (pageHeight - finalHeight) / 2;
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, '', 'FAST');
+                }
+                
+                pdf.save('documento_processado.pdf');
+            } catch (error) {
+                console.error('Erro no download do PDF:', error);
+                alert('Ocorreu um erro ao gerar o PDF. Por favor, tente novamente.');
+            }
+        });
+
+        async function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas);
+                };
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+    </script>
+
+</body>
+</html>

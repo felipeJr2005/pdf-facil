@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dividir PDF</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+   
+</head>
+<body class="converter-divider">
+    <div class="function-container">
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-cut"></i> Dividir PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <center>  
+                            <i class="fas fa-file-pdf upload-icon"></i>
+                        </center>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
+                        <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+
+        <div class="card control-panel hidden" id="controlPanel">
+            <div class="card-header">
+                <h3 class="card-title">Selecione o método de divisão</h3>
+            </div>
+            <div class="card-body">
+                <div class="method-options">
+                    <div class="method-card" id="byPageCard">
+                        <input type="radio" id="byPage" name="divisionMethod" value="page" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-copy"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Por número de páginas</div>
+                            <div class="method-description">Divide o PDF em partes com o mesmo número de páginas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="bySizeCard">
+                        <input type="radio" id="bySize" name="divisionMethod" value="size" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-weight-hanging"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Por tamanho (MB)</div>
+                            <div class="method-description">Divide o PDF em partes com tamanho máximo definido</div>
+                        </div>
+                    </div>
+                    
+                    <div class="method-card" id="byPjeCard">
+                        <input type="radio" id="byPje" name="divisionMethod" value="pje" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Otimizado para PJE (5 MB)</div>
+                            <div class="method-description">Divide o PDF em partes adequadas para o PJE</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="pageInput" class="input-group">
+                    <input type="number" id="pageValue" class="input-field" placeholder="Número de páginas por arquivo" min="1">
+                </div>
+
+                <div id="sizeInput" class="input-group">
+                    <input type="text" id="sizeValue" class="input-field" placeholder="Tamanho máximo por arquivo (MB)">
+                </div>
+
+                <button id="divideButton" class="divider-button" disabled>
+                    <i class="fas fa-cut"></i>
+                    Dividir PDF
+                </button>
+            </div>
+        </div>
+
+        <div id="statusArea"></div>
+    </div>
+    
+    <!-- JavaScript para a funcionalidade -->
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos essenciais
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const statusArea = document.getElementById('statusArea');
+            const divideButton = document.getElementById('divideButton');
+            const controlPanel = document.getElementById('controlPanel');
+            const methodCards = document.querySelectorAll('.method-card');
+            const radioInputs = document.querySelectorAll('input[type="radio"]');
+            const inputGroups = document.querySelectorAll('.input-group');
+            const pageValue = document.getElementById('pageValue');
+            const sizeValue = document.getElementById('sizeValue');
+            
+            // Constantes
+            const DEFAULT_PJE_SIZE_MB = 5;
+            
+            // Estado da aplicação
+            let selectedFile = null;
+            let isProcessing = false;
+            let pdfLoaded = false;
+            
+            // Configuração drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, preventDefault, false);
+            });
+            
+            function preventDefault(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(event => {
+                dropZone.addEventListener(event, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+            
+            // Evento de soltar arquivo na área
+            dropZone.addEventListener('drop', function(e) {
+                const file = e.dataTransfer.files[0];
+                console.log("Arquivo arrastado e solto:", file ? file.name : "nenhum");
+                resetState();
+                handleFile(file);
+            });
+            
+            // Evento de clique na área de upload
+            dropZone.addEventListener('click', function() {
+                console.log("Clique na área de drop");
+                resetState();
+                fileInput.click();
+            });
+            
+            // Evento de seleção de arquivo via input
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                console.log("Arquivo selecionado via input:", file ? file.name : "nenhum");
+                handleFile(file);
+            });
+            
+            // Cards de método de divisão
+            methodCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    console.log("Card clicado:", card.id);
+                    const radioId = card.id.replace('Card', '');
+                    const radio = document.getElementById(radioId);
+                    
+                    if (radio) {
+                        // Marcar o radio correspondente
+                        radio.checked = true;
+                        
+                        // Atualizar interface
+                        methodCards.forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        
+                        // Mostrar inputs necessários
+                        updateInputVisibility(radio.value);
+                        
+                        // Verificar se pode ativar o botão
+                        checkEnableDivideButton();
+                    }
+                });
+            });
+            
+            // Radios buttons
+            radioInputs.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log("Radio alterado:", radio.id, radio.value);
+                    updateInputVisibility(radio.value);
+                    
+                    // Atualizar UI dos cards
+                    methodCards.forEach(card => {
+                        card.classList.remove('selected');
+                    });
+                    
+                    const selectedCard = document.getElementById(`${radio.id}Card`);
+                    if (selectedCard) {
+                        selectedCard.classList.add('selected');
+                    }
+                    
+                    checkEnableDivideButton();
+                });
+            });
+            
+            // Entrada de valores
+            pageValue.addEventListener('input', checkEnableDivideButton);
+            
+            sizeValue.addEventListener('input', function() {
+                // Permitir apenas números, pontos e vírgulas
+                sizeValue.value = sizeValue.value.replace(/[^0-9.,]/g, '');
+                checkEnableDivideButton();
+            });
+            
+            // Botão de divisão
+            divideButton.addEventListener('click', function() {
+                console.log("Botão dividir clicado");
+                dividePDF();
+            });
+            
+            // Funções auxiliares
+            function updateInputVisibility(method) {
+                inputGroups.forEach(group => group.classList.remove('active'));
+                
+                if (method === 'page') {
+                    document.getElementById('pageInput').classList.add('active');
+                } else if (method === 'size') {
+                    document.getElementById('sizeInput').classList.add('active');
+                }
+                
+                console.log("Método selecionado:", method);
+            }
+            
+            function checkEnableDivideButton() {
+                const method = document.querySelector('input[name="divisionMethod"]:checked');
+                
+                // Verificar se há arquivo e método selecionados
+                if (!selectedFile || !pdfLoaded) {
+                    divideButton.disabled = true;
+                    console.log("Botão desabilitado: nenhum arquivo válido");
+                    return;
+                }
+                
+                if (!method) {
+                    divideButton.disabled = true;
+                    console.log("Botão desabilitado: nenhum método selecionado");
+                    return;
+                }
+                
+                // Verificar condições específicas do método
+                if (method.value === 'page') {
+                    const value = pageValue.value;
+                    const isValid = value && parseInt(value) >= 1;
+                    divideButton.disabled = !isValid;
+                    console.log("Método por página, valor:", value, "válido:", isValid);
+                } 
+                else if (method.value === 'size') {
+                    const rawValue = sizeValue.value;
+                    const normalized = rawValue.replace(',', '.');
+                    const isValid = !isNaN(parseFloat(normalized)) && parseFloat(normalized) > 0;
+                    divideButton.disabled = !isValid;
+                    console.log("Método por tamanho, valor:", normalized, "válido:", isValid);
+                }
+                else {
+                    // PJE ou outros métodos que não precisam de valor adicional
+                    divideButton.disabled = false;
+                    console.log("Método PJE, botão habilitado");
+                }
+                
+                console.log("Estado final do botão:", divideButton.disabled ? "desabilitado" : "habilitado");
+            }
+            
+            function showError(message) {
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        ${message}
+                    </div>`;
+            }
+            
+            function showProcessing(show, message = 'Processando PDF, aguarde...') {
+                if (show) {
+                    statusArea.innerHTML = `
+                        <div class="status-message success">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            ${message}
+                        </div>`;
+                } else {
+                    statusArea.innerHTML = '';
+                }
+            }
+            
+            function resetState() {
+                // Limpar estado
+                selectedFile = null;
+                isProcessing = false;
+                pdfLoaded = false;
+                
+                // Resetar UI
+                fileInfo.innerHTML = '';
+                statusArea.innerHTML = '';
+                controlPanel.classList.add('hidden');
+                
+                // Desmarcar os radio buttons
+                radioInputs.forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                // Remover seleção dos cards
+                methodCards.forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Limpar inputs
+                pageValue.value = '';
+                sizeValue.value = '';
+                
+                // Esconder grupos de input
+                inputGroups.forEach(group => group.classList.remove('active'));
+                
+                // Desabilitar botão
+                divideButton.disabled = true;
+                
+                console.log("Estado da aplicação resetado");
+            }
+            
+            // Funções principais
+            async function handleFile(file) {
+                if (!file) {
+                    return;
+                }
+                
+                if (isProcessing) {
+                    showError('Aguarde o processo atual terminar');
+                    return;
+                }
+                
+                // Verificar se é um PDF por tipo MIME ou extensão
+                const isPDF = file.type === 'application/pdf' || 
+                              file.name.toLowerCase().endsWith('.pdf');
+                
+                if (!isPDF) {
+                    try {
+                        showProcessing(true, 'Analisando arquivo...');
+                        // Verificar assinatura do arquivo (PDF começa com %PDF)
+                        const fileHeader = await readFileHeader(file);
+                        const isPDFContent = fileHeader.includes('%PDF');
+                        
+                        if (!isPDFContent) {
+                            showError('O arquivo não parece ser um PDF válido. Verifique o formato.');
+                            return;
+                        }
+                    } catch (error) {
+                        showError('Erro ao analisar o arquivo: ' + error.message);
+                        return;
+                    } finally {
+                        showProcessing(false);
+                    }
+                }
+                
+                try {
+                    showProcessing(true, 'Verificando PDF...');
+                    
+                    // Verificar se o PDF é válido e obter o número de páginas
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const numPages = pdfDoc.getPageCount();
+                    
+                    selectedFile = file;
+                    pdfLoaded = true;
+                    
+                    // Exibir informações do arquivo
+                    fileInfo.innerHTML = `
+                        <div class="info-block">
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Arquivo Selecionado: ${file.name}
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Quantidade de páginas: ${numPages}
+                            </div>
+                        </div>`;
+                    
+                    // Mostrar painel de controle
+                    controlPanel.classList.remove('hidden');
+                    
+                    checkEnableDivideButton();
+                    showProcessing(false);
+                } catch (error) {
+                    showProcessing(false);
+                    showError('O arquivo PDF selecionado está corrompido ou é inválido: ' + error.message);
+                }
+            }
+            
+            async function readFileHeader(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const arrayBuffer = reader.result;
+                        const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                        const header = new TextDecoder('utf-8').decode(bytes);
+                        resolve(header);
+                    };
+                    reader.onerror = reject;
+                    const blob = file.slice(0, 10);
+                    reader.readAsArrayBuffer(blob);
+                });
+            }
+            
+            async function createNewPart() {
+                return await PDFLib.PDFDocument.create();
+            }
+            
+            async function getDocumentSize(pdfDoc) {
+                const pdfBytes = await pdfDoc.save();
+                return pdfBytes.length / (1024 * 1024);
+            }
+            
+            async function dividePDF() {
+                console.log("Iniciando função dividePDF");
+                
+                if (!selectedFile || !pdfLoaded) {
+                    showError('Nenhum arquivo válido selecionado.');
+                    return;
+                }
+                
+                const method = document.querySelector('input[name="divisionMethod"]:checked');
+                if (!method) {
+                    showError('Selecione um método de divisão');
+                    return;
+                }
+                
+                try {
+                    isProcessing = true;
+                    showProcessing(true, 'Processando PDF, aguarde...');
+                    
+                    let maxSize;
+                    
+                    if (method.value === 'pje') {
+                        maxSize = DEFAULT_PJE_SIZE_MB;
+                        console.log("Método PJE: tamanho máximo", maxSize, "MB");
+                    } else if (method.value === 'size') {
+                        const rawValue = sizeValue.value;
+                        const normalized = rawValue.replace(',', '.');
+                        maxSize = parseFloat(normalized);
+                        
+                        if (isNaN(maxSize) || maxSize <= 0) {
+                            showError('Insira um tamanho válido');
+                            isProcessing = false;
+                            return;
+                        }
+                        
+                        console.log("Método tamanho: máximo", maxSize, "MB");
+                    } else {
+                        const value = parseInt(pageValue.value);
+                        console.log("Método páginas:", value, "por arquivo");
+                    }
+                    
+                    // Carregar o PDF
+                    const pdfBytes = await selectedFile.arrayBuffer();
+                    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                    const numPages = pdfDoc.getPageCount();
+                    const pdfDocs = [];
+                    
+                    if (method.value === 'page') {
+                        const pageParts = parseInt(pageValue.value);
+                        
+                        if (!pageParts || pageParts < 1) {
+                            showError('Insira um número válido de páginas');
+                            isProcessing = false;
+                            return;
+                        }
+                        
+                        let processedPages = 0;
+                        
+                        for (let i = 0; i < numPages; i += pageParts) {
+                            const newDoc = await createNewPart();
+                            const end = Math.min(i + pageParts, numPages);
+                            const pagesToCopy = Array.from({ length: end - i }, (_, j) => i + j);
+                            
+                            // Atualizar progresso
+                            showProcessing(true, `Processando páginas ${i+1} até ${end} de ${numPages}...`);
+                            
+                            const pages = await newDoc.copyPages(pdfDoc, pagesToCopy);
+                            pages.forEach(page => newDoc.addPage(page));
+                            const newPdfBytes = await newDoc.save();
+                            pdfDocs.push(newPdfBytes);
+                            
+                            processedPages += pagesToCopy.length;
+                            const progress = Math.round((processedPages / numPages) * 100);
+                            showProcessing(true, `Processando PDF - ${progress}%`);
+                        }
+                    } else {
+                        // Divisão por tamanho ou PJE
+                        let currentDoc = await createNewPart();
+                        let currentSize = 0;
+                        let processedPages = 0;
+                        
+                        for (let i = 0; i < numPages; i++) {
+                            processedPages++;
+                            const progress = Math.round((processedPages / numPages) * 100);
+                            showProcessing(true, `Processando página ${i+1} de ${numPages} - ${progress}%`);
+                            
+                            // Verificar tamanho da página atual
+                            const tempDoc = await createNewPart();
+                            const [page] = await tempDoc.copyPages(pdfDoc, [i]);
+                            tempDoc.addPage(page);
+                            const pageSize = await getDocumentSize(tempDoc);
+                            
+                            // Se adicionar ultrapassar o tamanho máximo, criar um novo documento
+                            if (currentSize + pageSize > maxSize) {
+                                const currentPdfBytes = await currentDoc.save();
+                                pdfDocs.push(currentPdfBytes);
+                                currentDoc = await createNewPart();
+                                currentSize = 0;
+                            }
+                            
+                            // Adicionar página ao documento atual
+                            const [newPage] = await currentDoc.copyPages(pdfDoc, [i]);
+                            currentDoc.addPage(newPage);
+                            currentSize += pageSize;
+                        }
+                        
+                        // Salvar o último documento se tiver páginas
+                        if (currentDoc.getPageCount() > 0) {
+                            const currentPdfBytes = await currentDoc.save();
+                            pdfDocs.push(currentPdfBytes);
+                        }
+                    }
+                    
+                    // Atualizar interface com links para download
+                    statusArea.innerHTML = `
+                        <div class="status-message success">
+                            <i class="fas fa-check-circle"></i>
+                            Divisão concluída! Baixe as partes:
+                        </div>`;
+                    
+                    // Criar links de download para cada parte
+                    pdfDocs.forEach((pdf, index) => {
+                        const size = (pdf.length / (1024 * 1024)).toFixed(2);
+                        const downloadLink = document.createElement('a');
+                        
+                        // Criar blob e URL para download
+                        const blob = new Blob([pdf], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        downloadLink.href = url;
+                        downloadLink.download = `parte_${index + 1}.pdf`;
+                        downloadLink.className = 'download-link';
+                        downloadLink.innerHTML = `<i class="fas fa-download"></i> Parte ${index + 1} (${size} MB)`;
+                        
+                        // Adicionar ao DOM
+                        statusArea.appendChild(downloadLink);
+                        
+                        // Liberar memória após download
+                        downloadLink.addEventListener('click', () => {
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        }, { once: true });
+                    });
+                    
+                    console.log("Divisão concluída. Partes geradas:", pdfDocs.length);
+                    
+                } catch (error) {
+                    console.error("Erro na divisão do PDF:", error);
+                    showError(`Erro ao processar o PDF: ${error.message}`);
+                } finally {
+                    isProcessing = false;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

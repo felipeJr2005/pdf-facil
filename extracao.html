@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrair Páginas PDF</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    
+    <!-- Estilos adicionais para melhorar a visualização -->
+    <style>
+        .pdf-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            padding: 20px;
+        }
+        
+        .pdf-page-preview {
+            min-height: 380px; /* Aumentado de 350px para 380px */
+            padding: 15px;
+            border: 2px solid var(--color-gray-200);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer; /* Adicionado cursor pointer aqui em vez de inline */
+            position: relative;
+        }
+        
+        .pdf-page-preview:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .pdf-page-preview.excluded {
+            border: 2px solid var(--color-extract);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .pdf-page-number {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 12px;
+        }
+        
+        /* Estilos de paginação para o grid de páginas */
+        .page-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button:hover {
+            background-color: #f0f7ff;
+            border-color: #90c2ff;
+        }
+
+        .page-nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+            border-color: #e0e0e0;
+            box-shadow: none;
+        }
+
+        .page-nav-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            margin: 0 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .page-zoom-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            z-index: 10;
+            opacity: 0;
+        }
+
+        .pdf-page-preview:hover .page-zoom-icon {
+            opacity: 1;
+        }
+
+        .page-zoom-icon:hover {
+            transform: scale(1.1);
+        }
+
+        #zoomModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        #zoomModalContent {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: zoomModalAppear 0.3s ease-out;
+        }
+
+        .zoom-page-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: 600;
+        }
+
+        #closeZoomModal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: background 0.2s ease;
+        }
+
+        #closeZoomModal:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        @keyframes zoomModalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+        
+<body class="converter-extract">
+    <div class="function-container">
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-file-export"></i> Extrair Páginas PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <center>  
+                            <i class="fas fa-file-pdf upload-icon"></i>
+                        </center>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
+                        <input type="file" id="fileInput" accept=".pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+
+            <div id="zoomModal">
+                <div id="zoomModalContent">
+                    <button id="closeZoomModal" aria-label="Fechar zoom">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de controles de extração -->
+        <div class="card control-panel" id="controlPanel" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i> Configuração de Extração
+                </h3>
+                <div id="pagesExtracted" class="mt-2" style="display: none;">
+                    Páginas Extraídas: <span id="selectedPagesList"></span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="settings-panel">
+                    <div class="settings-group">
+                        <label class="settings-label">Intervalo específico:</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" id="rangeStart" min="1" placeholder="Página inicial" class="p-2" style="width: 150px;">
+                            <span>até</span>
+                            <input type="number" id="rangeEnd" min="1" placeholder="Página final" class="p-2" style="width: 150px;">
+                            <button id="applyRangeBtn" class="btn" style="background-color: var(--color-extract-light); color: var(--color-extract);">
+                                <i class="fas fa-check"></i> Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="extractBtn" class="extract-btn" disabled style="background: linear-gradient(to right, var(--color-extract), var(--color-extract-dark)); color: white; width: 100%;">
+                    <i class="fas fa-file-export"></i> Extrair Páginas Selecionadas
+                </button>
+            </div>
+        </div>
+        
+        <!-- Área de status e download (posicionada entre controles e preview) -->
+        <div id="statusArea" style="display: none; margin-bottom: 20px;"></div>
+        
+        <!-- Visualização das páginas -->
+        <div class="card preview-container" id="previewContainer" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-eye"></i> Selecione as páginas para extrair
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="pdfPreviewGrid" class="pdf-preview-grid"></div>
+                
+                <!-- Navegação de páginas do grid -->
+                <div class="page-navigation" id="gridPagination" style="display: none;">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <!-- Botão de extração inferior -->
+                <button id="extractBtnBottom" class="pdf-action-button" disabled>
+                    <i class="fas fa-file-export"></i> Extrair Páginas Selecionadas
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3" id="processingText">Processando PDF...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const previewContainer = document.getElementById('previewContainer');
+            const controlPanel = document.getElementById('controlPanel');
+            const pdfPreviewGrid = document.getElementById('pdfPreviewGrid');
+            const extractBtn = document.getElementById('extractBtn');
+            const extractBtnBottom = document.getElementById('extractBtnBottom');
+            const statusArea = document.getElementById('statusArea');
+            const processingOverlay = document.getElementById('processingOverlay');
+            const rangeStart = document.getElementById('rangeStart');
+            const rangeEnd = document.getElementById('rangeEnd');
+            const applyRangeBtn = document.getElementById('applyRangeBtn');
+            const pagesExtracted = document.getElementById('pagesExtracted');
+            const selectedPagesList = document.getElementById('selectedPagesList');
+            const gridPagination = document.getElementById('gridPagination');
+            const prevGridPage = document.getElementById('prevGridPage');
+            const nextGridPage = document.getElementById('nextGridPage');
+            const gridPageInfo = document.getElementById('gridPageInfo');
+            const processingText = document.getElementById('processingText');
+            const zoomModal = document.getElementById('zoomModal');
+            const zoomModalContent = document.getElementById('zoomModalContent');
+            const closeZoomModal = document.getElementById('closeZoomModal');
+            
+            // Variáveis globais
+            let selectedFile = null;
+            let pdfDocument = null;
+            let totalPages = 0;
+            let selectedPages = new Set();
+            let extractionCompleted = false; // Flag para rastrear se uma extração foi concluída
+            let pageContainers = []; // Array para armazenar contêineres de todas as páginas
+            
+            // Variáveis para paginação
+            const PAGES_PER_VIEW = 45; // Número de páginas exibidas por vez
+            let currentGridPage = 0;
+            let totalGridPages = 0;
+            
+            // Log inicial para debug
+            console.log("Inicializando extração de páginas de PDF");
+            
+            // Função para reset completo do estado da aplicação
+            function resetState() {
+                console.log("Resetando estado da aplicação");
+                
+                // Limpar variáveis globais
+                selectedFile = null;
+                pdfDocument = null;
+                totalPages = 0;
+                selectedPages.clear();
+                extractionCompleted = false;
+                
+                // Limpar visualização
+                pdfPreviewGrid.innerHTML = '';
+                pageContainers = [];
+                currentGridPage = 0;
+                totalGridPages = 0;
+                
+                // Esconder elementos
+                previewContainer.style.display = 'none';
+                controlPanel.style.display = 'none';
+                statusArea.style.display = 'none';
+                gridPagination.style.display = 'none';
+                
+                // Limpar conteúdo
+                statusArea.innerHTML = '';
+                fileInfo.innerHTML = '';
+                
+                // Limpar input file para permitir reselecionar o mesmo arquivo
+                fileInput.value = '';
+                
+                // Liberar recursos de memória
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    canvas.width = 0;
+                    canvas.height = 0;
+                });
+                
+                // Revogar qualquer URL de objeto
+                document.querySelectorAll('a').forEach(link => {
+                    if (link.href && link.href.startsWith('blob:')) {
+                        URL.revokeObjectURL(link.href);
+                    }
+                });
+                
+                console.log("Estado resetado com sucesso");
+            }
+            
+            // Verificar estado inicial dos botões
+            console.log("Estado inicial dos botões:");
+            console.log("extractBtn disabled:", extractBtn.disabled);
+            console.log("extractBtnBottom disabled:", extractBtnBottom.disabled);
+            
+            // Event Listeners para a área de upload
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                console.log("Arquivo solto na área de drop");
+                const file = e.dataTransfer.files[0];
+                resetState(); // Reset ao soltar um novo arquivo
+                handleFile(file);
+            });
+            
+            dropZone.addEventListener('click', () => {
+                console.log("Clique na área de drop");
+                // Reset ao clicar para selecionar um novo arquivo
+                resetState();
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                console.log("Arquivo selecionado pelo input");
+                const file = e.target.files[0];
+                handleFile(file);
+            });
+            
+            // Aplicar intervalo
+            applyRangeBtn.addEventListener('click', () => {
+                console.log("Botão aplicar intervalo clicado");
+                applyRange();
+            });
+            
+            // Botão de extração (superior)
+            extractBtn.addEventListener('click', async () => {
+                console.log("Botão de extração superior clicado");
+                await extractSelectedPages();
+            });
+            
+            // Botão de extração (inferior)
+            extractBtnBottom.addEventListener('click', async () => {
+                console.log("Botão de extração inferior clicado");
+                await extractSelectedPages();
+            });
+            
+            // Navegação do grid de páginas
+            prevGridPage.addEventListener('click', () => {
+                console.log("Navegação: página anterior");
+                if (currentGridPage > 0) {
+                    currentGridPage--;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            nextGridPage.addEventListener('click', () => {
+                console.log("Navegação: próxima página");
+                if (currentGridPage < totalGridPages - 1) {
+                    currentGridPage++;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            // Ler os primeiros bytes de um arquivo - FUNÇÃO NOVA
+            async function readFileHeader(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const arrayBuffer = reader.result;
+                        const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                        const header = new TextDecoder('utf-8').decode(bytes);
+                        resolve(header);
+                    };
+                    reader.onerror = reject;
+                    const blob = file.slice(0, 10);
+                    reader.readAsArrayBuffer(blob);
+                });
+            }
+            
+            // Função para validar se um arquivo é PDF mesmo sem a extensão .pdf - FUNÇÃO MELHORADA
+            async function validateAsPDF(file) {
+                try {
+                    console.log("Tentando validar arquivo como PDF:", file.name);
+                    
+                    // Primeiro, tentar verificar os primeiros bytes para identificar a assinatura PDF (%PDF)
+                    const headerBytes = await readFileHeader(file);
+                    console.log("Cabeçalho do arquivo:", headerBytes);
+                    if (headerBytes.includes('%PDF')) {
+                        console.log("Arquivo identificado como PDF pela assinatura de cabeçalho");
+                        return true;
+                    }
+                    
+                    // Se a verificação de assinatura falhar, tentar abrir com PDF.js
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfJsDoc = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                    
+                    console.log("PDF validado com PDF.js, número de páginas:", pdfJsDoc.numPages);
+                    return pdfJsDoc.numPages > 0;
+                } catch (error) {
+                    console.error("Erro na validação do PDF:", error);
+                    return false;
+                }
+            }
+            
+            // Função principal para lidar com o arquivo selecionado - FUNÇÃO MELHORADA
+            async function handleFile(file) {
+                if (!file) {
+                    console.log("Nenhum arquivo fornecido");
+                    return;
+                }
+                
+                console.log("Processando arquivo:", file.name, "Tipo:", file.type);
+                
+                // Mostrar overlay de processamento
+                processingOverlay.style.display = 'flex';
+                processingText.textContent = 'Verificando arquivo...';
+                
+                try {
+                    // Primeiro tenta verificar por tipo MIME ou extensão
+                    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    
+                    if (isPDF) {
+                        console.log("Arquivo identificado como PDF pelo tipo MIME ou extensão");
+                        processValidFile(file);
+                        return;
+                    }
+                    
+                    // Se não for identificado como PDF pelo tipo MIME ou extensão,
+                    // vamos tentar verificar o conteúdo do arquivo
+                    console.log("Verificando assinatura do arquivo e conteúdo");
+                    const isValidPDF = await validateAsPDF(file);
+                    
+                    if (isValidPDF) {
+                        console.log("Arquivo validado como PDF pelo conteúdo");
+                        processValidFile(file);
+                    } else {
+                        console.log("Arquivo não é um PDF válido");
+                        processingOverlay.style.display = 'none';
+                        fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Por favor, selecione um arquivo PDF válido
+                            </div>`;
+                    }
+                } catch (error) {
+                    console.error("Erro ao processar arquivo:", error);
+                    processingOverlay.style.display = 'none';
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Erro ao validar arquivo: ${error.message}
+                        </div>`;
+                }
+            }
+            
+            // Função para adicionar zoom nas páginas
+            function addZoomToPage(pageContainer, pageNum) {
+                const zoomIcon = document.createElement('div');
+                zoomIcon.className = 'page-zoom-icon';
+                zoomIcon.innerHTML = '<i class="fas fa-search-plus"></i>';
+                zoomIcon.setAttribute('aria-label', `Ampliar página ${pageNum}`);
+                
+                zoomIcon.addEventListener('click', async (event) => {
+                    event.stopPropagation(); // Prevenir eventos duplicados
+                    console.log(`Zoom solicitado para página ${pageNum}`);
+                    
+                    try {
+                        // Indicador de carregamento
+                        zoomIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        
+                        const fileURL = URL.createObjectURL(selectedFile);
+                        const loadingTask = pdfjsLib.getDocument(fileURL);
+                        const pdf = await loadingTask.promise;
+                        const page = await pdf.getPage(pageNum);
+                        
+                        // Escalas dinâmicas
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const maxWidth = window.innerWidth * 0.9;
+                        const maxHeight = window.innerHeight * 0.9;
+                        const scale = Math.min(
+                            maxWidth / viewport.width, 
+                            maxHeight / viewport.height
+                        ) * 1.5; // Aumentar um pouco mais
+                        
+                        const scaledViewport = page.getViewport({ scale });
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = scaledViewport.width;
+                        canvas.height = scaledViewport.height;
+                        
+                        await page.render({
+                            canvasContext: context,
+                            viewport: scaledViewport
+                        }).promise;
+                        
+                        // Limpar conteúdo anterior
+                        zoomModalContent.innerHTML = '';
+                        
+                        // Botão de fechar
+                        const closeButton = document.createElement('button');
+                        closeButton.id = 'closeZoomModal';
+                        closeButton.innerHTML = '<i class="fas fa-times"></i>';
+                        closeButton.setAttribute('aria-label', 'Fechar zoom');
+                        closeButton.addEventListener('click', () => {
+                            zoomModal.style.display = 'none';
+                        });
+                        
+                        // Informação da página
+                        const pageInfo = document.createElement('div');
+                        pageInfo.className = 'zoom-page-info';
+                        pageInfo.textContent = `Página ${pageNum} de ${pdf.numPages}`;
+                        
+                        // Adicionar elementos
+                        zoomModalContent.appendChild(closeButton);
+                        zoomModalContent.appendChild(canvas);
+                        zoomModalContent.appendChild(pageInfo);
+                        
+                        // Mostrar modal
+                        zoomModal.style.display = 'flex';
+                        
+                        // Liberar URL
+                        URL.revokeObjectURL(fileURL);
+                        
+                        // Restaurar ícone original
+                        zoomIcon.innerHTML = '<i class="fas fa-search-plus"></i>';
+                        
+                        console.log(`Zoom renderizado para página ${pageNum}`);
+                    } catch (error) {
+                        console.error('Erro ao ampliar página:', error);
+                        zoomIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                    }
+                });
+                
+                pageContainer.appendChild(zoomIcon);
+            }
+            
+            // Fechar modal ao clicar fora do conteúdo
+            zoomModal.addEventListener('click', (event) => {
+                if (event.target === zoomModal) {
+                    zoomModal.style.display = 'none';
+                }
+            });
+            
+            // Adicionar suporte a tecla ESC para fechar
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && zoomModal.style.display === 'flex') {
+                    zoomModal.style.display = 'none';
+                }
+            });
+            
+            // Função para processar um arquivo PDF válido
+            async function processValidFile(file) {
+                try {
+                    console.log("Processando arquivo válido:", file.name);
+                    
+                    // Mostrar overlay de processamento
+                    processingOverlay.style.display = 'flex';
+                    processingText.textContent = 'Processando PDF...';
+                    
+                    // Resetar visualização anterior e paginação
+                    pdfPreviewGrid.innerHTML = '';
+                    pageContainers = [];
+                    currentGridPage = 0;
+                    selectedPages.clear(); // Limpar seleção anterior
+                    
+                    // Verificar se o PDF é válido e obter o número de páginas
+                    // Usando PDFLib para processar o arquivo
+                    const arrayBuffer = await file.arrayBuffer();
+                    let pdfDoc = null;
+                    
+                    try {
+                        console.log("Tentando carregar PDF com PDFLib");
+                        pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                        totalPages = pdfDoc.getPageCount();
+                        
+                        if (totalPages === 0) {
+                            throw new Error('O PDF não contém páginas.');
+                        }
+                        
+                        console.log("PDF carregado com PDFLib, total de páginas:", totalPages);
+                    } catch (pdfLibError) {
+                        console.error('Erro ao carregar com PDFLib:', pdfLibError);
+                        // Tentar método alternativo com PDF.js
+                        console.log("Tentando método alternativo com PDF.js");
+                        const fileURL = URL.createObjectURL(file);
+                        try {
+                            const pdfJsDoc = await pdfjsLib.getDocument({url: fileURL}).promise;
+                            totalPages = pdfJsDoc.numPages;
+                            URL.revokeObjectURL(fileURL);
+                            console.log("PDF carregado com PDF.js, total de páginas:", totalPages);
+                        } catch (pdfJsError) {
+                            console.error('Erro ao carregar com PDF.js:', pdfJsError);
+                            throw new Error('O PDF não pôde ser processado.');
+                        }
+                    }
+                    
+                    selectedFile = file;
+                    pdfDocument = pdfDoc;
+                    
+                    // Calcular total de páginas do grid de visualização
+                    totalGridPages = Math.ceil(totalPages / PAGES_PER_VIEW);
+                    console.log(`PDF tem ${totalPages} páginas. Exibindo em ${totalGridPages} páginas de grid.`);
+                    
+                    // Exibir informações do arquivo
+                    showFileInfo(file, totalPages);
+                    
+                    // Resetar flag de extração
+                    extractionCompleted = false;
+                    
+                    // Mostrar o painel de controle primeiro
+                    controlPanel.style.display = 'block';
+                    
+                    // Inicializar elementos de intervalo
+                    rangeStart.max = totalPages;
+                    rangeEnd.max = totalPages;
+                    rangeStart.value = 1;
+                    rangeEnd.value = totalPages;
+                    
+                    // Limpar área de status caso exista
+                    statusArea.style.display = 'none';
+                    statusArea.innerHTML = '';
+                    
+                    // Carregar visualização das páginas
+                    await loadPDFPreview(file);
+                    
+                    // Exibir o contêiner de visualização depois de carregar as previews
+                    previewContainer.style.display = 'block';
+                    
+                    // Exibir/ocultar paginação conforme necessário
+                    if (totalGridPages > 1) {
+                        // Garantir que a paginação esteja visível e com os botões configurados corretamente
+                        gridPagination.style.display = 'flex';
+                        updateGridPagination();
+                        console.log(`Paginação configurada: ${totalGridPages} páginas`);
+                    } else {
+                        gridPagination.style.display = 'none';
+                    }
+                    
+                    // Garantir que os botões de extração estejam inicialmente desabilitados
+                    updateExtractButton();
+                    console.log("Estado dos botões após carregar PDF:");
+                    console.log("extractBtn disabled:", extractBtn.disabled);
+                    console.log("extractBtnBottom disabled:", extractBtnBottom.disabled);
+                    
+                    // Esconder overlay de processamento
+                    processingOverlay.style.display = 'none';
+                } catch (error) {
+                    console.error('Erro ao processar o PDF:', error);
+                    
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            O arquivo PDF selecionado está corrompido ou é inválido: ${error.message}
+                        </div>`;
+                        
+                    // Esconder overlay de processamento
+                    processingOverlay.style.display = 'none';
+                }
+            }
+                
+                // Mostrar informações do arquivo
+                function showFileInfo(file, pages) {
+                    console.log(`Mostrando informações do arquivo: ${file.name}, ${pages} páginas`);
+                    fileInfo.innerHTML = `
+                        <div class="info-block">
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Arquivo Selecionado: ${file.name}
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-check-circle"></i>
+                                Quantidade de páginas: ${pages}
+                            </div>
+                        </div>`;
+                }
+                
+                // Carregar visualização do PDF
+                async function loadPDFPreview(file) {
+                    processingOverlay.style.display = 'flex';
+                    console.log("Iniciando carregamento da visualização do PDF");
+                    
+                    try {
+                        // Função de renderização de PDF simplificada para melhor compatibilidade
+                        const fileURL = URL.createObjectURL(file);
+                        console.log("Criado URL para o arquivo:", fileURL.substring(0, 15) + "...");
+                        
+                        const loadingTask = pdfjsLib.getDocument(fileURL);
+                        console.log("Tarefa de carregamento do PDF criada");
+                        
+                        const pdf = await loadingTask.promise;
+                        console.log("PDF carregado com sucesso, páginas:", pdf.numPages);
+                        
+                        // Criar array de promessas para todas as páginas
+                        const promises = [];
+                        pageContainers = new Array(pdf.numPages);
+                        
+                        // Preparar função de renderização de página
+                        const renderPage = async (pageNum) => {
+                            try {
+                                console.log(`Renderizando página ${pageNum}`);
+                                const page = await pdf.getPage(pageNum);
+                                
+                                // Calcular dimensões adequadas para a escala
+                                const originalViewport = page.getViewport({ scale: 1.0 });
+                                // Ajuste para fator 1.5 consistente com o componente de compressão
+                                const scale = 1.5;
+                                const viewport = page.getViewport({ scale });
+                                
+                                // Criar elementos
+                                const pageContainer = document.createElement('div');
+                                pageContainer.className = 'pdf-page-preview';
+                                pageContainer.dataset.page = pageNum;
+                                // Removidos estilos inline - agora estão no CSS
+                                
+                                const canvasContainer = document.createElement('div');
+                                canvasContainer.style.width = '100%';
+                                canvasContainer.style.display = 'flex';
+                                canvasContainer.style.justifyContent = 'center';
+                                canvasContainer.style.overflow = 'hidden';
+                                
+                                const canvas = document.createElement('canvas');
+                                canvas.width = viewport.width;
+                                canvas.height = viewport.height;
+                                canvas.style.maxWidth = '100%';
+                                canvas.style.height = 'auto';
+                                
+                                const pageNumber = document.createElement('div');
+                                pageNumber.className = 'pdf-page-number';
+                                pageNumber.textContent = `Página ${pageNum}`;
+                                
+                                // Renderizar página no canvas
+                                const context = canvas.getContext('2d');
+                                context.fillStyle = 'white';
+                                context.fillRect(0, 0, canvas.width, canvas.height);
+                                
+                                await page.render({
+                                    canvasContext: context,
+                                    viewport: viewport
+                                }).promise;
+                                
+                                // Adicionar elementos ao DOM
+                                canvasContainer.appendChild(canvas);
+                                pageContainer.appendChild(canvasContainer);
+                                pageContainer.appendChild(pageNumber);
+                                
+                                // Adicionar evento de clique para seleção
+                                pageContainer.addEventListener('click', () => {
+                                    togglePageSelection(pageNum, pageContainer);
+                                });
+                                
+                                // Adicionar zoom à página
+                                addZoomToPage(pageContainer, pageNum);
+                                
+                                // Atualizar progresso
+                                const percentComplete = Math.round((pageNum / pdf.numPages) * 100);
+                                processingText.textContent = `Processando PDF... ${percentComplete}%`;
+                                
+                                // Armazenar na posição correta
+                                pageContainers[pageNum - 1] = pageContainer;
+                                
+                                console.log(`Página ${pageNum} renderizada com sucesso`);
+                                return true;
+                            } catch (error) {
+                                console.error(`Erro ao renderizar página ${pageNum}:`, error);
+                                return false;
+                            }
+                        };
+                        
+                        // Iniciar renderização de todas as páginas
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            promises.push(renderPage(i));
+                        }
+                        
+                        console.log(`Iniciando renderização de ${promises.length} páginas`);
+                        
+                        // Aguardar todas as renderizações
+                        const results = await Promise.all(promises);
+                        const successCount = results.filter(Boolean).length;
+                        console.log(`Renderização completa: ${successCount}/${promises.length} páginas renderizadas com sucesso`);
+                        
+                        // Renderizar a primeira página do grid
+                        renderGridPage(0);
+                        
+                        // Liberar URL
+                        URL.revokeObjectURL(fileURL);
+                        console.log("URL do objeto liberada");
+                        
+                        return pdf.numPages;
+                        
+                    } catch (error) {
+                        console.error('Erro ao carregar visualização:', error);
+                        pdfPreviewGrid.innerHTML = `<div class="status-message error">Erro ao gerar visualização do PDF: ${error.message}</div>`;
+                    } finally {
+                        processingOverlay.style.display = 'none';
+                    }
+                }
+                
+                // Renderizar página específica do grid
+                function renderGridPage(pageIndex) {
+                    // Limpar grid atual
+                    pdfPreviewGrid.innerHTML = '';
+                    
+                    // Calcular índices inicial e final
+                    const startIndex = pageIndex * PAGES_PER_VIEW;
+                    const endIndex = Math.min(startIndex + PAGES_PER_VIEW, pageContainers.length);
+                    
+                    console.log(`Renderizando grid página ${pageIndex}: páginas ${startIndex+1} até ${endIndex}`);
+                    
+                    // Adicionar contêineres de página para a página atual do grid
+                    for (let i = startIndex; i < endIndex; i++) {
+                        if (pageContainers[i]) {
+                            // Verificar e aplicar classe excluded se a página estiver selecionada
+                            if (selectedPages.has(i + 1)) {
+                                pageContainers[i].classList.add('excluded');
+                            } else {
+                                pageContainers[i].classList.remove('excluded');
+                            }
+                            
+                            pdfPreviewGrid.appendChild(pageContainers[i]);
+                        } else {
+                            console.warn(`Contêiner para página ${i+1} não encontrado`);
+                        }
+                    }
+                    
+                    // Atualizar controles de paginação
+                    updateGridPagination();
+                    console.log(`Grid renderizado: ${pdfPreviewGrid.children.length} páginas visíveis`);
+                }
+                
+                // Alternando seleção de página
+                function togglePageSelection(pageNum, pageElement) {
+                    console.log(`Alternando seleção da página ${pageNum}`);
+                    
+                    if (selectedPages.has(pageNum)) {
+                        selectedPages.delete(pageNum);
+                        pageElement.classList.remove('excluded');
+                        console.log(`Página ${pageNum} desmarcada`);
+                    } else {
+                        selectedPages.add(pageNum);
+                        pageElement.classList.add('excluded');
+                        console.log(`Página ${pageNum} selecionada`);
+                    }
+                    
+                    console.log(`Total de páginas selecionadas: ${selectedPages.size}`);
+                    console.log(`Páginas selecionadas: ${Array.from(selectedPages).sort((a, b) => a - b).join(', ')}`);
+                    
+                    updateExtractButton();
+                    updateSelectedPagesList();
+                    
+                    // Se uma extração já foi concluída e o usuário modificou a seleção,
+                    // limpar a área de status
+                    if (extractionCompleted) {
+                        console.log("Seleção modificada após extração");
+                        statusArea.style.display = 'none';
+                        statusArea.innerHTML = '';
+                        
+                        // Adicionar mensagem de instrução
+                        const instructionMsg = document.createElement('div');
+                        instructionMsg.className = 'status-message warning';
+                        instructionMsg.innerHTML = `
+                            <i class="fas fa-exclamation-circle"></i>
+                            A seleção de páginas foi modificada. Clique em "Extrair Páginas Selecionadas" para gerar um novo PDF.
+                        `;
+                        statusArea.appendChild(instructionMsg);
+                        statusArea.style.display = 'block';
+                        
+                        // Definir temporizador para remover a mensagem após 5 segundos
+                        setTimeout(() => {
+                            instructionMsg.remove();
+                            if (!statusArea.hasChildNodes()) {
+                                statusArea.style.display = 'none';
+                            }
+                        }, 5000);
+                        
+                        // Resetar o flag de extração
+                        extractionCompleted = false;
+                    }
+                }
+                
+                // Atualizar botões de extração
+                function updateExtractButton() {
+                    const isDisabled = selectedPages.size === 0;
+                    
+                    console.log(`Atualizando botões de extração. Desabilitados: ${isDisabled}`);
+                    console.log(`Número de páginas selecionadas: ${selectedPages.size}`);
+                    
+                    // Aplicar mudanças nos botões superior e inferior
+                    [extractBtn, extractBtnBottom].forEach(button => {
+                        if (isDisabled) {
+                            button.disabled = true;
+                            button.classList.add('disabled');
+                            
+                            console.log(`Botão ${button.id} desabilitado`);
+                        } else {
+                            button.disabled = false;
+                            button.classList.remove('disabled');
+                            
+                            // Garantir que o atributo disabled seja realmente removido
+                            button.removeAttribute('disabled');
+                            
+                            console.log(`Botão ${button.id} habilitado`);
+                        }
+                    });
+                    
+                    // Log de verificação final
+                    console.log(`Estado final: botão superior ${extractBtn.disabled ? 'desabilitado' : 'habilitado'}, botão inferior ${extractBtnBottom.disabled ? 'desabilitado' : 'habilitado'}`);
+                }
+                
+                // Extrair páginas selecionadas
+// Extrair páginas selecionadas
+async function extractSelectedPages() {
+    console.log("Função extractSelectedPages chamada");
+    console.log("selectedPages.size:", selectedPages.size);
+    console.log("pdfDocument disponível:", !!pdfDocument);
+    
+    // Validação inicial
+    if (selectedPages.size === 0) {
+        console.log("Erro: Nenhuma página selecionada");
+        showTemporaryMessage('Selecione pelo menos uma página para extrair.', 'warning');
+        return;
+    }
+    
+    try {
+        // Mostrar overlay de processamento
+        processingOverlay.style.display = 'flex';
+        processingText.textContent = 'Extraindo páginas...';
+        
+        // Criar novo documento
+        console.log("Criando novo documento PDF");
+        const newPdfDoc = await PDFLib.PDFDocument.create();
+        
+        // Converter Set para Array e ordenar
+        const pagesToExtract = Array.from(selectedPages).sort((a, b) => a - b);
+        console.log("Páginas a extrair:", pagesToExtract.join(', '));
+        
+        // Se pdfDocument não estiver disponível, tentar recarregar do arquivo
+        let sourceDoc = pdfDocument;
+        if (!sourceDoc) {
+            console.log("pdfDocument não disponível, recarregando do arquivo");
+            try {
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                sourceDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                console.log("Documento fonte recarregado com sucesso");
+            } catch (loadError) {
+                console.error("Erro ao recarregar documento fonte:", loadError);
+                throw new Error("Não foi possível carregar o documento PDF. Tente novamente.");
+            }
+        }
+        
+        if (!sourceDoc) {
+            throw new Error("Documento PDF fonte não disponível");
+        }
+        
+        // Ajustar índices para PDF-LIB (que começa em 0)
+        const pageIndices = pagesToExtract.map(pageNum => pageNum - 1);
+        console.log("Índices de páginas a copiar:", pageIndices.join(', '));
+        
+        // Copiar páginas selecionadas
+        console.log("Copiando páginas para o novo documento");
+        const copiedPages = await newPdfDoc.copyPages(sourceDoc, pageIndices);
+        
+        // Adicionar páginas ao novo documento
+        console.log("Adicionando páginas ao novo documento");
+        copiedPages.forEach(page => {
+            newPdfDoc.addPage(page);
+        });
+        
+        // Salvar o novo PDF
+        console.log("Salvando o novo PDF");
+        const newPdfBytes = await newPdfDoc.save();
+        const newPdfBlob = new Blob([newPdfBytes], { type: 'application/pdf' });
+        console.log(`Novo PDF criado: ${(newPdfBytes.length / 1024 / 1024).toFixed(2)} MB`);
+        
+        // Criar link de download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(newPdfBlob);
+        
+        // MELHORIA: Nome de arquivo simplificado
+        const originalName = selectedFile.name.replace(/\.pdf$/i, '');
+        let pagesText = '';
+        
+        // Se são muitas páginas, usar formato resumido
+        if (pagesToExtract.length > 5) {
+            pagesText = `${pagesToExtract.length}pgs`;
+        } else {
+            // Para poucas páginas, mostrar os números
+            pagesText = 'pgs' + pagesToExtract.join('_');
+        }
+        
+        // Definir nome do arquivo: nomeoriginal_pgs1_2_3.pdf
+        downloadLink.download = `${originalName}_${pagesText}.pdf`;
+        
+        // MELHORIA: Mostrar apenas as páginas selecionadas no grid
+        // Limpar o grid atual
+        pdfPreviewGrid.innerHTML = '';
+        
+        // Adicionar apenas as páginas selecionadas ao grid
+        for (const pageNum of pagesToExtract) {
+            const pageIndex = pageNum - 1;
+            if (pageContainers[pageIndex]) {
+                pdfPreviewGrid.appendChild(pageContainers[pageIndex]);
+            }
+        }
+        
+        // Atualizar o título para informar ao usuário
+        const previewTitle = document.querySelector('.preview-container .card-title');
+        if (previewTitle) {
+            previewTitle.innerHTML = '<i class="fas fa-eye"></i> Páginas extraídas';
+        }
+        
+        // Ocultar paginação pois agora mostramos apenas um subconjunto específico
+        gridPagination.style.display = 'none';
+        
+        // Adicionar botão "Mostrar todas" apenas se não existir
+        if (!document.getElementById('showAllPagesBtn')) {
+            const showAllButton = document.createElement('button');
+            showAllButton.id = 'showAllPagesBtn';
+            showAllButton.className = 'pdf-action-button mt-4';
+            showAllButton.innerHTML = '<i class="fas fa-th"></i> Mostrar Todas as Páginas';
+            
+            // Adicionar evento para mostrar todas as páginas novamente
+            showAllButton.addEventListener('click', () => {
+                // Restaurar título original
+                if (previewTitle) {
+                    previewTitle.innerHTML = '<i class="fas fa-eye"></i> Selecione as páginas para extrair';
+                }
+                
+                // Renderizar a página do grid original
+                currentGridPage = 0;
+                renderGridPage(currentGridPage);
+                
+                // Mostrar paginação se necessário
+                if (totalGridPages > 1) {
+                    gridPagination.style.display = 'flex';
+                    updateGridPagination();
+                }
+                
+                // Remover este botão
+                showAllButton.remove();
+            });
+            
+            // Adicionar o botão antes do botão inferior de extração
+            pdfPreviewGrid.parentNode.insertBefore(showAllButton, extractBtnBottom);
+        }
+        
+        // Exibir mensagem de sucesso
+        console.log("Preparando mensagem de sucesso e link de download");
+        statusArea.innerHTML = `
+            <div class="status-message success">
+                <i class="fas fa-check-circle"></i>
+                Extração concluída com sucesso! ${pagesToExtract.length} página(s) extraída(s).
+            </div>`;
+        
+        // Adicionar link de download
+        downloadLink.className = 'download-link';
+        downloadLink.innerHTML = `<i class="fas fa-download"></i> Baixar PDF com as páginas extraídas`;
+        statusArea.appendChild(downloadLink);
+        
+        // Mostrar área de status
+        statusArea.style.display = 'block';
+        
+        // Rolar a página para exibir a área de status
+        statusArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Limpar URL do objeto quando o download começar
+        downloadLink.addEventListener('click', () => {
+            setTimeout(() => {
+                URL.revokeObjectURL(downloadLink.href);
+            }, 100);
+        }, { once: true });
+        
+        // Definir flag de extração concluída
+        extractionCompleted = true;
+        console.log("Extração concluída com sucesso");
+        
+    } catch (error) {
+        // Tratamento de erro
+        console.error('Erro ao extrair páginas:', error);
+        
+        // Exibir mensagem de erro
+        statusArea.innerHTML = `
+            <div class="status-message error">
+                <i class="fas fa-exclamation-circle"></i>
+                Erro ao extrair páginas: ${error.message}
+            </div>`;
+        statusArea.style.display = 'block';
+        
+        // Rolar a página para exibir a mensagem de erro
+        statusArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } finally {
+        // Sempre ocultar o overlay de processamento
+        processingOverlay.style.display = 'none';
+    }
+}  
+
+
+                // Função auxiliar para mensagens temporárias
+                function showTemporaryMessage(message, type = 'info', duration = 3000) {
+                    console.log(`Exibindo mensagem temporária: ${message} (tipo: ${type})`);
+                    
+                    const messageElement = document.createElement('div');
+                    messageElement.className = `status-message ${type}`;
+                    messageElement.innerHTML = `<i class="fas fa-${type === 'info' ? 'info-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'}"></i> ${message}`;
+                    
+                    statusArea.innerHTML = '';
+                    statusArea.appendChild(messageElement);
+                    statusArea.style.display = 'block';
+
+                    setTimeout(() => {
+                        console.log("Removendo mensagem temporária");
+                        statusArea.style.display = 'none';
+                        statusArea.innerHTML = '';
+                    }, duration);
+                }
+                
+                // Atualizar informações da paginação do grid
+                function updateGridPagination() {
+                    // Garantir que a informação de página atual e total esteja correta
+                    gridPageInfo.textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+                    
+                    // Garantir que os botões sejam habilitados/desabilitados corretamente
+                    prevGridPage.disabled = currentGridPage <= 0;
+                    nextGridPage.disabled = currentGridPage >= totalGridPages - 1;
+                    
+                    // Log para debug
+                    console.log(`Paginação atualizada: Página ${currentGridPage + 1}/${totalGridPages}`);
+                    console.log(`Botão anterior ${prevGridPage.disabled ? 'desabilitado' : 'habilitado'}`);
+                    console.log(`Botão próximo ${nextGridPage.disabled ? 'desabilitado' : 'habilitado'}`);
+                }
+                
+                // Atualizar lista de páginas selecionadas
+                function updateSelectedPagesList() {
+                    if (selectedPages.size > 0) {
+                        // Converter Set para Array, ordenar e formatar
+                        const selectedPagesArray = Array.from(selectedPages).sort((a, b) => a - b);
+                        
+                        // Criar representação comprimida (ex: 1-5, 7, 9-12)
+                        const compressedList = compressPageNumbers(selectedPagesArray);
+                        
+                        // Atualizar texto
+                        selectedPagesList.textContent = compressedList;
+                        pagesExtracted.style.display = 'block';
+                        
+                        console.log(`Lista de páginas atualizada: ${compressedList}`);
+                    } else {
+                        pagesExtracted.style.display = 'none';
+                        console.log("Lista de páginas oculta (nenhuma página selecionada)");
+                    }
+                }
+                
+                // Comprimir números de página (ex: [1,2,3,5,6,9] => "1-3, 5-6, 9")
+                function compressPageNumbers(pages) {
+                    if (pages.length === 0) return '';
+                    
+                    const ranges = [];
+                    let rangeStart = pages[0];
+                    let rangeEnd = pages[0];
+                    
+                    for (let i = 1; i < pages.length; i++) {
+                        if (pages[i] === rangeEnd + 1) {
+                            // Continuar intervalo
+                            rangeEnd = pages[i];
+                        } else {
+                            // Finalizar intervalo atual e iniciar novo
+                            if (rangeStart === rangeEnd) {
+                                ranges.push(`${rangeStart}`);
+                            } else {
+                                ranges.push(`${rangeStart}-${rangeEnd}`);
+                            }
+                            rangeStart = rangeEnd = pages[i];
+                        }
+                    }
+                    
+                    // Adicionar último intervalo
+                    if (rangeStart === rangeEnd) {
+                        ranges.push(`${rangeStart}`);
+                    } else {
+                        ranges.push(`${rangeStart}-${rangeEnd}`);
+                    }
+                    
+                    return ranges.join(', ');
+                }
+                
+                // Aplicar intervalo de páginas
+                function applyRange() {
+                    const start = parseInt(rangeStart.value);
+                    const end = parseInt(rangeEnd.value);
+                    
+                    console.log(`Aplicando intervalo: ${start} até ${end}`);
+                    
+                    if (isNaN(start) || isNaN(end) || start < 1 || end > totalPages || start > end) {
+                        console.log("Intervalo inválido");
+                        alert('Por favor, insira um intervalo válido de páginas.');
+                        return;
+                    }
+                    
+                    // Limpar seleção atual
+                    selectedPages.clear();
+                    
+                    // Limpar seleção visual em todos os contêineres
+                    pageContainers.forEach(container => {
+                        if (container) {
+                            container.classList.remove('excluded');
+                        }
+                    });
+                    
+                    // Selecionar páginas do intervalo
+                    for (let i = start; i <= end; i++) {
+                        selectedPages.add(i);
+                        
+                        // Marcar visualmente todos os contêineres afetados
+                        if (pageContainers[i-1]) {
+                            pageContainers[i-1].classList.add('excluded');
+                        }
+                    }
+                    
+                    // Log para debug
+                    console.log(`Intervalo aplicado: ${start}-${end}`);
+                    console.log(`Total de páginas selecionadas: ${selectedPages.size}`);
+                    
+                    updateExtractButton();
+                    updateSelectedPagesList();
+                    
+                    // Renderizar a página atual para atualizar a visualização
+                    renderGridPage(currentGridPage);
+                    
+                    // Se uma extração já foi concluída e o usuário aplicou um novo intervalo,
+                    // limpar a área de status
+                    if (extractionCompleted) {
+                        statusArea.style.display = 'none';
+                        statusArea.innerHTML = '';
+                        
+                        // Adicionar mensagem de instrução
+                        const instructionMsg = document.createElement('div');
+                        instructionMsg.className = 'status-message warning';
+                        instructionMsg.innerHTML = `
+                            <i class="fas fa-exclamation-circle"></i>
+                            A seleção de páginas foi modificada. Clique em "Extrair Páginas Selecionadas" para gerar um novo PDF.
+                        `;
+                        statusArea.appendChild(instructionMsg);
+                        statusArea.style.display = 'block';
+                        
+                        // Definir temporizador para remover a mensagem após 5 segundos
+                        setTimeout(() => {
+                            instructionMsg.remove();
+                            if (!statusArea.hasChildNodes()) {
+                                statusArea.style.display = 'none';
+                            }
+                        }, 5000);
+                        
+                        // Resetar o flag de extração
+                        extractionCompleted = false;
+                    }
+                }
+            });
+        </script>
+    </body>
+    </html>

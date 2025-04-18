@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrair Área de PDF</title>
+    <!-- CSS Global -->
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Cropper CSS - Para seleção precisa de área (via CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <!-- Scripts PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <style>
+        /* Estilos específicos para o container do cropper */
+        .image-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Classes para o cropper */
+        .cropper-container {
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        
+        /* Estilos para instruções do cropper */
+        #crop-instructions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            z-index: 1000;
+        }
+
+        /* Estilos para a navegação de página consistentes com o componente de compressão */
+        .page-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-nav-button:hover {
+            background-color: #f0f7ff;
+            border-color: #90c2ff;
+        }
+
+        .page-nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f0f0f0;
+            border-color: #e0e0e0;
+            box-shadow: none;
+        }
+
+        .page-nav-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            margin: 0 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Botão de voltar melhorado */
+        .btn-back-pages {
+            display: flex;
+            align-items: center;
+            background-color: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #505050;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-back-pages:hover {
+            background-color: #edf5ff;
+            border-color: #90c2ff;
+            color: #3178c6;
+        }
+
+        .btn-back-pages i {
+            margin-right: 8px;
+        }
+
+        /* Melhorar o estilo da visualização detalhada */
+        .detail-page-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* Botão cancelar com estilo de numeração de página */
+        .cancel-selection-centered {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .cancel-selection-centered:hover {
+            background: rgba(239, 68, 68, 0.9);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        .cancel-selection-centered i {
+            margin-right: 5px;
+            font-size: 0.75rem;
+        }
+
+        /* Mostrar o botão quando há seleção ativa */
+        .cropper-crop-box ~ .cancel-selection-centered {
+            display: flex;
+        }
+
+        /* Estilos para a área de resultado dentro do container */
+        .result-area {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0fdf4;
+            border-radius: 8px;
+            border-left: 4px solid var(--color-success);
+        }
+
+        .download-link-container {
+            margin-top: 15px;
+        }
+        
+        /* Log container para depuração */
+        #log-container {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            color: #343a40;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: none;
+        }
+        
+        /* Estilos para feedback de carregamento */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--color-primary);
+        }
+        
+        .loading-indicator i {
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="converter-extract">
+    <div class="function-container">
+        <!-- Área de Upload -->
+        <div class="card upload-area">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-crop-alt"></i> Extrair Área de PDF
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <i class="fas fa-file-pdf upload-icon"></i>
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
+                        <input type="file" id="pdfInput" accept="application/pdf,.pdf" class="hidden">
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Área de status -->
+        <div id="statusArea" style="display: none;"></div>
+        
+        <!-- Área de resultado - Reposicionado para ficar antes da visualização detalhada -->
+        <div class="card hidden" id="resultContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-check-circle"></i> Resultado da Extração
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="compressionInfo" class="compression-info hidden"></div>
+                <div id="downloadContainer" class="hidden download-link-container">
+                    <a id="downloadButton" href="#" class="download-link" download>
+                        <i class="fas fa-download"></i> Baixar Imagem da Área
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Visualização de Miniaturas -->
+        <div class="card hidden" id="previewContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-eye"></i> Selecione a página para extrair área
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="pdfPreviewGrid" class="pdf-preview-grid"></div>
+                
+                <!-- Paginação do grid -->
+                <div class="page-navigation hidden" id="gridPagination">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Visualização e Seleção de Área -->
+        <div class="card hidden" id="pageDetailView">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-search"></i> Visualização da Área
+                </h3>
+            </div>
+            <div class="card-body">
+                <button id="backToGridButton" class="btn-back-pages">
+                    <i class="fas fa-arrow-left"></i> Voltar para Páginas
+                </button>
+                
+                <div class="page-navigation">
+                    <button id="prevPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="pageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="detail-page-container">
+                    <div class="image-container">
+                        <img id="pageImage" src="" alt="Página do PDF" style="max-width: 100%;">
+                    </div>
+                    <!-- Botão cancelar com estilo de numeração de página -->
+                    <button id="cancelSelectionCentered" class="cancel-selection-centered">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+
+                <!-- Botões de ação - Apenas o botão extrair -->
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button id="extractButton" class="pdf-action-button" disabled>
+                        <i class="fas fa-crop-alt"></i> Selecione uma área primeiro
+                    </button>
+                </div>
+                
+                <!-- Container para logs de depuração (escondido por padrão) -->
+                <div id="log-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="processing-message">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-3" id="processingText">Processando PDF...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Constantes 
+            const THUMBNAILS_PER_PAGE = 30; // Número de miniaturas por página
+            const DEBUG_MODE = false; // Controla se os logs de depuração serão mostrados
+            
+            // ======== VARIÁVEIS DE ESTADO SIMPLIFICADAS ========
+            // Estado básico da aplicação
+            let originalFileSize = 0;
+            let currentPdfFile = null;
+            let isProcessing = false;
+            let pdfLoaded = false;
+            let hasExtractedArea = false;
+            
+            // Estado do PDF
+            let pdfDoc = null;
+            let currentPage = 1;
+            let totalPages = 0;
+            
+            // Estado do cropper
+            let cropperInstance = null;
+            let currentDataUrl = null;
+            
+            // Estado da visualização
+            let currentGridPage = 0;
+            let totalGridPages = 0;
+            let pageContainers = [];
+            let extractionCompleted = false;
+            
+            // ======== ELEMENTOS DOM ========
+            // Elementos principais
+            const dropZone = document.getElementById('dropZone');
+            const pdfInput = document.getElementById('pdfInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const statusArea = document.getElementById('statusArea');
+            
+            // Elementos de preview
+            const previewContainer = document.getElementById('previewContainer');
+            const pdfPreviewGrid = document.getElementById('pdfPreviewGrid');
+            const gridPagination = document.getElementById('gridPagination');
+            const prevGridPage = document.getElementById('prevGridPage');
+            const nextGridPage = document.getElementById('nextGridPage');
+            const gridPageInfo = document.getElementById('gridPageInfo');
+            
+            // Elementos da visualização detalhada
+            const pageDetailView = document.getElementById('pageDetailView');
+            const pageImage = document.getElementById('pageImage');
+            const prevPage = document.getElementById('prevPage');
+            const nextPage = document.getElementById('nextPage');
+            const pageInfo = document.getElementById('pageInfo');
+            const backToGridButton = document.getElementById('backToGridButton');
+            
+            // Elementos de seleção e extração
+            const extractButton = document.getElementById('extractButton');
+            const cancelSelectionCentered = document.getElementById('cancelSelectionCentered');
+            
+            // Elementos de resultado
+            const resultContainer = document.getElementById('resultContainer');
+            const downloadContainer = document.getElementById('downloadContainer');
+            const downloadButton = document.getElementById('downloadButton');
+            const compressionInfo = document.getElementById('compressionInfo');
+            
+            // Elementos de processamento
+            const processingOverlay = document.getElementById('processingOverlay');
+            const processingText = document.getElementById('processingText');
+            
+            // Elemento de log
+            const logContainer = document.getElementById('log-container');
+            
+            // ======== FUNÇÕES DE UTILIDADE ========
+            
+            // Função de log melhorada para depuração
+            function log(message, type = 'info') {
+                if (DEBUG_MODE) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const logMsg = `[${timestamp}] [${type}] ${message}`;
+                    console.log(logMsg);
+                    
+                    if (logContainer) {
+                        // Mostrar o container de log se estiver escondido
+                        logContainer.style.display = 'block';
+                        
+                        // Adicionar a mensagem com cor de acordo com o tipo
+                        const logLine = document.createElement('div');
+                        logLine.textContent = logMsg;
+                        
+                        if (type === 'error') logLine.style.color = 'red';
+                        if (type === 'warning') logLine.style.color = 'orange';
+                        if (type === 'success') logLine.style.color = 'green';
+                        
+                        logContainer.appendChild(logLine);
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                }
+            }
+            
+            // Formatar tamanho de arquivo
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return `${bytes} bytes`;
+                if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+                return `${(bytes / 1048576).toFixed(2)} MB`;
+            }
+            
+            // Função para mostrar feedback de processamento
+            function showProcessing(show, message = 'Processando PDF...') {
+                if (show) {
+                    processingText.textContent = message;
+                    processingOverlay.style.display = 'flex';
+                } else {
+                    processingOverlay.style.display = 'none';
+                }
+                isProcessing = show;
+                log(`Status processamento: ${show ? 'ativo' : 'inativo'} - ${message}`);
+            }
+            
+            // Função para mostrar erro
+            function showError(message) {
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        ${message}
+                    </div>`;
+                statusArea.style.display = 'block';
+                processingOverlay.style.display = 'none';
+                log(message, 'error');
+            }
+            
+            // Função para mostrar sucesso
+            function showSuccess(message) {
+                compressionInfo.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>${message}</strong>
+                        </div>
+                    </div>`;
+                compressionInfo.classList.remove('hidden');
+                log(message, 'success');
+            }
+            
+            // Função para prevenir comportamentos padrão
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // ======== FUNÇÕES DE GERENCIAMENTO DE PDF ========
+            
+            // Função para exibir informações do arquivo
+            function updateFileInfo(file, pages) {
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                
+                fileInfo.innerHTML = `
+                    <div class="info-block">
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Arquivo Selecionado: ${file.name}
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Tamanho: ${fileSizeMB} MB
+                        </div>
+                        <div class="info-line">
+                            <i class="fas fa-check-circle"></i>
+                            Quantidade de páginas: ${pages}
+                        </div>
+                    </div>`;
+                
+                log(`Arquivo processado: ${file.name}, ${fileSizeMB} MB, ${pages} páginas`, 'info');
+            }
+            
+            // Validação explícita de arquivos PDF
+            async function validatePDF(file) {
+                log(`Iniciando validação do arquivo: ${file.name}`, 'info');
+                
+                // Verificar pelo tipo MIME
+                if (file.type === 'application/pdf') {
+                    log('PDF validado pelo tipo MIME', 'success');
+                    return true;
+                }
+                
+                // Verificar pela extensão
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    log('PDF validado pela extensão do arquivo', 'success');
+                    return true;
+                }
+                
+                // Verificar assinatura PDF (%PDF)
+                try {
+                    const reader = new FileReader();
+                    const headerPromise = new Promise((resolve, reject) => {
+                        reader.onload = () => {
+                            const arrayBuffer = reader.result;
+                            const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                            const header = new TextDecoder('utf-8').decode(bytes);
+                            resolve(header);
+                        };
+                        reader.onerror = reject;
+                    });
+                    
+                    reader.readAsArrayBuffer(file.slice(0, 10));
+                    const header = await headerPromise;
+                    
+                    if (header.includes('%PDF')) {
+                        log('PDF validado pela assinatura de arquivo (%PDF)', 'success');
+                        return true;
+                    }
+                    
+                    // Se ainda não confirmou, tenta carregar com PDF.js
+                    log('Tentando validar via PDF.js...', 'info');
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfJsDoc = await pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)}).promise;
+                    
+                    if (pdfJsDoc.numPages > 0) {
+                        log(`PDF validado via PDF.js - ${pdfJsDoc.numPages} páginas`, 'success');
+                        return true;
+                    }
+                    
+                    log('Arquivo não é um PDF válido', 'error');
+                    return false;
+                } catch (error) {
+                    log(`Erro na validação: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+            
+            // ======== FUNÇÕES DE LIMPEZA E RESET ========
+            
+            // Função para limpar recursos (URLs, canvas, etc)
+            function cleanupResources() {
+                log('Limpando recursos de memória', 'info');
+                
+                // Revogar qualquer URL de objeto
+                document.querySelectorAll('a').forEach(link => {
+                    if (link.href && link.href.startsWith('blob:')) {
+                        URL.revokeObjectURL(link.href);
+                    }
+                });
+                
+                // Limpar canvas
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    const context = canvas.getContext('2d');
+                    if (context) {
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                    canvas.width = 0;
+                    canvas.height = 0;
+                });
+                
+                log('Recursos de memória liberados', 'success');
+            }
+            
+            // Resetar estado da aplicação
+            function resetState() {
+                log('Resetando estado da aplicação', 'info');
+                
+                // Limpar variáveis de estado
+                originalFileSize = 0;
+                currentPdfFile = null;
+                isProcessing = false;
+                pdfLoaded = false;
+                hasExtractedArea = false;
+                pdfDoc = null;
+                currentPage = 1;
+                totalPages = 0;
+                cropperInstance = null;
+                currentDataUrl = null;
+                currentGridPage = 0;
+                totalGridPages = 0;
+                pageContainers = [];
+                extractionCompleted = false;
+                
+                // Esconder elementos
+                previewContainer.classList.add('hidden');
+                pageDetailView.classList.add('hidden');
+                statusArea.style.display = 'none';
+                gridPagination.classList.add('hidden');
+                resultContainer.classList.add('hidden');
+                downloadContainer.classList.add('hidden');
+                
+                // Limpar conteúdo
+                statusArea.innerHTML = '';
+                fileInfo.innerHTML = '';
+                pdfPreviewGrid.innerHTML = '';
+                compressionInfo.classList.add('hidden');
+                compressionInfo.innerHTML = '';
+                
+                // Limpar input file para permitir reselecionar o mesmo arquivo
+                pdfInput.value = '';
+                
+                // Resetar estado de seleção
+                resetSelectionState();
+                
+                // Liberar recursos de memória
+                cleanupResources();
+                
+                log('Estado da aplicação resetado com sucesso', 'success');
+            }
+            
+            // Resetar apenas o estado de seleção de área
+            function resetSelectionState() {
+                log('Resetando estado de seleção', 'info');
+                
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                    log('Instância de cropper destruída', 'info');
+                }
+                
+                // Esconder download e limpar URL
+                resultContainer.classList.add('hidden');
+                downloadContainer.classList.add('hidden');
+                
+                if (downloadButton.href && downloadButton.href !== '#') {
+                    URL.revokeObjectURL(downloadButton.href);
+                    downloadButton.href = '#';
+                }
+                
+                // Resetar botão de extração
+                extractButton.disabled = true;
+                extractButton.innerHTML = '<i class="fas fa-crop-alt"></i> Selecione uma área primeiro';
+                
+                // Limpar instruções do cropper
+                const instructionDiv = document.getElementById('crop-instructions');
+                if (instructionDiv) {
+                    instructionDiv.remove();
+                    log('Instruções de cropper removidas', 'info');
+                }
+                
+                log('Estado de seleção resetado com sucesso', 'success');
+            }
+            
+            // ======== FUNÇÕES DE CONTROLE DE NAVEGAÇÃO ========
+            
+            // Atualizar controles de paginação do grid
+            function updateGridPagination() {
+                gridPageInfo.textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+                prevGridPage.disabled = currentGridPage <= 0;
+                nextGridPage.disabled = currentGridPage >= totalGridPages - 1;
+                
+                // Mostrar ou esconder paginação conforme necessário
+                gridPagination.classList.toggle('hidden', totalGridPages <= 1);
+                
+                log(`Paginação do grid atualizada: página ${currentGridPage + 1} de ${totalGridPages}`, 'info');
+            }
+            
+            // Atualizar controles de navegação de página
+            function updatePageControls() {
+                pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+                prevPage.disabled = currentPage <= 1;
+                nextPage.disabled = currentPage >= totalPages;
+                
+                log(`Controles de página atualizados: página ${currentPage} de ${totalPages}`, 'info');
+            }
+            
+            // ======== FUNÇÕES PRINCIPAIS ========
+            
+            // Processar arquivo PDF válido
+            async function processValidFile(file) {
+                try {
+                    log(`Processando arquivo PDF válido: ${file.name}`, 'info');
+                    showProcessing(true, 'Carregando PDF...');
+                    
+                    // Salvar referência ao arquivo
+                    currentPdfFile = file;
+                    originalFileSize = file.size;
+                    
+                    // Carregar o PDF com PDF.js
+                    const arrayBuffer = await file.arrayBuffer();
+                    pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)}).promise;
+                    totalPages = pdfDoc.numPages;
+                    
+                    if (totalPages === 0) {
+                        throw new Error('O PDF não contém páginas.');
+                    }
+                    
+                    // Atualizar estado
+                    pdfLoaded = true;
+                    
+                    // Exibir informações do arquivo
+                    updateFileInfo(file, totalPages);
+                    
+                    // Calcular paginação do grid
+                    totalGridPages = Math.ceil(totalPages / THUMBNAILS_PER_PAGE);
+                    
+                    // Renderizar miniaturas
+                    await renderPagesGrid();
+                    
+                    // Mostrar container de miniaturas
+                    previewContainer.classList.remove('hidden');
+                    
+                    // Verificar paginação
+                    if (totalGridPages > 1) {
+                        updateGridPagination();
+                        gridPagination.classList.remove('hidden');
+                    } else {
+                        gridPagination.classList.add('hidden');
+                    }
+                    
+                    showProcessing(false);
+                    log('Arquivo PDF processado com sucesso', 'success');
+                    
+                } catch (error) {
+                    console.error('Erro ao processar PDF:', error);
+                    showError(`O arquivo PDF selecionado está corrompido ou é inválido: ${error.message}`);
+                    showProcessing(false);
+                    log(`Erro ao processar PDF: ${error.message}`, 'error');
+                }
+            }
+            
+            // Função principal para processar arquivos
+            async function handleFile(file) {
+                if (!file) {
+                    log("Nenhum arquivo fornecido", 'warning');
+                    return;
+                }
+                
+                if (isProcessing) {
+                    showError('Aguarde o processo atual terminar');
+                    return;
+                }
+                
+                log(`Processando arquivo: ${file.name}, Tipo: ${file.type}`, 'info');
+                showProcessing(true, 'Verificando arquivo...');
+                
+                try {
+                    // Validação de PDF melhorada
+                    const isValidPDF = await validatePDF(file);
+                    
+                    if (isValidPDF) {
+                        processValidFile(file);
+                    } else {
+                        log("Arquivo não é um PDF válido", 'error');
+                        showError('Por favor, selecione um arquivo PDF válido');
+                        showProcessing(false);
+                    }
+                } catch (error) {
+                    console.error("Erro ao processar arquivo:", error);
+                    showError(`Erro ao validar arquivo: ${error.message}`);
+                    showProcessing(false);
+                    log(`Erro ao validar arquivo: ${error.message}`, 'error');
+                }
+            }
+            
+            // Renderizar todas as miniaturas de página
+            async function renderPagesGrid() {
+                pdfPreviewGrid.innerHTML = '';
+                pageContainers = new Array(totalPages);
+                
+                try {
+                    log(`Renderizando grade de miniaturas para ${totalPages} páginas`, 'info');
+                    
+                    // Criar array de promessas para renderização paralela
+                    const promises = [];
+                    
+                    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                        promises.push(renderThumbnail(pageNum));
+                    }
+                    
+                    // Aguardar todas as renderizações
+                    await Promise.all(promises);
+                    log(`Renderização de miniaturas concluída`, 'success');
+                    
+                    // Renderizar primeira página do grid
+                    renderGridPage(0);
+                    
+                } catch (error) {
+                    console.error('Erro ao renderizar grade de miniaturas:', error);
+                    showError(`Erro ao gerar visualização do PDF: ${error.message}`);
+                    log(`Erro ao renderizar miniaturas: ${error.message}`, 'error');
+                }
+            }
+            
+            // Renderizar uma miniatura específica
+            async function renderThumbnail(pageNum) {
+                try {
+                    log(`Renderizando miniatura da página ${pageNum}`, 'info');
+                    
+                    const page = await pdfDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 0.8 });
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    // Adicionar fundo branco
+                    context.fillStyle = 'white';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                    
+                    // Criar container da página
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-preview';
+                    pageContainer.dataset.page = pageNum;
+                    
+                    // Adicionar evento de clique
+                    pageContainer.addEventListener('click', () => {
+                        log(`Página ${pageNum} selecionada para extração`, 'info');
+                        selectPage(pageNum);
+                    });
+                    
+                    // Adicionar canvas
+                    pageContainer.appendChild(canvas);
+                    
+                    // Adicionar número da página
+                    const pageNumber = document.createElement('div');
+                    pageNumber.className = 'pdf-page-number';
+                    pageNumber.textContent = `Página ${pageNum}`;
+                    pageContainer.appendChild(pageNumber);
+                    
+                    // Armazenar no array na posição correta
+                    pageContainers[pageNum - 1] = pageContainer;
+                    
+                    // Atualizar progresso
+                    const percentComplete = Math.round((pageNum / totalPages) * 100);
+                    processingText.textContent = `Processando PDF... ${percentComplete}%`;
+                    
+                    return true;
+                } catch (error) {
+                    console.error(`Erro ao renderizar miniatura da página ${pageNum}:`, error);
+                    log(`Erro ao renderizar miniatura da página ${pageNum}: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+            
+            // Renderizar uma página específica do grid
+            function renderGridPage(pageIndex) {
+                log(`Renderizando página ${pageIndex + 1} do grid`, 'info');
+                pdfPreviewGrid.innerHTML = '';
+                
+                // Calcular índices inicial e final
+                const startIndex = pageIndex * THUMBNAILS_PER_PAGE;
+                const endIndex = Math.min(startIndex + THUMBNAILS_PER_PAGE, pageContainers.length);
+                
+                // Adicionar contêineres ao grid
+                for (let i = startIndex; i < endIndex; i++) {
+                    if (pageContainers[i]) {
+                        pdfPreviewGrid.appendChild(pageContainers[i]);
+                    }
+                }
+                
+                // Atualizar controles de paginação
+                updateGridPagination();
+                log(`Grid renderizado com ${endIndex - startIndex} miniaturas`, 'success');
+            }
+            
+            // Selecionar página para extração de área
+            function selectPage(pageNum) {
+                currentPage = pageNum;
+                
+                log(`Selecionando página ${pageNum} para extração`, 'info');
+                
+                // Esconder container de preview
+                previewContainer.classList.add('hidden');
+                
+                // Esconder resultado se existir
+                resultContainer.classList.add('hidden');
+                
+                // Renderizar a página selecionada para o cropper
+                renderPageForCropping(pageNum).then(() => {
+                    // Mostrar view de seleção
+                    pageDetailView.classList.remove('hidden');
+                    
+                    // Rolar para o topo
+                    window.scrollTo(0, 0);
+                    
+                    log(`Página ${pageNum} carregada na visualização de seleção`, 'success');
+                });
+            }
+            
+            // Renderizar página para o cropper
+            async function renderPageForCropping(pageNum) {
+                try {
+                    log(`Preparando página ${pageNum} para extração de área`, 'info');
+                    
+                    // Resetar estado de seleção
+                    resetSelectionState();
+                    
+                    // Obter a página e renderizar
+                    const page = await pdfDoc.getPage(pageNum);
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    const context = canvas.getContext('2d');
+                    
+                    context.fillStyle = 'white';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                    
+                    // Converter o canvas para uma URL de imagem
+                    currentDataUrl = canvas.toDataURL('image/png');
+                    
+                    // Atualizar a imagem
+                    pageImage.src = currentDataUrl;
+                    
+                    // Atualizar texto de navegação
+                    updatePageControls();
+                    
+                    // Inicializar o cropper após a imagem ser carregada
+                    pageImage.onload = function() {
+                        initCropper();
+                        log(`Página ${pageNum} renderizada para extração`, 'success');
+                    };
+                    
+                } catch (error) {
+                    console.error('Erro ao renderizar página:', error);
+                    showError(`Erro ao renderizar página ${pageNum}: ${error.message}`);
+                    log(`Erro ao renderizar página para extração: ${error.message}`, 'error');
+                }
+            }
+            
+            // Inicializar o cropper
+            function initCropper() {
+                log(`Inicializando Cropper.js`, 'info');
+                
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                }
+                
+                cropperInstance = new Cropper(pageImage, {
+                    viewMode: 1,
+                    dragMode: 'crop',
+                    aspectRatio: NaN,
+                    autoCrop: false,
+                    autoCropArea: 0.2,
+                    zoomable: false,
+                    rotatable: false,
+                    scalable: false,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    ready: function() {
+                        log(`Cropper pronto para seleção`, 'success');
+                        
+                        // Adicionar instruções
+                        const instructionDiv = document.createElement('div');
+                        instructionDiv.id = 'crop-instructions';
+                        instructionDiv.innerHTML = 'Clique e arraste para selecionar uma área';
+                        
+                        const containerElement = cropperInstance.containerEl;
+                        containerElement.parentNode.insertBefore(instructionDiv, containerElement);
+                    },
+                    crop: function(event) {
+                        // Atualizar botão quando uma área é selecionada
+                        const hasSelection = event.detail.width > 10 && event.detail.height > 10;
+                        
+                        extractButton.disabled = !hasSelection;
+                        extractButton.innerHTML = hasSelection 
+                            ? '<i class="fas fa-crop-alt"></i> Extrair Área Selecionada' 
+                            : '<i class="fas fa-crop-alt"></i> Selecione uma área primeiro';
+                        
+                        // Atualizar instruções
+                        if (hasSelection) {
+                            log(`Área selecionada: ${Math.round(event.detail.width)}x${Math.round(event.detail.height)}`, 'info');
+                            
+                            const instructionDiv = document.getElementById('crop-instructions');
+                            if (instructionDiv) {
+                                instructionDiv.innerHTML = 'Área selecionada! Clique em "Extrair Área Selecionada" ou ajuste a seleção';
+                            }
+                        }
+                    }
+                });
+                
+                log(`Cropper inicializado com sucesso`, 'success');
+            }
+            
+            // Cancelar seleção de área atual
+            function cancelAreaSelection() {
+                log(`Cancelando seleção de área`, 'info');
+                
+                if (cropperInstance) {
+                    // Limpar a seleção atual
+                    cropperInstance.clear();
+                    
+                    // Resetar o botão de extração
+                    extractButton.innerHTML = '<i class="fas fa-crop-alt"></i> Selecione uma área primeiro';
+                    extractButton.disabled = true;
+                    
+                    // Atualizar as instruções
+                    const instructionDiv = document.getElementById('crop-instructions');
+                    if (instructionDiv) {
+                        instructionDiv.innerHTML = 'Clique e arraste para selecionar uma área';
+                    }
+                    
+                    // Esconder área de download
+                    resultContainer.classList.add('hidden');
+                    downloadContainer.classList.add('hidden');
+                    compressionInfo.classList.add('hidden');
+                    compressionInfo.innerHTML = '';
+                    
+                    log(`Seleção de área cancelada`, 'success');
+                }
+            }
+            
+            // Extrair a área selecionada
+async function extractSelectedArea() {
+    try {
+        log(`Iniciando extração da área selecionada`, 'info');
+        
+        // Verificar se há uma área selecionada
+        if (!cropperInstance) {
+            showError('Erro: Cropper não inicializado');
+            log(`Erro: tentativa de extração sem cropper inicializado`, 'error');
+            return;
+        }
+        
+        const cropData = cropperInstance.getData();
+        if (cropData.width < 10 || cropData.height < 10) {
+            showError('Por favor, selecione uma área maior para extrair.');
+            log(`Seleção muito pequena: ${cropData.width}x${cropData.height}px`, 'warning');
+            return;
+        }
+        
+        // Mostrar overlay de processamento
+        showProcessing(true, 'Extraindo área selecionada...');
+        
+        // Remover as instruções se existirem
+        const instructionDiv = document.getElementById('crop-instructions');
+        if (instructionDiv) {
+            instructionDiv.remove();
+        }
+        
+        // Obter a área selecionada como canvas
+        log(`Preparando canvas para área: ${Math.round(cropData.width)}x${Math.round(cropData.height)}px`, 'info');
+        
+        const croppedCanvas = cropperInstance.getCroppedCanvas({
+            maxWidth: 4096,
+            maxHeight: 4096,
+            fillColor: '#fff',
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+        
+        if (!croppedCanvas) {
+            showError('Erro ao extrair a área selecionada. Por favor, tente selecionar outra área.');
+            showProcessing(false);
+            log(`Falha ao criar canvas para a área recortada`, 'error');
+            return;
+        }
+        
+        // Converter para URL de imagem
+        const imageUrl = croppedCanvas.toDataURL('image/png');
+        log(`Área extraída e convertida para imagem`, 'success');
+        
+        // Criar nome de arquivo para download
+        let fileName = 'area_extraida';
+        if (currentPdfFile) {
+            fileName = currentPdfFile.name.replace(/\.pdf$/i, '');
+        }
+        fileName = `${fileName}_pagina${currentPage}_area.png`;
+        
+        // Configurar o botão de download para uso posterior
+        downloadButton.href = imageUrl;
+        downloadButton.download = fileName;
+        
+        // Mostrar mensagem de sucesso
+        showSuccess('Área extraída com sucesso! O download começará automaticamente.');
+        
+        // Mostrar área de download para permitir que o usuário baixe novamente
+        resultContainer.classList.remove('hidden');
+        downloadContainer.classList.remove('hidden');
+        
+        // Esconder overlay de processamento
+        showProcessing(false);
+        
+        // NOVO: Iniciar o download automaticamente
+        log(`Iniciando download automático: ${fileName}`, 'info');
+        
+        // Criar um elemento temporário para download e acionar automaticamente
+        const tempLink = document.createElement('a');
+        tempLink.href = imageUrl;
+        tempLink.download = fileName;
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        
+        // Limpar o elemento temporário
+        setTimeout(() => {
+            document.body.removeChild(tempLink);
+            // Liberar URL após o download
+            URL.revokeObjectURL(imageUrl);
+        }, 100);
+        
+        // Marcar extração como completa
+        extractionCompleted = true;
+        hasExtractedArea = true;
+        
+        log(`Área extraída com sucesso. Download iniciado: ${fileName}`, 'success');
+        
+    } catch (error) {
+        console.error('Erro ao extrair área:', error);
+        showError(`Erro ao extrair área: ${error.message}`);
+        showProcessing(false);
+        log(`Erro durante a extração: ${error.message}`, 'error');
+    }
+}
+            
+            // Voltar para visualização de miniaturas
+            function showPreviewContainer() {
+                log(`Voltando para a visualização de miniaturas`, 'info');
+                
+                // Esconder view de seleção
+                pageDetailView.classList.add('hidden');
+                
+                // Mostrar resultado acima da área de miniaturas se houver extração
+                if (hasExtractedArea) {
+                    resultContainer.classList.remove('hidden');
+                    log(`Mostrando resultado de extração`, 'info');
+                } else {
+                    resultContainer.classList.add('hidden');
+                }
+                
+                // Mostrar o container de miniaturas
+                previewContainer.classList.remove('hidden');
+                
+                // Resetar estado de seleção
+                resetSelectionState();
+                
+                log(`Voltou para visualização de miniaturas`, 'success');
+            }
+            
+            // ======== CONFIGURAÇÃO DE EVENTOS ========
+            
+            // Eventos de drag and drop com logs detalhados
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                log(`Evento '${eventName}' registrado para a zona de drop`, 'info');
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                    log(`Zona de drop: ${eventName}`, 'info');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                    log(`Zona de drop: ${eventName}`, 'info');
+                });
+            });
+            
+            // Evento de soltar arquivo na área
+            dropZone.addEventListener('drop', function(e) {
+                const file = e.dataTransfer.files[0];
+                log(`Arquivo arrastado e solto: ${file ? file.name : "nenhum"}`, 'info');
+                resetState();
+                handleFile(file);
+            });
+            
+            // Evento de clique na área de upload
+            dropZone.addEventListener('click', function() {
+                log(`Clique na área de drop`, 'info');
+                resetState();
+                pdfInput.click();
+            });
+            
+            // Evento de seleção de arquivo via input
+            pdfInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                log(`Arquivo selecionado via input: ${file ? file.name : "nenhum"}`, 'info');
+                handleFile(file);
+            });
+            
+            // Navegação de página para o cropper
+            prevPage.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    log(`Navegando para página anterior: ${currentPage - 1}`, 'info');
+                    currentPage--;
+                    renderPageForCropping(currentPage);
+                }
+            });
+            
+            nextPage.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    log(`Navegando para próxima página: ${currentPage + 1}`, 'info');
+                    currentPage++;
+                    renderPageForCropping(currentPage);
+                }
+            });
+            
+            // Navegação do grid de miniaturas
+            prevGridPage.addEventListener('click', () => {
+                if (currentGridPage > 0) {
+                    log(`Navegando para página anterior do grid: ${currentGridPage}`, 'info');
+                    currentGridPage--;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            nextGridPage.addEventListener('click', () => {
+                if (currentGridPage < totalGridPages - 1) {
+                    log(`Navegando para próxima página do grid: ${currentGridPage + 2}`, 'info');
+                    currentGridPage++;
+                    renderGridPage(currentGridPage);
+                }
+            });
+            
+            // Botão de voltar para miniaturas
+            backToGridButton.addEventListener('click', () => {
+                log(`Voltando para visualização de miniaturas`, 'info');
+                showPreviewContainer();
+            });
+            
+            // Botão para cancelar seleção atual (estilo de numeração)
+            cancelSelectionCentered.addEventListener('click', () => {
+                log(`Cancelar seleção clicado (botão centralizado)`, 'info');
+                cancelAreaSelection();
+            });
+            
+            // Botão de extração
+            extractButton.addEventListener('click', () => {
+                log(`Botão de extração clicado`, 'info');
+                extractSelectedArea();
+            });
+            
+            // Adicionar evento de tecla ESC para cancelar seleção
+            document.addEventListener('keydown', (event) => {
+                // Verificar se estamos na página de seleção de área
+                if (pageDetailView && !pageDetailView.classList.contains('hidden')) {
+                    if (event.key === 'Escape') {
+                        log(`Tecla ESC pressionada - cancelando seleção`, 'info');
+                        cancelAreaSelection();
+                    }
+                }
+            });
+
+            // Adicionar evento de clique fora da área de seleção
+            document.addEventListener('click', (event) => {
+                // Verificar se estamos na página de seleção de área e o cropper está ativo
+                if (pageDetailView && !pageDetailView.classList.contains('hidden') && cropperInstance) {
+                    const cropperContainer = cropperInstance.containerEl;
+                    const cropBox = cropperInstance.cropBoxEl;
+                    
+                    // Verificar se o clique NÃO foi dentro do cropper ou em seus elementos relacionados
+                    if (cropperContainer && !cropperContainer.contains(event.target) &&
+                        cropBox && !cropBox.contains(event.target) &&
+                        event.target !== cancelSelectionCentered &&
+                        !cancelSelectionCentered.contains(event.target) &&
+                        event.target !== extractButton &&
+                        !extractButton.contains(event.target)) {
+                        log(`Clique fora da área de seleção detectado`, 'info');
+                        cancelAreaSelection();
+                    }
+                }
+            });
+            
+            // Limpar recursos ao fechar a página
+            window.addEventListener('beforeunload', () => {
+                log(`Fechando página - limpando recursos`, 'info');
+                cleanupResources();
+            });
+            
+            // Inicialização concluída
+            log('Aplicação inicializada com sucesso', 'success');
+        });
+    </script>
+</body>
+</html>
