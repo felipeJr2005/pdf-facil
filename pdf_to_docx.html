@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter PDF para DOCX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    
+    <style>
+       
+    </style>
+</head>
+<body class="converter-word">
+    <div class="function-container" style="padding-top: 0; padding-bottom: 0;">
+        <div class="container" style="padding: 0;">
+            <div class="card upload-area" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <div class="drop-zone" id="dropZone" style="background: linear-gradient(145deg, #f8fafc, #e6f0ff); border: 1.5px dashed #2b5797; padding: 1.5rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 100px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;">
+                            <i class="fas fa-file-pdf upload-icon" style="font-size: 1.75rem; color: #2b5797; background: white; width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></i>
+                            <div>
+                                <div class="upload-text" style="font-weight: 600; margin-bottom: 0.25rem;">Selecione o arquivo PDF</div>
+                                <div class="upload-subtext" style="font-size: 0.875rem; color: #64748b;">Arraste aqui ou clique para selecionar</div>
+                            </div>
+                        </div>
+                        <input type="file" id="fileInput" accept=".pdf" style="display: none">
+                    </div>
+                    <div id="fileInfo" style="margin-top: 0.75rem;"></div>
+                    <div id="topDownloadArea" style="margin-top: 0.75rem; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Área de visualização e seleção de páginas do PDF -->
+            <div id="pdf-preview-header" class="hidden" style="margin-top: 1rem;">
+                <h3 style="margin-bottom: 0.5rem; color: #2b5797; font-size: 1.125rem; font-weight: 600;">Selecione as páginas para converter:</h3>
+                <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Clique nas páginas para incluir/excluir da conversão
+                </p>
+            </div>
+            <div id="pdf-preview" class="pdf-preview-grid hidden"></div>
+
+            <div id="exclude-counter" class="exclude-counter">
+                Páginas excluídas: <span id="excluded-count">0</span>
+            </div>
+
+            <div class="card control-panel" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <h3 style="margin-bottom: 0.5rem; color: #2b5797; font-size: 1.125rem; font-weight: 600;">Converter PDF para DOCX</h3>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">Conversão com preservação de layout, imagens e formatação.</p>
+                    
+                    <button id="convertButton" class="btn" disabled style="width: 100%; padding: 0.75rem; background: linear-gradient(to right, #2b5797, #1e3e70); color: white; border: none; border-radius: 0.375rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s ease;">
+                        <i class="fas fa-sync-alt"></i>
+                        Converter PDF para DOCX
+                    </button>
+
+                    <div id="progressArea" class="progress-container" style="display: none; margin-top: 1rem;">
+                        <div class="progress-bar" style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div class="progress-bar-fill" id="progressBarFill" style="height: 100%; background: #2b5797; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="progress-text" id="conversionProgress" style="font-size: 0.875rem; color: #64748b; text-align: center; margin-top: 0.5rem;">Convertendo arquivo...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="statusArea" style="margin-bottom: 1.25rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+        
+        // Elementos do DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertButton = document.getElementById('convertButton');
+        const progressArea = document.getElementById('progressArea');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const conversionProgress = document.getElementById('conversionProgress');
+        const statusArea = document.getElementById('statusArea');
+        const pdfPreviewHeader = document.getElementById('pdf-preview-header');
+        const pdfPreview = document.getElementById('pdf-preview');
+        const topDownloadArea = document.getElementById('topDownloadArea');
+        
+        // Variáveis globais
+        let selectedFile = null;
+        let pdfPageCanvases = [];
+        let totalPdfPages = 0;
+        let excludedPages = new Set();
+    
+        // Event Listeners para Drag and Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+    
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+                dropZone.style.borderColor = '#1e3e70';
+                dropZone.style.background = 'rgba(230, 240, 255, 0.5)';
+            });
+        });
+    
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+                dropZone.style.borderColor = '#2b5797';
+                dropZone.style.background = 'linear-gradient(145deg, #f8fafc, #e6f0ff)';
+            });
+        });
+    
+        dropZone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+    
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+    
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+    
+        // Função para resetar o estado da aplicação
+        function resetState() {
+            selectedFile = null;
+            progressArea.style.display = 'none';
+            progressBarFill.style.width = '0%';
+            conversionProgress.textContent = 'Convertendo arquivo...';
+            statusArea.innerHTML = '';
+            pdfPreview.innerHTML = '';
+            pdfPreview.classList.add('hidden');
+            pdfPreviewHeader.classList.add('hidden');
+            pdfPageCanvases = [];
+            totalPdfPages = 0;
+            excludedPages.clear();
+            
+            // Reset do contador de páginas excluídas
+            document.getElementById('excluded-count').textContent = '0';
+            document.getElementById('exclude-counter').style.display = 'none';
+            
+            if (topDownloadArea) {
+                topDownloadArea.style.display = 'none';
+                topDownloadArea.innerHTML = '';
+            }
+            convertButton.disabled = true;
+        }
+    
+        // Atualizar o contador de páginas excluídas
+        function updateExcludedCounter() {
+            const counter = document.getElementById('excluded-count');
+            counter.textContent = excludedPages.size;
+            
+            const counterContainer = document.getElementById('exclude-counter');
+            if (excludedPages.size > 0) {
+                counterContainer.style.display = 'block';
+            } else {
+                counterContainer.style.display = 'none';
+            }
+        }
+    
+        // Alternar exclusão de página
+        function togglePageExclusion(pageNum, pageContainer, toggleBtn) {
+            if (excludedPages.has(pageNum)) {
+                excludedPages.delete(pageNum);
+                pageContainer.classList.remove('excluded');
+                toggleBtn.classList.remove('active');
+            } else {
+                excludedPages.add(pageNum);
+                pageContainer.classList.add('excluded');
+                toggleBtn.classList.add('active');
+            }
+            
+            updateExcludedCounter();
+        }
+    
+        // Renderizar página do PDF para um canvas
+        async function renderPdfPageToCanvas(pdf, pageNum, scale = 1.5) {
+            try {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                return { canvas, page };
+            } catch (error) {
+                console.error(`Erro ao renderizar página ${pageNum}:`, error);
+                throw error;
+            }
+        }
+    
+        // Mostrar visualização das páginas do PDF
+        async function displayPdfPages(pdfData) {
+            try {
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                totalPdfPages = pdf.numPages;
+                pdfPageCanvases = [];
+                excludedPages.clear();
+                
+                // Mostrar cabeçalho da visualização
+                pdfPreviewHeader.classList.remove('hidden');
+                
+                // Limpar a grade de visualização
+                pdfPreview.innerHTML = '';
+                
+                // Renderizar cada página do PDF
+                for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+                    const { canvas, page } = await renderPdfPageToCanvas(pdf, pageNum, 0.5); // Escala menor para preview
+                    pdfPageCanvases.push({ canvas, page });
+                    
+                    // Criar container para a página
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'page-preview'; // Alterado: 'pdf-page-preview' -> 'page-preview'
+                    pageContainer.dataset.page = pageNum;
+                    
+                    // Clone o canvas para a visualização
+                    const displayCanvas = document.createElement('canvas');
+                    displayCanvas.width = canvas.width;
+                    displayCanvas.height = canvas.height;
+                    displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                    displayCanvas.className = 'image-preview'; // Adicionado: classe para a imagem
+                    
+                    // Adicionar número da página
+                    const pageLabel = document.createElement('div');
+                    pageLabel.className = 'page-number'; // Alterado: 'pdf-page-number' -> 'page-number'
+                    pageLabel.textContent = `Página ${pageNum}`;
+                    
+                    // Botão para incluir/excluir a página
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'page-toggle-btn';
+                    toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    toggleBtn.title = 'Excluir/Incluir página';
+                    toggleBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePageExclusion(pageNum, pageContainer, toggleBtn);
+                    });
+                    
+                    // Adicionar elementos ao container da página
+                    pageContainer.appendChild(displayCanvas);
+                    pageContainer.appendChild(pageLabel);
+                    pageContainer.appendChild(toggleBtn);
+                    
+                    // Clicar na página também alterna a exclusão
+                    pageContainer.addEventListener('click', () => {
+                        togglePageExclusion(pageNum, pageContainer, toggleBtn);
+                    });
+                    
+                    // Adicionar à grade de visualização
+                    pdfPreview.appendChild(pageContainer);
+                }
+                
+                // Mostrar a grade de visualização
+                pdfPreview.classList.remove('hidden');
+                updateExcludedCounter();
+                
+                return pdf;
+            } catch (error) {
+                console.error('Erro ao processar PDF:', error);
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao processar o PDF: ${error.message || 'Arquivo inválido ou corrompido'}
+                    </div>`;
+                throw error;
+            }
+        }
+        
+        // Função para lidar com o arquivo selecionado
+        async function handleFile(file) {
+            resetState();
+    
+            if (!file) {
+                fileInfo.innerHTML = '';
+                convertButton.disabled = true;
+                return;
+            }
+    
+            if (file.type !== 'application/pdf') {
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Por favor, selecione um arquivo PDF válido. Formato atual: ${file.type}
+                    </div>`;
+                convertButton.disabled = true;
+                return;
+            }
+    
+            // Mostra mensagem de carregamento
+            fileInfo.innerHTML = `
+                <div class="status-message success">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Carregando arquivo PDF...
+                </div>`;
+    
+            try {
+                // Usar FileReader para ler o arquivo
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const pdfData = new Uint8Array(e.target.result);
+                        selectedFile = file; // Armazenar o arquivo para envio posterior
+                        
+                        // Processar visualização de páginas do PDF
+                        await displayPdfPages(pdfData);
+                        
+                        // Mostrar informações sobre o arquivo
+                        fileInfo.innerHTML = `
+                            <div class="status-message success">
+                                <i class="fas fa-check-circle"></i>
+                                Arquivo selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) - ${totalPdfPages} páginas
+                            </div>`;
+                        
+                        convertButton.disabled = false;
+                    } catch (error) {
+                        fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Erro ao processar o PDF: ${error.message || 'Arquivo inválido ou corrompido'}
+                            </div>`;
+                        convertButton.disabled = true;
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Erro ao ler o arquivo: Verifique se o arquivo é válido e tente novamente.
+                        </div>`;
+                    convertButton.disabled = true;
+                };
+                
+                // Iniciar a leitura do arquivo
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('Erro ao processar arquivo:', error);
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao processar o arquivo: ${error.message || 'Erro desconhecido'}
+                    </div>`;
+                convertButton.disabled = true;
+            }
+        }
+    
+        // Função para converter PDF para DOCX
+        convertButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+    
+            topDownloadArea.style.display = 'none';
+            statusArea.innerHTML = `
+                <div class="status-message success">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Iniciando conversão para DOCX...
+                </div>`;
+    
+            // Verificar se todas as páginas foram excluídas
+            const pagesToProcess = Array.from(
+                { length: totalPdfPages }, 
+                (_, i) => i + 1
+            ).filter(pageNum => !excludedPages.has(pageNum));
+            
+            if (pagesToProcess.length === 0) {
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.
+                    </div>`;
+                return;
+            }
+    
+            progressArea.style.display = 'block';
+            convertButton.disabled = true;
+            
+            try {
+                // Atualizar progresso
+                progressBarFill.style.width = '30%';
+                conversionProgress.textContent = 'Enviando arquivo para conversão...';
+                
+                // Preparar o formulário
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                
+                // Adicionar informações sobre as páginas a manter (invertendo a lógica de excludedPages)
+                if (excludedPages.size > 0) {
+                    const pagesToKeep = Array.from(
+                        { length: totalPdfPages },
+                        (_, i) => i
+                    ).filter(pageNum => !excludedPages.has(pageNum + 1));
+                    
+                    formData.append('pages_to_keep', JSON.stringify(pagesToKeep));
+                }
+                
+                // Enviar para o PHP que fará o proxy para a API FastAPI
+                const response = await fetch('pdf_to_docx.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                progressBarFill.style.width = '70%';
+                conversionProgress.textContent = 'Recebendo arquivo convertido...';
+                
+                if (!response.ok) {
+                    // Se o servidor retornou um erro
+                    if (response.headers.get('Content-Type').includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Erro ao converter o PDF');
+                    } else {
+                        throw new Error(`Erro no servidor: ${response.status}`);
+                    }
+                }
+                
+                // Baixar o arquivo DOCX
+                progressBarFill.style.width = '90%';
+                
+                const blob = await response.blob();
+                const downloadUrl = URL.createObjectURL(blob);
+                const fileName = selectedFile.name.replace('.pdf', '.docx');
+                
+                progressBarFill.style.width = '100%';
+                conversionProgress.textContent = 'Conversão concluída com sucesso!';
+                
+                // Criar botão de download no topo da página
+                topDownloadArea.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída! Baixe seu arquivo DOCX:
+                    </div>
+                    <a href="${downloadUrl}" download="${fileName}" class="download-link">
+                        <i class="fas fa-download"></i>
+                        Baixar arquivo DOCX
+                    </a>`;
+                topDownloadArea.style.display = 'block';
+                
+                // Manter o botão de download no final também
+                statusArea.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída com sucesso!
+                    </div>
+                    <a href="${downloadUrl}" download="${fileName}" class="download-link">
+                        <i class="fas fa-download"></i>
+                        Baixar arquivo DOCX
+                    </a>`;
+                
+            } catch (error) {
+                console.error('Erro na conversão:', error);
+                topDownloadArea.style.display = 'none';
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao converter PDF: ${error.message || 'Ocorreu um erro durante a conversão'}
+                    </div>`;
+            } finally {
+                progressArea.style.display = 'none';
+                convertButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

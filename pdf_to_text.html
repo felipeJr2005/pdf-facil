@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Fácil - Extrair Texto de PDF</title>
+    
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .function-container {
+            width: 100%;
+            padding: 2rem;
+            flex: 1;
+            background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+        }
+
+        .upload-area {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 6px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .drop-zone {
+            border: 2px dashed #9333ea;
+            border-radius: 0.75rem;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drop-zone:hover {
+            background: #f5f3ff;
+            border-color: #7e22ce;
+        }
+
+        .drop-zone.drag-over {
+            background: #ede9fe;
+            border-color: #6b21a8;
+            transform: scale(1.01);
+        }
+
+        .drop-zone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            color: #9333ea;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            color: #475569;
+        }
+
+        .upload-subtext {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 6px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            background: linear-gradient(to bottom right, #9333ea, #7e22ce);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(147, 51, 234, 0.2);
+            width: 100%;
+        }
+
+        .action-button:hover:not(:disabled) {
+            background: linear-gradient(to bottom right, #7e22ce, #6b21a8);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(147, 51, 234, 0.3);
+        }
+
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border-left: 4px solid #16a34a;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #dc2626;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #9333ea;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #conversionProgress {
+            font-size: 0.875rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .text-container {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.875rem;
+        }
+
+        .text-page {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        .text-page-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #7e22ce;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #f5f3ff;
+            color: #7e22ce;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .download-link:hover {
+            background: #ede9fe;
+            transform: translateY(-1px);
+        }
+
+        .feature-list {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f5f3ff;
+            border-radius: 0.5rem;
+        }
+
+        .feature-list ul {
+            list-style-type: none;
+            padding-left: 1rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-list li i {
+            color: #16a34a;
+            margin-right: 0.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #7e22ce;
+        }
+
+        .tools-nav {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tool-link {
+            padding: 0.5rem 1rem;
+            background: #f8fafc;
+            color: #475569;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .tool-link:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .tool-link.active {
+            background: #f5f3ff;
+            color: #7e22ce;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="function-container">
+        <div class="header">
+            <div class="logo">PDF Fácil</div>
+        </div>
+
+        <div class="tools-nav">
+            <a href="pdf_to_docx.html" class="tool-link">PDF para Word</a>
+            <a href="pdf_to_excel.html" class="tool-link">PDF para Excel</a>
+            <a href="pdf_to_text.html" class="tool-link active">Extrair Texto do PDF</a>
+            <!-- Adicione mais ferramentas conforme necessário -->
+        </div>
+
+        <div class="upload-area">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-content">
+                    <i class="fas fa-file-pdf upload-icon"></i>
+                    <div class="upload-text">Arraste seu arquivo PDF aqui</div>
+                    <div class="upload-subtext">ou clique para selecionar</div>
+                    <input type="file" name="file" id="fileInput" accept=".pdf" style="display: none" required>
+                </div>
+            </div>
+            <div id="fileInfo"></div>
+        </div>
+
+        <div class="control-panel">
+            <h3>Extrair Texto de PDF</h3>
+            <p style="margin: 0.5rem 0; color: #64748b;">Extração inteligente de todo o texto contido em documentos PDF.</p>
+            
+            <div class="feature-list">
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Extrai texto de qualquer PDF</li>
+                    <li><i class="fas fa-check-circle"></i> Preserva a divisão por páginas</li>
+                    <li><i class="fas fa-check-circle"></i> Recupera metadados do documento</li>
+                    <li><i class="fas fa-check-circle"></i> Permite copiar ou baixar o texto extraído</li>
+                </ul>
+            </div>
+            
+            <button type="button" id="convertButton" class="action-button" disabled style="margin-top: 1rem;">
+                <i class="fas fa-file-alt"></i>
+                Extrair Texto do PDF
+            </button>
+
+            <div id="progressArea" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div id="conversionProgress">Extraindo texto...</div>
+            </div>
+        </div>
+
+        <div id="statusArea"></div>
+        <div id="textResultArea" style="display: none;">
+            <h3 style="margin: 1rem 0 0.5rem 0;">Texto Extraído</h3>
+            <div id="textContent" class="text-container"></div>
+            <button id="copyTextButton" class="download-link" style="margin-top: 1rem;">
+                <i class="fas fa-copy"></i>
+                Copiar Todo o Texto
+            </button>
+            <a id="downloadTextLink" class="download-link">
+                <i class="fas fa-download"></i>
+                Baixar como Arquivo TXT
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Elementos do DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertButton = document.getElementById('convertButton');
+        const progressArea = document.getElementById('progressArea');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const conversionProgress = document.getElementById('conversionProgress');
+        const statusArea = document.getElementById('statusArea');
+        const textResultArea = document.getElementById('textResultArea');
+        const textContent = document.getElementById('textContent');
+        const copyTextButton = document.getElementById('copyTextButton');
+        const downloadTextLink = document.getElementById('downloadTextLink');
+        let selectedFile = null;
+        let extractedText = "";
+
+        // Event Listeners para Drag and Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        // Função para resetar o estado da aplicação
+        function resetState() {
+            progressArea.style.display = 'none';
+            progressBarFill.style.width = '0%';
+            conversionProgress.textContent = 'Extraindo texto...';
+            statusArea.innerHTML = '';
+            textResultArea.style.display = 'none';
+            textContent.innerHTML = '';
+            extractedText = "";
+        }
+
+        // Função para lidar com o arquivo selecionado
+        function handleFile(file) {
+            resetState();
+
+            if (file && file.type === 'application/pdf') {
+                selectedFile = file;
+                fileInfo.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Arquivo selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </div>`;
+                convertButton.disabled = false;
+            } else {
+                selectedFile = null;
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Por favor, selecione um arquivo PDF válido
+                    </div>`;
+                convertButton.disabled = true;
+            }
+        }
+
+        // Função para extrair texto do PDF
+        convertButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            resetState();
+            progressArea.style.display = 'block';
+            convertButton.disabled = true;
+            
+            // Iniciar animação de progresso
+            progressBarFill.style.width = '30%';
+            
+            // Preparar o formulário
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                // Enviar para o PHP que fará o proxy para a API FastAPI
+                conversionProgress.textContent = 'Analisando o PDF...';
+                const response = await fetch('pdf_to_text.php', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                progressBarFill.style.width = '70%';
+                conversionProgress.textContent = 'Processando resultado...';
+
+                if (!response.ok) {
+                    // Se o servidor retornou um erro
+                    if (response.headers.get('Content-Type').includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Erro ao extrair texto do PDF');
+                    } else {
+                        throw new Error(`Erro no servidor: ${response.status}`);
+                    }
+                }
+
+                // Processar o resultado
+                progressBarFill.style.width = '90%';
+                
+                const data = await response.json();
+                
+                // Mostrar o texto extraído
+                textResultArea.style.display = 'block';
+                let fullText = "";
+                
+                data.text.forEach(page => {
+                    const pageElement = document.createElement('div');
+                    pageElement.className = 'text-page';
+                    
+                    const pageTitle = document.createElement('div');
+                    pageTitle.className = 'text-page-title';
+                    pageTitle.textContent = `Página ${page.page}`;
+                    
+                    const pageContent = document.createElement('div');
+                    pageContent.textContent = page.content;
+                    
+                    pageElement.appendChild(pageTitle);
+                    pageElement.appendChild(pageContent);
+                    textContent.appendChild(pageElement);
+                    
+                    fullText += `--- Página ${page.page} ---\n${page.content}\n\n`;
+                });
+                
+                extractedText = fullText;
+                
+                // Preparar link de download
+                const blob = new Blob([fullText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                downloadTextLink.href = url;
+                downloadTextLink.download = selectedFile.name.replace('.pdf', '.txt');
+                
+                progressBarFill.style.width = '100%';
+                conversionProgress.textContent = 'Extração concluída com sucesso!';
+
+                // Mostrar mensagem de sucesso
+                statusArea.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Extração concluída com sucesso! Texto extraído de ${data.total_pages} página(s).
+                    </div>`;
+                
+            } catch (error) {
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        ${error.message || 'Erro ao extrair texto do PDF'}
+                    </div>`;
+            } finally {
+                progressArea.style.display = 'none';
+                convertButton.disabled = false;
+            }
+        });
+        
+        // Evento para copiar o texto
+        copyTextButton.addEventListener('click', () => {
+            if (extractedText) {
+                navigator.clipboard.writeText(extractedText).then(() => {
+                    const originalText = copyTextButton.innerHTML;
+                    copyTextButton.innerHTML = '<i class="fas fa-check"></i> Texto Copiado!';
+                    setTimeout(() => {
+                        copyTextButton.innerHTML = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Erro ao copiar texto: ', err);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
