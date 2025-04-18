@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter PDF para Imagem</title>
+    <!-- Bibliotecas necessárias -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+
+    <style>
+     
+    </style>
+</head>
+<body class="converter-image">
+    <div class="function-container" style="padding-top: 0; padding-bottom: 0;">
+        <div class="container" style="padding: 0;">
+            <div class="card upload-area" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <div class="drop-zone" id="dropZone" style="background: linear-gradient(145deg, #f8fafc, #f1ebff); border: 1.5px dashed #7048e8; padding: 1.5rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 100px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;">
+                            <i class="fas fa-file-pdf upload-icon" style="font-size: 1.75rem; color: #7048e8; background: white; width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></i>
+                            <div>
+                                <div class="upload-text" style="font-weight: 600; margin-bottom: 0.25rem;">Selecione o arquivo PDF</div>
+                                <div class="upload-subtext" style="font-size: 0.875rem; color: #64748b;">Arraste aqui ou clique para selecionar</div>
+                            </div>
+                        </div>
+                        <input type="file" id="fileInput" accept=".pdf" style="display: none">
+                    </div>
+                    <div id="fileInfo" style="margin-top: 0.75rem;"></div>
+                    <div id="topDownloadArea" style="margin-top: 0.75rem; display: none;"></div>
+                </div>
+            </div>
+
+            <div class="card control-panel" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <div class="format-options">
+                        <div class="format-card selected" data-format="jpg" tabindex="0">
+                            <div class="format-icon">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <div class="option-details">
+                                <div class="option-title">JPG</div>
+                                <div class="option-description">Melhor para fotos e imagens</div>
+                            </div>
+                        </div>
+                        <div class="format-card" data-format="png" tabindex="0">
+                            <div class="format-icon">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <div class="option-details">
+                                <div class="option-title">PNG</div>
+                                <div class="option-description">Melhor para textos e transparência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel" style="background: #f8fafc; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                        <div class="settings-group" style="margin-bottom: 1rem;">
+                            <label class="settings-label" style="font-weight: 500; color: #334155; display: flex; justify-content: space-between; align-items: center;">
+                                Qualidade da Imagem
+                                <span class="quality-value" id="qualityValue">85%</span>
+                            </label>
+                            <input type="range" id="qualitySlider" class="quality-slider" min="1" max="100" value="85">
+                        </div>
+                        
+                        <div class="settings-group" style="display: flex; align-items: center; gap: 1rem;">
+                            <label class="settings-label" style="font-weight: 500; color: #334155; white-space: nowrap; margin: 0; min-width: 120px;">DPI (Resolução)</label>
+                            <select class="settings-input" id="dpiSelect" style="flex-grow: 1; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; font-size: 0.875rem;">
+                                <option value="72">72 DPI (Web)</option>
+                                <option value="150">150 DPI (Tela)</option>
+                                <option value="300" selected>300 DPI (Impressão)</option>
+                                <option value="600">600 DPI (Alta Qualidade)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="convertButton" class="btn" disabled style="width: 100%; padding: 0.75rem; background: linear-gradient(to right, #7048e8, #5f3dc4); color: white; border: none; border-radius: 0.375rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s ease;">
+                        <i class="fas fa-sync-alt"></i>
+                        Converter PDF para Imagens
+                    </button>
+
+                    <div id="progressArea" class="progress-container" style="display: none; margin-top: 1rem;">
+                        <div class="progress-bar" style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div class="progress-bar-fill" id="progressBarFill" style="height: 100%; background: #7048e8; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="progress-text" id="conversionProgress" style="font-size: 0.875rem; color: #64748b; text-align: center; margin-top: 0.5rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="previewContainer" class="card preview-container" style="display: none; margin-bottom: 1.25rem;">
+                <div class="card-header" style="padding: 0.875rem 1rem; border-bottom: 1px solid #e2e8f0; background-color: #f1ebff;">
+                    <h2 class="card-title" style="font-size: 1rem; font-weight: 600; color: #7048e8; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-eye"></i>
+                        Pré-visualização das Imagens
+                    </h2>
+                </div>
+                <div class="card-body" style="padding: 1rem; text-align: center;">
+                    <div id="multiPagePreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                        <!-- As imagens das páginas serão inseridas aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="statusArea" style="margin-bottom: 1.25rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+
+        // Elementos do DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertButton = document.getElementById('convertButton');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const progressArea = document.getElementById('progressArea');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const conversionProgress = document.getElementById('conversionProgress');
+        const formatCards = document.querySelectorAll('.format-card');
+        let selectedFile = null;
+
+        // Event Listeners para Drag and Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+                dropZone.style.borderColor = '#5f3dc4';
+                dropZone.style.background = 'rgba(241, 235, 255, 0.5)';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+                dropZone.style.borderColor = '#7048e8';
+                dropZone.style.background = 'linear-gradient(145deg, #f8fafc, #f1ebff)';
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Evento para seleção do formato
+        formatCards.forEach(card => {
+            // Navegação por teclado
+            card.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+            
+            card.addEventListener('click', () => {
+                // Remove seleção anterior
+                formatCards.forEach(c => c.classList.remove('selected'));
+                // Adiciona seleção ao card clicado
+                card.classList.add('selected');
+            });
+        });
+
+        qualitySlider.addEventListener('input', (e) => {
+            qualityValue.textContent = `${e.target.value}%`;
+        });
+
+        // Função para resetar o estado da aplicação
+        function resetState() {
+            selectedFile = null;
+            previewContainer.style.display = 'none';
+            const multiPagePreview = document.getElementById('multiPagePreview');
+            if (multiPagePreview) {
+                multiPagePreview.innerHTML = '';
+            }
+            progressArea.style.display = 'none';
+            progressBarFill.style.width = '0%';
+            conversionProgress.textContent = '';
+            statusArea.innerHTML = '';
+            const topDownloadArea = document.getElementById('topDownloadArea');
+            if (topDownloadArea) {
+                topDownloadArea.style.display = 'none';
+                topDownloadArea.innerHTML = '';
+            }
+            convertButton.disabled = true;
+            
+            // Limpar páginas excluídas
+            window.pagesToExclude = new Set();
+        }
+
+        async function handleFile(file) {
+            // Reseta o estado antes de processar novo arquivo
+            resetState();
+
+            if (!file) {
+                fileInfo.innerHTML = '';
+                convertButton.disabled = true;
+                return;
+            }
+
+            if (file.type !== 'application/pdf') {
+                fileInfo.innerHTML = `
+                    <div class="status-message error" style="background-color: #fee2e2; color: #ef4444; border-left: 4px solid #ef4444; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Por favor, selecione um arquivo PDF válido. Formato atual: ${file.type}
+                    </div>`;
+                convertButton.disabled = true;
+                return;
+            }
+
+            // Mostra mensagem de carregamento
+            fileInfo.innerHTML = `
+                <div class="status-message" style="background-color: #f1ebff; color: #7048e8; border-left: 4px solid #7048e8; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Carregando arquivo PDF...
+                </div>`;
+
+            // Usar FileReader para ler o arquivo
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const pdfData = new Uint8Array(e.target.result);
+                    selectedFile = pdfData; // Armazenar os dados binários do PDF
+                    
+                    // Usar PDF.js para processar o PDF
+                    const loadingTask = pdfjsLib.getDocument({data: pdfData});
+                    const pdf = await loadingTask.promise;
+                    
+                    // Mostrar informações sobre o arquivo
+                    fileInfo.innerHTML = `
+                        <div class="status-message success" style="background-color: #f1ebff; color: #7048e8; border-left: 4px solid #7048e8; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-check-circle"></i>
+                            Arquivo selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) - ${pdf.numPages} páginas
+                        </div>`;
+                    
+                    convertButton.disabled = false;
+                    
+                    // Gerar previews das páginas
+                    const multiPagePreview = document.getElementById('multiPagePreview');
+                    multiPagePreview.innerHTML = ''; // Limpar previews anteriores
+                    
+                    // Inicializar conjunto para rastrear páginas excluídas
+                    window.pagesToExclude = new Set();
+                    
+                    // Renderizar previews para todas as páginas
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const scale = 0.5; // Escala menor para previews
+                        const viewport = page.getViewport({ scale });
+                        
+                        // Criar canvas para renderização
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        // Renderizar página do PDF
+                        await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise;
+                        
+                        // Criar contêiner da página
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'page-preview';
+                        pageContainer.dataset.page = pageNum;
+                        pageContainer.style.position = 'relative';
+                        pageContainer.style.borderRadius = '4px';
+                        pageContainer.style.overflow = 'hidden';
+                        pageContainer.style.border = '1px solid #e2e8f0';
+                        pageContainer.style.transition = 'all 0.2s ease';
+                        
+                        // Adicionar o número da página
+                        const pageNumber = document.createElement('div');
+                        pageNumber.textContent = `Página ${pageNum}`;
+                        pageNumber.style.position = 'absolute';
+                        pageNumber.style.bottom = '8px';
+                        pageNumber.style.left = '50%';
+                        pageNumber.style.transform = 'translateX(-50%)';
+                        pageNumber.style.background = 'rgba(0,0,0,0.6)';
+                        pageNumber.style.color = 'white';
+                        pageNumber.style.padding = '2px 8px';
+                        pageNumber.style.borderRadius = '12px';
+                        pageNumber.style.fontSize = '0.75rem';
+                        
+                        // Adicionar botão de exclusão
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                        deleteBtn.style.position = 'absolute';
+                        deleteBtn.style.top = '8px';
+                        deleteBtn.style.right = '8px';
+                        deleteBtn.style.background = 'rgba(239, 68, 68, 0.8)';
+                        deleteBtn.style.color = 'white';
+                        deleteBtn.style.border = 'none';
+                        deleteBtn.style.borderRadius = '50%';
+                        deleteBtn.style.width = '24px';
+                        deleteBtn.style.height = '24px';
+                        deleteBtn.style.display = 'flex';
+                        deleteBtn.style.alignItems = 'center';
+                        deleteBtn.style.justifyContent = 'center';
+                        deleteBtn.style.cursor = 'pointer';
+                        deleteBtn.style.opacity = '0';
+                        deleteBtn.style.transition = 'opacity 0.2s ease';
+                        
+                        // Funcionalidade para excluir/incluir páginas
+                        deleteBtn.addEventListener('click', function() {
+                            if (window.pagesToExclude.has(pageNum)) {
+                                // Incluir novamente
+                                window.pagesToExclude.delete(pageNum);
+                                pageContainer.style.opacity = '1';
+                                pageContainer.style.filter = 'none';
+                                deleteBtn.style.background = 'rgba(239, 68, 68, 0.8)';
+                                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                            } else {
+                                // Excluir
+                                window.pagesToExclude.add(pageNum);
+                                pageContainer.style.opacity = '0.5';
+                                pageContainer.style.filter = 'grayscale(100%)';
+                                deleteBtn.style.background = 'rgba(16, 185, 129, 0.8)';
+                                deleteBtn.innerHTML = '<i class="fas fa-undo"></i>';
+                            }
+                        });
+                        
+                        // Efeitos de hover
+                        pageContainer.addEventListener('mouseenter', function() {
+                            deleteBtn.style.opacity = '1';
+                            pageContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                        });
+                        
+                        pageContainer.addEventListener('mouseleave', function() {
+                            deleteBtn.style.opacity = '0';
+                            pageContainer.style.boxShadow = 'none';
+                        });
+                        
+                        // Adicionar a imagem redimensionada
+                        const img = document.createElement('img');
+                        img.src = canvas.toDataURL('image/jpeg');
+                        img.style.width = '100%';
+                        img.style.height = 'auto';
+                        img.style.display = 'block';
+                        
+                        // Montar componentes
+                        pageContainer.appendChild(img);
+                        pageContainer.appendChild(pageNumber);
+                        pageContainer.appendChild(deleteBtn);
+                        multiPagePreview.appendChild(pageContainer);
+                    }
+                    
+                    // Mostrar a área de previsualização
+                    previewContainer.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Erro ao processar PDF:', error);
+                    fileInfo.innerHTML = `
+                        <div class="status-message error" style="background-color: #fee2e2; color: #ef4444; border-left: 4px solid #ef4444; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Erro ao processar o PDF: ${error.message || 'Arquivo inválido ou corrompido'}
+                        </div>`;
+                    convertButton.disabled = true;
+                }
+            };
+            
+            reader.onerror = function(error) {
+                console.error('Erro ao ler o arquivo:', error);
+                fileInfo.innerHTML = `
+                    <div class="status-message error" style="background-color: #fee2e2; color: #ef4444; border-left: 4px solid #ef4444; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao ler o arquivo: Verifique se o arquivo é válido e tente novamente.
+                    </div>`;
+                convertButton.disabled = true;
+            };
+            
+            // Iniciar a leitura do arquivo
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Função para atualizar a barra de progresso
+        function updateProgress(current, total) {
+            const percentage = (current / total) * 100;
+            progressBarFill.style.width = `${percentage}%`;
+            conversionProgress.textContent = `Convertendo página ${current} de ${total}`;
+        }
+
+        // Função para converter PDF
+        convertButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const statusArea = document.getElementById('statusArea');
+            const topDownloadArea = document.getElementById('topDownloadArea');
+            
+            topDownloadArea.style.display = 'none';
+            statusArea.innerHTML = `
+                <div class="status-message success" style="background-color: #f1ebff; color: #7048e8; border-left: 4px solid #7048e8; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Preparando para converter...
+                </div>`;
+
+            progressArea.style.display = 'block';
+            convertButton.disabled = true;
+
+            try {
+                const format = document.querySelector('.format-card.selected').dataset.format;
+                const quality = parseInt(qualitySlider.value) / 100;
+                const dpi = parseInt(document.getElementById('dpiSelect').value);
+                
+                // Carregar o PDF a partir dos dados armazenados
+                const pdf = await pdfjsLib.getDocument({data: selectedFile}).promise;
+                const numPages = pdf.numPages;
+                
+                const zip = new JSZip();
+                const images = zip.folder("imagens_convertidas");
+                
+                // Obter a lista de páginas a excluir (se definida)
+                const pagesToExclude = window.pagesToExclude || new Set();
+
+                let convertedPages = 0;
+                let totalPagesToConvert = numPages - pagesToExclude.size;
+                
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    // Pular páginas marcadas para exclusão
+                    if (pagesToExclude.has(pageNum)) {
+                        continue;
+                    }
+                    
+                    convertedPages++;
+                    updateProgress(convertedPages, totalPagesToConvert);
+
+                    const page = await pdf.getPage(pageNum);
+                    const scale = dpi / 72; // Converter DPI para escala
+                    const viewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+
+                    // Converter para o formato selecionado e remover cabeçalho data URL
+                    const mimeType = `image/${format}`;
+                    const imageData = canvas.toDataURL(mimeType, quality);
+                    const base64Data = imageData.split(';base64,').pop();
+                    
+                    images.file(`pagina_${pageNum}.${format}`, base64Data, {base64: true});
+                }
+
+                // Gerar arquivo ZIP
+                const content = await zip.generateAsync({type:"blob"});
+                
+                // Criar link de download
+                const downloadUrl = URL.createObjectURL(content);
+                const pageText = totalPagesToConvert === 1 ? "página" : "páginas";
+                
+                // Mostrar download no topo da página
+                topDownloadArea.innerHTML = `
+                    <div class="status-message success" style="background-color: #f1ebff; color: #7048e8; border-left: 4px solid #7048e8; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída! ${totalPagesToConvert} ${pageText} convertidas para ${format.toUpperCase()}.
+                    </div>
+                    <a href="${downloadUrl}" download="imagens_convertidas.zip" class="download-link" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #f1ebff; color: #7048e8; text-decoration: none; border-radius: 0.5rem; border: 1px solid #7048e8; font-weight: 600; transition: all 0.2s ease; justify-content: center; width: 100%; margin-bottom: 1rem;">
+                        <i class="fas fa-download"></i>
+                        Baixar imagens convertidas (ZIP)
+                    </a>`;
+                topDownloadArea.style.display = 'block';
+                
+                // Manter o botão de download no final também
+                statusArea.innerHTML = `
+                    <div class="status-message success" style="background-color: #f1ebff; color: #7048e8; border-left: 4px solid #7048e8; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída! ${totalPagesToConvert} ${pageText} convertidas para ${format.toUpperCase()}.
+                    </div>
+                    <a href="${downloadUrl}" download="imagens_convertidas.zip" class="download-link" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #f1ebff; color: #7048e8; text-decoration: none; border-radius: 0.5rem; border: 1px solid #7048e8; font-weight: 600; transition: all 0.2s ease; justify-content: center; width: 100%;">
+                        <i class="fas fa-download"></i>
+                        Baixar imagens convertidas (ZIP)
+                    </a>`;
+            } catch (error) {
+                console.error('Erro durante a conversão:', error);
+                topDownloadArea.style.display = 'none';
+                statusArea.innerHTML = `
+                    <div class="status-message error" style="background-color: #fee2e2; color: #ef4444; border-left: 4px solid #ef4444; padding: 0.75rem; border-radius: 0.375rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao converter PDF: ${error.message || 'Ocorreu um erro durante a conversão'}
+                    </div>`;
+            } finally {
+                progressArea.style.display = 'none';
+                convertButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
