@@ -4,9 +4,31 @@
  * Caminho: manutencao/gargamel.php
  */
 
-// Configuração básica
-$adminUser = 'admin'; // Altere para seu nome de usuário desejado
-$adminPassword = '1364@Fe1980'; // Mantenha sua senha atual ou altere para uma mais segura
+// Caminho para o arquivo de credenciais (fora do diretório web)
+$credentialsFile = dirname(dirname(__FILE__)) . '/.admin_credentials.php';
+
+// Verificar se o arquivo de credenciais existe, senão criar
+if (!file_exists($credentialsFile)) {
+    // Usuário e senha iniciais
+    $defaultUser = 'admin';
+    $defaultPassword = password_hash('1364@Fe1980', PASSWORD_DEFAULT);
+    
+    // Criar arquivo com credenciais
+    $credentials = "<?php\n";
+    $credentials .= "// Arquivo de credenciais do administrador\n";
+    $credentials .= "// NÃO EDITE ESTE ARQUIVO MANUALMENTE\n";
+    $credentials .= "\$adminUser = '{$defaultUser}';\n";
+    $credentials .= "\$adminPasswordHash = '{$defaultPassword}';\n";
+    $credentials .= "?>";
+    
+    file_put_contents($credentialsFile, $credentials);
+    chmod($credentialsFile, 0600); // Permissão somente para o dono
+}
+
+// Incluir arquivo de credenciais
+require_once($credentialsFile);
+
+// Resto das configurações
 $sessionTimeout = 86400; // 24 horas em segundos
 $siteRoot = dirname(dirname(__FILE__)); // Diretório raiz (um nível acima)
 
@@ -30,19 +52,24 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 // Processar login
 $loginError = '';
 if (isset($_POST['action']) && $_POST['action'] === 'login') {
-    if ($_POST['username'] === $adminUser && $_POST['password'] === $adminPassword) {
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['last_activity'] = time();
-        $isLoggedIn = true;
-        
-        // Redirecionar para evitar reenvio do formulário
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit;
+    // Verificar nome de usuário primeiro
+    if ($_POST['username'] === $adminUser) {
+        // Agora verificar senha usando hash seguro
+        if (password_verify($_POST['password'], $adminPasswordHash)) {
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['last_activity'] = time();
+            $isLoggedIn = true;
+            
+            // Redirecionar para evitar reenvio do formulário
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        } else {
+            $loginError = 'Usuário ou senha incorretos.';
+        }
     } else {
         $loginError = 'Usuário ou senha incorretos.';
     }
 }
-
 // Processar logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_unset();
