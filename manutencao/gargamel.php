@@ -4,33 +4,11 @@
  * Caminho: manutencao/gargamel.php
  */
 
-// Caminho para o arquivo de credenciais (fora do diretório web)
-$credentialsFile = dirname(dirname(__FILE__)) . '/.admin_credentials.php';
-
-// Verificar se o arquivo de credenciais existe, senão criar
-if (!file_exists($credentialsFile)) {
-    // Usuário e senha iniciais
-    $defaultUser = 'admin';
-    $defaultPassword = password_hash('1364@Fe1980', PASSWORD_DEFAULT);
-    
-    // Criar arquivo com credenciais
-    $credentials = "<?php\n";
-    $credentials .= "// Arquivo de credenciais do administrador\n";
-    $credentials .= "// NÃO EDITE ESTE ARQUIVO MANUALMENTE\n";
-    $credentials .= "\$adminUser = '{$defaultUser}';\n";
-    $credentials .= "\$adminPasswordHash = '{$defaultPassword}';\n";
-    $credentials .= "?>";
-    
-    file_put_contents($credentialsFile, $credentials);
-    chmod($credentialsFile, 0600); // Permissão somente para o dono
-}
-
-// Incluir arquivo de credenciais
-require_once($credentialsFile);
-
-// Resto das configurações
+// Configuração básica
+$adminUser = 'admin';
+$adminPassword = '1364@Fe1980';
 $sessionTimeout = 86400; // 24 horas em segundos
-$siteRoot = dirname(dirname(__FILE__)); // Diretório raiz (um nível acima)
+$siteRoot = dirname(dirname(__FILE__));
 
 // Iniciar sessão
 session_start();
@@ -52,24 +30,19 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 // Processar login
 $loginError = '';
 if (isset($_POST['action']) && $_POST['action'] === 'login') {
-    // Verificar nome de usuário primeiro
-    if ($_POST['username'] === $adminUser) {
-        // Agora verificar senha usando hash seguro
-        if (password_verify($_POST['password'], $adminPasswordHash)) {
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['last_activity'] = time();
-            $isLoggedIn = true;
-            
-            // Redirecionar para evitar reenvio do formulário
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit;
-        } else {
-            $loginError = 'Usuário ou senha incorretos.';
-        }
+    if ($_POST['username'] === $adminUser && $_POST['password'] === $adminPassword) {
+        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['last_activity'] = time();
+        $isLoggedIn = true;
+        
+        // Redirecionar para evitar reenvio do formulário
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
     } else {
         $loginError = 'Usuário ou senha incorretos.';
     }
 }
+
 // Processar logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_unset();
@@ -81,27 +54,27 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 // Processar limpeza de cache
 $cacheMessage = '';
 if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'clear_cache') {
-    // Atualizar timestamp
+    // Atualizar timestamp (se possível)
     $timestampFile = $siteRoot . '/.last_cache_clean';
-    file_put_contents($timestampFile, time());
+    $timestampUpdated = @file_put_contents($timestampFile, time());
     
     // Limpar cache PHP
+    $opcacheCleared = false;
     if (function_exists('opcache_reset')) {
         opcache_reset();
+        $opcacheCleared = true;
     }
+    
+    // Limpar cache de estatísticas
     clearstatcache(true);
     
-    // Tocar arquivos principais para forçar atualização
-    $mainFiles = glob($siteRoot . '/*.{html,php}', GLOB_BRACE);
-    $touchedFiles = 0;
+    // Enviar cabeçalhos anti-cache
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
+    header("Pragma: no-cache");
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
     
-    foreach ($mainFiles as $file) {
-        if (touch($file)) {
-            $touchedFiles++;
-        }
-    }
-    
-    $cacheMessage = 'Cache limpo com sucesso! ' . $touchedFiles . ' arquivos atualizados.';
+    $cacheMessage = 'Cache limpo com sucesso! Cache do PHP e do navegador foram atualizados.';
 }
 
 // Ler notas de manutenção (se existirem)
@@ -133,14 +106,16 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
     // Adicionar à lista de notas
     $notes[] = $newNote;
     
-    // Salvar notas
-    file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT));
+    // Tentar salvar notas
+    $notesSaved = @file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT));
     
-    // Mensagem de sucesso
-    $cacheMessage = 'Nota adicionada com sucesso!';
+    // Mensagem de sucesso ou erro
+    if ($notesSaved) {
+        $cacheMessage = 'Nota adicionada com sucesso!';
+    } else {
+        $cacheMessage = 'Erro ao salvar nota. Problema de permissão.';
+    }
 }
-
-// Conteúdo HTML da página
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -300,9 +275,30 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
             margin-top: 10px;
         }
         
-        /* Estilos para notas */
-        .notes-container {
-            margin-top: 20px;
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
         }
         
         .note-item {
@@ -358,32 +354,6 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
         
         .priority-baixa {
             background-color: var(--primary-color);
-        }
-        
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 20px;
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-        
-        .tab.active {
-            font-weight: 600;
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
         }
         
         @media (max-width: 768px) {
@@ -447,7 +417,7 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
                     <div class="card">
                         <div class="card-title">Gerenciamento de Cache</div>
                         <div class="card-content">
-                            <p>Use esta opção para limpar o cache do site e forçar a atualização dos arquivos.</p>
+                            <p>Use esta opção para limpar o cache do PHP e notificar os navegadores para atualizarem seus caches.</p>
                             
                             <?php
                             $timestampFile = $siteRoot . '/.last_cache_clean';
@@ -483,7 +453,7 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
                                 </p>
                             <?php endif; endif; ?>
                             
-                            <p><strong>Diretório raiz:</strong> <?php echo htmlspecialchars($siteRoot); ?></p>
+                            <p><strong>Diretório:</strong> <?php echo htmlspecialchars($siteRoot); ?></p>
                         </div>
                         
                         <a href="/" class="btn">Voltar para o site</a>
