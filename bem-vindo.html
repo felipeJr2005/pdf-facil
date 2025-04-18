@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao PDFFacil</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #5c95ce;
+            --primary-hover: #1976d2;
+            --gradient-start: #bfdbe4;
+            --gradient-end: #5c95ce;
+            --accent-color: #4CAF50;
+            --secondary-bg: #f8f9fa;
+            --text-primary: #333;
+            --text-secondary: #6b7280;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-hover: 0 8px 15px rgba(30,64,175,0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--secondary-bg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            font-size: 1.75rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+        }
+
+        .how-to-section {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .how-to-title {
+            font-size: 1.75rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .steps {
+            list-style-type: none;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            background-color: var(--primary-color);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex-grow: 1;
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+        }
+
+        .cta-section {
+            text-align: center;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            padding: 3rem 2rem;
+            border-radius: 0.75rem;
+            color: white;
+        }
+
+        .cta-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-message {
+            font-style: italic;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="welcome-header">
+            <h1 class="welcome-title">Bem-vindo ao PDFFacil</h1>
+            <p class="welcome-subtitle">Sua solução completa para manipulação de arquivos PDF de forma simples, rápida e gratuita!</p>
+        </header>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-compress"></i>
+                </div>
+                <h2 class="feature-title">Compressão Inteligente</h2>
+                <p class="feature-description">Reduza o tamanho dos seus arquivos PDF mantendo a qualidade original para facilitar o compartilhamento por e-mail ou upload em plataformas com limite de tamanho.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h2 class="feature-title">Conversão Versátil</h2>
+                <p class="feature-description">Converta PDFs para diversos formatos como Word, Excel, PowerPoint, JPG, PNG ou transforme outros formatos em PDF com facilidade.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-object-group"></i>
+                </div>
+                <h2 class="feature-title">Juntar e Dividir</h2>
+                <p class="feature-description">Combine vários arquivos PDF em um único documento ou divida um PDF grande em arquivos menores conforme sua necessidade.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <h2 class="feature-title">Otimização para PJE</h2>
+                <p class="feature-description">Adeque seus documentos PDF às exigências específicas do Processo Judicial Eletrônico (PJE), garantindo a conformidade com normas jurídicas.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-font"></i>
+                </div>
+                <h2 class="feature-title">Reconhecimento OCR</h2>
+                <p class="feature-description">Converta imagens ou documentos escaneados em texto pesquisável, facilitando a localização de informações importantes em seus arquivos.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2 class="feature-title">Privacidade Garantida</h2>
+                <p class="feature-description">Todo o processamento é realizado localmente no seu navegador, sem enviar seus documentos para servidores externos, garantindo total segurança e privacidade.</p>
+            </div>
+        </div>
+
+        <section class="how-to-section">
+            <h2 class="how-to-title">Como Usar</h2>
+            <ol class="steps">
+                <li class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Selecione a Ferramenta</h3>
+                        <p class="step-description">Escolha a função desejada no menu lateral esquerdo, como Comprimir, Converter, Juntar, Dividir, entre outras opções disponíveis.</p>
+                    </div>
+                </li>
+                <li class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Carregue seu Arquivo</h3>
+                        <p class="step-description">Arraste e solte seus arquivos PDF na área indicada ou clique para selecionar os arquivos do seu computador.</p>
+                    </div>
+                </li>
+                <li class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Ajuste as Configurações</h3>
+                        <p class="step-description">Personalize as opções disponíveis de acordo com sua necessidade específica para obter o melhor resultado.</p>
+                    </div>
+                </li>
+                <li class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Processe e Baixe</h3>
+                        <p class="step-description">Clique em processar e, após a conclusão, baixe o arquivo resultante diretamente para o seu dispositivo.</p>
+                    </div>
+                </li>
+            </ol>
+        </section>
+
+        <section class="cta-section">
+            <h2 class="cta-title">Comece Agora!</h2>
+            <p class="cta-subtitle">Escolha uma das ferramentas no menu lateral esquerdo e transforme seus documentos PDF com poucos cliques.</p>
+            <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
+        </section>
+    </div>
+</body>
+</html>

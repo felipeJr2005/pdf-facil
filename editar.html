@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor PDF e Desenho</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+
+    <style>
+    /* Reset básico */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    /* Estilos base */
+    body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        padding: 20px;
+        min-height: 100vh;
+    }
+    
+    /* Toolbar principal */
+    .toolbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 5px;
+        min-height: 60px;
+    }
+    
+    .toolbar-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 5px 10px;
+        border-right: 1px solid #e5e7eb;
+        align-items: center;
+    }
+    
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+    
+    /* Botões */
+    .btn {
+        min-width: 100px;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 6px;
+        background: #e0e0e0;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    
+    .btn:hover {
+        background: #d0d0d0;
+        transform: translateY(-1px);
+    }
+    
+    .btn.active {
+        background: #6366f1;
+        color: white;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+    }
+    
+    .btn i {
+        font-size: 14px;
+    }
+    
+    /* Controles da toolbar */
+    .toolbar-controls {
+        margin-left: auto;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        padding: 5px 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .control-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .size-control, .color-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .control-label {
+        font-size: 13px;
+        color: #4b5563;
+        font-weight: 500;
+        min-width: 60px;
+    }
+    
+    /* Slider de tamanho */
+    .size-slider {
+        width: 100px;
+        height: 4px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        appearance: none;
+        outline: none;
+    }
+    
+    .size-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        background: #6366f1;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .size-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+    }
+    
+    .size-value {
+        font-size: 13px;
+        color: #6b7280;
+        min-width: 40px;
+        text-align: center;
+    }
+    
+    /* Controle de cor */
+    .color-picker-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .main-color {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    
+    .main-color:hover {
+        border-color: #6366f1;
+    }
+    
+    .rgb-inputs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .rgb-input {
+        width: 40px;
+        padding: 4px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+        background: white;
+        transition: all 0.2s ease;
+    }
+    
+    .rgb-input:focus {
+        border-color: #6366f1;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+    
+    /* Container do PDF */
+    #pdf-container {
+        margin-top: 80px;
+        padding: 20px;
+    }
+    
+    .page-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 900px;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        overflow: hidden;
+    }
+    
+    .canvas-wrapper {
+        background: white;
+        position: relative;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+    }
+    
+    .page-number {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    /* Cursor personalizado */
+    #custom-cursor {
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        border: 2px solid #000;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.5);
+        width: 16px;
+        height: 16px;
+        display: none;
+        transition: width 0.2s, height 0.2s;
+    }
+    
+    /* Réguas */
+    .ruler-horizontal {
+        position: absolute;
+        top: 0;
+        left: 20px;
+        height: 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e7eb;
+        overflow: hidden;
+        max-width: calc(100% - 20px);
+    }
+    
+    .ruler-vertical {
+        position: absolute;
+        top: 20px;
+        left: 0;
+        width: 20px;
+        background: #f8f9fa;
+        border-right: 1px solid #e5e7eb;
+        overflow: hidden;
+        max-height: calc(100% - 20px);
+    }
+    
+    .ruler-corner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 20px;
+        height: 20px;
+        background: #f8f9fa;
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .ruler-line {
+        position: absolute;
+        background: #9ca3af;
+        width: 1px;
+        height: 5px;
+    }
+    
+    .ruler-number {
+        position: absolute;
+        font-size: 8px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    /* Tela de carregamento */
+    .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255,255,255,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(2px);
+    }
+    
+    /* Utilitários */
+    #file-input {
+        display: none;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 1200px) {
+        .toolbar {
+            padding: 0.5rem;
+        }
+    
+        .toolbar-controls {
+            flex-basis: 100%;
+            margin: 10px 0;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .toolbar {
+            gap: 8px;
+        }
+    
+        .toolbar-group {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px;
+        }
+    
+        .btn {
+            min-width: auto;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+    
+        .toolbar-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    
+        .control-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    
+        .size-control, .color-control {
+            width: 100%;
+        }
+    
+        .color-picker-wrapper {
+            justify-content: center;
+        }
+    
+        .rgb-inputs {
+            justify-content: center;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        #pdf-container {
+            margin-top: 160px;
+            padding: 10px;
+        }
+    
+        .page-container {
+            padding: 10px;
+            margin: 10px auto;
+        }
+    
+        .toolbar-controls {
+            padding: 8px;
+        }
+    }
+
+</style>
+
+</head>
+
+<body>
+    <div class="toolbar">
+        <!-- Grupo de Arquivos -->
+        <div class="toolbar-group">
+            <button id="upload-btn" class="btn">
+                <i class="fas fa-file-upload"></i> Abrir
+            </button>
+            <button id="save-btn" class="btn">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </div>
+    
+        <!-- Grupo de Ferramentas de Desenho -->
+        <div class="toolbar-group">
+            <button id="select-tool" class="btn">
+                <i class="fas fa-mouse-pointer"></i> Selecionar
+            </button>
+            <button id="pencil-tool" class="btn">
+                <i class="fas fa-pencil-alt"></i> Lápis
+            </button>
+            <button id="line-tool" class="btn">
+                <i class="fas fa-minus"></i> Linha
+            </button>
+            <button id="text-tool" class="btn">
+                <i class="fas fa-font"></i> Texto
+            </button>
+        </div>
+    
+        <!-- Grupo de Formas -->
+        <div class="toolbar-group">
+            <button id="circle-tool" class="btn">
+                <i class="fas fa-circle"></i> Círculo
+            </button>
+            <button id="rectangle-tool" class="btn">
+                <i class="fas fa-square"></i> Quadrado
+            </button>
+        </div>
+    
+        <!-- Grupo de Edição -->
+        <div class="toolbar-group">
+            <button id="eraser-tool" class="btn">
+                <i class="fas fa-eraser"></i> Borracha
+            </button>
+            <button id="undo-btn" class="btn">
+                <i class="fas fa-undo"></i> Desfazer
+            </button>
+            <button id="redo-btn" class="btn">
+                <i class="fas fa-redo"></i> Refazer
+            </button>
+        </div>
+    
+        <!-- Grupo de Visualização -->
+        <div class="toolbar-group">
+            <button id="ruler-tool" class="btn">
+                <i class="fas fa-ruler"></i> Régua
+            </button>
+            <button id="zoom-in" class="btn">
+                <i class="fas fa-search-plus"></i> Zoom +
+            </button>
+            <button id="zoom-out" class="btn">
+                <i class="fas fa-search-minus"></i> Zoom -
+            </button>
+        </div>
+    
+        <!-- Controles de Estilo -->
+        <div class="toolbar-controls">
+            <!-- Tamanho -->
+            <div class="control-group">
+                <div class="size-control">
+                    <label class="control-label">Tamanho:</label>
+                    <input type="range" min="1" max="50" value="15" class="size-slider" id="main-size-slider">
+                    <span class="size-value" id="main-size-value">15px</span>
+                </div>
+            </div>
+    
+            <!-- Cor -->
+            <div class="control-group">
+                <div class="color-control">
+                    <label class="control-label">Cor:</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="main-color" id="main-color-picker" value="#000000">
+                        <div class="rgb-inputs">
+                            <input type="number" class="rgb-input r-input" min="0" max="255" value="0" placeholder="R">
+                            <input type="number" class="rgb-input g-input" min="0" max="255" value="0" placeholder="G">
+                            <input type="number" class="rgb-input b-input" min="0" max="255" value="0" placeholder="B">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-container"></div>
+    <input type="file" id="file-input" accept=".pdf" style="display: none;">
+
+    <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+
+const state = {
+    pdfDocument: null,
+    fabricCanvases: new Map(),
+    originalPageSizes: new Map(),
+    currentTool: 'select',
+    cursor: null
+    
+};
+
+state.zoom = 1;
+state.showRuler = false;
+
+function setupCanvas(canvas) {
+    canvas.historyUndo = [];
+    canvas.historyRedo = [];
+
+    canvas.on('path:created', function() {
+        const json = canvas.toJSON();
+        canvas.historyUndo.push(json);
+        canvas.historyRedo = [];
+    });
+
+    canvas.undo = function() {
+        if (this.historyUndo.length > 0) {
+            const current = this.toJSON();
+            this.historyRedo.push(current);
+
+            const content = this.historyUndo.pop();
+            this.loadFromJSON(content, () => {
+                this.renderAll();
+                const backgroundImage = this.backgroundImage;
+                if (backgroundImage) {
+                    this.setBackgroundImage(backgroundImage, this.renderAll.bind(this));
+                }
+            });
+        }
+    };
+
+    canvas.redo = function() {
+        if (this.historyRedo.length > 0) {
+            const current = this.toJSON();
+            this.historyUndo.push(current);
+
+            const content = this.historyRedo.pop();
+            this.loadFromJSON(content, () => {
+                this.renderAll();
+                const backgroundImage = this.backgroundImage;
+                if (backgroundImage) {
+                    this.setBackgroundImage(backgroundImage, this.renderAll.bind(this));
+                }
+            });
+        }
+    };
+
+    canvas.on('selection:created', function(e) {
+    const selectedObject = e.target;
+
+    if (selectedObject) {
+        const colorPicker = document.getElementById('main-color-picker');
+        const rInput = document.querySelector('.r-input');
+        const gInput = document.querySelector('.g-input');
+        const bInput = document.querySelector('.b-input');
+        const sizeSlider = document.getElementById('main-size-slider');
+
+        // Verifica o tipo de objeto
+        switch(selectedObject.type) {
+            case 'circle':
+            case 'line':
+            case 'rect':
+                const strokeColor = selectedObject.stroke;
+                colorPicker.value = strokeColor;
+                
+                const r = parseInt(strokeColor.substr(1,2), 16);
+                const g = parseInt(strokeColor.substr(3,2), 16);
+                const b = parseInt(strokeColor.substr(5,2), 16);
+                
+                rInput.value = r;
+                gInput.value = g;
+                bInput.value = b;
+
+                sizeSlider.value = selectedObject.strokeWidth;
+                document.getElementById('main-size-value').textContent = `${selectedObject.strokeWidth}px`;
+                break;
+            default:
+                if (selectedObject.fill) {
+                    colorPicker.value = selectedObject.fill;
+                    const r = parseInt(selectedObject.fill.substr(1,2), 16);
+                    const g = parseInt(selectedObject.fill.substr(3,2), 16);
+                    const b = parseInt(selectedObject.fill.substr(5,2), 16);
+                    rInput.value = r;
+                    gInput.value = g;
+                    bInput.value = b;
+                }
+        }
+    }
+});
+
+
+    canvas.on('selection:updated', function(e) {
+        const selectedObject = e.target;
+
+        if (selectedObject) {
+            const colorPicker = document.getElementById('main-color-picker');
+            const rInput = document.querySelector('.r-input');
+            const gInput = document.querySelector('.g-input');
+            const bInput = document.querySelector('.b-input');
+
+            if (selectedObject.fill) {
+                colorPicker.value = selectedObject.fill;
+                const r = parseInt(selectedObject.fill.substr(1,2), 16);
+                const g = parseInt(selectedObject.fill.substr(3,2), 16);
+                const b = parseInt(selectedObject.fill.substr(5,2), 16);
+                rInput.value = r;
+                gInput.value = g;
+                bInput.value = b;
+            }
+        }
+    });
+}
+
+
+
+function setCircleTool() {
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.defaultCursor = 'crosshair';
+        canvas.hoverCursor = 'crosshair';
+
+        // Desabilita seleção de todos os objetos
+        canvas.forEachObject(function(obj) {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+
+        let isDrawing = false;
+        let circle = null;
+        let origX = 0;
+        let origY = 0;
+
+        canvas.off('mouse:down'); // Remove listeners anteriores
+        canvas.on('mouse:down', function(o) {
+            isDrawing = true;
+            const pointer = canvas.getPointer(o.e);
+            origX = pointer.x;
+            origY = pointer.y;
+
+            circle = new fabric.Circle({
+                left: origX,
+                top: origY,
+                originX: 'left',
+                originY: 'top',
+                radius: 0,
+                strokeWidth: parseInt(document.getElementById('main-size-slider').value, 10),
+                stroke: document.getElementById('main-color-picker').value,
+                fill: 'transparent',
+                selectable: false,
+                evented: false
+            });
+
+            canvas.add(circle);
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:move', function(o) {
+            if (!isDrawing) return;
+
+            const pointer = canvas.getPointer(o.e);
+            const radius = Math.sqrt(
+                Math.pow(pointer.x - origX, 2) + 
+                Math.pow(pointer.y - origY, 2)
+            ) / 2;
+
+            circle.set({
+                left: origX + radius,
+                top: origY + radius,
+                radius: radius,
+                originX: 'center',
+                originY: 'center'
+            });
+
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:up', function() {
+            isDrawing = false;
+            if (circle) {
+                circle.setCoords();
+                const json = canvas.toJSON();
+                canvas.historyUndo.push(json);
+                canvas.historyRedo = [];
+            }
+        });
+    });
+}
+
+function setEraserTool() {
+    const size = document.getElementById('main-size-slider')?.value || 8;
+
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = true;
+        canvas.selection = false;
+        canvas.defaultCursor = 'none';
+        canvas.hoverCursor = 'none';
+
+        const eraserBrush = new fabric.PencilBrush(canvas);
+        eraserBrush.width = parseInt(size, 10);
+        eraserBrush.color = '#FFFFFF';
+        canvas.freeDrawingBrush = eraserBrush;
+
+        if (!state.cursor) {
+            state.cursor = document.createElement('div');
+            state.cursor.id = 'custom-cursor';
+            document.body.appendChild(state.cursor);
+        }
+
+        const canvasEl = canvas.upperCanvasEl;
+        
+        canvas.updateCursor = (e) => {
+            const size = parseInt(document.getElementById('main-size-slider')?.value || 8);
+            state.cursor.style.left = `${e.clientX - size/2}px`;
+            state.cursor.style.top = `${e.clientY - size/2}px`;
+            state.cursor.style.width = `${size}px`;
+            state.cursor.style.height = `${size}px`;
+            state.cursor.style.display = 'block';
+        };
+
+        canvas.showCursor = () => state.cursor.style.display = 'block';
+        canvas.hideCursor = () => state.cursor.style.display = 'none';
+
+        canvasEl.addEventListener('mousemove', canvas.updateCursor);
+        canvasEl.addEventListener('mouseenter', canvas.showCursor);
+        canvasEl.addEventListener('mouseleave', canvas.hideCursor);
+    });
+}
+
+
+
+
+function undo() {
+    const activeCanvas = state.fabricCanvases.get(1);
+    if (activeCanvas) {
+        activeCanvas.undo();
+    }
+}
+
+function redo() {
+    const activeCanvas = state.fabricCanvases.get(1);
+    if (activeCanvas) {
+        activeCanvas.redo();
+    }
+}
+
+function createBlankA4() {
+    const a4Width = 794;
+    const a4Height = 1123;
+
+    const container = document.getElementById('pdf-container');
+    container.innerHTML = '';
+
+    const pageContainer = document.createElement('div');
+    pageContainer.className = 'page-container';
+    container.appendChild(pageContainer);
+
+    const canvasWrapper = document.createElement('div');
+    canvasWrapper.className = 'canvas-wrapper';
+    pageContainer.appendChild(canvasWrapper);
+
+    const fabricCanvas = document.createElement('canvas');
+    fabricCanvas.id = 'page-1';
+    canvasWrapper.appendChild(fabricCanvas);
+
+    const fCanvas = new fabric.Canvas(fabricCanvas, {
+        width: a4Width,
+        height: a4Height,
+        selection: false,
+        preserveObjectStacking: true,
+        backgroundColor: 'white'
+    });
+
+    setupCanvas(fCanvas);
+
+    state.fabricCanvases.clear();
+    state.fabricCanvases.set(1, fCanvas);
+    state.originalPageSizes.set(1, { width: a4Width, height: a4Height });
+
+    const pageNumber = document.createElement('div');
+    pageNumber.className = 'page-number';
+    pageNumber.textContent = 'Página 1';
+    pageContainer.appendChild(pageNumber);
+
+    fCanvas.requestRenderAll();
+}
+
+function showLoading() {
+    const loading = document.createElement('div');
+    loading.className = 'loading';
+    loading.innerHTML = '<div>Carregando PDF...</div>';
+    document.body.appendChild(loading);
+}
+
+function hideLoading() {
+    const loading = document.querySelector('.loading');
+    if (loading) loading.remove();
+}
+
+async function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file?.type !== 'application/pdf') {
+        alert('Por favor, selecione um arquivo PDF válido.');
+        return;
+    }
+
+    showLoading();
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        await loadPDF(new Uint8Array(arrayBuffer));
+    } catch (error) {
+        console.error('Erro ao ler arquivo:', error);
+        alert('Erro ao processar o arquivo. Tente novamente.');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function loadPDF(data) {
+    try {
+        state.pdfDocument = await pdfjsLib.getDocument(data).promise;
+        state.fabricCanvases.clear();
+        state.originalPageSizes.clear();
+        await renderAllPages();
+    } catch (error) {
+        console.error('Erro ao carregar PDF:', error);
+        alert('Erro ao carregar o PDF. Por favor, tente novamente.');
+    }
+}
+
+async function renderAllPages() {
+    const container = document.getElementById('pdf-container');
+    container.innerHTML = '';
+
+    for (let pageNum = 1; pageNum <= state.pdfDocument.numPages; pageNum++) {
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'page-container';
+        container.appendChild(pageContainer);
+
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.className = 'canvas-wrapper';
+        pageContainer.appendChild(canvasWrapper);
+
+        const page = await state.pdfDocument.getPage(pageNum);
+        
+        const containerWidth = pageContainer.clientWidth - 40;
+        const originalViewport = page.getViewport({ scale: 1.0 });
+        const scale = containerWidth / originalViewport.width;
+        const viewport = page.getViewport({ scale });
+
+        state.originalPageSizes.set(pageNum, { 
+            width: viewport.width, 
+            height: viewport.height 
+        });
+
+        const pdfCanvas = document.createElement('canvas');
+        pdfCanvas.width = viewport.width;
+        pdfCanvas.height = viewport.height;
+        
+        await page.render({
+            canvasContext: pdfCanvas.getContext('2d'),
+            viewport: viewport
+        }).promise;
+
+        const fabricCanvas = document.createElement('canvas');
+        fabricCanvas.id = `page-${pageNum}`;
+        canvasWrapper.appendChild(fabricCanvas);
+
+        const fCanvas = new fabric.Canvas(fabricCanvas, {
+            width: viewport.width,
+            height: viewport.height,
+            selection: false,
+            preserveObjectStacking: true
+        });
+
+        setupCanvas(fCanvas);
+
+        fabric.Image.fromURL(pdfCanvas.toDataURL(), img => {
+            fCanvas.setBackgroundImage(img, fCanvas.renderAll.bind(fCanvas), {
+                scaleX: 1,
+                scaleY: 1,
+                originX: 'left',
+                originY: 'top'
+            });
+        });
+
+        state.fabricCanvases.set(pageNum, fCanvas);
+
+        const pageNumber = document.createElement('div');
+        pageNumber.className = 'page-number';
+        pageNumber.textContent = `Página ${pageNum}`;
+        pageContainer.appendChild(pageNumber);
+
+        fCanvas.requestRenderAll();
+    }
+}
+
+function setupToolbarControls() {
+    const colorPicker = document.getElementById('main-color-picker');
+    const rInput = document.querySelector('.r-input');
+    const gInput = document.querySelector('.g-input');
+    const bInput = document.querySelector('.b-input');
+    const sizeSlider = document.getElementById('main-size-slider');
+    const sizeValue = document.getElementById('main-size-value');
+
+    function updateRGBFromColor(color) {
+        const r = parseInt(color.substr(1,2), 16);
+        const g = parseInt(color.substr(3,2), 16);
+        const b = parseInt(color.substr(5,2), 16);
+        
+        rInput.value = r;
+        gInput.value = g;
+        bInput.value = b;
+    }
+
+    function updateColorFromRGB() {
+        const r = parseInt(rInput.value) || 0;
+        const g = parseInt(gInput.value) || 0;
+        const b = parseInt(bInput.value) || 0;
+        
+        const color = '#' + 
+            r.toString(16).padStart(2, '0') + 
+            g.toString(16).padStart(2, '0') + 
+            b.toString(16).padStart(2, '0');
+            
+        colorPicker.value = color;
+        
+        state.fabricCanvases.forEach(canvas => {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                switch(activeObject.type) {
+                    case 'circle':
+                    case 'line':
+                    case 'rect':
+                        activeObject.set('stroke', color);
+                        break;
+                    case 'i-text':
+                        activeObject.set('fill', color);
+                        break;
+                    case 'path':
+                        activeObject.set('stroke', color);
+                        break;
+                    default:
+                        if (activeObject.fill !== undefined) {
+                            activeObject.set('fill', color);
+                        }
+                }
+                canvas.renderAll();
+            } else if (canvas.freeDrawingBrush) {
+                canvas.freeDrawingBrush.color = color;
+            }
+        });
+    }
+
+    colorPicker.addEventListener('input', function() {
+        const color = this.value;
+        updateRGBFromColor(color);
+        
+        state.fabricCanvases.forEach(canvas => {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                switch(activeObject.type) {
+                    case 'circle':
+                    case 'line':
+                    case 'rect':
+                        activeObject.set('stroke', color);
+                        break;
+                    case 'i-text':
+                        activeObject.set('fill', color);
+                        break;
+                    case 'path':
+                        activeObject.set('stroke', color);
+                        break;
+                    default:
+                        if (activeObject.fill !== undefined) {
+                            activeObject.set('fill', color);
+                        }
+                }
+                canvas.renderAll();
+            } else if (canvas.freeDrawingBrush) {
+                canvas.freeDrawingBrush.color = color;
+            }
+        });
+    });
+
+    [rInput, gInput, bInput].forEach(input => {
+        input.addEventListener('input', updateColorFromRGB);
+    });
+
+    sizeSlider.addEventListener('input', function() {
+        const size = this.value;
+        sizeValue.textContent = `${size}px`;
+        
+        state.fabricCanvases.forEach(canvas => {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                switch(activeObject.type) {
+                    case 'circle':
+                    case 'line':
+                    case 'rect':
+                        activeObject.set('strokeWidth', parseInt(size, 10));
+                        break;
+                    case 'i-text':
+                        activeObject.set('fontSize', parseInt(size, 10));
+                        break;
+                }
+                canvas.renderAll();
+            } else if (canvas.freeDrawingBrush) {
+                canvas.freeDrawingBrush.width = parseInt(size, 10);
+            }
+            
+            if (state.cursor && state.cursor.style.display !== 'none') {
+                state.cursor.style.width = `${size}px`;
+                state.cursor.style.height = `${size}px`;
+            }
+        });
+    });
+}
+
+function updateRulers(canvas) {
+    if (!state.showRuler) return;
+    
+    const container = canvas.wrapperEl.parentNode;
+    const rulers = container.querySelectorAll('.ruler-horizontal, .ruler-vertical, .ruler-corner');
+    rulers.forEach(ruler => ruler.remove());
+
+    // Criar réguas novas
+    const rulerH = document.createElement('div');
+    rulerH.className = 'ruler-horizontal';
+    rulerH.style.width = `${canvas.width * state.zoom}px`;
+    
+    const rulerV = document.createElement('div');
+    rulerV.className = 'ruler-vertical';
+    rulerV.style.height = `${canvas.height * state.zoom}px`;
+    
+    const rulerCorner = document.createElement('div');
+    rulerCorner.className = 'ruler-corner';
+    
+    container.appendChild(rulerH);
+    container.appendChild(rulerV);
+    container.appendChild(rulerCorner);
+    
+    // Adicionar marcações ajustadas ao zoom
+    const step = 50 * state.zoom;
+    for (let i = 0; i < canvas.width * state.zoom; i += step) {
+        const mark = document.createElement('div');
+        mark.className = 'ruler-line';
+        mark.style.left = `${i}px`;
+        mark.style.top = '15px';
+        mark.style.width = '1px';
+        mark.style.height = '5px';
+        
+        const number = document.createElement('div');
+        number.className = 'ruler-number';
+        number.style.left = `${i + 2}px`;
+        number.style.top = '2px';
+        number.textContent = Math.round(i / state.zoom);
+        
+        rulerH.appendChild(mark);
+        rulerH.appendChild(number);
+    }
+    
+    for (let i = 0; i < canvas.height * state.zoom; i += step) {
+        const mark = document.createElement('div');
+        mark.className = 'ruler-line';
+        mark.style.top = `${i}px`;
+        mark.style.left = '15px';
+        mark.style.height = '1px';
+        mark.style.width = '5px';
+        
+        const number = document.createElement('div');
+        number.className = 'ruler-number';
+        number.style.top = `${i + 2}px`;
+        number.style.left = '2px';
+        number.textContent = Math.round(i / state.zoom);
+        
+        rulerV.appendChild(mark);
+        rulerV.appendChild(number);
+    }
+}
+
+
+function setPencilTool() {
+    // Sempre define a cor preta ao ativar o lápis
+    const colorPicker = document.getElementById('main-color-picker');
+    const rInput = document.querySelector('.r-input');
+    const gInput = document.querySelector('.g-input');
+    const bInput = document.querySelector('.b-input');
+    
+    // Define valores RGB para preto
+    colorPicker.value = '#000000';
+    rInput.value = '0';
+    gInput.value = '0';
+    bInput.value = '0';
+    
+    const size = document.getElementById('main-size-slider')?.value || 8;
+
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = true;
+        canvas.selection = false;
+        canvas.defaultCursor = 'crosshair';
+        canvas.hoverCursor = 'crosshair';
+
+        const pencilBrush = new fabric.PencilBrush(canvas);
+        pencilBrush.width = parseInt(size, 10);
+        pencilBrush.color = '#000000'; // Sempre preto
+        
+        canvas.freeDrawingBrush = pencilBrush;
+    });
+}
+
+function setTextTool() {
+    state.fabricCanvases.forEach((canvas) => {
+        // Configuração básica do canvas
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.defaultCursor = 'text';
+        canvas.hoverCursor = 'text';
+
+        // Desativa seleção de objetos existentes
+        canvas.forEachObject(function(obj) {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+
+        // Remove listeners anteriores
+        canvas.off('mouse:down');
+
+        // Adiciona novo listener para texto
+        canvas.on('mouse:down', function(options) {
+            const pointer = canvas.getPointer(options.e);
+            
+            // Verifica se clicou em um texto existente
+            if (options.target && options.target.type === 'i-text') {
+                const text = options.target;
+                text.selectable = true;
+                text.evented = true;
+                canvas.setActiveObject(text);
+                text.enterEditing();
+                canvas.requestRenderAll();
+                return;
+            }
+
+            // Cria novo texto
+            const text = new fabric.IText('Digite aqui', {
+                left: pointer.x,
+                top: pointer.y,
+                fontFamily: 'Arial',
+                fontSize: parseInt(document.getElementById('main-size-slider').value, 10),
+                fill: document.getElementById('main-color-picker').value,
+                selectable: true,
+                evented: true,
+                padding: 7
+            });
+
+            canvas.add(text);
+            canvas.setActiveObject(text);
+
+            // Configura eventos do texto
+            text.on('editing:entered', function() {
+                canvas.selection = false;
+                text.selectAll();
+            });
+
+            text.on('editing:exited', function() {
+                // Salva o estado para undo/redo
+                const json = canvas.toJSON();
+                canvas.historyUndo.push(json);
+                canvas.historyRedo = [];
+                
+                // Reseta o estado do texto
+                text.selectable = false;
+                text.evented = false;
+                canvas.requestRenderAll();
+            });
+
+            text.enterEditing();
+            canvas.requestRenderAll();
+        });
+    });
+}
+
+
+function clearCanvasEvents(canvas) {
+    canvas.off('mouse:down');
+    canvas.off('mouse:move');
+    canvas.off('mouse:up');
+    
+    canvas.isDrawingMode = false;
+    canvas.selection = false;
+
+    // Remove os listeners do cursor personalizado se existirem
+    if (canvas.upperCanvasEl) {
+        const canvasEl = canvas.upperCanvasEl;
+        if (canvas.updateCursor) {
+            canvasEl.removeEventListener('mousemove', canvas.updateCursor);
+            canvasEl.removeEventListener('mouseenter', canvas.showCursor);
+            canvasEl.removeEventListener('mouseleave', canvas.hideCursor);
+        }
+    }
+
+    // Reset de todos os objetos para não selecionável
+    canvas.forEachObject(function(obj) {
+        obj.selectable = false;
+        obj.evented = false;
+    });
+}
+
+function setTool(tool) {
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // Limpa eventos em todos os canvas
+    state.fabricCanvases.forEach(canvas => {
+        clearCanvasEvents(canvas);
+    });
+
+    // Esconde o cursor personalizado
+    if (state.cursor) {
+        state.cursor.style.display = 'none';
+    }
+
+    state.currentTool = tool;
+
+    // Ativa a ferramenta selecionada
+    switch(tool) {
+        case 'pencil':
+            document.getElementById('pencil-tool').classList.add('active');
+            setPencilTool();
+            break;
+        case 'eraser':
+            document.getElementById('eraser-tool').classList.add('active');
+            setEraserTool();
+            break;
+        case 'circle':
+            document.getElementById('circle-tool').classList.add('active');
+            setCircleTool();
+            break;
+        case 'select':
+            document.getElementById('select-tool').classList.add('active');
+            setSelectTool();
+            break;
+        case 'rectangle':
+            document.getElementById('rectangle-tool').classList.add('active');
+            setRectangleTool();
+            break;
+        case 'text':
+            document.getElementById('text-tool').classList.add('active');
+            setTextTool();
+            break;
+
+            case 'line':
+            document.getElementById('line-tool').classList.add('active');
+            setLineTool();
+            break;
+    }
+}
+
+function setSelectTool() {
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = false;
+        canvas.selection = true;
+        canvas.defaultCursor = 'default';
+        canvas.hoverCursor = 'move';
+
+        // Ativa a seleção para todos os objetos
+        canvas.forEachObject(function(obj) {
+            obj.selectable = true;
+            obj.evented = true;
+        });
+
+        // Remove listeners anteriores
+        canvas.off('mouse:down');
+
+        // Adiciona novo listener para controle preciso de seleção
+        canvas.on('mouse:down', function(options) {
+            const pointer = canvas.getPointer(options.e);
+            
+            // Encontra todos os objetos sob o ponto clicado
+            const objects = canvas.getObjects().filter(obj => {
+                // Verifica se o ponto está dentro do objeto
+                if (obj.containsPoint(pointer)) {
+                    return true;
+                }
+                return false;
+            });
+
+            // Se encontrou objetos no ponto clicado
+            if (objects.length > 0) {
+                // Encontra o objeto mais próximo do ponto de clique
+                let selectedObject = objects[0];
+                let minDistance = Number.MAX_VALUE;
+
+                objects.forEach(obj => {
+                    // Calcula o centro do objeto
+                    const center = obj.getCenterPoint();
+                    // Calcula a distância do clique até o centro do objeto
+                    const distance = Math.sqrt(
+                        Math.pow(pointer.x - center.x, 2) + 
+                        Math.pow(pointer.y - center.y, 2)
+                    );
+
+                    // Se a distância for menor, atualiza o objeto selecionado
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        selectedObject = obj;
+                    }
+                });
+
+                // Seleciona o objeto encontrado
+                canvas.setActiveObject(selectedObject);
+                canvas.requestRenderAll();
+            } else {
+                // Se não encontrou objetos, limpa a seleção
+                canvas.discardActiveObject();
+                canvas.requestRenderAll();
+            }
+        });
+
+        canvas.selectionColor = 'rgba(99, 102, 241, 0.3)';
+        canvas.selectionBorderColor = 'rgba(99, 102, 241, 1)';
+        canvas.selectionLineWidth = 2;
+
+        state.currentTool = 'select';
+    });
+}
+
+
+async function savePDF() {
+    try {
+        showLoading();
+        const pdfDoc = await PDFLib.PDFDocument.create();
+
+        const pageCount = state.pdfDocument ? state.pdfDocument.numPages : 1;
+
+        for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+            const canvas = state.fabricCanvases.get(pageNum);
+            const pageSize = state.originalPageSizes.get(pageNum);
+            
+            const pageData = canvas.toDataURL({
+                format: 'png',
+                quality: 1.0,
+                enableRetinaScaling: true
+            });
+
+            const base64Data = pageData.replace(/^data:image\/\w+;base64,/, '');
+            const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const pngImage = await pdfDoc.embedPng(imageBytes);
+
+            const page = pdfDoc.addPage([pageSize.width, pageSize.height]);
+
+            page.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width: pageSize.width,
+                height: pageSize.height
+            });
+        }
+
+        const pdfBytes = await pdfDoc.save();
+
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'documento_editado.pdf';
+        link.click();
+
+        URL.revokeObjectURL(url);
+        hideLoading();
+    } catch (error) {
+        console.error('Erro ao salvar PDF:', error);
+        alert('Erro ao salvar o PDF. Por favor, tente novamente.');
+        hideLoading();
+    }
+}
+
+function setLineTool() {
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.defaultCursor = 'crosshair';
+        canvas.hoverCursor = 'crosshair';
+
+        // Desabilita seleção dos objetos
+        canvas.forEachObject(function(obj) {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+
+        let isDrawing = false;
+        let line = null;
+        let startX = 0;
+        let startY = 0;
+
+        canvas.off('mouse:down');
+        canvas.on('mouse:down', function(o) {
+            isDrawing = true;
+            const pointer = canvas.getPointer(o.e);
+            startX = pointer.x;
+            startY = pointer.y;
+
+            line = new fabric.Line([startX, startY, startX, startY], {
+                strokeWidth: parseInt(document.getElementById('main-size-slider').value, 10),
+                stroke: document.getElementById('main-color-picker').value,
+                selectable: false,
+                evented: false
+            });
+
+            canvas.add(line);
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:move', function(o) {
+            if (!isDrawing) return;
+
+            const pointer = canvas.getPointer(o.e);
+            line.set({
+                x2: pointer.x,
+                y2: pointer.y
+            });
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:up', function() {
+            if (isDrawing) {
+                isDrawing = false;
+                line.setCoords();
+                const json = canvas.toJSON();
+                canvas.historyUndo.push(json);
+                canvas.historyRedo = [];
+            }
+        });
+    });
+}
+
+function setRectangleTool() {
+    state.fabricCanvases.forEach((canvas) => {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;         // Desativa seleção geral
+        canvas.defaultCursor = 'crosshair';
+        canvas.hoverCursor = 'crosshair';
+
+        // Desativa a seleção de todos os objetos existentes
+        canvas.forEachObject(function(obj) {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+
+        let isDrawing = false;
+        let rectangle = null;
+        let origX = 0;
+        let origY = 0;
+
+        canvas.on('mouse:down', function(o) {
+            isDrawing = true;
+            const pointer = canvas.getPointer(o.e);
+            origX = pointer.x;
+            origY = pointer.y;
+
+            rectangle = new fabric.Rect({
+                left: origX,
+                top: origY,
+                originX: 'left',
+                originY: 'top',
+                width: 0,
+                height: 0,
+                strokeWidth: parseInt(document.getElementById('main-size-slider').value, 10),
+                stroke: document.getElementById('main-color-picker').value,
+                fill: 'transparent',
+                selectable: false,  // O novo objeto também não será selecionável
+                evented: false
+            });
+
+            canvas.add(rectangle);
+            canvas.renderAll();
+        });
+
+
+        canvas.on('mouse:move', function(o) {
+            if (!isDrawing) return;
+
+            const pointer = canvas.getPointer(o.e);
+            const width = Math.abs(pointer.x - origX);
+            const height = Math.abs(pointer.y - origY);
+
+            rectangle.set({
+                width: width,
+                height: height
+            });
+
+            canvas.renderAll();
+        });
+
+        canvas.on('mouse:up', function() {
+            isDrawing = false;
+            if (rectangle) {
+                rectangle.setCoords();
+                const json = canvas.toJSON();
+                canvas.historyUndo.push(json);
+                canvas.historyRedo = [];
+            }
+        });
+    });
+}
+
+// Função para zoom
+function setZoom(zoomLevel) {
+    state.fabricCanvases.forEach((canvas) => {
+        const center = canvas.getCenter();
+        canvas.zoomToPoint(new fabric.Point(center.left, center.top), zoomLevel);
+        state.zoom = zoomLevel;
+        
+        if (state.showRuler) {
+            updateRulers(canvas);
+        }
+    });
+}
+
+// Função para criar e atualizar réguas
+function toggleRulers() {
+    state.showRuler = !state.showRuler;
+    
+    state.fabricCanvases.forEach((canvas) => {
+        const container = canvas.wrapperEl.parentNode;
+        
+        if (state.showRuler) {
+            // Criar réguas
+            const rulerH = document.createElement('div');
+            rulerH.className = 'ruler-horizontal';
+            rulerH.style.width = `${canvas.width}px`;
+            
+            const rulerV = document.createElement('div');
+            rulerV.className = 'ruler-vertical';
+            rulerV.style.height = `${canvas.height}px`;
+            
+            const rulerCorner = document.createElement('div');
+            rulerCorner.className = 'ruler-corner';
+            
+            container.appendChild(rulerH);
+            container.appendChild(rulerV);
+            container.appendChild(rulerCorner);
+            
+            // Adicionar marcações
+            for (let i = 0; i < canvas.width; i += 50) {
+                const mark = document.createElement('div');
+                mark.className = 'ruler-line';
+                mark.style.left = `${i}px`;
+                mark.style.top = '15px';
+                mark.style.width = '1px';
+                mark.style.height = '5px';
+                
+                const number = document.createElement('div');
+                number.className = 'ruler-number';
+                number.style.left = `${i + 2}px`;
+                number.style.top = '2px';
+                number.textContent = i;
+                
+                rulerH.appendChild(mark);
+                rulerH.appendChild(number);
+            }
+            
+            for (let i = 0; i < canvas.height; i += 50) {
+                const mark = document.createElement('div');
+                mark.className = 'ruler-line';
+                mark.style.top = `${i}px`;
+                mark.style.left = '15px';
+                mark.style.height = '1px';
+                mark.style.width = '5px';
+                
+                const number = document.createElement('div');
+                number.className = 'ruler-number';
+                number.style.top = `${i + 2}px`;
+                number.style.left = '2px';
+                number.textContent = i;
+                
+                rulerV.appendChild(mark);
+                rulerV.appendChild(number);
+            }
+        } else {
+            // Remover réguas
+            const rulers = container.querySelectorAll('.ruler-horizontal, .ruler-vertical, .ruler-corner');
+            rulers.forEach(ruler => ruler.remove());
+        }
+    });
+}
+
+// Função para deletar objetos
+function setupDeleteKey() {
+    document.addEventListener('keydown', function(e) {
+    if ((e.key === 'Delete' || e.key === 'Backspace')) {
+        // Verifica se algum elemento de texto está sendo editado
+        const activeElement = document.activeElement;
+        const isEditingText = state.fabricCanvases.some(canvas => {
+            const activeObject = canvas.getActiveObject();
+            return activeObject && 
+                   activeObject.type === 'i-text' && 
+                   activeObject.isEditing;
+        });
+
+        // Se estiver editando texto, permite o comportamento normal do delete/backspace
+        if (isEditingText) {
+            return;
+        }
+
+        // Se não estiver editando texto, remove o objeto selecionado
+        state.fabricCanvases.forEach((canvas) => {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                canvas.remove(activeObject);
+                const json = canvas.toJSON();
+                canvas.historyUndo.push(json);
+                canvas.historyRedo = [];
+                canvas.renderAll();
+            }
+        });
+    }
+});
+
+}
+
+
+// Atualizar os event listeners também
+function setupEventListeners() {
+    // Grupo de Arquivos
+    document.getElementById('upload-btn').addEventListener('click', () => 
+        document.getElementById('file-input').click());
+    document.getElementById('file-input').addEventListener('change', handleFileSelect);
+    document.getElementById('save-btn').addEventListener('click', savePDF);
+
+    // Grupo de Ferramentas
+    document.getElementById('select-tool').addEventListener('click', () => setTool('select'));
+    document.getElementById('pencil-tool').addEventListener('click', () => setTool('pencil'));
+    document.getElementById('line-tool').addEventListener('click', () => setTool('line'));
+    document.getElementById('circle-tool').addEventListener('click', () => setTool('circle'));
+    document.getElementById('rectangle-tool').addEventListener('click', () => setTool('rectangle'));
+    document.getElementById('text-tool').addEventListener('click', () => setTool('text'));
+    document.getElementById('eraser-tool').addEventListener('click', () => setTool('eraser'));
+
+    // Grupo de Ações
+    document.getElementById('undo-btn').addEventListener('click', undo);
+    document.getElementById('redo-btn').addEventListener('click', redo);
+
+    // Novas ferramentas
+    document.getElementById('zoom-in').addEventListener('click', () => {
+        const newZoom = Math.min(state.zoom + 0.1, 3);
+        setZoom(newZoom);
+    });
+    
+    document.getElementById('zoom-out').addEventListener('click', () => {
+        const newZoom = Math.max(state.zoom - 0.1, 0.1);
+        setZoom(newZoom);
+    });
+    
+    document.getElementById('ruler-tool').addEventListener('click', toggleRulers);
+
+    // Setup dos controles da toolbar
+    setupToolbarControls();
+
+    // Atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        // Atalhos de Zoom
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    redo();
+                } else {
+                    undo();
+                }
+            } else if (e.key === 'y') {
+                e.preventDefault();
+                redo();
+            } else if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                const newZoom = Math.min(state.zoom + 0.1, 3);
+                setZoom(newZoom);
+            } else if (e.key === '-') {
+                e.preventDefault();
+                const newZoom = Math.max(state.zoom - 0.1, 0.1);
+                setZoom(newZoom);
+            } else if (e.key === '0') {
+                e.preventDefault();
+                setZoom(1); // Reset zoom to 100%
+            }
+        }
+
+        // Delete/Backspace para remover objetos selecionados
+        if ((e.key === 'Delete' || e.key === 'Backspace') && 
+            !['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) {
+            state.fabricCanvases.forEach((canvas) => {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject) {
+                    canvas.remove(activeObject);
+                    const json = canvas.toJSON();
+                    canvas.historyUndo.push(json);
+                    canvas.historyRedo = [];
+                    canvas.renderAll();
+                }
+            });
+        }
+    });
+
+    // Previne o comportamento padrão do zoom do navegador
+    document.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const delta = e.deltaY;
+            const currentZoom = state.zoom;
+            const newZoom = delta > 0 
+                ? Math.max(currentZoom - 0.1, 0.1)
+                : Math.min(currentZoom + 0.1, 3);
+            setZoom(newZoom);
+        }
+    }, { passive: false });
+
+    // Mouse wheel para scroll horizontal com Shift pressionado
+    document.addEventListener('wheel', function(e) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            window.scrollBy({
+                left: e.deltaY,
+                behavior: 'smooth'
+            });
+        }
+    }, { passive: false });
+
+    // Tratamento de touch para dispositivos móveis
+    let touchStartX, touchStartY;
+    document.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            touchStartX = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
+            touchStartY = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const touchEndX = Math.abs(e.touches[0].clientX - e.touches[1].clientX);
+            const touchEndY = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+            const touchDiff = Math.sqrt(
+                Math.pow(touchEndX - touchStartX, 2) + 
+                Math.pow(touchEndY - touchStartY, 2)
+            );
+            
+            const currentZoom = state.zoom;
+            const newZoom = touchDiff < 0 
+                ? Math.max(currentZoom - 0.1, 0.1)
+                : Math.min(currentZoom + 0.1, 3);
+            setZoom(newZoom);
+
+            touchStartX = touchEndX;
+            touchStartY = touchEndY;
+        }
+    }, { passive: false });
+}
+
+// Inicialização correta
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    createBlankA4();
+    setupDeleteKey(); // Adiciona suporte à tecla delete
+});
+    
+</script>
+</body>
+</html>
