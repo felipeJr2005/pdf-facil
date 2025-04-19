@@ -55,17 +55,23 @@
         .welcome-header {
             text-align: center;
             margin-bottom: 3rem;
+            background: linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(67, 97, 238, 0.8));
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            color: white;
+            box-shadow: var(--shadow-md);
         }
 
         .welcome-title {
             font-size: 2.5rem;
-            color: var(--color-primary);
+            color: white;
             margin-bottom: 1rem;
+            font-weight: 600;
         }
 
         .welcome-subtitle {
             font-size: 1.25rem;
-            color: var(--color-gray-600);
+            color: rgba(255, 255, 255, 0.9);
             max-width: 800px;
             margin: 0 auto;
         }
@@ -174,7 +180,7 @@
 
         .cta-section {
             text-align: center;
-            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+            background: linear-gradient(135deg, rgba(238, 242, 255, 0.9), rgba(67, 97, 238, 0.9));
             padding: 3rem 2rem;
             border-radius: var(--radius-lg);
             color: white;
@@ -200,6 +206,36 @@
             font-style: italic;
             opacity: 0.8;
             font-size: 0.9rem;
+        }
+
+        .home-link {
+            display: inline-block;
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .home-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-decoration: none;
+        }
+
+        .home-button:hover {
+            background-color: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         /* Responsividade */
@@ -353,6 +389,12 @@
             <p class="cta-subtitle">Escolha uma das ferramentas no menu lateral esquerdo e transforme seus documentos PDF com poucos cliques.</p>
             <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
         </section>
+        
+        <div class="home-link">
+            <button class="home-button" onclick="window.parent.loadHomePage()">
+                <i class="fas fa-home"></i> Voltar para a página inicial
+            </button>
+        </div>
     </div>
 </body>
 </html>
