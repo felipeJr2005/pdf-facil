@@ -6,6 +6,33 @@
     <title>Contato - PDFFacil</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Utilizando as mesmas variáveis do unified-pdf-tools.css */
+        :root {
+            --color-primary: #4361ee;
+            --color-primary-light: #eef2ff;
+            --color-primary-dark: #3a56d4;
+            --color-success: #10b981;
+            --color-gray-50: #f8fafc;
+            --color-gray-100: #f1f5f9;
+            --color-gray-200: #e2e8f0;
+            --color-gray-300: #cbd5e1;
+            --color-gray-400: #94a3b8;
+            --color-gray-500: #64748b;
+            --color-gray-600: #475569;
+            --color-gray-700: #334155;
+            --color-gray-800: #1e293b;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --transition-normal: all 0.2s ease;
+            --color-whatsapp: #25d366;
+            --color-whatsapp-dark: #128c7e;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,10 +41,12 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: a;
+            background-color: var(--color-gray-50);
+            color: var(--color-gray-800);
+            line-height: 1.6;
             padding: 2rem;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .contact-container {
@@ -27,175 +56,6 @@
         }
 
         .contact-header {
-            margin-bottom: 2rem;
-        }
-
-        .contact-title {
-            font-size: 2rem;
-            color: #4361ee;
-            margin-bottom: 1rem;
-        }
-
-        .contact-description {
-            font-size: 1.1rem;
-            color: #6b7280;
-            margin-bottom: 2rem;
-        }
-
-        .contact-options {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 3rem;
-            flex-wrap: wrap;
-        }
-
-        .contact-card {
-            background-color: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            transition: all 0.3s ease;
-            max-width: 300px;
-            flex: 1;
-            min-width: 240px;
-            cursor: pointer;
-        }
-
-        .contact-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(30, 64, 175, 0.1);
-        }
-
-        .contact-icon {
-            width: 4rem;
-            height: 4rem;
-            background: linear-gradient(135deg, #bfdbe4, #4361ee);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.25rem;
-            font-size: 1.75rem;
-        }
-
-        .contact-card-title {
-            font-size: 1.5rem;
-            margin-bottom: 0.75rem;
-            color: #333;
-        }
-
-        .contact-card-description {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-        }
-
-        .contact-button {
-            background: linear-gradient(to right, #4361ee, #3a56d4);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .contact-button:hover {
-            background: linear-gradient(to right, #3a56d4, #2a3bba);
-            transform: translateY(-2px);
-        }
-
-        .whatsapp-button {
-            background: linear-gradient(to right, #25d366, #128c7e);
-        }
-
-        .whatsapp-button:hover {
-            background: linear-gradient(to right, #128c7e, #075e54);
-        }
-        
-        /* Esconder o iframe oculto */
-        #hidden-iframe {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="contact-container">
-        <header class="contact-header">
-            <h1 class="contact-title">Entre em Contato</h1>
-            <p class="contact-description">Estamos prontos para ajudar! Escolha a melhor forma de entrar em contato conosco.</p>
-        </header>
-
-        <div class="contact-options">
-            <div class="contact-card" id="suggestion-card">
-                <div class="contact-icon">
-                    <i class="fas fa-comment-alt"></i>
-                </div>
-                <h2 class="contact-card-title">Enviar Sugestão</h2>
-                <p class="contact-card-description">Envie suas dúvidas, comentários ou sugestões para melhorar nossa plataforma.</p>
-                <button class="contact-button" id="open-suggestion-form">Formulário de Contato</button>
-            </div>
-
-            <div class="contact-card">
-                <div class="contact-icon">
-                    <i class="fab fa-whatsapp"></i>
-                </div>
-                <h2 class="contact-card-title">WhatsApp</h2>
-                <p class="contact-card-description">Precisa de uma resposta rápida? Entre em contato diretamente pelo WhatsApp.</p>
-                <a href="https://wa.me/5587988281725" target="_blank" class="contact-button whatsapp-button">Iniciar Conversa</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Iframe invisível para carregar o formulário flutuante -->
-    <iframe id="hidden-iframe" src="about:blank"></iframe>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const suggestionCard = document.getElementById('suggestion-card');
-            const openFormButton = document.getElementById('open-suggestion-form');
-            
-            // Função para abrir o formulário flutuante
-            function openSuggestionForm() {
-                try {
-                    // Tenta acessar o botão do formulário flutuante no contexto pai
-                    if (window.parent && window.parent.document) {
-                        const formButton = window.parent.document.querySelector('.fc-form');
-                        const overlay = window.parent.document.querySelector('.fc-overlay');
-                        
-                        if (formButton) {
-                            formButton.click();
-                        } else if (overlay) {
-                            overlay.classList.add('active');
-                        } else {
-                            alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
-                        }
-                    } else {
-                        alert('Não foi possível acessar o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
-                    }
-                } catch (error) {
-                    console.error('Erro ao tentar abrir o formulário:', error);
-                    alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
-                }
-            }
-            
-            // Adiciona eventos de clique
-            if (openFormButton) {
-                openFormButton.addEventListener('click', openSuggestionForm);
-            }
-            
-            if (suggestionCard) {
-                suggestionCard.addEventListener('click', function(e) {
-                    // Evita disparar o evento se o clique for no botão
-                    if (!e.target.classList.contains('contact-button')) {
-                        openSuggestionForm();
-                    }
-                });
-            }
-        });
-    </script>
-</body>
-</html>
+            margin-bottom: 2.5rem;
+            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+            border
