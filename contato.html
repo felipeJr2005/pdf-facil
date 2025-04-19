@@ -58,4 +58,240 @@
         .contact-header {
             margin-bottom: 2.5rem;
             background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
-            border
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .contact-title {
+            font-size: 2.25rem;
+            color: white;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .contact-description {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-options {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-card {
+            background-color: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            transition: var(--transition-normal);
+            max-width: 300px;
+            flex: 1;
+            min-width: 240px;
+            cursor: pointer;
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .contact-icon {
+            width: 4rem;
+            height: 4rem;
+            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+        }
+
+        .contact-card:nth-child(2) .contact-icon {
+            background: linear-gradient(135deg, #d1fadf, var(--color-whatsapp));
+        }
+
+        .contact-card-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-gray-800);
+            font-weight: 600;
+        }
+
+        .contact-card-description {
+            color: var(--color-gray-600);
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-button {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            width: 100%;
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .contact-button:hover {
+            background: linear-gradient(to right, var(--color-primary-dark), #2a3bba);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .whatsapp-button {
+            background: linear-gradient(to right, var(--color-whatsapp), var(--color-whatsapp-dark));
+        }
+
+        .whatsapp-button:hover {
+            background: linear-gradient(to right, var(--color-whatsapp-dark), #075e54);
+        }
+        
+        /* Esconder o iframe oculto */
+        #hidden-iframe {
+            display: none;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .contact-header {
+                padding: 2rem 1rem;
+            }
+            
+            .contact-title {
+                font-size: 1.75rem;
+            }
+            
+            .contact-options {
+                gap: 1rem;
+            }
+            
+            .contact-card {
+                min-width: 100%;
+            }
+        }
+
+        /* Modo escuro */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-gray-50: #1f2937;
+                --color-gray-100: #374151;
+                --color-gray-200: #4b5563;
+                --color-gray-300: #6b7280;
+                --color-gray-400: #9ca3af;
+                --color-gray-500: #d1d5db;
+                --color-gray-600: #e5e7eb;
+                --color-gray-700: #f3f4f6;
+                --color-gray-800: #f9fafb;
+                --color-primary-light: #1e293b;
+            }
+            
+            body {
+                background-color: #111827;
+                color: var(--color-gray-700);
+            }
+            
+            .contact-card {
+                background-color: #1f2937;
+                border-color: #374151;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="contact-container">
+        <header class="contact-header">
+            <h1 class="contact-title">Entre em Contato</h1>
+            <p class="contact-description">Estamos prontos para ajudar! Escolha a melhor forma de entrar em contato conosco.</p>
+        </header>
+
+        <div class="contact-options">
+            <div class="contact-card" id="suggestion-card">
+                <div class="contact-icon">
+                    <i class="fas fa-comment-alt"></i>
+                </div>
+                <h2 class="contact-card-title">Enviar Sugestão</h2>
+                <p class="contact-card-description">Envie suas dúvidas, comentários ou sugestões para melhorar nossa plataforma.</p>
+                <button class="contact-button" id="open-suggestion-form">Formulário de Contato</button>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <h2 class="contact-card-title">WhatsApp</h2>
+                <p class="contact-card-description">Precisa de uma resposta rápida? Entre em contato diretamente pelo WhatsApp.</p>
+                <a href="https://wa.me/5587988281725" target="_blank" class="contact-button whatsapp-button">Iniciar Conversa</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Iframe invisível para carregar o formulário flutuante -->
+    <iframe id="hidden-iframe" src="about:blank"></iframe>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const suggestionCard = document.getElementById('suggestion-card');
+            const openFormButton = document.getElementById('open-suggestion-form');
+            
+            // Função para abrir o formulário flutuante
+            function openSuggestionForm() {
+                try {
+                    // Tenta acessar o botão do formulário flutuante no contexto pai
+                    if (window.parent && window.parent.document) {
+                        const formButton = window.parent.document.querySelector('.fc-form');
+                        const overlay = window.parent.document.querySelector('.fc-overlay');
+                        
+                        if (formButton) {
+                            formButton.click();
+                        } else if (overlay) {
+                            overlay.classList.add('active');
+                        } else {
+                            alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                        }
+                    } else {
+                        alert('Não foi possível acessar o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao tentar abrir o formulário:', error);
+                    alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                }
+            }
+            
+            // Adiciona eventos de clique
+            if (openFormButton) {
+                openFormButton.addEventListener('click', openSuggestionForm);
+            }
+            
+            if (suggestionCard) {
+                suggestionCard.addEventListener('click', function(e) {
+                    // Evita disparar o evento se o clique for no botão
+                    if (!e.target.classList.contains('contact-button')) {
+                        openSuggestionForm();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
