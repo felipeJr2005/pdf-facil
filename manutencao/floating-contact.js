@@ -146,3 +146,85 @@ function setupEvents() {
     const overlay = document.querySelector('.fc-overlay');
     const closeButton = document.querySelector('.fc-form-close');
     const form = document.getElementById('fcForm');
+    const message = document.getElementById('fcMessage');
+    
+    // Abrir/fechar menu
+    button.addEventListener('click', () => {
+        menu.classList.toggle('active');
+        button.classList.toggle('active');
+    });
+    
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.fc-container')) {
+            menu.classList.remove('active');
+            button.classList.remove('active');
+        }
+    });
+    
+    // Abrir formulário
+    formButton.addEventListener('click', () => {
+        overlay.classList.add('active');
+        menu.classList.remove('active');
+        button.classList.remove('active');
+    });
+    
+    // Fechar formulário
+    closeButton.addEventListener('click', () => overlay.classList.remove('active'));
+    
+    // Fechar formulário ao clicar no overlay
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+    });
+    
+    // Enviar formulário
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Dados do formulário
+        const data = {
+            name: document.getElementById('fc-name').value,
+            email: document.getElementById('fc-email').value,
+            module: document.getElementById('fc-module').value,
+            content: document.getElementById('fc-content').value,
+            date_created: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            status: 'pendente'
+        };
+        
+        // Exibir mensagem de carregamento
+        message.className = 'fc-message info';
+        message.textContent = 'Enviando sua sugestão...';
+        message.style.display = 'block';
+        
+        // Enviar para o servidor
+        fetch('manutencao/process-suggestion.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Sucesso
+                message.className = 'fc-message success';
+                message.textContent = 'Obrigado! Sua sugestão foi recebida com sucesso.';
+                form.reset();
+                
+                // Fechar formulário após 3s
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                    message.style.display = 'none';
+                }, 3000);
+            } else {
+                // Erro
+                message.className = 'fc-message error';
+                message.textContent = result.message || 'Ocorreu um erro. Tente novamente.';
+            }
+        })
+        .catch(error => {
+            // Erro de rede
+            message.className = 'fc-message error';
+            message.textContent = 'Falha na conexão. Verifique sua internet e tente novamente.';
+        });
+    });
+}
