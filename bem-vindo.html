@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bem-vindo ao PDFFacil</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+       <style>
         /* Utilizando as mesmas variáveis do unified-pdf-tools.css */
         :root {
             --color-primary: #4361ee;
@@ -38,205 +38,166 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
             line-height: 1.6;
             color: var(--color-gray-800);
             background-color: var(--color-gray-50);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            padding: 0;
             margin: 0;
-            height: 100vh;
+            padding: 0;
             width: 100%;
+            height: 100vh;
             overflow-x: hidden;
         }
 
-        .container {
-            max-width: 1200px;
+        .about-container {
+            max-width: 1100px;
             margin: 0 auto;
             padding: 1.5rem;
         }
 
-        .welcome-header {
-            text-align: center;
-            margin-bottom: 3rem;
+        .about-header {
             background: linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(67, 97, 238, 0.8));
-            border-radius: var(--radius-lg);
-            padding: 2.5rem 2rem;
             color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
         }
 
-        .welcome-title {
+        .about-title {
             font-size: 2.5rem;
-            color: white;
             margin-bottom: 1rem;
             font-weight: 600;
         }
 
-        .welcome-subtitle {
-            font-size: 1.25rem;
-            color: rgba(255, 255, 255, 0.9);
+        .about-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
             max-width: 800px;
             margin: 0 auto;
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .feature-card {
-            background-color: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            padding: 1.5rem;
-            transition: var(--transition-normal);
-            border: 1px solid var(--color-gray-200);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .feature-icon {
-            width: 4rem;
-            height: 4rem;
-            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.25rem;
-            font-size: 1.75rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .feature-title {
-            font-size: 1.5rem;
-            margin-bottom: 0.75rem;
-            color: var(--color-gray-800);
-            font-weight: 600;
-        }
-
-        .feature-description {
-            color: var(--color-gray-600);
-        }
-
-        .how-to-section {
-            background-color: white;
+        .about-content {
+            background: white;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
             padding: 2rem;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             border: 1px solid var(--color-gray-200);
         }
 
-        .how-to-title {
-            font-size: 1.75rem;
+        .section-title {
             color: var(--color-primary);
-            margin-bottom: 1.5rem;
-            text-align: center;
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color-gray-200);
             font-weight: 600;
         }
 
-        .steps {
-            list-style-type: none;
+        .section-title:first-of-type {
+            margin-top: 0;
         }
 
-        .step {
-            display: flex;
-            align-items: flex-start;
+        .about-content h3 {
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-primary-dark);
+            font-weight: 600;
+        }
+
+        .about-content p {
+            margin-bottom: 1rem;
+            color: var(--color-gray-700);
+        }
+
+        .about-content ul, .about-content ol {
             margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            color: var(--color-gray-700);
         }
 
-        .step-number {
-            background-color: var(--color-primary);
-            color: white;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
+        .about-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight {
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--color-gray-500);
+        }
+
+        .home-link {
             display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .home-button {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-
-        .step-content {
-            flex-grow: 1;
-        }
-
-        .step-title {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--color-gray-800);
-        }
-
-        .step-description {
-            color: var(--color-gray-600);
-        }
-
-        .cta-section {
-            text-align: center;
-            background: linear-gradient(135deg, rgba(238, 242, 255, 0.9), rgba(67, 97, 238, 0.9));
-            padding: 3rem 2rem;
-            border-radius: var(--radius-lg);
+            gap: 0.5rem;
+            background-color: var(--color-primary);
             color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .home-button:hover {
+            background-color: var(--color-primary-dark);
+            transform: translateY(-2px);
             box-shadow: var(--shadow-md);
         }
 
-        .cta-title {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-
-        .cta-subtitle {
-            font-size: 1.25rem;
-            margin-bottom: 2rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            opacity: 0.9;
-        }
-
-        .cta-message {
-            font-style: italic;
-            opacity: 0.8;
+        .development-tag {
+            display: inline-block;
+            background-color: #ef4444;
+            color: white;
             font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
         }
 
         /* Responsividade */
         @media (max-width: 768px) {
-            .container {
+            .about-container {
                 padding: 1rem;
             }
             
-            .features-grid {
-                grid-template-columns: 1fr;
+            .about-header {
+                padding: 2rem 1rem;
             }
             
-            .welcome-title {
+            .about-title {
                 font-size: 2rem;
             }
             
-            .welcome-subtitle {
-                font-size: 1.1rem;
+            .about-content {
+                padding: 1.5rem;
             }
             
-            .cta-title {
-                font-size: 1.75rem;
-            }
-            
-            .cta-subtitle {
-                font-size: 1.1rem;
+            .section-title {
+                font-size: 1.35rem;
             }
         }
 
@@ -260,10 +221,13 @@
                 color: var(--color-gray-700);
             }
             
-            .feature-card,
-            .how-to-section {
+            .about-content {
                 background-color: #1f2937;
                 border-color: #374151;
+            }
+            
+            .section-title {
+                border-bottom-color: #374151;
             }
         }
     </style>
