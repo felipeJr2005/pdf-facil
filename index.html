@@ -198,10 +198,65 @@
             backdrop-filter: blur(10px);
         }
 
+        /* Estilos para transições suaves */
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .iframe-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(248, 249, 250, 0.85);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .iframe-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid var(--primary-color);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         #resultFrame {
+            transition: opacity 0.3s ease;
+            opacity: 1;
             width: 100%;
             height: 100%;
             border: none;
+        }
+
+        #resultFrame.loading {
+            opacity: 0.3;
         }
 
         @media (min-width: 768px) {
@@ -346,197 +401,232 @@
 
         <main class="main-content">
             <div class="content-area">
-              <iframe id="resultFrame"></iframe> 
-                
-                
+                <div class="iframe-container">
+                    <iframe id="resultFrame" onload="hideLoader()"></iframe>
+                    <div class="iframe-overlay" id="iframeOverlay">
+                        <span class="loader"></span>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
+    // Função para esconder o loader após o carregamento
+    function hideLoader() {
+        const overlay = document.getElementById('iframeOverlay');
+        const frame = document.getElementById('resultFrame');
+        
+        // Usando setTimeout para dar um pequeno atraso e tornar a transição mais suave
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            frame.classList.remove('loading');
+        }, 300);
+    }
        
     function loadErrorPage() {
-    const descriptionEl = document.getElementById('functionDescription');
-    const frame = document.getElementById('resultFrame');
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
+        const overlay = document.getElementById('iframeOverlay');
 
-    // Atualiza a descrição da função
-    if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
+        // Atualiza a descrição da função
+        if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
 
-    // Carrega o conteúdo no iframe
-    if (frame) {
-        // Usar URL absoluta para carregar 404.html
-        frame.src = window.location.origin + '/404.html';
-    }
+        // Mostra o overlay com o loader durante o carregamento
+        overlay.classList.add('active');
+        frame.classList.add('loading');
 
-    // Remove a classe 'btn-green' de todos os botões
-    document.querySelectorAll('.sidebar-nav button').forEach(button => {
-        button.classList.remove('btn-green');
-        button.classList.add('btn-secondary');
-    });
-
-    // Adiciona a classe 'btn-green' ao botão de erro 404
-    const activeButton = document.getElementById('error404Button');
-    if (activeButton) {
-        activeButton.classList.remove('btn-secondary');
-        activeButton.classList.add('btn-green');
-    }
-}
-
-        // Função para carregar a página inicial de forma consistente
-        function loadHomePage() {
-            const descriptionEl = document.getElementById('functionDescription');
-            const frame = document.getElementById('resultFrame');
-
-            // Atualiza a descrição da função
-            if (descriptionEl) descriptionEl.innerText = 'Selecione uma função';
-
-            // Carrega uma página de boas-vindas ou limpa o iframe
-            if (frame) {
-                // Se você tem uma página de boas-vindas:
-                frame.src = 'bem-vindo.html';              
-                
-            }
-
-            // Remove a classe 'btn-green' de todos os botões
-            document.querySelectorAll('.sidebar-nav button').forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
+        // Carrega o conteúdo no iframe
+        if (frame) {
+            // Usar URL absoluta para carregar 404.html
+            frame.src = window.location.origin + '/404.html';
         }
 
-        // Função de debounce para evitar múltiplas chamadas seguidas
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+        // Remove a classe 'btn-green' de todos os botões
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
+        });
+
+        // Adiciona a classe 'btn-green' ao botão de erro 404
+        const activeButton = document.getElementById('error404Button');
+        if (activeButton) {
+            activeButton.classList.remove('btn-secondary');
+            activeButton.classList.add('btn-green');
+        }
+    }
+
+    // Função para carregar a página inicial de forma consistente
+    function loadHomePage() {
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
+        const overlay = document.getElementById('iframeOverlay');
+
+        // Atualiza a descrição da função
+        if (descriptionEl) descriptionEl.innerText = 'Selecione uma função';
+
+        // Mostra o overlay com o loader durante o carregamento
+        overlay.classList.add('active');
+        frame.classList.add('loading');
+
+        // Carrega uma página de boas-vindas ou limpa o iframe
+        if (frame) {
+            // Se você tem uma página de boas-vindas:
+            frame.src = 'bem-vindo.html';              
+        }
+
+        // Remove a classe 'btn-green' de todos os botões
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
+        });
+    }
+
+    // Função de debounce para evitar múltiplas chamadas seguidas
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                func(...args);
             };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Função para atualizar conteúdo com tratamento de página e transição suave
+    const updateContent = debounce((title, description, functionName) => {
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
+        const overlay = document.getElementById('iframeOverlay');
+
+        // Verifica se a página solicitada é a mesma que já está carregada
+        if (frame.src.includes(functionName + '.html')) {
+            console.warn(`Página ${functionName}.html já está carregada`);
+            return;
         }
         
-        // Função para atualizar conteúdo com tratamento de página
-        const updateContent = debounce((title, description, functionName) => {
-    const descriptionEl = document.getElementById('functionDescription');
-    const frame = document.getElementById('resultFrame');
+        // Atualiza a descrição da função
+        if (descriptionEl) descriptionEl.innerText = description;
 
-    // Verifica se a página solicitada é a mesma que já está carregada
-    if (frame.src.includes(functionName + '.html')) {
-        console.warn(`Página ${functionName}.html já está carregada`);
-        return;
-    }
-                    // Atualiza a descrição da função
-            if (descriptionEl) descriptionEl.innerText = description;
+        // Mostra o overlay com o loader durante o carregamento
+        overlay.classList.add('active');
+        frame.classList.add('loading');
 
-            // Carrega o conteúdo no iframe com tratamento de erro
-            if (frame) {
-                // Manipulador de erro para carregamento do iframe
-                frame.onerror = function() {
-                    // Se der erro ao carregar a página, mostrar página 404
-                    loadErrorPage();
-                    return true;
-                };
-                
-                // Adiciona event listener para detectar quando o iframe termina de carregar
-                frame.onload = function() {
-                    try {
-                        // Verifica se a página carregada é a página de erro (através da URL)
-                        if (frame.contentWindow.location.href.includes('?error=404') || 
-                            frame.contentWindow.location.href.includes('404.html')) {
-                            // Foi para página de erro, ajusta a UI
-                            const errorButton = document.getElementById('error404Button');
-                            if (errorButton) {
-                                document.querySelectorAll('.sidebar-nav button').forEach(button => {
-                                    button.classList.remove('btn-green');
-                                    button.classList.add('btn-secondary');
-                                });
-                                
-                                errorButton.classList.remove('btn-secondary');
-                                errorButton.classList.add('btn-green');
-                                
-                                if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
-                            }
-                        }
-                    } catch (e) {
-                        // Se ocorrer erro ao tentar acessar contentWindow.location,
-                        // provavelmente é um erro de segurança de domínio cruzado
-                        // Nesse caso, mostra a página de erro
-                        loadErrorPage();
-                    }
-                };
-                
-                // Tenta carregar a página solicitada
-                frame.src = `${functionName}.html`;
-            }
-
-            // Remove a classe 'btn-green' de todos os botões
-            document.querySelectorAll('.sidebar-nav button').forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
-
-            // Adiciona a classe 'btn-green' ao botão ativo
-            const activeButton = Array.from(document.querySelectorAll('.sidebar-nav button'))
-                .find(button => button.innerText.includes(title));
-
-            if (activeButton) {
-                activeButton.classList.remove('btn-secondary');
-                activeButton.classList.add('btn-green');
-            }
-        }, 150);
-
-        // Evento de carregamento do documento
-        document.addEventListener('DOMContentLoaded', () => {
-            // Adiciona evento de touchstart para melhorar resposta em dispositivos móveis
-            document.addEventListener('touchstart', function(){}, {passive: true});
-
-            // Verificar se estamos dentro de um iframe para evitar recursão
-            const isInIframe = window !== window.parent;
+        // Carrega o conteúdo no iframe com tratamento de erro
+        if (frame) {
+            // Manipulador de erro para carregamento do iframe
+            frame.onerror = function() {
+                // Se der erro ao carregar a página, mostrar página 404
+                loadErrorPage();
+                return true;
+            };
             
-            // Somente prossegue com a verificação de erro se não estivermos em um iframe
-            if (!isInIframe) {
-                // Verificar se há erro na URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const errorParam = urlParams.get('error');
-
-                if (errorParam === '404') {
-                    // Chama a função para carregar a página de erro<button class="btn-secondary"
-                    setTimeout(() => {
-                        loadErrorPage();
-                    }, 300);
+            // Adiciona event listener para detectar quando o iframe termina de carregar
+            frame.onload = function() {
+                try {
+                    // Verifica se a página carregada é a página de erro (através da URL)
+                    if (frame.contentWindow.location.href.includes('?error=404') || 
+                        frame.contentWindow.location.href.includes('404.html')) {
+                        // Foi para página de erro, ajusta a UI
+                        const errorButton = document.getElementById('error404Button');
+                        if (errorButton) {
+                            document.querySelectorAll('.sidebar-nav button').forEach(button => {
+                                button.classList.remove('btn-green');
+                                button.classList.add('btn-secondary');
+                            });
+                            
+                            errorButton.classList.remove('btn-secondary');
+                            errorButton.classList.add('btn-green');
+                            
+                            if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
+                        }
+                    }
+                    
+                    // O evento onload já chama hideLoader()
+                    
+                } catch (e) {
+                    // Se ocorrer erro ao tentar acessar contentWindow.location,
+                    // provavelmente é um erro de segurança de domínio cruzado
+                    // Nesse caso, mostra a página de erro
+                    loadErrorPage();
                 }
-            }
+            };
+            
+            // Tenta carregar a página solicitada
+            frame.src = `${functionName}.html`;
+        }
 
-            // Prefetch de páginas comuns para melhorar performance
-            const commonPages = ['comprimir', 'converter', 'juntar'];
-            commonPages.forEach(page => {
-                const link = document.createElement('link');
-                link.rel = 'prefetch';
-                link.href = `${page}.html`;
-                document.head.appendChild(link);
+        // Remove a classe 'btn-green' de todos os botões
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
+        });
+
+        // Adiciona a classe 'btn-green' ao botão ativo
+        const activeButton = Array.from(document.querySelectorAll('.sidebar-nav button'))
+            .find(button => button.innerText.includes(title));
+
+        if (activeButton) {
+            activeButton.classList.remove('btn-secondary');
+            activeButton.classList.add('btn-green');
+        }
+    }, 150);
+
+    // Evento de carregamento do documento
+    document.addEventListener('DOMContentLoaded', () => {
+        // Adiciona evento de touchstart para melhorar resposta em dispositivos móveis
+        document.addEventListener('touchstart', function(){}, {passive: true});
+
+        // Carregar a página inicial
+        loadHomePage();
+
+        // Verificar se estamos dentro de um iframe para evitar recursão
+        const isInIframe = window !== window.parent;
+        
+        // Somente prossegue com a verificação de erro se não estivermos em um iframe
+        if (!isInIframe) {
+            // Verificar se há erro na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorParam = urlParams.get('error');
+
+            if (errorParam === '404') {
+                // Chama a função para carregar a página de erro
+                setTimeout(() => {
+                    loadErrorPage();
+                }, 300);
+            }
+        }
+
+        // Prefetch de páginas comuns para melhorar performance
+        const commonPages = ['comprime', 'converte', 'junte'];
+        commonPages.forEach(page => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = `${page}.html`;
+            document.head.appendChild(link);
+        });
+
+        // Adiciona eventos de foco e blur aos botões
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.addEventListener('focus', () => {
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-green');
             });
 
-            // Adiciona eventos de foco e blur aos botões
-            document.querySelectorAll('.sidebar-nav button').forEach(button => {
-                button.addEventListener('focus', () => {
-                    button.classList.remove('btn-secondary');
-                    button.classList.add('btn-green');
-                });
-
-                button.addEventListener('blur', () => {
-                    // Remove a classe 'btn-green' apenas se o botão não for o ativo
-                    if (!button.innerText.includes(document.getElementById('functionDescription').innerText)) {
-                        button.classList.remove('btn-green');
-                        button.classList.add('btn-secondary');
-                    }
-                });
+            button.addEventListener('blur', () => {
+                // Remove a classe 'btn-green' apenas se o botão não for o ativo
+                if (!button.innerText.includes(document.getElementById('functionDescription').innerText)) {
+                    button.classList.remove('btn-green');
+                    button.classList.add('btn-secondary');
+                }
             });
         });
+    });
     </script>
     <!-- Botão Flutuante de Contato -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="/manutencao/floating-contact.js"></script>
 </body>
-</html>      
+</html>
