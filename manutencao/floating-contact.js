@@ -1,421 +1,148 @@
-(function() {
-    // Criar o elemento de estilo
-    const style = document.createElement('style');
-    style.textContent = `
-        /* Estilos para o painel flutuante */
-        #pdf-floating-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 999999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-end;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        #pdf-floating-panel * {
-            box-sizing: border-box;
-        }
-        
-        .pdf-floating-panel-buttons {
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        #pdf-floating-panel.active .pdf-floating-panel-buttons {
-            display: flex;
-        }
-        
-        .pdf-floating-button {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.25rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        .pdf-floating-button:hover {
-            transform: translateY(-3px);
-        }
-        
-        .pdf-floating-button.main {
-            background: linear-gradient(135deg, #5c95ce, #1976d2);
-            color: white;
-            font-size: 1.5rem;
-            width: 60px;
-            height: 60px;
-            animation: pdfPulse 2s infinite;
-        }
-        
-        .pdf-floating-button.whatsapp {
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            color: white;
-        }
-        
-        .pdf-floating-button.suggestion {
-            background: linear-gradient(135deg, #ffb700, #ff9500);
-            color: white;
-        }
-        
-        .pdf-button-tooltip {
-            position: absolute;
-            right: 60px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8125rem;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }
-        
-        .pdf-floating-button:hover .pdf-button-tooltip {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        /* Modal de sugestões */
-        #pdf-suggestion-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000000;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        #pdf-suggestion-modal.active {
-            display: flex;
-        }
-        
-        .pdf-suggestion-modal-content {
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .pdf-suggestion-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 1.25rem;
-            color: #999;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            width: auto;
-            height: auto;
-            padding: 5px;
-        }
-        
-        #pdf-suggestion-modal h3 {
-            color: #5c95ce;
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
-        }
-        
-        .pdf-suggestion-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .pdf-suggestion-form label {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            display: block;
-        }
-        
-        .pdf-suggestion-form input,
-        .pdf-suggestion-form textarea,
-        .pdf-suggestion-form select {
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            font-family: inherit;
-            font-size: 0.9375rem;
-            width: 100%;
-        }
-        
-        .pdf-suggestion-form textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .pdf-suggestion-form button {
-            background: linear-gradient(135deg, #5c95ce, #1976d2);
-            color: white;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            width: 100%;
-        }
-        
-        .pdf-suggestion-form button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(92, 149, 206, 0.3);
-        }
-        
-        .pdf-suggestion-thanks {
-            display: none;
-            text-align: center;
-            padding: 2rem 1rem;
-        }
-        
-        .pdf-suggestion-thanks.active {
-            display: block;
-        }
-        
-        .pdf-suggestion-thanks i {
-            font-size: 3rem;
-            color: #4CAF50;
-            margin-bottom: 1rem;
-        }
-        
-        .pdf-suggestion-thanks h4 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            color: #5c95ce;
-        }
-        
-        /* Animação de pulso para o botão principal */
-        @keyframes pdfPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(92, 149, 206, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(92, 149, 206, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(92, 149, 206, 0);
-            }
-        }
-        
-        @media (max-width: 767px) {
-            #pdf-floating-panel {
-                bottom: 70px;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+/**
+ * PDFFacil - Sistema de Contato Flutuante (Versão Simplificada)
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Inserir CSS diretamente (ao invés de usar arquivo separado)
+    injectStyles();
     
-    // Carregar Font Awesome se não estiver presente
-    if (!document.querySelector('link[href*="font-awesome"]')) {
-        const fontAwesome = document.createElement('link');
-        fontAwesome.rel = 'stylesheet';
-        fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
-        document.head.appendChild(fontAwesome);
-    }
+    // Criar elementos do botão flutuante e formulário
+    createFloatingButton();
     
-    // Criar o painel flutuante
-    const floatingPanel = document.createElement('div');
-    floatingPanel.id = 'pdf-floating-panel';
-    floatingPanel.innerHTML = `
-        <div class="pdf-floating-panel-buttons">
-            <button onclick="pdfFloatingContact.openWhatsApp()" class="pdf-floating-button whatsapp">
-                <i class="fab fa-whatsapp"></i>
-                <span class="pdf-button-tooltip">Entrar em contato via WhatsApp</span>
-            </button>
-            <button onclick="pdfFloatingContact.openSuggestionForm()" class="pdf-floating-button suggestion">
-                <i class="fas fa-lightbulb"></i>
-                <span class="pdf-button-tooltip">Sugerir melhoria</span>
-            </button>
-        </div>
-        <button onclick="pdfFloatingContact.togglePanel()" class="pdf-floating-button main">
-            <i class="fas fa-comments"></i>
-        </button>
+    // Adicionar event listeners
+    setupEvents();
+});
+
+// Injetar estilos CSS diretamente no documento
+function injectStyles() {
+    const styles = `
+    .fc-container {position:fixed;bottom:30px;right:30px;z-index:9998;display:flex;flex-direction:column;align-items:flex-end;}
+    .fc-button {width:60px;height:60px;border-radius:50%;background:linear-gradient(145deg,#4361ee,#3a56d4);color:white;border:none;box-shadow:0 4px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:all 0.3s ease;z-index:9999;}
+    .fc-button:hover {transform:scale(1.05);box-shadow:0 6px 12px rgba(0,0,0,0.3);}
+    .fc-button.active {background:linear-gradient(145deg,#3a56d4,#2a3bba);transform:rotate(45deg);}
+    .fc-menu {position:absolute;bottom:75px;right:5px;background-color:white;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.15);padding:10px;display:flex;flex-direction:column;gap:8px;opacity:0;visibility:hidden;transform:translateY(20px);transition:all 0.3s ease;min-width:200px;}
+    .fc-menu.active {opacity:1;visibility:visible;transform:translateY(0);}
+    .fc-option {padding:12px 16px;border-radius:8px;display:flex;align-items:center;gap:10px;font-weight:500;transition:all 0.2s ease;text-decoration:none;background:none;border:none;font-family:inherit;font-size:15px;cursor:pointer;color:#334155;width:100%;text-align:left;}
+    .fc-option:hover {background-color:#f1f5f9;}
+    .fc-option i {font-size:18px;}
+    .fc-whatsapp {color:#25D366;}
+    .fc-whatsapp:hover {background-color:rgba(37,211,102,0.1);}
+    .fc-form {color:#4361ee;}
+    .fc-form:hover {background-color:#eef2ff;}
+    .fc-overlay {position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all 0.3s ease;backdrop-filter:blur(3px);}
+    .fc-overlay.active {opacity:1;visibility:visible;}
+    .fc-form-container {background-color:white;width:95%;max-width:500px;border-radius:12px;box-shadow:0 5px 25px rgba(0,0,0,0.2);overflow:hidden;animation:fcSlideIn 0.4s ease;}
+    @keyframes fcSlideIn {from{opacity:0;transform:translateY(-30px);}to{opacity:1;transform:translateY(0);}}
+    .fc-form-header {padding:16px 20px;background-color:#eef2ff;color:#4361ee;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;}
+    .fc-form-header h3 {margin:0;font-size:18px;font-weight:600;}
+    .fc-form-close {background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;transition:color 0.2s ease;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;}
+    .fc-form-close:hover {color:#4361ee;background-color:rgba(0,0,0,0.05);}
+    .fc-form-content {padding:20px;}
+    .fc-form-group {margin-bottom:16px;}
+    .fc-form-group label {display:block;margin-bottom:8px;font-weight:500;color:#334155;}
+    .fc-input, .fc-select, .fc-textarea {width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:6px;font-size:15px;transition:all 0.2s ease;background-color:white;font-family:inherit;}
+    .fc-input:focus, .fc-select:focus, .fc-textarea:focus {outline:none;border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,0.15);}
+    .fc-textarea {resize:vertical;min-height:120px;}
+    .fc-submit {width:100%;padding:12px;border:none;border-radius:6px;background:linear-gradient(to right,#4361ee,#3a56d4);color:white;font-weight:600;font-size:16px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 5px rgba(0,0,0,0.1);margin-top:8px;}
+    .fc-submit:hover {background:linear-gradient(to right,#3a56d4,#2a3bba);box-shadow:0 4px 8px rgba(0,0,0,0.15);transform:translateY(-2px);}
+    .fc-message {padding:12px 20px;margin:0 20px 20px;border-radius:6px;font-size:15px;font-weight:500;}
+    .fc-message.success {background-color:#dcfce7;color:#10b981;border-left:4px solid #10b981;}
+    .fc-message.error {background-color:#fee2e2;color:#ef4444;border-left:4px solid #ef4444;}
+    .fc-message.info {background-color:#eef2ff;color:#4361ee;border-left:4px solid #4361ee;}
+    @media (max-width:768px) {.fc-container{bottom:20px;right:20px;}.fc-menu{right:0;min-width:180px;}.fc-form-container{max-height:90vh;overflow-y:auto;}}
+    @media (prefers-color-scheme:dark) {.fc-menu,.fc-form-container{background-color:#1f2937;}.fc-form-header{background-color:#111827;}.fc-input,.fc-select,.fc-textarea{background-color:#1f2937;color:#cbd5e1;border-color:#374151;}.fc-option:hover{background-color:#374151;}.fc-form:hover{background-color:rgba(67,97,238,0.2);}.fc-whatsapp:hover{background-color:rgba(37,211,102,0.2);}.fc-message.success{background-color:rgba(16,185,129,0.1);}.fc-message.error{background-color:rgba(239,68,68,0.1);}.fc-message.info{background-color:rgba(67,97,238,0.1);}}
     `;
     
-    // Criar o modal de sugestões
-    const suggestionModal = document.createElement('div');
-    suggestionModal.id = 'pdf-suggestion-modal';
-    suggestionModal.innerHTML = `
-        <div class="pdf-suggestion-modal-content">
-            <button class="pdf-suggestion-close" onclick="pdfFloatingContact.closeSuggestionModal()">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <div id="pdf-suggestion-form">
-                <h3>Sugerir melhoria para o PDFFacil</h3>
-                <form class="pdf-suggestion-form" id="pdf-improvement-form" onsubmit="pdfFloatingContact.submitSuggestion(event)">
-                    <div>
-                        <label for="pdf-suggestion-module">Módulo:</label>
-                        <select id="pdf-suggestion-module" required>
-                            <option value="" disabled selected>Selecione uma opção</option>
-                            <option value="geral">Geral</option>
-                            <option value="comprimir">Comprimir</option>
-                            <option value="converter">Converter</option>
-                            <option value="dividir">Dividir</option>
-                            <option value="editar">Editar</option>
-                            <option value="extrair">Extrair Páginas</option>
-                            <option value="extrair_imagens">Extrair Imagens</option>
-                            <option value="filtro">Filtro</option>
-                            <option value="juntar">Juntar</option>
-                            <option value="otimizar_pje">Otimizar PJE</option>
-                            <option value="apagar">Remover Páginas</option>
-                            <option value="reorganizar">Reorganizar</option>
-                            <option value="rotacionar">Rotacionar</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="pdf-suggestion-type">Tipo de sugestão:</label>
-                        <select id="pdf-suggestion-type" required>
-                            <option value="" disabled selected>Selecione uma opção</option>
-                            <option value="melhoria">Melhoria</option>
-                            <option value="erro">Correção de erro</option>
-                            <option value="nova_funcao">Nova funcionalidade</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="pdf-suggestion-title">Título:</label>
-                        <input type="text" id="pdf-suggestion-title" placeholder="Título da sua sugestão" required>
-                    </div>
-                    <div>
-                        <label for="pdf-suggestion-content">Descrição:</label>
-                        <textarea id="pdf-suggestion-content" placeholder="Descreva sua sugestão em detalhes" required></textarea>
-                    </div>
-                    <div>
-                        <label for="pdf-suggestion-email">Email (opcional):</label>
-                        <input type="email" id="pdf-suggestion-email" placeholder="Seu email para contato">
-                    </div>
-                    
-                    <button type="submit">Enviar sugestão</button>
-                </form>
+    const styleElement = document.createElement('style');
+    styleElement.textContent = styles;
+    document.head.appendChild(styleElement);
+}
+
+// Criar e adicionar elementos ao DOM
+function createFloatingButton() {
+    // Container principal
+    const container = document.createElement('div');
+    container.className = 'fc-container';
+    
+    // Botão principal
+    const button = document.createElement('button');
+    button.className = 'fc-button';
+    button.innerHTML = '<i class="fas fa-comment"></i>';
+    button.setAttribute('aria-label', 'Opções de contato');
+    
+    // Menu de opções
+    const menu = document.createElement('div');
+    menu.className = 'fc-menu';
+    
+    // Opção de WhatsApp
+    const whatsapp = document.createElement('a');
+    whatsapp.className = 'fc-option fc-whatsapp';
+    whatsapp.href = 'https://wa.me/5587988281725';
+    whatsapp.target = '_blank';
+    whatsapp.innerHTML = '<i class="fab fa-whatsapp"></i> WhatsApp';
+    
+    // Opção de formulário
+    const form = document.createElement('button');
+    form.className = 'fc-option fc-form';
+    form.innerHTML = '<i class="fas fa-envelope"></i> Sugestões';
+    
+    // Adicionar ao DOM
+    menu.appendChild(whatsapp);
+    menu.appendChild(form);
+    container.appendChild(menu);
+    container.appendChild(button);
+    document.body.appendChild(container);
+    
+    // Overlay do formulário
+    const overlay = document.createElement('div');
+    overlay.className = 'fc-overlay';
+    overlay.innerHTML = `
+        <div class="fc-form-container">
+            <div class="fc-form-header">
+                <h3>Enviar Sugestão</h3>
+                <button class="fc-form-close"><i class="fas fa-times"></i></button>
             </div>
-            
-            <div id="pdf-suggestion-thanks" class="pdf-suggestion-thanks">
-                <i class="fas fa-check-circle"></i>
-                <h4>Obrigado pela sua sugestão!</h4>
-                <p>Sua contribuição é muito importante para melhorarmos o PDFFacil.</p>
-                <button onclick="pdfFloatingContact.closeSuggestionModal()">Fechar</button>
-            </div>
+            <form id="fcForm" class="fc-form-content">
+                <div class="fc-form-group">
+                    <label for="fc-name">Nome</label>
+                    <input type="text" id="fc-name" name="name" class="fc-input" required>
+                </div>
+                <div class="fc-form-group">
+                    <label for="fc-email">Email</label>
+                    <input type="email" id="fc-email" name="email" class="fc-input" required>
+                </div>
+                <div class="fc-form-group">
+                    <label for="fc-module">Módulo</label>
+                    <select id="fc-module" name="module" class="fc-select" required>
+                        <option value="" disabled selected>Selecione um módulo</option>
+                        <option value="converter">Converter PDF</option>
+                        <option value="juntar">Juntar PDF</option>
+                        <option value="dividir">Dividir PDF</option>
+                        <option value="comprimir">Comprimir PDF</option>
+                        <option value="editar">Editar PDF</option>
+                        <option value="apagar">Apagar Páginas</option>
+                        <option value="extrair">Extrair Páginas</option>
+                        <option value="rotacionar">Rotacionar PDF</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                </div>
+                <div class="fc-form-group">
+                    <label for="fc-content">Sua sugestão</label>
+                    <textarea id="fc-content" name="content" class="fc-textarea" required placeholder="Descreva sua sugestão ou problema"></textarea>
+                </div>
+                <button type="submit" class="fc-submit">Enviar Sugestão</button>
+            </form>
+            <div id="fcMessage" class="fc-message" style="display:none;"></div>
         </div>
     `;
     
-    // Adicionar elementos ao DOM
-    document.body.appendChild(floatingPanel);
-    document.body.appendChild(suggestionModal);
-    
-    // Definir o objeto global com as funções
-    window.pdfFloatingContact = {
-        // Alternar exibição do painel
-        togglePanel: function() {
-            document.getElementById('pdf-floating-panel').classList.toggle('active');
-        },
-        
-        // Abrir WhatsApp
-        openWhatsApp: function() {
-            window.open('https://wa.me/5587988281725', '_blank');
-            document.getElementById('pdf-floating-panel').classList.remove('active');
-        },
-        
-        // Abrir formulário de sugestão
-        openSuggestionForm: function() {
-            document.getElementById('pdf-suggestion-modal').classList.add('active');
-            document.getElementById('pdf-suggestion-form').style.display = 'block';
-            document.getElementById('pdf-suggestion-thanks').classList.remove('active');
-            document.getElementById('pdf-floating-panel').classList.remove('active');
-        },
-        
-        // Fechar modal
-        closeSuggestionModal: function() {
-            document.getElementById('pdf-suggestion-modal').classList.remove('active');
-            document.getElementById('pdf-improvement-form').reset();
-        },
-        
-        // Enviar sugestão
-        submitSuggestion: function(event) {
-            event.preventDefault();
-            
-            // Coletar dados do formulário
-            const module = document.getElementById('pdf-suggestion-module').value;
-            const type = document.getElementById('pdf-suggestion-type').value;
-            const title = document.getElementById('pdf-suggestion-title').value;
-            const content = document.getElementById('pdf-suggestion-content').value;
-            const email = document.getElementById('pdf-suggestion-email').value;
-            
-            // Preparar dados para envio
-            const suggestionData = {
-                module,
-                type,
-                title,
-                content,
-                email,
-                date: new Date().toISOString()
-            };
-            
-            // Salvar em localStorage
-            try {
-                const pendingSuggestions = JSON.parse(localStorage.getItem('pendingSuggestions') || '[]');
-                pendingSuggestions.push(suggestionData);
-                localStorage.setItem('pendingSuggestions', JSON.stringify(pendingSuggestions));
-            } catch (e) {
-                console.error('Erro ao salvar sugestão localmente:', e);
-            }
-            
-            // Tentativa de envio por API
-            try {
-                fetch('/api/sugestoes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(suggestionData)
-                })
-                .catch(error => {
-                    console.error('Erro ao enviar sugestão:', error);
-                    // Erro silencioso, mostraremos agradecimento de qualquer forma
-                });
-            } catch (e) {
-                console.error('Erro ao enviar sugestão:', e);
-                // Erro silencioso, mostraremos agradecimento de qualquer forma
-            }
-            
-            // Mostrar tela de agradecimento independente do resultado
-            document.getElementById('pdf-suggestion-form').style.display = 'none';
-            document.getElementById('pdf-suggestion-thanks').classList.add('active');
-        }
-    };
-    
-    // Adicionar listeners para fechamento do modal
-    document.addEventListener('click', function(event) {
-        const modal = document.getElementById('pdf-suggestion-modal');
-        if (event.target === modal) {
-            window.pdfFloatingContact.closeSuggestionModal();
-        }
-    });
-    
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape' && document.getElementById('pdf-suggestion-modal').classList.contains('active')) {
-            window.pdfFloatingContact.closeSuggestionModal();
-        }
-    });
-})();
+    document.body.appendChild(overlay);
+}
+
+// Configurar eventos
+function setupEvents() {
+    const button = document.querySelector('.fc-button');
+    const menu = document.querySelector('.fc-menu');
+    const formButton = document.querySelector('.fc-form');
+    const overlay = document.querySelector('.fc-overlay');
+    const closeButton = document.querySelector('.fc-form-close');
+    const form = document.getElementById('fcForm');
