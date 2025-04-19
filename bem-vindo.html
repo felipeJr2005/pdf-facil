@@ -78,7 +78,7 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 2rem;
             margin-bottom: 3rem;
         }
@@ -327,10 +327,66 @@
 
             <div class="feature-card">
                 <div class="feature-icon">
+                    <i class="fas fa-edit"></i>
+                </div>
+                <h2 class="feature-title">Editar PDF</h2>
+                <p class="feature-description">Faça alterações em seus documentos PDF diretamente no navegador, sem precisar de software adicional. Altere texto, adicione imagens e mais.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <h2 class="feature-title">Extrair Páginas</h2>
+                <p class="feature-description">Selecione e extraia páginas específicas de um documento PDF para criar um novo arquivo, facilitando o compartilhamento de apenas as informações necessárias.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-images"></i>
+                </div>
+                <h2 class="feature-title">Extrair Imagens</h2>
+                <p class="feature-description">Extraia todas as imagens contidas em um PDF de forma automática, salvando-as em formatos como JPG ou PNG para uso em outros documentos ou projetos.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-filter"></i>
+                </div>
+                <h2 class="feature-title">Filtros PDF</h2>
+                <p class="feature-description">Aplique diversos filtros e ajustes aos seus documentos PDF para melhorar a qualidade visual, otimizar cores ou preparar para impressão.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
                     <i class="fas fa-gavel"></i>
                 </div>
                 <h2 class="feature-title">Otimização para PJE</h2>
                 <p class="feature-description">Adeque seus documentos PDF às exigências específicas do Processo Judicial Eletrônico (PJE), garantindo a conformidade com normas jurídicas.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+                <h2 class="feature-title">Remover Páginas</h2>
+                <p class="feature-description">Elimine páginas desnecessárias de um documento PDF, mantendo apenas o conteúdo relevante sem alterar a formatação do documento original.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-sort"></i>
+                </div>
+                <h2 class="feature-title">Reorganizar</h2>
+                <p class="feature-description">Altere a ordem das páginas do seu PDF, reorganizando-as facilmente por meio de uma interface intuitiva de arrastar e soltar.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-redo"></i>
+                </div>
+                <h2 class="feature-title">Rotacionar</h2>
+                <p class="feature-description">Rotacione as páginas do seu PDF individual ou coletivamente para corrigir a orientação e facilitar a leitura em qualquer dispositivo.</p>
             </div>
 
             <div class="feature-card">
@@ -389,7 +445,12 @@
             <p class="cta-subtitle">Escolha uma das ferramentas no menu lateral esquerdo e transforme seus documentos PDF com poucos cliques.</p>
             <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
         </section>
-               
+        
+        <div class="home-link">
+            <button class="home-button" onclick="window.parent.loadHomePage()">
+                <i class="fas fa-home"></i> Voltar para a página inicial
+            </button>
+        </div>
     </div>
 </body>
 </html>
