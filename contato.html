@@ -44,7 +44,11 @@
             background-color: var(--color-gray-50);
             color: var(--color-gray-800);
             line-height: 1.6;
-            padding: 2rem;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -53,6 +57,7 @@
             max-width: 800px;
             margin: 0 auto;
             text-align: center;
+            padding: 1.5rem;
         }
 
         .contact-header {
@@ -197,7 +202,7 @@
         
         /* Responsividade */
         @media (max-width: 768px) {
-            body {
+            .contact-container {
                 padding: 1rem;
             }
             
