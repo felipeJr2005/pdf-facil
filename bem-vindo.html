@@ -44,12 +44,17 @@
             background-color: var(--color-gray-50);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            padding: 2rem;
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 1.5rem;
         }
 
         .welcome-header {
@@ -78,7 +83,7 @@
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 2rem;
             margin-bottom: 3rem;
         }
@@ -208,39 +213,9 @@
             font-size: 0.9rem;
         }
 
-        .home-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-align: center;
-            width: 100%;
-        }
-
-        .home-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            background-color: var(--color-primary);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            text-decoration: none;
-        }
-
-        .home-button:hover {
-            background-color: var(--color-primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
         /* Responsividade */
         @media (max-width: 768px) {
-            body {
+            .container {
                 padding: 1rem;
             }
             
@@ -332,78 +307,6 @@
                 <h2 class="feature-title">Editar PDF</h2>
                 <p class="feature-description">Faça alterações em seus documentos PDF diretamente no navegador, sem precisar de software adicional. Altere texto, adicione imagens e mais.</p>
             </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-file-export"></i>
-                </div>
-                <h2 class="feature-title">Extrair Páginas</h2>
-                <p class="feature-description">Selecione e extraia páginas específicas de um documento PDF para criar um novo arquivo, facilitando o compartilhamento de apenas as informações necessárias.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-images"></i>
-                </div>
-                <h2 class="feature-title">Extrair Imagens</h2>
-                <p class="feature-description">Extraia todas as imagens contidas em um PDF de forma automática, salvando-as em formatos como JPG ou PNG para uso em outros documentos ou projetos.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-filter"></i>
-                </div>
-                <h2 class="feature-title">Filtros PDF</h2>
-                <p class="feature-description">Aplique diversos filtros e ajustes aos seus documentos PDF para melhorar a qualidade visual, otimizar cores ou preparar para impressão.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-gavel"></i>
-                </div>
-                <h2 class="feature-title">Otimização para PJE</h2>
-                <p class="feature-description">Adeque seus documentos PDF às exigências específicas do Processo Judicial Eletrônico (PJE), garantindo a conformidade com normas jurídicas.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-trash-alt"></i>
-                </div>
-                <h2 class="feature-title">Remover Páginas</h2>
-                <p class="feature-description">Elimine páginas desnecessárias de um documento PDF, mantendo apenas o conteúdo relevante sem alterar a formatação do documento original.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-sort"></i>
-                </div>
-                <h2 class="feature-title">Reorganizar</h2>
-                <p class="feature-description">Altere a ordem das páginas do seu PDF, reorganizando-as facilmente por meio de uma interface intuitiva de arrastar e soltar.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-redo"></i>
-                </div>
-                <h2 class="feature-title">Rotacionar</h2>
-                <p class="feature-description">Rotacione as páginas do seu PDF individual ou coletivamente para corrigir a orientação e facilitar a leitura em qualquer dispositivo.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-font"></i>
-                </div>
-                <h2 class="feature-title">Reconhecimento OCR</h2>
-                <p class="feature-description">Converta imagens ou documentos escaneados em texto pesquisável, facilitando a localização de informações importantes em seus arquivos.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <h2 class="feature-title">Privacidade Garantida</h2>
-                <p class="feature-description">Todo o processamento é realizado localmente no seu navegador, sem enviar seus documentos para servidores externos, garantindo total segurança e privacidade.</p>
-            </div>
         </div>
 
         <section class="how-to-section">
@@ -444,7 +347,7 @@
             <h2 class="cta-title">Comece Agora!</h2>
             <p class="cta-subtitle">Escolha uma das ferramentas no menu lateral esquerdo e transforme seus documentos PDF com poucos cliques.</p>
             <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
-        </section>            
+        </section>
     </div>
 </body>
 </html>
