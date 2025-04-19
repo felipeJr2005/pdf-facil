@@ -44,12 +44,14 @@
             background-color: var(--color-gray-50);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            padding: 2rem;
+            padding: 0;
+            margin: 0;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0;
         }
 
         .welcome-header {
@@ -208,42 +210,8 @@
             font-size: 0.9rem;
         }
 
-        .home-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-align: center;
-            width: 100%;
-        }
-
-        .home-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            background-color: var(--color-primary);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            text-decoration: none;
-        }
-
-        .home-button:hover {
-            background-color: var(--color-primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
         /* Responsividade */
         @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-            
             .features-grid {
                 grid-template-columns: 1fr;
             }
