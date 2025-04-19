@@ -98,6 +98,7 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'clear_cache'
 
 // Arquivo de notas de manutenção
 $notesFile = $siteRoot . '/maintenance_notes.json';
+$suggestionLogFile = __DIR__ . '/suggestion_log.txt';
 
 // Função para ler notas do arquivo
 function getNotes() {
@@ -132,7 +133,8 @@ if ($isLoggedIn && isset($_POST['action']) && $_POST['action'] === 'add_note') {
         'module' => $_POST['note_module'],
         'priority' => $_POST['note_priority'],
         'date_created' => date('Y-m-d H:i:s'),
-        'status' => 'pendente'
+        'status' => 'pendente',
+        'source' => 'admin'
     ];
     
     // Adicionar à lista de notas
@@ -192,9 +194,13 @@ if ($isLoggedIn && isset($_GET['delete']) && !empty($_GET['delete'])) {
     exit;
 }
 
-// Filtrar notas por status
+// Filtrar notas por status e origem (admin/pública)
 $pendingNotes = array_filter($notes, function($note) {
-    return $note['status'] === 'pendente';
+    return $note['status'] === 'pendente' && (!isset($note['source']) || $note['source'] === 'admin');
+});
+
+$publicSuggestions = array_filter($notes, function($note) {
+    return isset($note['source']) && $note['source'] === 'public' && $note['status'] === 'pendente';
 });
 
 $completedNotes = array_filter($notes, function($note) {
@@ -213,6 +219,11 @@ usort($pendingNotes, function($a, $b) {
     }
     
     // Se mesma prioridade, ordenar por data (mais recente primeiro)
+    return strtotime($b['date_created']) - strtotime($a['date_created']);
+});
+
+// Ordenar sugestões públicas por data (mais recente primeiro)
+usort($publicSuggestions, function($a, $b) {
     return strtotime($b['date_created']) - strtotime($a['date_created']);
 });
 
@@ -394,18 +405,36 @@ asort($availableModules);
             display: flex;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
         .tab {
             padding: 10px 20px;
             cursor: pointer;
             border-bottom: 3px solid transparent;
+            position: relative;
         }
         
         .tab.active {
             font-weight: 600;
             color: var(--primary-color);
             border-bottom-color: var(--primary-color);
+        }
+        
+        .tab-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--error-color);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .tab-content {
@@ -483,6 +512,10 @@ asort($availableModules);
             background-color: var(--success-color);
         }
         
+        .tag-public {
+            background-color: #7048e8;
+        }
+        
         .note-actions {
             position: absolute;
             top: 15px;
@@ -516,6 +549,20 @@ asort($availableModules);
             color: var(--text-secondary);
         }
         
+        .log-container {
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+        }
+        
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -525,8 +572,31 @@ asort($availableModules);
                 flex-direction: column;
                 gap: 5px;
             }
+            
+            .tabs {
+                display: block;
+                border-bottom: none;
+            }
+            
+            .tab {
+                display: block;
+                border-left: 3px solid transparent;
+                border-bottom: 1px solid var(--border-color);
+                padding: 12px 15px;
+            }
+            
+            .tab.active {
+                border-left-color: var(--primary-color);
+                border-bottom-color: var(--border-color);
+                background-color: rgba(92, 149, 206, 0.1);
+            }
+            
+            .tab-badge {
+                right: 15px;
+            }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -574,6 +644,13 @@ asort($availableModules);
             <div class="tabs">
                 <div class="tab active" data-tab="dashboard">Dashboard</div>
                 <div class="tab" data-tab="notes">Notas de Manutenção</div>
+                <div class="tab" data-tab="public-suggestions">
+                    Sugestões Públicas
+                    <?php if (count($publicSuggestions) > 0): ?>
+                        <span class="tab-badge"><?php echo count($publicSuggestions); ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="tab" data-tab="contact-settings">Configurações de Contato</div>
             </div>
             
             <div id="dashboard" class="tab-content active">
@@ -691,10 +768,10 @@ asort($availableModules);
                                     <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
                                     <div class="note-actions">
                                         <a href="?complete=<?php echo urlencode($note['id']); ?>" class="action-link complete-link" title="Marcar como concluída">
-                                            <i class="✓">✓</i>
+                                            <i class="fas fa-check"></i>
                                         </a>
                                         <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
-                                            <i class="✕">✕</i>
+                                            <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -724,12 +801,164 @@ asort($availableModules);
                                     <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
                                     <div class="note-actions">
                                         <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir nota" onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
-                                            <i class="✕">✕</i>
+                                            <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Aba de Sugestões Públicas -->
+            <div id="public-suggestions" class="tab-content">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-comments"></i> Sugestões Enviadas pelos Usuários
+                    </div>
+                    
+                    <?php if (empty($publicSuggestions)): ?>
+                        <div class="empty-message">
+                            <p>Não há sugestões públicas pendentes.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($publicSuggestions as $note): ?>
+                            <div class="note-item">
+                                <div class="note-header">
+                                    <div class="note-title"><?php echo htmlspecialchars($note['title']); ?></div>
+                                </div>
+                                <div class="note-meta">
+                                    <span><strong>Módulo:</strong> <?php echo htmlspecialchars($availableModules[$note['module']] ?? $note['module']); ?></span>
+                                    <span class="tag tag-public">Sugestão Pública</span>
+                                    <span><strong>Data:</strong> <?php echo htmlspecialchars($note['date_created']); ?></span>
+                                </div>
+                                <div class="note-content"><?php echo htmlspecialchars($note['content']); ?></div>
+                                <div class="note-actions">
+                                    <a href="?complete=<?php echo urlencode($note['id']); ?>" class="action-link complete-link" title="Marcar como concluída">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="?delete=<?php echo urlencode($note['id']); ?>" class="action-link delete-link" title="Excluir sugestão" onclick="return confirm('Tem certeza que deseja excluir esta sugestão?');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    
+                    <!-- Log de Sugestões -->
+                    <div style="margin-top: 30px;">
+                        <h3 style="font-size: 16px; margin-bottom: 10px;">
+                            <i class="fas fa-history"></i> Log de Sugestões Recentes
+                        </h3>
+                        
+                        <div class="log-container">
+                            <?php 
+                            if (file_exists($suggestionLogFile)) {
+                                $logContent = file_get_contents($suggestionLogFile);
+                                echo htmlspecialchars($logContent);
+                            } else {
+                                echo "Nenhum log disponível.";
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Configurações de Contato -->
+            <div id="contact-settings" class="tab-content">
+                <div class="grid">
+                    <!-- Card de Configurações de Botão Flutuante -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-phone-alt"></i> Configurações do Botão de Contato
+                        </div>
+                        
+                        <div class="card-content">
+                            <p>O botão flutuante de contato está configurado para exibir um WhatsApp e um formulário de sugestões.</p>
+                            <p><strong>WhatsApp:</strong> <span style="color:#25D366">+55 87 9 8828-1725</span></p>
+                            <p><strong>Arquivo JavaScript:</strong> <code>/manutencao/floating-contact.js</code></p>
+                        </div>
+                        
+                        <h3 style="font-size: 16px; margin: 20px 0 10px;">Status do Botão Flutuante</h3>
+                        <div class="note-item">
+                            <div class="note-header">
+                                <div class="note-title">Instruções de Instalação</div>
+                            </div>
+                            <div class="note-content">
+Para ativar o botão flutuante de contato, adicione os seguintes códigos ao final do seu arquivo index.php, logo antes do fechamento da tag &lt;/body&gt;:
+
+&lt;!-- Botão Flutuante de Contato --&gt;
+&lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"&gt;
+&lt;script src="/manutencao/floating-contact.js"&gt;&lt;/script&gt;</div>
+                        </div>
+                        
+                        <h3 style="font-size: 16px; margin: 20px 0 10px;">Arquivos do Sistema de Contato</h3>
+                        <div style="font-size: 14px; margin-bottom: 5px;">
+                            <i class="fas fa-file-code" style="color: var(--primary-color);"></i> 
+                            <strong>floating-contact.js</strong> - Script principal do botão flutuante
+                        </div>
+                        <div style="font-size: 14px; margin-bottom: 5px;">
+                            <i class="fas fa-file-code" style="color: var(--primary-color);"></i> 
+                            <strong>process-suggestion.php</strong> - Processador de sugestões enviadas
+                        </div>
+                        <div style="font-size: 14px;">
+                            <i class="fas fa-file-alt" style="color: var(--primary-color);"></i> 
+                            <strong>suggestion_log.txt</strong> - Arquivo de log das sugestões
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <a href="/" class="btn" style="margin-right: 10px;">
+                                <i class="fas fa-globe"></i> Visualizar no Site
+                            </a>
+                            <button type="button" id="refreshContactBtn" style="background-color: #4CAF50;">
+                                <i class="fas fa-sync-alt"></i> Atualizar Cache do Contato
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Card de Previsualização -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-eye"></i> Previsualização do Botão Flutuante
+                        </div>
+                        
+                        <div class="card-content" style="display: flex; flex-direction: column; align-items: center;">
+                            <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; width: 100%; margin-bottom: 20px; position: relative; min-height: 300px; background-color: #f8f8f8;">
+                                <!-- Simulação do botão flutuante -->
+                                <div style="position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end;">
+                                    <div style="background-color: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; width: 180px;">
+                                        <a href="#" style="display: flex; align-items: center; text-decoration: none; padding: 10px; border-radius: 5px; color: #25D366; gap: 10px; transition: all 0.2s;">
+                                            <i class="fab fa-whatsapp" style="font-size: 20px;"></i>
+                                            <span style="font-weight: 500;">WhatsApp</span>
+                                        </a>
+                                        <a href="#" style="display: flex; align-items: center; text-decoration: none; padding: 10px; border-radius: 5px; color: #4361ee; gap: 10px; transition: all 0.2s;">
+                                            <i class="fas fa-envelope" style="font-size: 18px;"></i>
+                                            <span style="font-weight: 500;">Sugestões</span>
+                                        </a>
+                                    </div>
+                                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(145deg, #4361ee, #3a56d4); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 3px 8px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-comment"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p style="margin-bottom: 15px; color: #666; font-style: italic; text-align: center;">
+                                * Esta é apenas uma visualização. O botão real incluirá animações e funcionalidades completas.
+                            </p>
+                        </div>
+                        
+                        <div class="card-content">
+                            <h3 style="font-size: 16px; margin-bottom: 10px;">Como Funciona</h3>
+                            <ol style="padding-left: 20px; margin-bottom: 20px;">
+                                <li>O botão flutuante aparece no canto inferior direito de todas as páginas</li>
+                                <li>Ao clicar, exibe as opções de WhatsApp e formulário de sugestões</li>
+                                <li>O WhatsApp abre diretamente o chat no aplicativo ou web</li>
+                                <li>O formulário de sugestões abre em um modal na mesma página</li>
+                                <li>As sugestões enviadas aparecem na aba "Sugestões Públicas" deste painel</li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -762,6 +991,50 @@ asort($availableModules);
             setTimeout(() => {
                 successMessage.style.display = 'none';
             }, 5000);
+        }
+        
+        // Botão de atualização de cache de contato
+        const refreshContactBtn = document.getElementById('refreshContactBtn');
+        if (refreshContactBtn) {
+            refreshContactBtn.addEventListener('click', function() {
+                // Adicionar indicador visual de processamento
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+                this.disabled = true;
+                
+                // Fazer uma requisição para limpar o cache
+                fetch('?action=clear_cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=clear_cache'
+                })
+                .then(response => {
+                    // Restaurar botão após 2 segundos
+                    setTimeout(() => {
+                        this.innerHTML = '<i class="fas fa-check"></i> Cache Atualizado!';
+                        
+                        // Restaurar texto original após mais 2 segundos
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }, 2000);
+                    }, 1000);
+                })
+                .catch(error => {
+                    // Em caso de erro
+                    setTimeout(() => {
+                        this.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro';
+                        
+                        // Restaurar texto original após mais 2 segundos
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }, 2000);
+                    }, 1000);
+                });
+            });
         }
     });
     </script>
