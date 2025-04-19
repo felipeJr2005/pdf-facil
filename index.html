@@ -417,11 +417,39 @@
         const overlay = document.getElementById('iframeOverlay');
         const frame = document.getElementById('resultFrame');
         
-        // Usando setTimeout para dar um pequeno atraso e tornar a transição mais suave
+        // Remover classes imediatamente para evitar que o spinner fique rodando
+        overlay.classList.remove('active');
+        frame.classList.remove('loading');
+        
+        // Garantir que o overlay está definitivamente escondido
+        overlay.style.display = 'none';
+        
+        // Restaurar o display após um curto período para não quebrar futuras transições
         setTimeout(() => {
-            overlay.classList.remove('active');
-            frame.classList.remove('loading');
-        }, 300);
+            overlay.style.display = '';
+        }, 500);
+    }
+    
+    // Função de segurança para forçar a remoção do overlay após um tempo limite
+    function setupLoaderTimeout() {
+        // Força a remoção do loader após 5 segundos, mesmo se o onload não disparar corretamente
+        const loaderTimeout = setTimeout(() => {
+            const overlay = document.getElementById('iframeOverlay');
+            const frame = document.getElementById('resultFrame');
+            
+            if (overlay.classList.contains('active')) {
+                console.warn('Loader timeout - forçando remoção do overlay');
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+                frame.classList.remove('loading');
+                
+                setTimeout(() => {
+                    overlay.style.display = '';
+                }, 500);
+            }
+        }, 5000); // 5 segundos de timeout
+        
+        return loaderTimeout;
     }
        
     function loadErrorPage() {
@@ -432,12 +460,24 @@
         // Atualiza a descrição da função
         if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
 
+        // Garante que o overlay esteja visível
+        overlay.style.display = '';
+        
         // Mostra o overlay com o loader durante o carregamento
         overlay.classList.add('active');
         frame.classList.add('loading');
+        
+        // Configura um timeout de segurança
+        const loaderTimeout = setupLoaderTimeout();
 
         // Carrega o conteúdo no iframe
         if (frame) {
+            // Adiciona handler de onload
+            frame.onload = function() {
+                clearTimeout(loaderTimeout);
+                hideLoader();
+            };
+            
             // Usar URL absoluta para carregar 404.html
             frame.src = window.location.origin + '/404.html';
         }
@@ -465,14 +505,26 @@
         // Atualiza a descrição da função
         if (descriptionEl) descriptionEl.innerText = 'Selecione uma função';
 
+        // Garante que o overlay esteja visível
+        overlay.style.display = '';
+        
         // Mostra o overlay com o loader durante o carregamento
         overlay.classList.add('active');
         frame.classList.add('loading');
+        
+        // Configura um timeout de segurança
+        const loaderTimeout = setupLoaderTimeout();
 
         // Carrega uma página de boas-vindas ou limpa o iframe
         if (frame) {
+            // Adiciona handler de onload
+            frame.onload = function() {
+                clearTimeout(loaderTimeout);
+                hideLoader();
+            };
+            
             // Se você tem uma página de boas-vindas:
-            frame.src = 'bem-vindo.html';              
+            frame.src = 'bem-vindo.html';
         }
 
         // Remove a classe 'btn-green' de todos os botões
@@ -510,21 +562,31 @@
         // Atualiza a descrição da função
         if (descriptionEl) descriptionEl.innerText = description;
 
+        // Garante que o overlay esteja visível antes de iniciar
+        overlay.style.display = '';
+        
         // Mostra o overlay com o loader durante o carregamento
         overlay.classList.add('active');
         frame.classList.add('loading');
+        
+        // Configura um timeout de segurança
+        const loaderTimeout = setupLoaderTimeout();
 
         // Carrega o conteúdo no iframe com tratamento de erro
         if (frame) {
             // Manipulador de erro para carregamento do iframe
             frame.onerror = function() {
                 // Se der erro ao carregar a página, mostrar página 404
+                clearTimeout(loaderTimeout);
                 loadErrorPage();
                 return true;
             };
             
             // Adiciona event listener para detectar quando o iframe termina de carregar
             frame.onload = function() {
+                // Limpa o timeout quando o carregamento é bem-sucedido
+                clearTimeout(loaderTimeout);
+                
                 try {
                     // Verifica se a página carregada é a página de erro (através da URL)
                     if (frame.contentWindow.location.href.includes('?error=404') || 
@@ -544,7 +606,8 @@
                         }
                     }
                     
-                    // O evento onload já chama hideLoader()
+                    // Esconde o overlay após o carregamento
+                    hideLoader();
                     
                 } catch (e) {
                     // Se ocorrer erro ao tentar acessar contentWindow.location,
