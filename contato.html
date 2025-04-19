@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contato - PJE & PDF</title>
+    <title>Contato - PDFFacil</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Estilos básicos */
         * {
             margin: 0;
             padding: 0;
@@ -14,148 +13,189 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
             background-color: #f8f9fa;
             color: #333;
-            line-height: 1.6;
+            line-height: a;
             padding: 2rem;
         }
 
-        h1 {
+        .contact-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .contact-header {
+            margin-bottom: 2rem;
+        }
+
+        .contact-title {
             font-size: 2rem;
-            color: #2563eb;
+            color: #4361ee;
             margin-bottom: 1rem;
         }
 
-        p {
-            margin-bottom: 1.5rem;
+        .contact-description {
+            font-size: 1.1rem;
             color: #6b7280;
+            margin-bottom: 2rem;
         }
 
-        form {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 2rem;
+        .contact-options {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-card {
+            background-color: white;
             border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            max-width: 300px;
+            flex: 1;
+            min-width: 240px;
+            cursor: pointer;
         }
 
-        .form-group {
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(30, 64, 175, 0.1);
+        }
+
+        .contact-icon {
+            width: 4rem;
+            height: 4rem;
+            background: linear-gradient(135deg, #bfdbe4, #4361ee);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+        }
+
+        .contact-card-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #333;
+        }
+
+        .contact-card-description {
+            color: #6b7280;
             margin-bottom: 1.5rem;
         }
 
-        label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #4b5563;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e5e7eb;
+        .contact-button {
+            background: linear-gradient(to right, #4361ee, #3a56d4);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        textarea:focus {
-            border-color: #2563eb;
-            outline: none;
+        .contact-button:hover {
+            background: linear-gradient(to right, #3a56d4, #2a3bba);
+            transform: translateY(-2px);
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 150px;
+        .whatsapp-button {
+            background: linear-gradient(to right, #25d366, #128c7e);
         }
 
-        .button-container {
-    display: flex;
-    justify-content: center; /* Centraliza o botão "Enviar Mensagem" */
-    align-items: center; /* Alinha verticalmente os itens */
-    gap: 1rem; /* Espaçamento entre os botões */
-    position: relative; /* Permite posicionar o botão do WhatsApp à direita */
-}
-
-button[type="submit"] {
-    background-color: #2563eb;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button[type="submit"]:hover {
-    background-color: #1d4ed8;
-}
-
-.whatsapp-button {
-    background-color: #25d366;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    text-decoration: none;
-    position: absolute; /* Posiciona o botão do WhatsApp à direita */
-    right: 0; /* Alinha o botão do WhatsApp à direita */
-}
-
-.whatsapp-button:hover {
-    background-color: #128c7e;
-}
+        .whatsapp-button:hover {
+            background: linear-gradient(to right, #128c7e, #075e54);
+        }
+        
+        /* Esconder o iframe oculto */
+        #hidden-iframe {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    
-    <form action="enviar_email.php" method="post">
-        <center><h1>Contato</h1></center>
-    <p>Preencha o formulário abaixo para entrar em contato conosco.
-    <br> Responderemos o mais breve possível.
-    <br>Sempre que possível, nos comunique a respeito de bugs e melhorias.
-    <br> Seu feedback é fundamental para o aperfeiçoamento da plataforma.</p>
-    <div class="form-group">
-        <label for="nome">Nome:</label>
-        <input type="text" id="nome" name="nome" required>
+    <div class="contact-container">
+        <header class="contact-header">
+            <h1 class="contact-title">Entre em Contato</h1>
+            <p class="contact-description">Estamos prontos para ajudar! Escolha a melhor forma de entrar em contato conosco.</p>
+        </header>
+
+        <div class="contact-options">
+            <div class="contact-card" id="suggestion-card">
+                <div class="contact-icon">
+                    <i class="fas fa-comment-alt"></i>
+                </div>
+                <h2 class="contact-card-title">Enviar Sugestão</h2>
+                <p class="contact-card-description">Envie suas dúvidas, comentários ou sugestões para melhorar nossa plataforma.</p>
+                <button class="contact-button" id="open-suggestion-form">Formulário de Contato</button>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <h2 class="contact-card-title">WhatsApp</h2>
+                <p class="contact-card-description">Precisa de uma resposta rápida? Entre em contato diretamente pelo WhatsApp.</p>
+                <a href="https://wa.me/5587988281725" target="_blank" class="contact-button whatsapp-button">Iniciar Conversa</a>
+            </div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label for="email">E-mail:</label>
-        <input type="email" id="email" name="email" required>
-    </div>
+    <!-- Iframe invisível para carregar o formulário flutuante -->
+    <iframe id="hidden-iframe" src="about:blank"></iframe>
 
-    <div class="form-group">
-        <label for="assunto">Assunto:</label>
-        <input type="text" id="assunto" name="assunto" required>
-    </div>
-
-    <div class="form-group">
-        <label for="mensagem">Mensagem:</label>
-        <textarea id="mensagem" name="mensagem" required></textarea>
-    </div>
-
-    <div class="button-container">
-        <button type="submit">Enviar Mensagem</button>
-        <a href="https://wa.me/5587988281725" class="whatsapp-button" target="_blank">
-            <i class="fab fa-whatsapp"></i>
-        </a>
-    </div>
-</form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const suggestionCard = document.getElementById('suggestion-card');
+            const openFormButton = document.getElementById('open-suggestion-form');
+            
+            // Função para abrir o formulário flutuante
+            function openSuggestionForm() {
+                try {
+                    // Tenta acessar o botão do formulário flutuante no contexto pai
+                    if (window.parent && window.parent.document) {
+                        const formButton = window.parent.document.querySelector('.fc-form');
+                        const overlay = window.parent.document.querySelector('.fc-overlay');
+                        
+                        if (formButton) {
+                            formButton.click();
+                        } else if (overlay) {
+                            overlay.classList.add('active');
+                        } else {
+                            alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                        }
+                    } else {
+                        alert('Não foi possível acessar o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao tentar abrir o formulário:', error);
+                    alert('Não foi possível abrir o formulário. Por favor, use o botão flutuante no canto inferior direito da tela.');
+                }
+            }
+            
+            // Adiciona eventos de clique
+            if (openFormButton) {
+                openFormButton.addEventListener('click', openSuggestionForm);
+            }
+            
+            if (suggestionCard) {
+                suggestionCard.addEventListener('click', function(e) {
+                    // Evita disparar o evento se o clique for no botão
+                    if (!e.target.classList.contains('contact-button')) {
+                        openSuggestionForm();
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
