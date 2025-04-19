@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bem-vindo ao PDFFacil</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-       <style>
+    <style>
         /* Utilizando as mesmas variáveis do unified-pdf-tools.css */
         :root {
             --color-primary: #4361ee;
@@ -38,166 +38,205 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: var(--color-gray-800);
             background-color: var(--color-gray-50);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            margin: 0;
             padding: 0;
-            width: 100%;
+            margin: 0;
             height: 100vh;
+            width: 100%;
             overflow-x: hidden;
         }
 
-        .about-container {
-            max-width: 1100px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
             padding: 1.5rem;
         }
 
-        .about-header {
-            background: linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(67, 97, 238, 0.8));
-            color: white;
-            padding: 3rem 2rem;
+        .welcome-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(67, 97, 238, 0.8));
             border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            color: white;
             box-shadow: var(--shadow-md);
         }
 
-        .about-title {
+        .welcome-title {
             font-size: 2.5rem;
+            color: white;
             margin-bottom: 1rem;
             font-weight: 600;
         }
 
-        .about-subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
+        .welcome-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
             max-width: 800px;
             margin: 0 auto;
         }
 
-        .about-content {
-            background: white;
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background-color: white;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
-            padding: 2rem;
-            margin-bottom: 2rem;
+            padding: 1.5rem;
+            transition: var(--transition-normal);
             border: 1px solid var(--color-gray-200);
         }
 
-        .section-title {
-            color: var(--color-primary);
-            font-size: 1.5rem;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--color-gray-200);
-            font-weight: 600;
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
         }
 
-        .section-title:first-of-type {
-            margin-top: 0;
-        }
-
-        .about-content h3 {
-            font-size: 1.2rem;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--color-primary-dark);
-            font-weight: 600;
-        }
-
-        .about-content p {
-            margin-bottom: 1rem;
-            color: var(--color-gray-700);
-        }
-
-        .about-content ul, .about-content ol {
-            margin-bottom: 1.5rem;
-            padding-left: 1.5rem;
-            color: var(--color-gray-700);
-        }
-
-        .about-content li {
-            margin-bottom: 0.5rem;
-        }
-
-        .highlight {
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 1.5rem;
-            font-size: 0.875rem;
-            color: var(--color-gray-500);
-        }
-
-        .home-link {
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+            color: white;
+            border-radius: 50%;
             display: flex;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .home-button {
-            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            background-color: var(--color-primary);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition-normal);
+            margin-bottom: 1.25rem;
+            font-size: 1.75rem;
+            box-shadow: var(--shadow-sm);
         }
 
-        .home-button:hover {
-            background-color: var(--color-primary-dark);
-            transform: translateY(-2px);
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-gray-800);
+            font-weight: 600;
+        }
+
+        .feature-description {
+            color: var(--color-gray-600);
+        }
+
+        .how-to-section {
+            background-color: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .how-to-title {
+            font-size: 1.75rem;
+            color: var(--color-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .steps {
+            list-style-type: none;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            background-color: var(--color-primary);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex-grow: 1;
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--color-gray-800);
+        }
+
+        .step-description {
+            color: var(--color-gray-600);
+        }
+
+        .cta-section {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(238, 242, 255, 0.9), rgba(67, 97, 238, 0.9));
+            padding: 3rem 2rem;
+            border-radius: var(--radius-lg);
+            color: white;
             box-shadow: var(--shadow-md);
         }
 
-        .development-tag {
-            display: inline-block;
-            background-color: #ef4444;
-            color: white;
-            font-size: 0.9rem;
+        .cta-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
             font-weight: 600;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            margin-left: 0.5rem;
-            vertical-align: middle;
+        }
+
+        .cta-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.9;
+        }
+
+        .cta-message {
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 0.9rem;
         }
 
         /* Responsividade */
         @media (max-width: 768px) {
-            .about-container {
+            .container {
                 padding: 1rem;
             }
             
-            .about-header {
-                padding: 2rem 1rem;
+            .features-grid {
+                grid-template-columns: 1fr;
             }
             
-            .about-title {
+            .welcome-title {
                 font-size: 2rem;
             }
             
-            .about-content {
-                padding: 1.5rem;
+            .welcome-subtitle {
+                font-size: 1.1rem;
             }
             
-            .section-title {
-                font-size: 1.35rem;
+            .cta-title {
+                font-size: 1.75rem;
+            }
+            
+            .cta-subtitle {
+                font-size: 1.1rem;
             }
         }
 
@@ -221,13 +260,10 @@
                 color: var(--color-gray-700);
             }
             
-            .about-content {
+            .feature-card,
+            .how-to-section {
                 background-color: #1f2937;
                 border-color: #374151;
-            }
-            
-            .section-title {
-                border-bottom-color: #374151;
             }
         }
     </style>
@@ -266,26 +302,10 @@
 
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-gavel"></i>
+                    <i class="fas fa-edit"></i>
                 </div>
-                <h2 class="feature-title">Otimização para PJE</h2>
-                <p class="feature-description">Adeque seus documentos PDF às exigências específicas do Processo Judicial Eletrônico (PJE), garantindo a conformidade com normas jurídicas.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-font"></i>
-                </div>
-                <h2 class="feature-title">Reconhecimento OCR</h2>
-                <p class="feature-description">Converta imagens ou documentos escaneados em texto pesquisável, facilitando a localização de informações importantes em seus arquivos.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <h2 class="feature-title">Privacidade Garantida</h2>
-                <p class="feature-description">Todo o processamento é realizado localmente no seu navegador, sem enviar seus documentos para servidores externos, garantindo total segurança e privacidade.</p>
+                <h2 class="feature-title">Editar PDF</h2>
+                <p class="feature-description">Faça alterações em seus documentos PDF diretamente no navegador, sem precisar de software adicional. Altere texto, adicione imagens e mais.</p>
             </div>
         </div>
 
@@ -328,12 +348,6 @@
             <p class="cta-subtitle">Escolha uma das ferramentas no menu lateral esquerdo e transforme seus documentos PDF com poucos cliques.</p>
             <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
         </section>
-        
-        <div class="home-link">
-            <button class="home-button" onclick="window.parent.loadHomePage()">
-                <i class="fas fa-home"></i> Voltar para a página inicial
-            </button>
-        </div>
     </div>
 </body>
 </html>
