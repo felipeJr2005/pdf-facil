@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulário de Guia de Recolhimento</title>
+    <title>Formulário Carta Guia</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -224,14 +224,17 @@
             
             <div class="field-header">
                 <label class="editable-label field-title" for="sentenca">Sentença</label>
+                <button type="button" class="btn btn-secondary" id="resumirSentenca">Resumir</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="inserirSentenca">Inserir</button>
             </div>
+            
             <div id="sentenca" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
             <div class="character-count" id="sentencaCount">0 caracteres</div>
             
             <div class="field-header">
                 <label class="editable-label field-title" for="acordao">Acórdão</label>
                 <button type="button" class="btn btn-secondary btn-sm" id="inserirAcordao">Inserir</button>
+                
             </div>
             <div id="acordao" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do acórdão..."></div>
             <div class="character-count" id="acordaoCount">0 caracteres</div>
@@ -251,10 +254,19 @@
             <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
             <div class="character-count" id="resumoCount">0 caracteres</div>
             
+            
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="limparCampos">Limpar Campos</button>
+                
                 <button type="button" class="btn btn-primary" id="salvarResumo">Salvar Resumo</button>
             </div>
+
+            
+        </div>
+        <div class="form-actions" style="margin-top: 20px; text-align: center;">
+            <button type="button" id="preencherAutomatico" class="btn btn-primary" style="background-color: #4CAF50;">
+                Preencher Formulário a partir do Resumo
+            </button>
         </div>
 
         <h2>Dados da Peça</h2>
@@ -659,168 +671,307 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Elementos editáveis
-            const editableFields = document.querySelectorAll('.editable-content');
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos editáveis
+    const editableFields = document.querySelectorAll('.editable-content');
+    
+    // Adicionar evento de click ao botão de preenchimento automático
+    const preencherBtn = document.getElementById('preencherAutomatico');
+    if (preencherBtn) {
+        preencherBtn.addEventListener('click', function() {
+            const resumoField = document.getElementById('resumo');
+            const resumoText = resumoField.innerText || resumoField.textContent;
             
-            // Atualizar contagem de caracteres
-            function updateCount(field, countElement, limit = null) {
-                const text = field.textContent || '';
-                const count = text.trim().length;
-                countElement.textContent = `${count} caracteres`;
-                
-                if (limit && count > limit) {
-                    countElement.classList.add('limit-exceeded');
-                } else {
-                    countElement.classList.remove('limit-exceeded');
-                }
+            if (!resumoText.trim()) {
+                alert('O campo de resumo está vazio! Preencha o resumo primeiro.');
+                return;
             }
             
-            // Configurar eventos para campos editáveis
-            editableFields.forEach(field => {
-                const countId = field.id + 'Count';
-                const countElement = document.getElementById(countId);
-                
-                field.addEventListener('input', () => {
-                    updateCount(field, countElement, field.id === 'resumo' ? 20000 : null);
-                    localStorage.setItem(field.id, field.innerHTML);
-                });
-                
-                field.addEventListener('blur', () => localStorage.setItem(field.id, field.innerHTML));
-                
-                // Carregar conteúdo salvo
-                const savedContent = localStorage.getItem(field.id);
-                if (savedContent) field.innerHTML = savedContent;
-                
-                // Atualizar contagem inicial
-                if (countElement) updateCount(field, countElement);
-            });
-            
-            // Concatenar campos
-            document.getElementById('concatenarCampos').addEventListener('click', function() {
-                const fields = {
-                    'NÚMERO DE INQUÉRITO': document.getElementById('numeroInquerito').value,
-                    'DENÚNCIA': document.getElementById('denuncia').innerHTML,
-                    'SENTENÇA': document.getElementById('sentenca').innerHTML,
-                    'ACÓRDÃO': document.getElementById('acordao').innerHTML,
-                    'TRÂNSITO EM JULGADO': document.getElementById('transitoJulgado').innerHTML
-                };
-                
-                let resumoContent = '';
-                for (const [title, content] of Object.entries(fields)) {
-                    if (content.trim()) {
-                        resumoContent += `<strong>${title}:</strong><br>${content}<br><br>`;
-                    }
-                }
-                
-                const resumoField = document.getElementById('resumo');
-                resumoField.innerHTML = resumoContent;
-                updateCount(resumoField, document.getElementById('resumoCount'), 20000);
-                localStorage.setItem('resumo', resumoContent);
-                resumoField.focus();
-            });
-            
-            // Botão Salvar Resumo
-            document.getElementById('salvarResumo').addEventListener('click', function() {
-                const resumoText = document.getElementById('resumo').innerText;
-                
-                if (resumoText.trim()) {
-                    navigator.clipboard.writeText(resumoText)
-                        .then(() => alert('Resumo copiado!'))
-                        .catch(() => {
-                            const textarea = document.createElement('textarea');
-                            textarea.value = resumoText;
-                            document.body.appendChild(textarea);
-                            textarea.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(textarea);
-                            alert('Resumo copiado!');
-                        });
-                } else {
-                    alert('Resumo vazio!');
-                }
-            });
-            
-            // Botão Limpar Campos
-            document.getElementById('limparCampos').addEventListener('click', function() {
-                if (confirm('Limpar todos os campos?')) {
-                    editableFields.forEach(field => {
-                        field.innerHTML = '';
-                        localStorage.removeItem(field.id);
-                        updateCount(field, document.getElementById(field.id + 'Count'));
-                    });
-                    document.getElementById('numeroInquerito').value = '';
-                    localStorage.removeItem('numeroInquerito');
-                }
-            });
-            
-            // Botão para adicionar parágrafo na tipificação penal
-            document.getElementById('adicionarParagrafo').addEventListener('click', function() {
-                alert('Funcionalidade para adicionar parágrafo será implementada aqui');
-            });
-            
-            // Submissão do formulário
-            document.getElementById('guiaRecolhimentoForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Validar campos obrigatórios do formulário
-                const camposObrigatorios = document.querySelectorAll('[required]');
-                let formValido = true;
-                
-                camposObrigatorios.forEach(campo => {
-                    if (!campo.value.trim()) {
-                        campo.classList.add('invalid');
-                        formValido = false;
-                    } else {
-                        campo.classList.remove('invalid');
-                    }
-                });
-                
-                // Construir objeto com todos os dados do formulário
-                const formData = {
-                    numeroInquerito: document.getElementById('numeroInquerito').value.trim(),
-                    denuncia: document.getElementById('denuncia').innerHTML,
-                    sentenca: document.getElementById('sentenca').innerHTML,
-                    acordao: document.getElementById('acordao').innerHTML,
-                    transitoJulgado: document.getElementById('transitoJulgado').innerHTML,
-                    resumo: document.getElementById('resumo').innerHTML,
-                    // Outros campos do formulário seriam adicionados aqui
-                };
-                
-                if (formValido) {
-                    // Aqui seria implementada a lógica de envio do formulário
-                    console.log('Dados do formulário:', formData);
-                    alert('Formulário enviado com sucesso!');
-                } else {
-                    alert('Por favor, preencha todos os campos obrigatórios.');
-                }
-            });
-            
-            // Adicionar estilos adicionais para campos inválidos
-        const style = document.createElement('style');
-        style.textContent = `
-            .invalid {
-                border-color: #e53935 !important;
-                background-color: #ffebee !important;
-            }
-            .editable-content.invalid {
-                border-color: #e53935 !important;
-                background-color: #ffebee !important;
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Salvar número de inquérito no localStorage
-        document.getElementById('numeroInquerito').addEventListener('input', function() {
-            localStorage.setItem('numeroInquerito', this.value);
+            // Chamar a função externa de processamento
+            processarResumo(resumoText);
         });
+    }
+    
+    // Atualizar contagem de caracteres
+    function updateCount(field, countElement, limit = null) {
+        const text = field.textContent || '';
+        const count = text.trim().length;
+        countElement.textContent = `${count} caracteres`;
         
-        // Carregar número de inquérito salvo (se existir)
-        const savedInquerito = localStorage.getItem('numeroInquerito');
-        if (savedInquerito) {
-            document.getElementById('numeroInquerito').value = savedInquerito;
+        if (limit && count > limit) {
+            countElement.classList.add('limit-exceeded');
+        } else {
+            countElement.classList.remove('limit-exceeded');
         }
+    }
+    
+    // Configurar eventos para campos editáveis
+    editableFields.forEach(field => {
+        const countId = field.id + 'Count';
+        const countElement = document.getElementById(countId);
+        
+        field.addEventListener('input', () => {
+            updateCount(field, countElement, field.id === 'resumo' ? 20000 : null);
+            localStorage.setItem(field.id, field.innerHTML);
         });
+        
+        field.addEventListener('blur', () => localStorage.setItem(field.id, field.innerHTML));
+        
+        // Carregar conteúdo salvo
+        const savedContent = localStorage.getItem(field.id);
+        if (savedContent) field.innerHTML = savedContent;
+        
+        // Atualizar contagem inicial
+        if (countElement) updateCount(field, countElement);
+    });
+    
+    // Script para resumir sentença
+    document.getElementById('resumirSentenca').addEventListener('click', function() {
+        const sentencaField = document.getElementById('sentenca');
+        const textoOriginal = sentencaField.innerHTML;
+        
+        // Padrões para remover fundamentação
+        const padroesRemocao = [
+            // Seções de fundamentação comuns
+            {
+                padrao: /Fundamentação\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Seções de fundamentação'
+            },
+            {
+                padrao: /Mérito\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Seções de mérito'
+            },
+            {
+                padrao: /Análise\s*[:=-]?\s*do\s*caso.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Análise do caso'
+            },
+            {
+                padrao: /Considerando\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Considerações'
+            },
+            
+            // Padrões de argumentação jurídica
+            {
+                padrao: /Fundamentação\s*jurídica\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Fundamentação jurídica'
+            },
+            {
+                padrao: /Análise\s*das\s*provas\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Análise de provas'
+            },
+            {
+                padrao: /Aspectos\s*fáticos\s*e\s*jurídicos\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Aspectos fáticos e jurídicos'
+            },
+            
+            // Citações e jurisprudências
+            {
+                padrao: /Jurisprudência\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Jurisprudência'
+            },
+            {
+                padrao: /Doutrinas\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Doutrinas'
+            },
+            
+            // Padrões adicionais para capturar mais variações
+            {
+                padrao: /Relatório\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
+                descricao: 'Seção de relatório'
+            }
+        ];
+        
+        // Função para remover fundamentação
+        function removerFundamentacao(texto) {
+            let textoLimpo = texto;
+            let secoesRemovidas = [];
+            
+            // Aplicar cada padrão de remoção
+            padroesRemocao.forEach(({padrao, descricao}) => {
+                const matches = texto.match(padrao);
+                if (matches) {
+                    secoesRemovidas.push(descricao);
+                    textoLimpo = textoLimpo.replace(padrao, '');
+                }
+            });
+            
+            // Remover múltiplas linhas em branco
+            textoLimpo = textoLimpo.replace(/\n{3,}/g, '\n\n');
+            
+            // Opcionalmente, logar seções removidas
+            if (secoesRemovidas.length > 0) {
+                console.log('Seções removidas:', secoesRemovidas);
+            }
+            
+            return textoLimpo.trim();
+        }
+        
+        // Remover fundamentação
+        const textoResumido = removerFundamentacao(textoOriginal);
+        sentencaField.innerHTML = textoResumido;
+        
+        // Atualizar contagem de caracteres
+        updateCount(sentencaField, document.getElementById('sentencaCount'));
+        
+        // Feedback visual
+        sentencaField.style.transition = 'background-color 0.5s ease';
+        sentencaField.style.backgroundColor = '#e6f3ff';
+        setTimeout(() => {
+            sentencaField.style.backgroundColor = '';
+        }, 1000);
+        
+        // Opcional: Mostrar toast de resumo
+        const toast = document.createElement('div');
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.backgroundColor = '#4CAF50';
+        toast.style.color = 'white';
+        toast.style.padding = '15px';
+        toast.style.borderRadius = '5px';
+        toast.style.zIndex = '1000';
+        toast.textContent = 'Sentença resumida com sucesso!';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 3000);
+    });
+    
+    // Concatenar campos
+    document.getElementById('concatenarCampos').addEventListener('click', function() {
+        const fields = {
+            'NÚMERO DE INQUÉRITO': document.getElementById('numeroInquerito').value,
+            'DENÚNCIA': document.getElementById('denuncia').innerHTML,
+            'SENTENÇA': document.getElementById('sentenca').innerHTML,
+            'ACÓRDÃO': document.getElementById('acordao').innerHTML,
+            'TRÂNSITO EM JULGADO': document.getElementById('transitoJulgado').innerHTML
+        };
+        
+        let resumoContent = '';
+        for (const [title, content] of Object.entries(fields)) {
+            if (content.trim()) {
+                resumoContent += `<strong>${title}:</strong><br>${content}<br><br>`;
+            }
+        }
+        
+        const resumoField = document.getElementById('resumo');
+        resumoField.innerHTML = resumoContent;
+        updateCount(resumoField, document.getElementById('resumoCount'), 20000);
+        localStorage.setItem('resumo', resumoContent);
+        resumoField.focus();
+    });
+    
+    // Botão Salvar Resumo
+    document.getElementById('salvarResumo').addEventListener('click', function() {
+        const resumoText = document.getElementById('resumo').innerText;
+        
+        if (resumoText.trim()) {
+            navigator.clipboard.writeText(resumoText)
+                .then(() => alert('Resumo copiado!'))
+                .catch(() => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = resumoText;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    alert('Resumo copiado!');
+                });
+        } else {
+            alert('Resumo vazio!');
+        }
+    });
+    
+    // Botão Limpar Campos
+    document.getElementById('limparCampos').addEventListener('click', function() {
+        if (confirm('Limpar todos os campos?')) {
+            editableFields.forEach(field => {
+                field.innerHTML = '';
+                localStorage.removeItem(field.id);
+                updateCount(field, document.getElementById(field.id + 'Count'));
+            });
+            document.getElementById('numeroInquerito').value = '';
+            localStorage.removeItem('numeroInquerito');
+        }
+    });
+    
+    // Botão para adicionar parágrafo na tipificação penal
+    document.getElementById('adicionarParagrafo').addEventListener('click', function() {
+        alert('Funcionalidade para adicionar parágrafo será implementada aqui');
+    });
+    
+    // Submissão do formulário
+    document.getElementById('guiaRecolhimentoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validar campos obrigatórios do formulário
+        const camposObrigatorios = document.querySelectorAll('[required]');
+        let formValido = true;
+        
+        camposObrigatorios.forEach(campo => {
+            if (!campo.value.trim()) {
+                campo.classList.add('invalid');
+                formValido = false;
+            } else {
+                campo.classList.remove('invalid');
+            }
+        });
+        
+        // Construir objeto com todos os dados do formulário
+        const formData = {
+            numeroInquerito: document.getElementById('numeroInquerito').value.trim(),
+            denuncia: document.getElementById('denuncia').innerHTML,
+            sentenca: document.getElementById('sentenca').innerHTML,
+            acordao: document.getElementById('acordao').innerHTML,
+            transitoJulgado: document.getElementById('transitoJulgado').innerHTML,
+            resumo: document.getElementById('resumo').innerHTML,
+            // Outros campos do formulário seriam adicionados aqui
+        };
+        
+        if (formValido) {
+            // Aqui seria implementada a lógica de envio do formulário
+            console.log('Dados do formulário:', formData);
+            alert('Formulário enviado com sucesso!');
+        } else {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+        }
+    });
+    
+    // Adicionar estilos adicionais para campos inválidos
+    const style = document.createElement('style');
+    style.textContent = `
+        .invalid {
+            border-color: #e53935 !important;
+            background-color: #ffebee !important;
+        }
+        .editable-content.invalid {
+            border-color: #e53935 !important;
+            background-color: #ffebee !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Salvar número de inquérito no localStorage
+    document.getElementById('numeroInquerito').addEventListener('input', function() {
+        localStorage.setItem('numeroInquerito', this.value);
+    });
+    
+    // Carregar número de inquérito salvo (se existir)
+    const savedInquerito = localStorage.getItem('numeroInquerito');
+    if (savedInquerito) {
+        document.getElementById('numeroInquerito').value = savedInquerito;
+    }
+});
+
+
     </script>
+    <script src="preencher_guia.js"></script>
+
+
+
+    
 </body>
 </html>
