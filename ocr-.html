@@ -2004,28 +2004,26 @@ function addFixedOverlayStyles() {
     }
     
     // Inicializar a aplicação
-    function initializeApp() {
-        console.log('Inicializando aplicação OCR...');
-        
-        // Configurar editor
-        setupEditor();
-        
-        // Configurar ações de texto
-        setupTextActions();
-        
-        // Configurar eventos
-        setupEventListeners();
-        
-        // Adicionar estilos
-        addStylesForOCR();
-
-        
-        
-        console.log('Aplicação OCR inicializada com sucesso!');
-    }
+function initializeApp() {
+    console.log('Inicializando aplicação OCR...');
     
-    // Iniciar aplicação
-    initializeApp();
+    // Configurar editor
+    setupEditor();
+    
+    // Configurar ações de texto
+    setupTextActions();
+    
+    // Configurar eventos
+    setupEventListeners();
+    
+    // Adicionar estilos
+    addStylesForOCR();
+    
+    // Adicionar estilos para overlay fixo
+    addFixedOverlayStyles();
+    
+    console.log('Aplicação OCR inicializada com sucesso!');
+}
 });
 
     </script>
