@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulário Carta Guia</title>
+    <title>Formulário Carta Guia Judicial</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -25,185 +25,57 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
         }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-            gap: 15px;
-        }
         .form-group {
-            flex: 1;
-            min-width: 300px;
+            margin-bottom: 15px;
         }
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            font-size: 12px;
-            color: #666;
+            font-weight: bold;
         }
         .form-control {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .form-check {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-        .form-check-input {
-            margin-top: 3px;
-            margin-right: 8px;
-        }
-        .form-check-label {
-            font-size: 14px;
-        }
-        .radio-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        .radio-option {
-            display: flex;
-            align-items: center;
-        }
-        .radio-option input {
-            margin-right: 5px;
-        }
-        .clear-button {
-            border: none;
-            background: transparent;
-            color: #666;
-            cursor: pointer;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        .input-with-clear {
-            position: relative;
         }
         .btn {
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-primary {
-            background-color: #6200ee;
+            padding: 10px 15px;
+            background-color: #4CAF50;
             color: white;
             border: none;
-        }
-        .btn-primary:hover {
-            background-color: #5000c9;
-        }
-        .text-right {
-            text-align: right;
-        }
-        h2 {
-            margin-top: 30px;
-            color: #333;
-            font-size: 18px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .actions-row {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 30px;
-        }
-        .btn-secondary {
-            background-color: #f5f5f5;
-            color: #333;
-            border: 1px solid #ccc;
-        }
-        .btn-secondary:hover {
-            background-color: #e0e0e0;
-        }
-        .editable-section {
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
             border-radius: 4px;
-            padding: 15px;
-            background-color: #f9f9f9;
+            cursor: pointer;
         }
-        .editable-label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 14px;
+        .btn:hover {
+            background-color: #45a049;
         }
         .editable-content {
             border: 1px solid #ddd;
+            min-height: 100px;
             padding: 10px;
-            min-height: 80px;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            margin-bottom: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-            width: 100%;
-            box-sizing: border-box;
+            margin-bottom: 10px;
         }
-        .editable-content:focus {
-            outline: none;
-            border-color: #6200ee;
-            box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
-            background-color: #fff;
+        /* Estilos para campos preenchidos automaticamente */
+        .campo-preenchido-auto {
+            background-color: #e8f5e9 !important;
+            border-color: #81c784 !important;
+            transition: background-color 0.3s ease;
         }
-        .editable-content:empty:before {
-            content: "Clique para adicionar texto...";
-            color: #999;
-            font-style: italic;
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            animation: slideIn 0.5s ease;
         }
-        .editable-content[data-placeholder]:empty:before {
-            content: attr(data-placeholder);
-            color: #999;
-            font-style: italic;
-        }
-        .form-actions {
-            text-align: right;
-            margin-top: 10px;
-        }
-        .form-actions button {
-            margin-left: 10px;
-        }
-        .character-count {
-            font-size: 12px;
-            color: #666;
-            text-align: right;
-            margin-top: 5px;
-        }
-        .character-count.limit-exceeded {
-            color: #e53935;
-            font-weight: bold;
-        }
-        .invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-        .editable-content.invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-        .field-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .field-title {
-            font-weight: bold;
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
         }
     </style>
 </head>
@@ -211,882 +83,120 @@
     <div class="container">
         <div class="editable-section">
             <div class="form-group">
-                <label class="editable-label" for="numeroInquerito">Número de Inquérito</label>
+                <label for="numeroInquerito">Número de Inquérito</label>
                 <input type="text" id="numeroInquerito" class="form-control">
             </div>
             
-            <div class="field-header">
-                <label class="editable-label field-title" for="denuncia">Denúncia</label>
-                <button type="button" class="btn btn-secondary btn-sm" id="inserirDenuncia">Inserir</button>
-            </div>
-            <div id="denuncia" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da denúncia..."></div>
-            <div class="character-count" id="denunciaCount">0 caracteres</div>
-            
-            <div class="field-header">
-                <label class="editable-label field-title" for="sentenca">Sentença</label>
-                <button type="button" class="btn btn-secondary" id="resumirSentenca">Resumir</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="inserirSentenca">Inserir</button>
+            <div class="form-group">
+                <label for="denuncia">Denúncia</label>
+                <div id="denuncia" class="editable-content" contenteditable="true"></div>
             </div>
             
-            <div id="sentenca" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
-            <div class="character-count" id="sentencaCount">0 caracteres</div>
-            
-            <div class="field-header">
-                <label class="editable-label field-title" for="acordao">Acórdão</label>
-                <button type="button" class="btn btn-secondary btn-sm" id="inserirAcordao">Inserir</button>
-                
-            </div>
-            <div id="acordao" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do acórdão..."></div>
-            <div class="character-count" id="acordaoCount">0 caracteres</div>
-            
-            <div class="field-header">
-                <label class="editable-label field-title" for="transitoJulgado">Trânsito em Julgado</label>
-                <button type="button" class="btn btn-secondary btn-sm" id="inserirTransito">Inserir</button>
-            </div>
-            <div id="transitoJulgado" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do trânsito em julgado..."></div>
-            <div class="character-count" id="transitoJulgadoCount">0 caracteres</div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-primary" id="concatenarCampos">Concatenar Campos</button>
+            <div class="form-group">
+                <label for="sentenca">Sentença</label>
+                <div id="sentenca" class="editable-content" contenteditable="true"></div>
+                <button id="resumirSentenca" class="btn">Resumir Sentença</button>
             </div>
             
-            <label class="editable-label" for="resumo">Resumo</label>
-            <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
-            <div class="character-count" id="resumoCount">0 caracteres</div>
-            
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="limparCampos">Limpar Campos</button>
-                
-                <button type="button" class="btn btn-primary" id="salvarResumo">Salvar Resumo</button>
+            <div class="form-group">
+                <label for="resumo">Resumo</label>
+                <div id="resumo" class="editable-content" contenteditable="true"></div>
+                <button id="preencherAutomatico" class="btn">Preencher Formulário</button>
             </div>
-
-            
-        </div>
-        <div class="form-actions" style="margin-top: 20px; text-align: center;">
-            <button type="button" id="preencherAutomatico" class="btn btn-primary" style="background-color: #4CAF50;">
-                Preencher Formulário a partir do Resumo
-            </button>
         </div>
 
-        <h2>Dados da Peça</h2>
-        
-        <form id="guiaRecolhimentoForm">
-            <!-- Tipo de Peça -->
-            <div class="form-section">
-                <div class="form-group">
-                    <label for="tipoPeca">Tipo de peça</label>
-                    <input type="text" id="tipoPeca" class="form-control" value="Guia de Recolhimento" readonly>
-                </div>
-                
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" id="guiaProvisoria" name="tipoGuia" value="provisoria">
-                        <label for="guiaProvisoria">Guia de Recolhimento Provisória</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="guiaDefinitiva" name="tipoGuia" value="definitiva" checked>
-                        <label for="guiaDefinitiva">Guia de Recolhimento Definitiva</label>
-                    </div>
+        <div class="form-section">
+            <h2>Dados do Processo</h2>
+            
+            <div class="form-group">
+                <label for="numeroProcesso">Número do Processo</label>
+                <input type="text" id="numeroProcesso" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="nomeReu">Nome do Réu</label>
+                <input type="text" id="nomeReu" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="artigo">Artigo</label>
+                <input type="text" id="artigo" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="tempoPena">Tempo de Pena</label>
+                <div class="form-row">
+                    <input type="number" id="anos" placeholder="Anos" class="form-control" style="width: 30%; display: inline-block; margin-right: 10px;">
+                    <input type="number" id="meses" placeholder="Meses" class="form-control" style="width: 30%; display: inline-block; margin-right: 10px;">
+                    <input type="number" id="dias" placeholder="Dias" class="form-control" style="width: 30%; display: inline-block;">
                 </div>
             </div>
             
-            <!-- Regime Prisional -->
-            <div class="form-section">
-                <div class="form-group">
-                    <label for="regimePrisional">Regime Prisional</label>
-                    <select id="regimePrisional" class="form-control">
-                        <option value="fechado" selected>Fechado</option>
-                        <option value="semiaberto">Semiaberto</option>
-                        <option value="aberto">Aberto</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label>Regime Prisional</label>
+                <select id="regimePrisional" class="form-control">
+                    <option value="fechado">Fechado</option>
+                    <option value="semiaberto">Semiaberto</option>
+                    <option value="aberto">Aberto</option>
+                </select>
             </div>
             
-            <!-- Mandado de Prisão -->
-            <div class="form-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="mandadoPrisao">Mandado de Prisão/Internação ou Guia de Recolhimento Provisório</label>
-                        <input type="text" id="mandadoPrisao" class="form-control">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="orgaoJudiciario">Órgão Judiciário</label>
-                        <input type="text" id="orgaoJudiciario" class="form-control">
-                    </div>
+            <div class="form-group">
+                <label>Características do Crime</label>
+                <div>
+                    <input type="checkbox" id="crimeTentado"> 
+                    <label for="crimeTentado">Crime Tentado</label>
                 </div>
-                
-                <div class="form-check">
-                    <input type="checkbox" id="expedicaoExcepcional">
-                    <label for="expedicaoExcepcional">Expedição excepcional sem mandado cumprido, por determinação judicial</label>
+                <div>
+                    <input type="checkbox" id="violenciaDomestica"> 
+                    <label for="violenciaDomestica">Violência Doméstica</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="resultadoMorte"> 
+                    <label for="resultadoMorte">Resultado da Morte</label>
                 </div>
             </div>
-            
-            <!-- Processo -->
-            <div class="form-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="numeroProcesso">Nº do Processo *</label>
-                        <input type="text" id="numeroProcesso" class="form-control" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dataExpedicao">Data de Expedição *</label>
-                        <input type="text" id="dataExpedicao" class="form-control" value="15/04/2025 14:10" required>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Localização -->
-            <div class="form-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="uf">UF</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="uf" class="form-control" value="Pernambuco">
-                            <button type="button" class="clear-button">✕</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="municipio">Município</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="municipio" class="form-control">
-                            <button type="button" class="clear-button">✕</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="localCustodia">Local da Custódia</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="localCustodia" class="form-control">
-                            <button type="button" class="clear-button">✕</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dados do Processo Criminal -->
-            <h2>Dados do Processo Criminal</h2>
-            
-            <div class="form-section">
-                <div class="form-group">
-                    <label for="tipoProcessoCriminal">Tipo de Processo Criminal*</label>
-                    <select id="tipoProcessoCriminal" class="form-control" required>
-                        <option value="" selected>Selecione</option>
-                        <option value="283">283 - Ação Penal - Procedimento Ordinário</option>
-                        <option value="284">284 - Ação Penal - Procedimento Sumário</option>
-                        <option value="285">285 - Ação Penal - Procedimento Especial</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="revisaoCriminal">Revisão Criminal? *</label>
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="revisaoSim" name="revisaoCriminal" value="sim">
-                            <label for="revisaoSim">Sim</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="revisaoNao" name="revisaoCriminal" value="nao" checked>
-                            <label for="revisaoNao">Não</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Datas do Processo -->
-            <div class="form-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dataInfracao">Data da Infração *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataInfracao" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dataRecebimentoDenuncia">Data de Recebimento da Denúncia/Queixa *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataRecebimentoDenuncia" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dataPublicacaoPronuncia">Data do Publicação da Pronúncia</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataPublicacaoPronuncia" class="form-control" placeholder="dd/mm/aaaa">
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dataPublicacaoSentenca">Data de Publicação da Sentença *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataPublicacaoSentenca" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dataPublicacaoAcordao">Data de Publicação do Acórdão</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataPublicacaoAcordao" class="form-control" placeholder="dd/mm/aaaa">
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dataTransitoDefesa">Data do Trânsito em Julgado para Defesa *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataTransitoDefesa" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dataTransitoAcusacao">Data de Trânsito em Julgado da Acusação *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataTransitoAcusacao" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="dataTransitoAssistente">Data de Trânsito em Julgado da Assistente de Acusação</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataTransitoAssistente" class="form-control" placeholder="dd/mm/aaaa">
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dataTransitoReu">Data de Trânsito em Julgado do réu *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="dataTransitoReu" class="form-control" placeholder="dd/mm/aaaa" required>
-                            <button type="button" class="clear-button">📅</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Cadastro da Sentença -->
-            <h2>Cadastro da Sentença</h2>
-            
-            <div class="form-section">
-                <div class="form-group">
-                    <label for="tipoPena">Tipo da Pena *</label>
-                    <select id="tipoPena" class="form-control" required>
-                        <option value="apelacao" selected>Apelação Criminal</option>
-                        <option value="recurso">Recurso Ordinário Criminal</option>
-                        <option value="outra">Outra</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="numeroRecurso">Nº do Recurso*</label>
-                    <input type="text" id="numeroRecurso" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="recorrentesRecurso">Recorrentes do Recurso *</label>
-                    <select id="recorrentesRecurso" class="form-control" required>
-                        <option value="reu" selected>O Réu</option>
-                        <option value="mp">Ministério Público</option>
-                        <option value="outro">Outro</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="dataDecisaoRecurso">Data de Decisão do Recurso *</label>
-                    <div class="input-with-clear">
-                        <input type="text" id="dataDecisaoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
-                        <button type="button" class="clear-button">📅</button>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="orgaoJudiciarioRecurso">Órgão Judiciário *</label>
-                    <input type="text" id="orgaoJudiciarioRecurso" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="camaraJulgadora">Câmara Julgadora do Recurso *</label>
-                    <input type="text" id="camaraJulgadora" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="dataTransitoRecurso">Data de Trânsito em Julgado do Recurso *</label>
-                    <div class="input-with-clear">
-                        <input type="text" id="dataTransitoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
-                        <button type="button" class="clear-button">📅</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Tipificação Penal -->
-            <h2>Tipificação Penal</h2>
-            
-            <div class="form-section">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="lei">Lei*</label>
-                        <select id="lei" class="form-control" required>
-                            <option value="" selected>Selecione</option>
-                            <option value="2848">Lei 2848 - Código Penal</option>
-                            <option value="11343">Lei 11343 - Lei de Drogas</option>
-                            <option value="8069">Lei 8069 - Estatuto da Criança e do Adolescente</option>
-                            <option value="10826">Lei 10826 - Estatuto do Desarmamento</option>
-                            <option value="9605">Lei 9605 - Lei de Crimes Ambientais</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="artigo">Artigo *</label>
-                        <div class="input-with-clear">
-                            <input type="text" id="artigo" class="form-control" required>
-                            <button type="button" class="clear-button">✕</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="complemento">Complemento</label>
-                    <input type="text" id="complemento" class="form-control">
-                </div>
-                
-                <div class="form-group">
-                    <label for="dataDelito">Data do Delito</label>
-                    <div class="input-with-clear">
-                        <input type="text" id="dataDelito" class="form-control" placeholder="dd/mm/aaaa">
-                        <button type="button" class="clear-button">📅</button>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <div class="form-check">
-                            <input type="checkbox" id="crimeTentado" class="form-check-input">
-                            <label for="crimeTentado" class="form-check-label">Crime Tentado</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="violenciaDomestica" class="form-check-input">
-                            <label for="violenciaDomestica" class="form-check-label">Violência Doméstica</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="resultadoMorte" class="form-check-input">
-                            <label for="resultadoMorte" class="form-check-label">Resultado da Morte</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="violenciaGraveAmeaca" class="form-check-input">
-                            <label for="violenciaGraveAmeaca" class="form-check-label">Com Violência ou Grave Ameaça</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="reincidenteComum" class="form-check-input">
-                            <label for="reincidenteComum" class="form-check-label">Reincidente Comum</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="reincidenteEspecifico" class="form-check-input">
-                            <label for="reincidenteEspecifico" class="form-check-label">Reincidente Específico</label>
-                        </div>
-                        
-                        <div class="form-check">
-                            <input type="checkbox" id="comandoOrganizacao" class="form-check-input">
-                            <label for="comandoOrganizacao" class="form-check-label">Condenado por exercer o comando organização criminosa para cometimento de crime hediondo</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="fracaoProgressao">Fração Progressão Regime</label>
-                    <select id="fracaoProgressao" class="form-control">
-                        <option value="">Selecione</option>
-                        <option value="1/6">1/6</option>
-                        <option value="2/5">2/5</option>
-                        <option value="3/5">3/5</option>
-                        <option value="1/2">1/2</option>
-                        <option value="1/3">1/3</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="fracaoLivramento">Fração Livramento Condicional</label>
-                    <select id="fracaoLivramento" class="form-control">
-                        <option value="">Selecione</option>
-                        <option value="1/3">1/3</option>
-                        <option value="1/2">1/2</option>
-                        <option value="2/3">2/3</option>
-                        <option value="3/4">3/4</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="tempoPena">Tempo de Pena</label>
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 1; margin-right: 10px;">
-                            <label for="anos">Anos</label>
-                            <input type="number" id="anos" class="form-control" min="0">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-right: 10px;">
-                            <label for="meses">Meses</label>
-                            <input type="number" id="meses" class="form-control" min="0" max="11">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label for="dias">Dias</label>
-                            <input type="number" id="dias" class="form-control" min="0" max="30">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group text-right">
-                    <button type="button" class="btn btn-primary" id="adicionarParagrafo">+ Adicionar Parágrafo</button>
-                </div>
-            </div>
-            
-            <!-- Botões de ação -->
-            <div class="actions-row">
-                <button type="button" class="btn btn-secondary">Cancelar</button>
-                <button type="button" class="btn btn-secondary">Salvar como Rascunho</button>
-                <button type="submit" class="btn btn-primary">Salvar</button>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <script>
+    <script type="module">
+        import ResumoSentenca from './resumir_sentenca.js';
+        import PreencherGuia from './preencher_guia.js';
 
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            const resumidor = new ResumoSentenca();
+            const preenchedor = new PreencherGuia();
 
-// Script completo para o formulário de Carta Guia
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos editáveis
-    const editableFields = document.querySelectorAll('.editable-content');
-    
-    // Campos que não devem receber imagens e nem quebras de linha
-    const camposSemImagensQuebras = [
-        'denuncia',
-        'sentenca',
-        'acordao',
-        'transitoJulgado',
-        'numeroInquerito'
-    ];
-    
-    // Função para processar conteúdo colado nos campos especiais
-    function processarCamposEspeciais(e) {
-        // Prevent the default paste action
-        e.preventDefault();
-        
-        // Get only the plain text from clipboard
-        const textoPlano = e.clipboardData.getData('text/plain');
-        
-        // Remove line breaks
-        const textoSemQuebras = textoPlano.replace(/\r?\n|\r/g, ' ');
-        
-        // Insert the processed text
-        document.execCommand('insertText', false, textoSemQuebras);
-    }
-    
-    // Adicionar evento de click ao botão de preenchimento automático
-    const preencherBtn = document.getElementById('preencherAutomatico');
-    if (preencherBtn) {
-        preencherBtn.addEventListener('click', function() {
-            const resumoField = document.getElementById('resumo');
-            const resumoText = resumoField.innerText || resumoField.textContent;
-            
-            if (!resumoText.trim()) {
-                alert('O campo de resumo está vazio! Preencha o resumo primeiro.');
-                return;
-            }
-            
-            // Chamar a função externa de processamento
-            processarResumo(resumoText);
-        });
-    }
-    
-    // Atualizar contagem de caracteres
-    function updateCount(field, countElement, limit = null) {
-        const text = field.textContent || '';
-        const count = text.trim().length;
-        countElement.textContent = `${count} caracteres`;
-        
-        if (limit && count > limit) {
-            countElement.classList.add('limit-exceeded');
-        } else {
-            countElement.classList.remove('limit-exceeded');
-        }
-    }
-    
-    // Configurar eventos para campos editáveis
-    editableFields.forEach(field => {
-        const countId = field.id + 'Count';
-        const countElement = document.getElementById(countId);
-        
-        // Verificar se é um campo que não deve receber imagens e quebras de linha
-        if (camposSemImagensQuebras.includes(field.id)) {
-            // Adicionar evento de 'paste' para processar conteúdo colado
-            field.addEventListener('paste', processarCamposEspeciais);
-            
-            // Adicionar evento de 'input' para remover qualquer quebra de linha adicionada manualmente
-            field.addEventListener('input', function() {
-                // Obter o conteúdo atual
-                const conteudo = this.innerHTML;
+            // Botão Resumir Sentença
+            const resumirBtn = document.getElementById('resumirSentenca');
+            resumirBtn.addEventListener('click', () => {
+                const sentencaField = document.getElementById('sentenca');
+                const textoOriginal = sentencaField.innerText;
                 
-                // Verificar se há quebras de linha HTML
-                if (conteudo.includes('<br>') || conteudo.includes('<div>') || conteudo.includes('<p>')) {
-                    // Remover tags HTML que causam quebras de linha
-                    const conteudoSemQuebras = conteudo
-                        .replace(/<br\s*\/?>/gi, ' ')
-                        .replace(/<div>/gi, ' ')
-                        .replace(/<\/div>/gi, ' ')
-                        .replace(/<p>/gi, ' ')
-                        .replace(/<\/p>/gi, ' ')
-                        .replace(/<img[^>]*>/gi, '')
-                        .replace(/\s+/g, ' ');
-                    
-                    // Atualizar o conteúdo sem alterar a posição do cursor
-                    const selection = window.getSelection();
-                    const range = selection.getRangeAt(0);
-                    const position = range.startOffset;
-                    
-                    this.innerHTML = conteudoSemQuebras;
-                    
-                    // Tentar restaurar a posição do cursor
-                    try {
-                        if (this.childNodes.length > 0) {
-                            const newRange = document.createRange();
-                            newRange.setStart(this.childNodes[0], Math.min(position, this.childNodes[0].length));
-                            newRange.collapse(true);
-                            selection.removeAllRanges();
-                            selection.addRange(newRange);
-                        }
-                    } catch (e) {
-                        console.warn('Não foi possível restaurar a posição do cursor:', e);
-                    }
-                }
+                // Resumir sentença
+                const resumo = resumidor.resumir(textoOriginal);
+                
+                // Atualizar campo de resumo
+                const resumoField = document.getElementById('resumo');
+                resumoField.innerText = resumo;
             });
-            
-            // Impedir que imagens sejam arrastadas para o campo
-            field.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                return false;
-            });
-            
-            field.addEventListener('drop', function(e) {
-                e.preventDefault();
-                return false;
-            });
-        }
-        
-        // Evento de input para atualizar contagem de caracteres (para todos os campos)
-        field.addEventListener('input', () => {
-            updateCount(field, countElement, field.id === 'resumo' ? 20000 : null);
-            localStorage.setItem(field.id, field.innerHTML);
-        });
-        
-        field.addEventListener('blur', () => localStorage.setItem(field.id, field.innerHTML));
-        
-        // Carregar conteúdo salvo
-        const savedContent = localStorage.getItem(field.id);
-        if (savedContent) field.innerHTML = savedContent;
-        
-        // Atualizar contagem inicial
-        if (countElement) updateCount(field, countElement);
-    });
-    
-    // Script para resumir sentença
-    document.getElementById('resumirSentenca').addEventListener('click', function() {
-        const sentencaField = document.getElementById('sentenca');
-        const textoOriginal = sentencaField.innerHTML;
-        
-        // Padrões para remover fundamentação
-        const padroesRemocao = [
-            // Seções de fundamentação comuns
-            {
-                padrao: /Fundamentação\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Seções de fundamentação'
-            },
-            {
-                padrao: /Mérito\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Seções de mérito'
-            },
-            {
-                padrao: /Análise\s*[:=-]?\s*do\s*caso.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Análise do caso'
-            },
-            {
-                padrao: /Considerando\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Considerações'
-            },
-            
-            // Padrões de argumentação jurídica
-            {
-                padrao: /Fundamentação\s*jurídica\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Fundamentação jurídica'
-            },
-            {
-                padrao: /Análise\s*das\s*provas\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Análise de provas'
-            },
-            {
-                padrao: /Aspectos\s*fáticos\s*e\s*jurídicos\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Aspectos fáticos e jurídicos'
-            },
-            
-            // Citações e jurisprudências
-            {
-                padrao: /Jurisprudência\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Jurisprudência'
-            },
-            {
-                padrao: /Doutrinas\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Doutrinas'
-            },
-            
-            // Padrões adicionais para capturar mais variações
-            {
-                padrao: /Relatório\s*[:=-]?.*?(?=Dispositivo|Decisão|$)/gis,
-                descricao: 'Seção de relatório'
-            }
-        ];
-        
-        // Função para remover fundamentação
-        function removerFundamentacao(texto) {
-            let textoLimpo = texto;
-            let secoesRemovidas = [];
-            
-            // Aplicar cada padrão de remoção
-            padroesRemocao.forEach(({padrao, descricao}) => {
-                const matches = texto.match(padrao);
-                if (matches) {
-                    secoesRemovidas.push(descricao);
-                    textoLimpo = textoLimpo.replace(padrao, '');
-                }
-            });
-            
-            // Remover múltiplas linhas em branco
-            textoLimpo = textoLimpo.replace(/\n{3,}/g, '\n\n');
-            
-            // Opcionalmente, logar seções removidas
-            if (secoesRemovidas.length > 0) {
-                console.log('Seções removidas:', secoesRemovidas);
-            }
-            
-            return textoLimpo.trim();
-        }
-        
-        // Remover fundamentação
-        const textoResumido = removerFundamentacao(textoOriginal);
-        sentencaField.innerHTML = textoResumido;
-        
-        // Atualizar contagem de caracteres
-        updateCount(sentencaField, document.getElementById('sentencaCount'));
-        
-        // Feedback visual
-        sentencaField.style.transition = 'background-color 0.5s ease';
-        sentencaField.style.backgroundColor = '#e6f3ff';
-        setTimeout(() => {
-            sentencaField.style.backgroundColor = '';
-        }, 1000);
-        
-        // Opcional: Mostrar toast de resumo
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.right = '20px';
-        toast.style.backgroundColor = '#4CAF50';
-        toast.style.color = 'white';
-        toast.style.padding = '15px';
-        toast.style.borderRadius = '5px';
-        toast.style.zIndex = '1000';
-        toast.textContent = 'Sentença resumida com sucesso!';
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 3000);
-    });
-    
-    // Adicionando eventos para os botões de inserção
-    const botoesInserir = [
-        { botaoId: 'inserirDenuncia', campoId: 'denuncia' },
-        { botaoId: 'inserirSentenca', campoId: 'sentenca' },
-        { botaoId: 'inserirAcordao', campoId: 'acordao' },
-        { botaoId: 'inserirTransito', campoId: 'transitoJulgado' }
-    ];
-    
-    botoesInserir.forEach(({ botaoId, campoId }) => {
-        const botao = document.getElementById(botaoId);
-        if (botao) {
-            botao.addEventListener('click', function() {
-                // Abrir diálogo para inserir texto
-                const texto = prompt('Digite o texto para inserir:');
-                if (texto) {
-                    // Processar texto (remover quebras de linha)
-                    const textoProcessado = texto.replace(/\r?\n|\r/g, ' ');
-                    
-                    // Inserir no campo
-                    const campo = document.getElementById(campoId);
-                    if (campo) {
-                        campo.innerHTML = textoProcessado;
-                        updateCount(campo, document.getElementById(campoId + 'Count'));
-                        localStorage.setItem(campoId, textoProcessado);
-                    }
-                }
-            });
-        }
-    });
-    
-    // Concatenar campos
-    document.getElementById('concatenarCampos').addEventListener('click', function() {
-        const fields = {
-            'NÚMERO DE INQUÉRITO': document.getElementById('numeroInquerito').value,
-            'DENÚNCIA': document.getElementById('denuncia').innerHTML,
-            'SENTENÇA': document.getElementById('sentenca').innerHTML,
-            'ACÓRDÃO': document.getElementById('acordao').innerHTML,
-            'TRÂNSITO EM JULGADO': document.getElementById('transitoJulgado').innerHTML
-        };
-        
-        let resumoContent = '';
-        for (const [title, content] of Object.entries(fields)) {
-            if (content.trim()) {
-                resumoContent += `<strong>${title}:</strong><br>${content}<br><br>`;
-            }
-        }
-        
-        const resumoField = document.getElementById('resumo');
-        resumoField.innerHTML = resumoContent;
-        updateCount(resumoField, document.getElementById('resumoCount'), 20000);
-        localStorage.setItem('resumo', resumoContent);
-        resumoField.focus();
-    });
-    
-    // Botão Salvar Resumo
-    document.getElementById('salvarResumo').addEventListener('click', function() {
-        const resumoText = document.getElementById('resumo').innerText;
-        
-        if (resumoText.trim()) {
-            navigator.clipboard.writeText(resumoText)
-                .then(() => alert('Resumo copiado!'))
-                .catch(() => {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = resumoText;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    alert('Resumo copiado!');
-                });
-        } else {
-            alert('Resumo vazio!');
-        }
-    });
-    
-    // Botão Limpar Campos
-    document.getElementById('limparCampos').addEventListener('click', function() {
-        if (confirm('Limpar todos os campos?')) {
-            editableFields.forEach(field => {
-                field.innerHTML = '';
-                localStorage.removeItem(field.id);
-                updateCount(field, document.getElementById(field.id + 'Count'));
-            });
-            document.getElementById('numeroInquerito').value = '';
-            localStorage.removeItem('numeroInquerito');
-        }
-    });
-    
-    // Botão para adicionar parágrafo na tipificação penal
-    document.getElementById('adicionarParagrafo').addEventListener('click', function() {
-        alert('Funcionalidade para adicionar parágrafo será implementada aqui');
-    });
-    
-    // Submissão do formulário
-    document.getElementById('guiaRecolhimentoForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Validar campos obrigatórios do formulário
-        const camposObrigatorios = document.querySelectorAll('[required]');
-        let formValido = true;
-        
-        camposObrigatorios.forEach(campo => {
-            if (!campo.value.trim()) {
-                campo.classList.add('invalid');
-                formValido = false;
-            } else {
-                campo.classList.remove('invalid');
-            }
-        });
-        
-        // Construir objeto com todos os dados do formulário
-        const formData = {
-            numeroInquerito: document.getElementById('numeroInquerito').value.trim(),
-            denuncia: document.getElementById('denuncia').innerHTML,
-            sentenca: document.getElementById('sentenca').innerHTML,
-            acordao: document.getElementById('acordao').innerHTML,
-            transitoJulgado: document.getElementById('transitoJulgado').innerHTML,
-            resumo: document.getElementById('resumo').innerHTML,
-            // Outros campos do formulário seriam adicionados aqui
-        };
-        
-        if (formValido) {
-            // Aqui seria implementada a lógica de envio do formulário
-            console.log('Dados do formulário:', formData);
-            alert('Formulário enviado com sucesso!');
-        } else {
-            alert('Por favor, preencha todos os campos obrigatórios.');
-        }
-    });
-    
-    // Configurar limpeza de campos input com botão ✕
-    document.querySelectorAll('.clear-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const inputField = this.parentElement.querySelector('input');
-            if (inputField) {
-                inputField.value = '';
-                inputField.focus();
-            }
-        });
-    });
-    
-    // Salvar número de inquérito no localStorage
-    document.getElementById('numeroInquerito').addEventListener('input', function() {
-        localStorage.setItem('numeroInquerito', this.value);
-    });
-    
-    // Carregar número de inquérito salvo (se existir)
-    const savedInquerito = localStorage.getItem('numeroInquerito');
-    if (savedInquerito) {
-        document.getElementById('numeroInquerito').value = savedInquerito;
-    }
-    
-    // Função temporária para processarResumo (será substituída pela implementação real)
-    window.processarResumo = function(textoResumo) {
-        // Placeholder - esta função será implementada externamente
-        alert('A função processarResumo(textoResumo) deve ser implementada no arquivo preencher_guia.js');
-        console.log('Texto do resumo para processar:', textoResumo);
-    };
-});
 
+            // Botão Preencher Automático
+            const preencherBtn = document.getElementById('preencherAutomatico');
+            preencherBtn.addEventListener('click', () => {
+                const resumoField = document.getElementById('resumo');
+                const resumoTexto = resumoField.innerText;
+
+                if (!resumoTexto.trim()) {
+                    alert('O campo de resumo está vazio. Preencha o resumo primeiro.');
+                    return;
+                }
+
+                // Processar resumo e preencher formulário
+                preenchedor.processarResumo(resumoTexto);
+            });
+        });
     </script>
-    <script src="preencher_guia.js"></script>
-
-
-
-    
 </body>
 </html>
