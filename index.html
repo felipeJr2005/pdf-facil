@@ -354,156 +354,130 @@
     sandbox="allow-scripts allow-same-origin"
 ></iframe>
 
-                
-                
-                
-            </div>
-        </main>
-    </div>
 
-    <script>
-       
-  function loadErrorPage() {
-    const descriptionEl = document.getElementById('functionDescription');
-    const frame = document.getElementById('resultFrame');
+<script>
+    function loadErrorPage() {
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
 
-    if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
+        if (descriptionEl) descriptionEl.innerText = 'Página não encontrada';
 
-    if (frame) {
-        frame.src = window.location.origin + '/404.html';
-    }
-
-    document.querySelectorAll('.sidebar-nav button').forEach(button => {
-        button.classList.remove('btn-green');
-        button.classList.add('btn-secondary');
-    });
-
-    const activeButton = document.getElementById('error404Button');
-    if (activeButton) {
-        activeButton.classList.remove('btn-secondary');
-        activeButton.classList.add('btn-green');
-    }
-}
-
-      
-function loadHomePage() {
-    const descriptionEl = document.getElementById('functionDescription');
-    const frame = document.getElementById('resultFrame');
-
-    if (descriptionEl) descriptionEl.innerText = 'Selecione uma função';
-
-    if (frame) {
-        frame.src = 'https://pdffacil.com/bem-vindo.html';
-    }
-
-    document.querySelectorAll('.sidebar-nav button').forEach(button => {
-        button.classList.remove('btn-green');
-        button.classList.add('btn-secondary');
-    });
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-
-
-
-
-
-            
-
-            // Remove a classe 'btn-green' de todos os botões
-            document.querySelectorAll('.sidebar-nav button').forEach(button => {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
-            });
+        if (frame) {
+            frame.src = window.location.origin + '/404.html';
         }
 
-     function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
+        });
+
+        const activeButton = document.getElementById('error404Button');
+        if (activeButton) {
+            activeButton.classList.remove('btn-secondary');
+            activeButton.classList.add('btn-green');
+        }
+    }
+
+    function loadHomePage() {
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
+
+        if (descriptionEl) descriptionEl.innerText = 'Selecione uma função';
+
+        if (frame) {
+            frame.src = 'https://pdffacil.com/bem-vindo.html';
+        }
+
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
+        });
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
             clearTimeout(timeout);
-            func(...args);
+            timeout = setTimeout(later, wait);
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+    }
 
-const updateContent = debounce((title, description, functionName) => {
-    const descriptionEl = document.getElementById('functionDescription');
-    const frame = document.getElementById('resultFrame');
+    const updateContent = debounce((title, description, functionName) => {
+        const descriptionEl = document.getElementById('functionDescription');
+        const frame = document.getElementById('resultFrame');
 
-    if (descriptionEl) descriptionEl.innerText = description;
+        if (descriptionEl) descriptionEl.innerText = description;
 
-    if (frame) {
-        frame.onerror = () => loadErrorPage();
-        
-        frame.onload = function() {
-            try {
-                const currentLocation = this.contentWindow.location.href;
-                if (currentLocation.includes('404.html') || currentLocation.includes('?error=404')) {
+        if (frame) {
+            frame.onerror = () => loadErrorPage();
+            
+            frame.onload = function() {
+                try {
+                    const currentLocation = this.contentWindow.location.href;
+                    if (currentLocation.includes('404.html') || currentLocation.includes('?error=404')) {
+                        loadErrorPage();
+                    }
+                } catch (e) {
                     loadErrorPage();
                 }
-            } catch (e) {
-                loadErrorPage();
-            }
-        };
-        
-        frame.src = `https://pdffacil.com/${functionName}.html`;
-    }
-
-    document.querySelectorAll('.sidebar-nav button').forEach(button => {
-        button.classList.remove('btn-green');
-        button.classList.add('btn-secondary');
-    });
-
-    const activeButton = Array.from(document.querySelectorAll('.sidebar-nav button'))
-        .find(button => button.innerText.includes(title));
-
-    if (activeButton) {
-        activeButton.classList.remove('btn-secondary');
-        activeButton.classList.add('btn-green');
-    }
-}, 150);
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.addEventListener('touchstart', function(){}, {passive: true});
-
-    const isInIframe = window !== window.parent;
-    
-    if (!isInIframe) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const errorParam = urlParams.get('error');
-
-        if (errorParam === '404') {
-            setTimeout(loadErrorPage, 300);
+            };
+            
+            frame.src = `https://pdffacil.com/${functionName}.html`;
         }
-    }
 
-    document.querySelectorAll('.sidebar-nav button').forEach(button => {
-        button.addEventListener('focus', () => {
-            button.classList.remove('btn-secondary');
-            button.classList.add('btn-green');
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.classList.remove('btn-green');
+            button.classList.add('btn-secondary');
         });
 
-        button.addEventListener('blur', () => {
-            if (!button.innerText.includes(document.getElementById('functionDescription').innerText)) {
-                button.classList.remove('btn-green');
-                button.classList.add('btn-secondary');
+        const activeButton = Array.from(document.querySelectorAll('.sidebar-nav button'))
+            .find(button => button.innerText.includes(title));
+
+        if (activeButton) {
+            activeButton.classList.remove('btn-secondary');
+            activeButton.classList.add('btn-green');
+        }
+    }, 150);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('touchstart', function(){}, {passive: true});
+
+        const isInIframe = window !== window.parent;
+        
+        if (!isInIframe) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorParam = urlParams.get('error');
+
+            if (errorParam === '404') {
+                setTimeout(loadErrorPage, 300);
             }
+        }
+
+        document.querySelectorAll('.sidebar-nav button').forEach(button => {
+            button.addEventListener('focus', () => {
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-green');
+            });
+
+            button.addEventListener('blur', () => {
+                if (!button.innerText.includes(document.getElementById('functionDescription').innerText)) {
+                    button.classList.remove('btn-green');
+                    button.classList.add('btn-secondary');
+                }
+            });
         });
     });
-});
     </script>
+
+
+
+
+
+                
     <!-- Botão Flutuante de Contato -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="/manutencao/floating-contact.js"></script>
