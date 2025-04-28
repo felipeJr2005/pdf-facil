@@ -1257,6 +1257,7 @@ function cleanOCRText(text) {
 
 
 async function startOCR() {
+    console.log("startOCR foi chamada!");
     if (!currentFile) {
         showStatus('Nenhum arquivo selecionado.', 'error');
         return;
@@ -2004,6 +2005,7 @@ function addFixedOverlayStyles() {
     }
     
     // Inicializar a aplicação
+// Inicializar a aplicação
 function initializeApp() {
     console.log('Inicializando aplicação OCR...');
     
@@ -2024,7 +2026,10 @@ function initializeApp() {
     
     console.log('Aplicação OCR inicializada com sucesso!');
 }
-});
+    
+    // Iniciar aplicação
+    initializeApp();
+});  // Este é o fechamento do addEventListener('DOMContentLoaded'...)
 
     </script>
 </body>
