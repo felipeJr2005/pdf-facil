@@ -674,9 +674,11 @@
     <script>
 
 document.addEventListener('DOMContentLoaded', function() {
+        
+document.addEventListener('DOMContentLoaded', function() {
         /**
-         * Função aprimorada para contar caracteres com maior precisão
-         * Mantém o mesmo nome da função original para facilitar a substituição
+         * Função para contar caracteres brutos sem qualquer processamento
+         * Para garantir a contagem mais alta e precisa possível
          * 
          * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
          * @param {string} contadorId - ID do elemento que exibirá a contagem
@@ -684,24 +686,48 @@ document.addEventListener('DOMContentLoaded', function() {
          * @returns {number} - Número de caracteres
          */
         function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
-            // Obter o texto do elemento ou usar o texto diretamente se for uma string
-            let texto = typeof elemento === 'string' 
-                ? elemento 
-                : (elemento.innerText || elemento.textContent || '');
+            // Obter texto bruto sem processamento adicional
+            let texto;
             
-            // Normalize o texto para garantir contagem uniforme de caracteres Unicode
-            texto = texto.normalize();
+            if (typeof elemento === 'string') {
+                texto = elemento;
+            } else {
+                // Para elementos HTML, capturar o HTML interno completo para incluir tags
+                const htmlCompleto = elemento.innerHTML;
+                
+                // Processar o HTML para obter texto puro com preservação exata de quebras de linha
+                const temp = document.createElement('div');
+                temp.innerHTML = htmlCompleto;
+                
+                // Usar textContent para preservar espaços em branco e quebras exatamente como estão
+                texto = temp.textContent || "";
+                
+                // Verificação de backup se textContent estiver vazio (raro, mas pode acontecer)
+                if (!texto.trim() && elemento.innerText) {
+                    texto = elemento.innerText;
+                }
+            }
             
-            // Converter quebras de linha de Windows (\r\n) para Unix (\n)
-            texto = texto.replace(/\r\n/g, '\n');
-            
-            // Contar caracteres incluindo espaços e quebras de linha
+            // Não realizar nenhum tipo de normalização ou substituição
+            // Simplesmente contar os caracteres como estão
             const numCaracteres = texto.length;
             
-            // Atualizar o contador
+            // Método alternativo de contagem para validação (mais detalhado)
+            let contagem = 0;
+            for (let i = 0; i < texto.length; i++) {
+                contagem++;
+            }
+            
+            // Verificar se as contagens são iguais (para debugar)
+            if (numCaracteres !== contagem) {
+                console.warn('Discrepância na contagem de caracteres:', 
+                             { length: numCaracteres, contagem, texto: texto.substring(0, 50) + '...' });
+            }
+            
+            // Atualizar o contador com contagem bruta
             const contador = document.getElementById(contadorId);
             if (contador) {
-                contador.textContent = numCaracteres + ' caracteres';
+                contador.textContent = numCaracteres + ' caracteres (brutos)';
                 
                 // Verificar se excede o limite
                 if (numCaracteres > limiteAviso) {
@@ -709,25 +735,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     contador.classList.remove('limit-exceeded');
                 }
+                
+                // Adicionar informações detalhadas no título para debug
+                contador.title = `Contagem: ${numCaracteres} | Tamanho bytes: ${new Blob([texto]).size}`;
             }
+            
+            // Para debug: mostrar informações detalhadas no console
+            console.log(`Contagem para ${contadorId}:`, { 
+                caracteres: numCaracteres,
+                bytes: new Blob([texto]).size,
+                caracteresPorByte: numCaracteres / (new Blob([texto]).size || 1),
+                primeiros50: texto.substring(0, 50),
+                ultimOs50: texto.substring(texto.length - 50)
+            });
             
             return numCaracteres;
         }
 
-        // Função auxiliar para inicializar a contagem em múltiplos campos
+
+
+       // Função auxiliar para inicializar a contagem em múltiplos campos
         function inicializarContagemCaracteres() {
             const camposEditaveis = [
-                { campo: 'denuncia', contador: 'denunciaCount' },
-                { campo: 'sentenca', contador: 'sentencaCount' },
-                { campo: 'acordao', contador: 'acordaoCount' },
-                { campo: 'transitoJulgado', contador: 'transitoJulgadoCount' },
-                { campo: 'resumo', contador: 'resumoCount' }
+                { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
+                { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
+                { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
+                { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
+                { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
             ];
             
-            camposEditaveis.forEach(({ campo, contador }) => {
+            camposEditaveis.forEach(({ campo, contador, limite }) => {
                 const elemento = document.getElementById(campo);
                 if (elemento) {
-                    const atualizarContador = () => contarCaracteres(elemento, contador);
+                    const atualizarContador = () => contarCaracteres(elemento, contador, limite);
                     
                     // Contar caracteres iniciais
                     atualizarContador();
@@ -754,8 +794,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return camposEditaveis;
         }
 
+
+
         // Define camposEditaveis no escopo principal e inicializa contagem
         const camposEditaveis = inicializarContagemCaracteres();
+    
+        // Teste para verificar a diferença de contagem em sistemas diferentes
+        function testarContagem() {
+            const textoTeste = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Praesent vel rhoncus nisl. Nunc vel magna nec ex lobortis laoreet.
+            Aenean posuere dui eget purus malesuada, non tempus tellus interdum.
+            Duis varius mauris in lectus scelerisque, ut pharetra lectus venenatis.`;
+            
+            console.log('Teste de contagem:', {
+                length: textoTeste.length,
+                bytes: new Blob([textoTeste]).size,
+                lengthSemEspacos: textoTeste.replace(/\s/g, '').length,
+                linhas: (textoTeste.match(/\n/g) || []).length + 1
+            });
+            
+            // Exibir no console como diferentes sistemas poderiam contar
+            return {
+                "Contagem bruta (todos os caracteres)": textoTeste.length,
+                "Contagem sem espaços e quebras": textoTeste.replace(/\s/g, '').length,
+                "Contagem só sem quebras": textoTeste.replace(/[\r\n]/g, '').length,
+                "Bytes UTF-8": new Blob([textoTeste]).size
+            };
+        }
+        
+        // Executar teste de contagem para comparação
+        console.log('Comparação de métodos de contagem:', testarContagem());
             
         // Classe ResumoSentenca para resumir sentenças
         class ResumoSentenca {
