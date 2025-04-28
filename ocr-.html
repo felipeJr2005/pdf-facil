@@ -1884,9 +1884,9 @@ function addFixedOverlayStyles() {
             bottom: 0 !important;
             background-color: rgba(0, 0, 0, 0.7) !important;
             z-index: 9999 !important;
-            display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            /* Removido o "display: flex !important;" para não forçar a exibição */
         }
         
         .processing-message {
@@ -1914,21 +1914,13 @@ function addFixedOverlayStyles() {
         }
     `;
     document.head.appendChild(styleElement);
+    
+    // Garantir que o overlay esteja oculto inicialmente
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2019,10 +2011,11 @@ function initializeApp() {
     setupEventListeners();
     
     // Adicionar estilos
-    addStylesForOCR();
-    
+    addStylesForOCR();  
+
     // Adicionar estilos para overlay fixo
     addFixedOverlayStyles();
+ 
     
     console.log('Aplicação OCR inicializada com sucesso!');
 }
