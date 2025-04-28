@@ -1057,6 +1057,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Processar PDF com OCR - VERSÃO CORRIGIDA
 // Processar PDF com OCR
 // Processar PDF com OCR
+
 async function processPDFWithOCR(language) {
     // Criar lista de páginas para processar (excluindo as removidas)
     const pagesToProcess = Array.from(
@@ -1071,14 +1072,33 @@ async function processPDFWithOCR(language) {
     let allText = '';
     const totalPagesToProcess = pagesToProcess.length;
     
+    // Posicionar o container de processamento no centro da tela
+    const centerOverlay = () => {
+        const overlay = $('#processingOverlay');
+        const message = $('.processing-message');
+        if (overlay && message) {
+            message.style.position = 'fixed';
+            message.style.top = '50%';
+            message.style.left = '50%';
+            message.style.transform = 'translate(-50%, -50%)';
+            message.style.zIndex = '10000';
+        }
+    };
+    
+    // Centralizar overlay
+    centerOverlay();
+    
     for (let i = 0; i < pagesToProcess.length; i++) {
         const pageNum = pagesToProcess[i];
         const progressPercent = (i / totalPagesToProcess) * 100;
         
-        // Atualizar progresso
+        // Atualizar progresso sem afetar a rolagem
         $('#progressBar').value = progressPercent;
         $('#progressText').textContent = `Reconhecendo texto da página ${pageNum} de ${totalPdfPages}`;
         $('#processingText').textContent = `Processando página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
+        
+        // Forçar centralização da mensagem e evitar rolagem
+        centerOverlay();
         
         // Obter o canvas da página
         const pageCanvas = pdfPageCanvases[pageNum - 1];
@@ -1092,6 +1112,8 @@ async function processPDFWithOCR(language) {
                         const pageProgress = progress.progress * (100 / totalPagesToProcess);
                         const totalProgress = progressPercent + pageProgress;
                         $('#progressBar').value = totalProgress;
+                        // Manter overlay centralizado
+                        centerOverlay();
                     }
                 }
             };
@@ -1135,6 +1157,15 @@ async function processPDFWithOCR(language) {
     
     return allText;
 }
+
+
+
+
+
+
+
+
+
 
 // Função limpar e corrigir texto OCR
 function cleanOCRText(text) {
@@ -1220,67 +1251,11 @@ function cleanOCRText(text) {
     return text.trim();
 }
 
-// Modificar a função processPDFWithOCR para incluir a limpeza
-async function processPDFWithOCR(language) {
-    // Criar lista de páginas para processar (excluindo as removidas)
-    const pagesToProcess = Array.from(
-        { length: totalPdfPages }, 
-        (_, i) => i + 1
-    ).filter(pageNum => !excludedPages.has(pageNum));
-    
-    if (pagesToProcess.length === 0) {
-        throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
-    }
-    
-    let allText = '';
-    const totalPagesToProcess = pagesToProcess.length;
-    
-    for (let i = 0; i < pagesToProcess.length; i++) {
-        const pageNum = pagesToProcess[i];
-        const progressPercent = (i / totalPagesToProcess) * 100;
-        
-        // Atualizar progresso
-        $('#progressBar').value = progressPercent;
-        $('#progressText').textContent = `Reconhecendo texto da página ${pageNum} de ${totalPdfPages}`;
-        $('#processingText').textContent = `Processando página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
-        
-        // Obter o canvas da página
-        const pageCanvas = pdfPageCanvases[pageNum - 1];
-        const imageData = pageCanvas.toDataURL('image/png');
-        
-        // Reconhecer texto com Tesseract
-        const result = await Tesseract.recognize(
-            imageData,
-            language,
-            {
-                logger: progress => {
-                    if (progress.status === 'recognizing text') {
-                        const pageProgress = progress.progress * (100 / totalPagesToProcess);
-                        const totalProgress = progressPercent + pageProgress;
-                        $('#progressBar').value = totalProgress;
-                    }
-                }
-            }
-        );
-        
-        // Aplicar limpeza ao texto reconhecido
-        let pageText = cleanOCRText(result.data.text);
-        
-        // Adicionar à saída final
-        if (pageText.trim()) {
-            if (allText) allText += '\n\n';
-            allText += `--- Página ${pageNum} ---\n\n${pageText}`;
-        }
-    }
-    
-    // Concluído
-    $('#progressBar').value = 100;
-    $('#progressText').textContent = 'Processamento concluído!';
-    
-    return allText;
-}
+
 
 // Modificar a função startOCR para aplicar limpeza final
+
+
 async function startOCR() {
     if (!currentFile) {
         showStatus('Nenhum arquivo selecionado.', 'error');
@@ -1295,6 +1270,19 @@ async function startOCR() {
     try {
         isProcessing = true;
         
+        // Salvar posição da rolagem atual
+        const scrollPositionBefore = window.scrollY;
+        
+        // Mostrar overlay de processamento com posição fixa
+        $('#processingOverlay').style.display = 'flex';
+        $('#processingOverlay').style.position = 'fixed';
+        $('#processingOverlay').style.top = '0';
+        $('#processingOverlay').style.left = '0';
+        $('#processingOverlay').style.right = '0';
+        $('#processingOverlay').style.bottom = '0';
+        $('#processingOverlay').style.zIndex = '9999';
+        $('#processingText').textContent = 'Preparando OCR...';
+        
         // Mostrar progresso
         removeClass('#progressContainer', 'hidden');
         $('#progressBar').value = 0;
@@ -1303,10 +1291,6 @@ async function startOCR() {
         // Esconder editor
         addClass('#editorContainer', 'hidden');
         addClass('#textActions', 'hidden');
-        
-        // Mostrar overlay
-        $('#processingOverlay').style.display = 'flex';
-        $('#processingText').textContent = 'Preparando OCR...';
         
         // Contar páginas a processar
         const pagesToProcess = Array.from(
@@ -1337,6 +1321,9 @@ async function startOCR() {
         // Formatar o texto para exibição mais limpa
         const formattedText = formatRecognizedText(allRecognizedText);
         
+        // Esconder progresso antes de mostrar resultado
+        addClass('#progressContainer', 'hidden');
+        
         // Exibir resultado diretamente no editor
         $('#editorContent').textContent = formattedText;
         
@@ -1349,16 +1336,21 @@ async function startOCR() {
         // Concluído
         ocrCompleted = true;
         
+        // Restaurar a posição de rolagem
+        window.scrollTo(0, scrollPositionBefore);
+        
     } catch (error) {
         console.error('Erro no reconhecimento de texto:', error);
         showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
     } finally {
-        // Esconder elementos de progresso
+        // Esconder elementos
         addClass('#progressContainer', 'hidden');
         $('#processingOverlay').style.display = 'none';
         isProcessing = false;
     }
 }
+
+
 
 // Atualizar a função formatRecognizedText para melhor tratamento jurídico
 function formatRecognizedText(allText) {
@@ -1424,87 +1416,6 @@ function formatRecognizedText(allText) {
 
     // Iniciar OCR
    // Iniciar OCR - VERSÃO ATUALIZADA COM FORMATAÇÃO SIMPLES
-async function startOCR() {
-    if (!currentFile) {
-        showStatus('Nenhum arquivo selecionado.', 'error');
-        return;
-    }
-    
-    if (isProcessing) {
-        showStatus('Já existe um processamento em andamento.', 'warning');
-        return;
-    }
-    
-    try {
-        isProcessing = true;
-        
-        // Mostrar progresso
-        removeClass('#progressContainer', 'hidden');
-        $('#progressBar').value = 0;
-        $('#progressText').textContent = 'Iniciando reconhecimento...';
-        
-        // Esconder editor
-        addClass('#editorContainer', 'hidden');
-        addClass('#textActions', 'hidden');
-        
-        // Mostrar overlay
-        $('#processingOverlay').style.display = 'flex';
-        $('#processingText').textContent = 'Preparando OCR...';
-        
-        // Contar páginas a processar
-        const pagesToProcess = Array.from(
-            { length: totalPdfPages }, 
-            (_, i) => i + 1
-        ).filter(pageNum => !excludedPages.has(pageNum));
-        
-        $('#processingText').textContent = `Preparando OCR para ${pagesToProcess.length} páginas...`;
-        console.log(`Iniciando OCR para ${pagesToProcess.length} páginas`);
-        
-        const language = $('#languageSelect').value;
-        let allRecognizedText = '';
-        
-        // Verificar tipo
-        const isPDF = currentFile.type === 'application/pdf' || 
-                     currentFile.name.toLowerCase().endsWith('.pdf') || 
-                     (await readFileHeader(currentFile)).includes('%PDF');
-        
-        if (isPDF && pdfPageCanvases.length > 0) {
-            // Processar PDF
-            allRecognizedText = await processPDFWithOCR(language);
-        } else {
-            // Processar imagem
-            const imageSource = $('#previewImage').src;
-            allRecognizedText = await processImageWithOCR(imageSource, language);
-        }
-        
-        // Formatar o texto para exibição mais limpa
-        const formattedText = formatRecognizedText(allRecognizedText);
-        
-        // Exibir resultado diretamente no editor
-        $('#editorContent').textContent = formattedText;
-        
-        // Mostrar botões
-        removeClass('#textActions', 'hidden');
-        
-        // Mostrar editor
-        removeClass('#editorContainer', 'hidden');
-        
-        // Concluído
-        ocrCompleted = true;
-        
-    } catch (error) {
-        console.error('Erro no reconhecimento de texto:', error);
-        showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
-        
-        // Resetar estado
-        isProcessing = false;
-    } finally {
-        // Esconder elementos
-        addClass('#progressContainer', 'hidden');
-        $('#processingOverlay').style.display = 'none';
-        isProcessing = false;
-    }
-}
 
     // ===== AÇÕES DE TEXTO =====
     
@@ -1958,6 +1869,70 @@ async function startOCR() {
     document.head.appendChild(styleElement);
 }
 
+
+
+function addFixedOverlayStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        /* Overlay de processamento fixo no centro da tela */
+        .processing-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            z-index: 9999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        .processing-message {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            background-color: white !important;
+            padding: 2rem !important;
+            border-radius: 0.5rem !important;
+            text-align: center !important;
+            max-width: 80% !important;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        /* Evitar que elementos de progresso causem rolagem */
+        #progressContainer {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 10000 !important;
+            width: 80% !important;
+            max-width: 600px !important;
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     // Configurar eventos da aplicação
     function setupEventListeners() {
@@ -2043,6 +2018,8 @@ async function startOCR() {
         
         // Adicionar estilos
         addStylesForOCR();
+
+        
         
         console.log('Aplicação OCR inicializada com sucesso!');
     }
