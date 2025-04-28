@@ -392,10 +392,28 @@
 
             // Carrega uma página de boas-vindas ou limpa o iframe
             if (frame) {
-                // Se você tem uma página de boas-vindas:
-                frame.src = 'bem-vindo.html';              
+           // Use o caminho absoluto
+    frame.src = 'https://pdffacil.com/bem-vindo.html';
+    
+    // Adicione logs para debugging
+    console.log('Carregando iframe:', frame.src);
+    
+    // Adicione event listeners para capturar erros
+    frame.addEventListener('error', (e) => {
+        console.error('Erro no carregamento do iframe:', e);           
                 
             }
+
+
+
+
+
+
+
+
+
+
+            
 
             // Remove a classe 'btn-green' de todos os botões
             document.querySelectorAll('.sidebar-nav button').forEach(button => {
