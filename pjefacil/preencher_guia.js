@@ -1,11 +1,8 @@
 // preencher_guia.js
 // Módulo para processamento e preenchimento automático de formulário jurídico
 
-import ResumoSentenca from './resumir_sentenca.js';
-
 class PreencherGuia {
     constructor() {
-        this.resumidor = new ResumoSentenca();
         this.camposMapeados = {
             'Processo': 'numeroProcesso',
             'Réu': 'nomeReu',
@@ -53,11 +50,21 @@ class PreencherGuia {
 
     // Método principal para processar resumo e preencher formulário
     processarResumo(textoResumo) {
-        // Primeiro, validar o resumo
-        const resumidor = this.resumidor;
-        const resumoValidado = resumidor.validarResumo(textoResumo) 
-            ? textoResumo 
-            : resumidor.resumir(textoResumo);
+        if (!textoResumo || textoResumo.trim() === '') {
+            alert('O texto do resumo está vazio.');
+            return;
+        }
+        
+        // Validar o resumo
+        let resumoValidado = textoResumo;
+        
+        // Importar ResumoSentenca de forma dinâmica se não estiver disponível
+        if (typeof ResumoSentenca !== 'undefined') {
+            const resumidor = new ResumoSentenca();
+            if (!resumidor.validarResumo(textoResumo)) {
+                resumoValidado = resumidor.resumir(textoResumo);
+            }
+        }
 
         // Campos a serem preenchidos
         const camposPreenchidos = [];
@@ -138,6 +145,20 @@ class PreencherGuia {
 
     // Método para destacar campos preenchidos
     destacarCamposPreenchidos(campos) {
+        // Adicionar estilo CSS se não existir
+        if (!document.getElementById('campo-preenchido-estilo')) {
+            const estilo = document.createElement('style');
+            estilo.id = 'campo-preenchido-estilo';
+            estilo.textContent = `
+                .campo-preenchido-auto {
+                    background-color: #e8f5e9 !important;
+                    border-color: #4CAF50 !important;
+                    transition: background-color 0.3s ease;
+                }
+            `;
+            document.head.appendChild(estilo);
+        }
+
         campos.forEach(campo => {
             campo.classList.add('campo-preenchido-auto');
             
@@ -145,16 +166,23 @@ class PreencherGuia {
             const removeDestaque = () => campo.classList.remove('campo-preenchido-auto');
             
             if (campo.type === 'checkbox') {
-                campo.addEventListener('change', removeDestaque);
+                campo.addEventListener('change', removeDestaque, {once: true});
             } else {
-                campo.addEventListener('input', removeDestaque);
+                campo.addEventListener('input', removeDestaque, {once: true});
             }
         });
     }
 
     // Método para notificar preenchimento
     notificarPreenchimento(quantidadeCampos) {
+        // Remover toast existente, se houver
+        const toastExistente = document.getElementById('toast-notificacao');
+        if (toastExistente) {
+            document.body.removeChild(toastExistente);
+        }
+
         const toast = document.createElement('div');
+        toast.id = 'toast-notificacao';
         toast.style.position = 'fixed';
         toast.style.bottom = '20px';
         toast.style.right = '20px';
@@ -163,12 +191,15 @@ class PreencherGuia {
         toast.style.padding = '15px';
         toast.style.borderRadius = '5px';
         toast.style.zIndex = '1000';
+        toast.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
         toast.textContent = `Preenchimento automático concluído. ${quantidadeCampos} campos atualizados.`;
         
         document.body.appendChild(toast);
         
         setTimeout(() => {
-            document.body.removeChild(toast);
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
         }, 3000);
     }
 
@@ -192,9 +223,14 @@ class PreencherGuia {
 }
 
 // Exportar e inicializar globalmente
-const preencherGuia = new PreencherGuia();
-window.preencherGuia = preencherGuia;
-
-document.addEventListener('DOMContentLoaded', () => preencherGuia.iniciar());
+if (typeof window !== 'undefined') {
+    window.PreencherGuia = PreencherGuia;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const preencherGuia = new PreencherGuia();
+        window.preencherGuia = preencherGuia;
+        preencherGuia.iniciar();
+    });
+}
 
 export default PreencherGuia;
