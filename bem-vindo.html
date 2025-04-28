@@ -414,5 +414,64 @@
             <p class="cta-message">PDFFacil.com - Simplificando sua vida digital desde 2023</p>
         </section>      
     </div>
+
+    <script> 
+        
+        // Função para carregar a página inicial de forma consistente
+        function loadHomePage() {
+            const descriptionEl = document.getElementById('functionDescription');
+            // Atualiza a descrição da função
+            if (descriptionEl) descriptionEl.innerText = 'Página Inicial';
+            // Mostra o spinner de carregamento
+            showLoading();
+            // Carrega a página inicial via fetch
+            fetch('bem-vindo.html')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Insere o HTML no contentArea
+                    elements.contentArea.innerHTML = html;
+                    // Executa scripts internos
+                    executeScripts(elements.contentArea);
+                    // Remove a classe 'btn-green' de todos os botões
+                    document.querySelectorAll('.sidebar-nav button').forEach(button => {
+                        button.classList.remove('btn-green');
+                        button.classList.add('btn-secondary');
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar página inicial:', error);
+                    // Conteúdo de fallback para página inicial
+                    elements.contentArea.innerHTML = `
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 2rem;">
+                            <img src="logo.png" alt="PDF FACIL" style="max-width: 200px; margin-bottom: 2rem;">
+                            <h1 style="margin-bottom: 1rem; color: var(--primary-color);">Bem-vindo ao PDF FACIL</h1>
+                            <p style="max-width: 600px; margin-bottom: 2rem;">
+                                Selecione uma das ferramentas no menu lateral para começar a trabalhar com seus arquivos PDF.
+                            </p>
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                                <button onclick="updateContent('Comprime', 'Reduza o tamanho do arquivo mantendo a qualidade', 'comprime')" class="btn-secondary">
+                                    <i class="fas fa-compress"></i> Comprimir PDF
+                                </button>
+                                <button onclick="updateContent('Junte', 'Una PDFs em só arquivo', 'junte')" class="btn-secondary">
+                                    <i class="fas fa-object-group"></i> Juntar PDFs
+                                </button>
+                                <button onclick="updateContent('Editar', 'Modifique o conteúdo do PDF', 'editar')" class="btn-secondary">
+                                    <i class="fas fa-edit"></i> Editar PDF
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                })
+                .finally(() => {
+                    // Esconde o spinner de carregamento
+                    hideLoading();
+                });
+        }
+</script>
 </body>
 </html>
