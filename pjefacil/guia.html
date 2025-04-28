@@ -673,9 +673,34 @@
     <script>
 
 
+// Script completo para o formulário de Carta Guia
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos editáveis
     const editableFields = document.querySelectorAll('.editable-content');
+    
+    // Campos que não devem receber imagens e nem quebras de linha
+    const camposSemImagensQuebras = [
+        'denuncia',
+        'sentenca',
+        'acordao',
+        'transitoJulgado',
+        'numeroInquerito'
+    ];
+    
+    // Função para processar conteúdo colado nos campos especiais
+    function processarCamposEspeciais(e) {
+        // Prevent the default paste action
+        e.preventDefault();
+        
+        // Get only the plain text from clipboard
+        const textoPlano = e.clipboardData.getData('text/plain');
+        
+        // Remove line breaks
+        const textoSemQuebras = textoPlano.replace(/\r?\n|\r/g, ' ');
+        
+        // Insert the processed text
+        document.execCommand('insertText', false, textoSemQuebras);
+    }
     
     // Adicionar evento de click ao botão de preenchimento automático
     const preencherBtn = document.getElementById('preencherAutomatico');
@@ -712,6 +737,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const countId = field.id + 'Count';
         const countElement = document.getElementById(countId);
         
+        // Verificar se é um campo que não deve receber imagens e quebras de linha
+        if (camposSemImagensQuebras.includes(field.id)) {
+            // Adicionar evento de 'paste' para processar conteúdo colado
+            field.addEventListener('paste', processarCamposEspeciais);
+            
+            // Adicionar evento de 'input' para remover qualquer quebra de linha adicionada manualmente
+            field.addEventListener('input', function() {
+                // Obter o conteúdo atual
+                const conteudo = this.innerHTML;
+                
+                // Verificar se há quebras de linha HTML
+                if (conteudo.includes('<br>') || conteudo.includes('<div>') || conteudo.includes('<p>')) {
+                    // Remover tags HTML que causam quebras de linha
+                    const conteudoSemQuebras = conteudo
+                        .replace(/<br\s*\/?>/gi, ' ')
+                        .replace(/<div>/gi, ' ')
+                        .replace(/<\/div>/gi, ' ')
+                        .replace(/<p>/gi, ' ')
+                        .replace(/<\/p>/gi, ' ')
+                        .replace(/<img[^>]*>/gi, '')
+                        .replace(/\s+/g, ' ');
+                    
+                    // Atualizar o conteúdo sem alterar a posição do cursor
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    const position = range.startOffset;
+                    
+                    this.innerHTML = conteudoSemQuebras;
+                    
+                    // Tentar restaurar a posição do cursor
+                    try {
+                        if (this.childNodes.length > 0) {
+                            const newRange = document.createRange();
+                            newRange.setStart(this.childNodes[0], Math.min(position, this.childNodes[0].length));
+                            newRange.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        }
+                    } catch (e) {
+                        console.warn('Não foi possível restaurar a posição do cursor:', e);
+                    }
+                }
+            });
+            
+            // Impedir que imagens sejam arrastadas para o campo
+            field.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            field.addEventListener('drop', function(e) {
+                e.preventDefault();
+                return false;
+            });
+        }
+        
+        // Evento de input para atualizar contagem de caracteres (para todos os campos)
         field.addEventListener('input', () => {
             updateCount(field, countElement, field.id === 'resumo' ? 20000 : null);
             localStorage.setItem(field.id, field.innerHTML);
@@ -840,6 +922,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     });
     
+    // Adicionando eventos para os botões de inserção
+    const botoesInserir = [
+        { botaoId: 'inserirDenuncia', campoId: 'denuncia' },
+        { botaoId: 'inserirSentenca', campoId: 'sentenca' },
+        { botaoId: 'inserirAcordao', campoId: 'acordao' },
+        { botaoId: 'inserirTransito', campoId: 'transitoJulgado' }
+    ];
+    
+    botoesInserir.forEach(({ botaoId, campoId }) => {
+        const botao = document.getElementById(botaoId);
+        if (botao) {
+            botao.addEventListener('click', function() {
+                // Abrir diálogo para inserir texto
+                const texto = prompt('Digite o texto para inserir:');
+                if (texto) {
+                    // Processar texto (remover quebras de linha)
+                    const textoProcessado = texto.replace(/\r?\n|\r/g, ' ');
+                    
+                    // Inserir no campo
+                    const campo = document.getElementById(campoId);
+                    if (campo) {
+                        campo.innerHTML = textoProcessado;
+                        updateCount(campo, document.getElementById(campoId + 'Count'));
+                        localStorage.setItem(campoId, textoProcessado);
+                    }
+                }
+            });
+        }
+    });
+    
     // Concatenar campos
     document.getElementById('concatenarCampos').addEventListener('click', function() {
         const fields = {
@@ -940,19 +1052,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Adicionar estilos adicionais para campos inválidos
-    const style = document.createElement('style');
-    style.textContent = `
-        .invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-        .editable-content.invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-    `;
-    document.head.appendChild(style);
+    // Configurar limpeza de campos input com botão ✕
+    document.querySelectorAll('.clear-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const inputField = this.parentElement.querySelector('input');
+            if (inputField) {
+                inputField.value = '';
+                inputField.focus();
+            }
+        });
+    });
     
     // Salvar número de inquérito no localStorage
     document.getElementById('numeroInquerito').addEventListener('input', function() {
@@ -964,8 +1073,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedInquerito) {
         document.getElementById('numeroInquerito').value = savedInquerito;
     }
+    
+    // Função temporária para processarResumo (será substituída pela implementação real)
+    window.processarResumo = function(textoResumo) {
+        // Placeholder - esta função será implementada externamente
+        alert('A função processarResumo(textoResumo) deve ser implementada no arquivo preencher_guia.js');
+        console.log('Texto do resumo para processar:', textoResumo);
+    };
 });
-
 
     </script>
     <script src="preencher_guia.js"></script>
