@@ -1058,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Processar PDF com OCR
 // Processar PDF com OCR
 async function processPDFWithOCR(language) {
+    // Criar lista de páginas para processar (excluindo as removidas)
     const pagesToProcess = Array.from(
         { length: totalPdfPages }, 
         (_, i) => i + 1
@@ -1075,34 +1076,35 @@ async function processPDFWithOCR(language) {
         const progressPercent = (i / totalPagesToProcess) * 100;
         
         // Atualizar progresso
-        progressBar.value = progressPercent;
-        progressText.textContent = `Reconhecendo texto da página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
+        $('#progressBar').value = progressPercent;
+        $('#progressText').textContent = `Reconhecendo texto da página ${pageNum} de ${totalPdfPages}`;
+        $('#processingText').textContent = `Processando página ${pageNum} (${i+1} de ${totalPagesToProcess})`;
         
         // Obter o canvas da página
         const pageCanvas = pdfPageCanvases[pageNum - 1];
         const imageData = pageCanvas.toDataURL('image/png');
         
         try {
-            // Configurações avançadas do Tesseract para português
+            // Configurações avançadas do Tesseract
             let tessOptions = {
                 logger: progress => {
                     if (progress.status === 'recognizing text') {
                         const pageProgress = progress.progress * (100 / totalPagesToProcess);
                         const totalProgress = progressPercent + pageProgress;
-                        progressBar.value = totalProgress;
+                        $('#progressBar').value = totalProgress;
                     }
                 }
             };
             
-            javascriptCopiar// Configurações específicas para português
+            // Configurações específicas para português
             if (language === 'por') {
-    tessOptions = {
-        ...tessOptions,
-        tessedit_pageseg_mode: '6', // Bloco único (ideal para documentos formatados)
-        tessedit_char_whitelist: 'A-Za-zÀ-ÖØ-öø-ÿ0-9 .,;:!?()[]{}#$%&*+-=@"\'\\/§ºª°|', // Símbolos jurídicos inclusos
-        preserve_interword_spaces: '1' // Mantém espaçamento entre palavras
-    };
-}
+                tessOptions = {
+                    ...tessOptions,
+                    tessedit_pageseg_mode: '6', // Bloco único (ideal para documentos formatados)
+                    tessedit_char_whitelist: 'A-Za-zÀ-ÖØ-öø-ÿ0-9 .,;:!?()[]{}#$%&*+-=@"\'\\/§ºª°|', // Símbolos jurídicos inclusos
+                    preserve_interword_spaces: '1' // Mantém espaçamento entre palavras
+                };
+            }
             
             // Reconhecer texto da página
             const result = await Tesseract.recognize(
@@ -1111,69 +1113,28 @@ async function processPDFWithOCR(language) {
                 tessOptions
             );
             
-            // Adicionar texto reconhecido com separador de página
-            if (result.data.text.trim()) {
-                if (allText) {
-                    allText += '\n\n';
-                }
-                allText += `----- Página ${pageNum} -----\n\n`;
-                allText += result.data.text;
+            // Aplicar limpeza ao texto reconhecido
+            let pageText = cleanOCRText(result.data.text);
+            
+            // Adicionar à saída final
+            if (pageText.trim()) {
+                if (allText) allText += '\n\n';
+                allText += `--- Página ${pageNum} ---\n\n${pageText}`;
             }
         } catch (error) {
             console.error(`Erro ao processar OCR da página ${pageNum}:`, error);
             // Continuar com próximas páginas
-            allText += `\n\n----- Página ${pageNum} (erro no processamento) -----\n\n`;
+            if (allText) allText += '\n\n';
+            allText += `--- Página ${pageNum} (erro no processamento) ---\n\n`;
         }
     }
     
-    // Limpar e formatar o texto reconhecido
-    allText = cleanOCRText(allText);
-    
-    // Marcar como concluído
-    progressBar.value = 100;
-    progressText.textContent = 'Processamento concluído!';
+    // Concluído
+    $('#progressBar').value = 100;
+    $('#progressText').textContent = 'Processamento concluído!';
     
     return allText;
 }
-
-
-// Função para formatar o texto reconhecido de forma mais limpa
-function formatRecognizedText(allText) {
-    if (!allText || allText.trim() === '') {
-        return 'Nenhum texto reconhecido.';
-    }
-
-    // Primeira limpeza geral
-    let formattedText = cleanOCRText(allText);
-
-    // Processar páginas individualmente
-    const pagePattern = /-{5} Página (\d+) -{5}/;
-    const pages = formattedText.split(pagePattern);
-    
-    if (pages[0].trim() === '') {
-        pages.shift();
-    }
-    
-    let finalText = '';
-    
-    for (let i = 0; i < pages.length; i += 2) {
-        if (i + 1 >= pages.length) break;
-        
-        const pageNum = pages[i].trim();
-        let pageContent = pages[i + 1].trim();
-        
-        // Limpeza específica por página
-        pageContent = pageContent
-            .replace(/([^.!?])\n/g, '$1 ')  // Quebras não após pontuação
-            .replace(/ +/g, ' ')            // Espaços múltiplos
-            .replace(/(\n\s*){2,}/g, '\n\n'); // Quebras múltiplas
-
-        finalText += `--- Página ${pageNum} ---\n\n${pageContent}\n\n`;
-    }
-    
-    return finalText;
-}
-
 
 // Função limpar e corrigir texto OCR
 function cleanOCRText(text) {
@@ -1333,39 +1294,66 @@ async function startOCR() {
     
     try {
         isProcessing = true;
+        
+        // Mostrar progresso
         removeClass('#progressContainer', 'hidden');
         $('#progressBar').value = 0;
         $('#progressText').textContent = 'Iniciando reconhecimento...';
         
+        // Esconder editor
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        
+        // Mostrar overlay
+        $('#processingOverlay').style.display = 'flex';
+        $('#processingText').textContent = 'Preparando OCR...';
+        
+        // Contar páginas a processar
+        const pagesToProcess = Array.from(
+            { length: totalPdfPages }, 
+            (_, i) => i + 1
+        ).filter(pageNum => !excludedPages.has(pageNum));
+        
+        $('#processingText').textContent = `Preparando OCR para ${pagesToProcess.length} páginas...`;
+        console.log(`Iniciando OCR para ${pagesToProcess.length} páginas`);
+        
         const language = $('#languageSelect').value;
         let allRecognizedText = '';
         
-        // Determinar tipo de arquivo
+        // Verificar tipo
         const isPDF = currentFile.type === 'application/pdf' || 
                      currentFile.name.toLowerCase().endsWith('.pdf') || 
                      (await readFileHeader(currentFile)).includes('%PDF');
         
         if (isPDF && pdfPageCanvases.length > 0) {
+            // Processar PDF
             allRecognizedText = await processPDFWithOCR(language);
         } else {
+            // Processar imagem
             const imageSource = $('#previewImage').src;
-            const result = await Tesseract.recognize(imageSource, language);
-            allRecognizedText = cleanOCRText(result.data.text);
+            allRecognizedText = await processImageWithOCR(imageSource, language);
         }
         
-        // Formatação final do texto
-        const finalText = formatRecognizedText(allRecognizedText);
+        // Formatar o texto para exibição mais limpa
+        const formattedText = formatRecognizedText(allRecognizedText);
         
-        // Exibir resultado
-        $('#editorContent').textContent = finalText;
+        // Exibir resultado diretamente no editor
+        $('#editorContent').textContent = formattedText;
+        
+        // Mostrar botões
         removeClass('#textActions', 'hidden');
+        
+        // Mostrar editor
         removeClass('#editorContainer', 'hidden');
+        
+        // Concluído
         ocrCompleted = true;
         
     } catch (error) {
         console.error('Erro no reconhecimento de texto:', error);
         showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
     } finally {
+        // Esconder elementos de progresso
         addClass('#progressContainer', 'hidden');
         $('#processingOverlay').style.display = 'none';
         isProcessing = false;
