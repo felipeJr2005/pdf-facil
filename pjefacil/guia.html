@@ -1,10 +1,215 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulário Carta Guia</title>
-    <link rel="stylesheet" href="estilo.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 300px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-check {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .form-check-input {
+            margin-top: 3px;
+            margin-right: 8px;
+        }
+        .form-check-label {
+            font-size: 14px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+        .radio-option input {
+            margin-right: 5px;
+        }
+        .clear-button {
+            border: none;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .input-with-clear {
+            position: relative;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #6200ee;
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #5000c9;
+        }
+        .text-right {
+            text-align: right;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #333;
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .actions-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+        .editable-section {
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .editable-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+        .editable-content {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 80px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .editable-content:focus {
+            outline: none;
+            border-color: #6200ee;
+            box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
+            background-color: #fff;
+        }
+        .editable-content:empty:before {
+            content: "Clique para adicionar texto...";
+            color: #999;
+            font-style: italic;
+        }
+        .editable-content[data-placeholder]:empty:before {
+            content: attr(data-placeholder);
+            color: #999;
+            font-style: italic;
+        }
+        .form-actions {
+            text-align: right;
+            margin-top: 10px;
+        }
+        .form-actions button {
+            margin-left: 10px;
+        }
+        .character-count {
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .character-count.limit-exceeded {
+            color: #e53935;
+            font-weight: bold;
+        }
+        .invalid {
+            border-color: #e53935 !important;
+            background-color: #ffebee !important;
+        }
+        .editable-content.invalid {
+            border-color: #e53935 !important;
+            background-color: #ffebee !important;
+        }
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .field-title {
+            font-weight: bold;
+        }
+        .campo-preenchido-auto {
+            background-color: #e8f5e9 !important;
+            border-color: #4CAF50 !important;
+            transition: background-color 0.3s ease;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -26,6 +231,7 @@
                 <button type="button" class="btn btn-secondary" id="resumirSentenca">Resumir</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="inserirSentenca">Inserir</button>
             </div>
+            
             <div id="sentenca" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
             <div class="character-count" id="sentencaCount">0 caracteres</div>
             
@@ -47,18 +253,15 @@
                 <button type="button" class="btn btn-primary" id="concatenarCampos">Concatenar Campos</button>
             </div>
             
-            <div class="form-group">
-                <label class="editable-label" for="resumo">Resumo</label>
-                <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
-                <div class="character-count" id="resumoCount">0 caracteres</div>
-            </div>
+            <label class="editable-label" for="resumo">Resumo</label>
+            <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
+            <div class="character-count" id="resumoCount">0 caracteres</div>
             
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="limparCampos">Limpar Campos</button>
                 <button type="button" class="btn btn-primary" id="salvarResumo">Salvar Resumo</button>
             </div>
         </div>
-        
         <div class="form-actions" style="margin-top: 20px; text-align: center;">
             <button type="button" id="preencherAutomatico" class="btn btn-primary" style="background-color: #4CAF50;">
                 Preencher Formulário a partir do Resumo
@@ -466,286 +669,1330 @@
         </form>
     </div>
 
-       <!-- Scripts -->
-    <script src="resumir_sentenca.js"></script>
-    <script src="preencher_guia.js"></script>
+    <!-- Scripts -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            /**
-             * Função para contar caracteres brutos sem qualquer processamento
-             * 
-             * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
-             * @param {string} contadorId - ID do elemento que exibirá a contagem
-             * @param {number} limiteAviso - Limite para exibir aviso de excesso de caracteres
-             * @returns {number} - Número de caracteres
-             */
-            function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
-                // Obter texto bruto sem processamento adicional
-                let texto;
-                
-                if (typeof elemento === 'string') {
-                    texto = elemento;
-                } else {
-                    // Para elementos HTML, capturar o HTML interno completo
-                    const htmlCompleto = elemento.innerHTML;
-                    
-                    // Processar o HTML para obter texto puro preservando quebras de linha
-                    const temp = document.createElement('div');
-                    temp.innerHTML = htmlCompleto;
-                    
-                    // Usar textContent que preserva espaços em branco e quebras
-                    texto = temp.textContent || "";
-                    
-                    // Verificação de backup se textContent estiver vazio
-                    if (!texto.trim() && elemento.innerText) {
-                        texto = elemento.innerText;
-                    }
-                }
-                
-                // Contar caracteres brutos sem qualquer processamento
-                const numCaracteres = texto.length;
-                
-                // Atualizar o contador
-                const contador = document.getElementById(contadorId);
-                if (contador) {
-                    contador.textContent = numCaracteres + ' caracteres (brutos)';
-                    
-                    if (numCaracteres > limiteAviso) {
-                        contador.classList.add('limit-exceeded');
-                    } else {
-                        contador.classList.remove('limit-exceeded');
-                    }
-                    
-                    contador.title = `Contagem total: ${numCaracteres} caracteres`;
-                }
-                
-                return numCaracteres;
+document.addEventListener('DOMContentLoaded', function() {
+    /**
+     * Função para contar caracteres brutos sem qualquer processamento
+     * Para garantir a contagem mais alta e precisa possível
+     * 
+     * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
+     * @param {string} contadorId - ID do elemento que exibirá a contagem
+     * @param {number} limiteAviso - Limite para exibir aviso de excesso de caracteres
+     * @returns {number} - Número de caracteres
+     */
+    function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
+        // Obter texto bruto sem processamento adicional
+        let texto;
+        
+        if (typeof elemento === 'string') {
+            texto = elemento;
+        } else {
+            // Para elementos HTML, capturar o HTML interno completo
+            const htmlCompleto = elemento.innerHTML;
+            
+            // Processar o HTML para obter texto puro preservando quebras de linha
+            const temp = document.createElement('div');
+            temp.innerHTML = htmlCompleto;
+            
+            // Usar textContent que preserva espaços em branco e quebras
+            texto = temp.textContent || "";
+            
+            // Verificação de backup se textContent estiver vazio
+            if (!texto.trim() && elemento.innerText) {
+                texto = elemento.innerText;
             }
-
-            // Função auxiliar para inicializar a contagem em múltiplos campos
-            function inicializarContagemCaracteres() {
-                const camposEditaveis = [
-                    { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
-                    { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
-                    { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
-                    { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
-                    { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
-                ];
-                
-                camposEditaveis.forEach(({ campo, contador, limite }) => {
-                    const elemento = document.getElementById(campo);
-                    if (elemento) {
-                        const atualizarContador = () => contarCaracteres(elemento, contador, limite);
-                        
-                        // Contar caracteres iniciais
-                        atualizarContador();
-                        
-                        // Atualizar contador ao digitar
-                        elemento.addEventListener('input', atualizarContador);
-                        
-                        // Atualizar contador após colar (com pequeno atraso)
-                        elemento.addEventListener('paste', () => setTimeout(atualizarContador, 10));
-                        
-                        // Atualizar após corte de texto
-                        elemento.addEventListener('cut', () => setTimeout(atualizarContador, 10));
-                        
-                        // Monitorar mudanças via script
-                        const observer = new MutationObserver(atualizarContador);
-                        observer.observe(elemento, { 
-                            childList: true, 
-                            characterData: true, 
-                            subtree: true 
-                        });
-                    }
-                });
-
-                return camposEditaveis;
-            }
-
-            // Define camposEditaveis no escopo principal e inicializa contagem
-            const camposEditaveis = inicializarContagemCaracteres();
-
-            // Função para concatenar campos
-            document.getElementById('concatenarCampos').addEventListener('click', () => {
-                const denuncia = document.getElementById('denuncia').innerText;
-                const sentenca = document.getElementById('sentenca').innerText;
-                const acordao = document.getElementById('acordao').innerText;
-                const transitoJulgado = document.getElementById('transitoJulgado').innerText;
-                
-                let resumoConcatenado = '';
-                
-                if (denuncia.trim()) {
-                    resumoConcatenado += `Denúncia: ${denuncia.trim()}\n\n`;
-                }
-                
-                if (sentenca.trim()) {
-                    resumoConcatenado += `Sentença: ${sentenca.trim()}\n\n`;
-                }
-                
-                if (acordao.trim()) {
-                    resumoConcatenado += `Acórdão: ${acordao.trim()}\n\n`;
-                }
-                
-                if (transitoJulgado.trim()) {
-                    resumoConcatenado += `Trânsito em Julgado: ${transitoJulgado.trim()}\n\n`;
-                }
-                
-                const resumoElement = document.getElementById('resumo');
-                resumoElement.innerText = resumoConcatenado.trim();
-                
-                // Atualizar contagem de caracteres
-                contarCaracteres(resumoElement, 'resumoCount');
-            });
+        }
+        
+        // Contar caracteres brutos sem qualquer processamento
+        const numCaracteres = texto.length;
+        
+        // Atualizar o contador
+        const contador = document.getElementById(contadorId);
+        if (contador) {
+            contador.textContent = numCaracteres + ' caracteres (brutos)';
             
-            // Botão para limpar campos
-            document.getElementById('limparCampos').addEventListener('click', () => {
-                const confirmacao = confirm('Tem certeza que deseja limpar todos os campos?');
-                if (confirmacao) {
-                    camposEditaveis.forEach(({ campo }) => {
-                        document.getElementById(campo).innerText = '';
-                        contarCaracteres(document.getElementById(campo), campo + 'Count');
-                    });
-                }
-            });
-            
-            // Botão para salvar resumo
-            document.getElementById('salvarResumo').addEventListener('click', () => {
-                const resumo = document.getElementById('resumo').innerText;
-                if (!resumo.trim()) {
-                    alert('O resumo está vazio. Não há nada para salvar.');
-                    return;
-                }
-                
-                // Salvar em localStorage
-                localStorage.setItem('resumoSalvo', resumo);
-                alert('Resumo salvo com sucesso!');
-            });
-
-            // Botão Resumir Sentença
-            document.getElementById('resumirSentenca').addEventListener('click', () => {
-                const sentencaField = document.getElementById('sentenca');
-                const textoOriginal = sentencaField.innerText;
-                
-                if (!textoOriginal.trim()) {
-                    alert('O campo de sentença está vazio. Não há nada para resumir.');
-                    return;
-                }
-                
-                // Verificar se a classe ResumoSentenca está disponível
-                if (typeof ResumoSentenca === 'undefined') {
-                    alert('Erro: Módulo de resumo não encontrado. Verifique se o arquivo resumir_sentenca.js foi carregado corretamente.');
-                    return;
-                }
-                
-                // Resumir sentença
-                const resumidor = new ResumoSentenca();
-                const resumo = resumidor.resumir(textoOriginal);
-                
-                // Atualizar campo de resumo
-                const resumoField = document.getElementById('resumo');
-                resumoField.innerText = resumo;
-                
-                // Atualizar contagem de caracteres
-                contarCaracteres(resumoField, 'resumoCount');
-            });
-
-            // Botões de inserção de exemplos (para testes)
-            const insercoes = {
-                'inserirDenuncia': 'Réu: João da Silva\nData da infração: 15/01/2025\nArtigo 157 do Código Penal\nDescrição: Acusado de roubo qualificado com uso de arma de fogo.',
-                'inserirSentenca': 'Processo nº 0001234-56.2025.8.17.0001\nTribunal de Justiça de Pernambuco\nData da publicação da sentença: 20/02/2025\nDispositivo: Condenação por roubo qualificado\nPena: 8 anos e 6 meses de reclusão em regime fechado.',
-                'inserirAcordao': 'Apelação Criminal nº 2025.123456-7\nÓrgão Julgador: 1ª Câmara Criminal\nData de publicação do acórdão: 10/03/2025\nDecisão: Negado provimento ao recurso, mantida a condenação.',
-                'inserirTransito': 'Data do trânsito em julgado para defesa: 25/03/2025\nData do trânsito em julgado para acusação: 20/03/2025\nData do trânsito em julgado do réu: 25/03/2025'
-            };
-            
-            Object.entries(insercoes).forEach(([botaoId, texto]) => {
-                const botao = document.getElementById(botaoId);
-                if (botao) {
-                    botao.addEventListener('click', () => {
-                        const alvo = botaoId.replace('inserir', '').toLowerCase();
-                        const elemento = document.getElementById(alvo);
-                        if (elemento) {
-                            elemento.innerText = texto;
-                            contarCaracteres(elemento, alvo + 'Count');
-                        }
-                    });
-                }
-            });
-            
-            // Funcionalidade para os botões de limpar campos
-            document.querySelectorAll('.clear-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const input = e.target.closest('.input-with-clear').querySelector('input');
-                    if (input) {
-                        input.value = '';
-                        input.focus();
-                    }
-                });
-            });
-            
-            // Botão adicionar parágrafo
-            document.getElementById('adicionarParagrafo').addEventListener('click', () => {
-                alert('Funcionalidade para adicionar novo parágrafo de tipificação a ser implementada.');
-                // Aqui você pode implementar a lógica para adicionar um novo parágrafo de tipificação
-            });
-            
-            // Eventos para botões de formulário
-            document.getElementById('cancelarForm').addEventListener('click', () => {
-                if (confirm('Tem certeza que deseja cancelar? Todas as alterações serão perdidas.')) {
-                    window.location.reload();
-                }
-            });
-            
-            document.getElementById('salvarRascunho').addEventListener('click', () => {
-                alert('Rascunho salvo com sucesso!');
-                // Aqui poderia implementar o salvamento real
-            });
-            
-            document.getElementById('guiaRecolhimentoForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                // Validar campos obrigatórios
-                const camposObrigatorios = document.querySelectorAll('[required]');
-                let todosValidos = true;
-                
-                camposObrigatorios.forEach(campo => {
-                    if (!campo.value.trim()) {
-                        campo.classList.add('invalid');
-                        todosValidos = false;
-                    } else {
-                        campo.classList.remove('invalid');
-                    }
-                });
-                
-                if (!todosValidos) {
-                    alert('Por favor, preencha todos os campos obrigatórios.');
-                    return;
-                }
-                
-                alert('Formulário enviado com sucesso!');
-                // Aqui poderia implementar o envio real do formulário
-            });
-            
-            // Verificar se os módulos foram carregados corretamente
-            if (typeof ResumoSentenca === 'undefined') {
-                console.warn('Módulo de resumo não encontrado!');
+            if (numCaracteres > limiteAviso) {
+                contador.classList.add('limit-exceeded');
+            } else {
+                contador.classList.remove('limit-exceeded');
             }
             
-            if (typeof PreencherGuiaAtualizada === 'undefined' && typeof PreencherGuia === 'undefined') {
-                console.warn('Módulo de preenchimento não encontrado!');
+            contador.title = `Contagem total: ${numCaracteres} caracteres`;
+        }
+        
+        return numCaracteres;
+    }
+
+    // Função auxiliar para inicializar a contagem em múltiplos campos
+    function inicializarContagemCaracteres() {
+        const camposEditaveis = [
+            { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
+            { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
+            { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
+            { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
+            { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
+        ];
+        
+        camposEditaveis.forEach(({ campo, contador, limite }) => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                const atualizarContador = () => contarCaracteres(elemento, contador, limite);
                 
-                // Adicionar aviso visual
-                const aviso = document.createElement('div');
-                aviso.style.backgroundColor = '#f8d7da';
-                aviso.style.color = '#721c24';
-                aviso.style.padding = '10px';
-                aviso.style.marginBottom = '15px';
-                aviso.style.borderRadius = '4px';
-                aviso.innerText = 'Atenção: Módulos de processamento não carregados corretamente. Algumas funcionalidades podem não estar disponíveis.';
+                // Contar caracteres iniciais
+                atualizarContador();
                 
-                const container = document.querySelector('.container');
-                container.insertBefore(aviso, container.firstChild);
+                // Atualizar contador ao digitar
+                elemento.addEventListener('input', atualizarContador);
+                
+                // Atualizar contador após colar (com pequeno atraso)
+                elemento.addEventListener('paste', () => setTimeout(atualizarContador, 10));
+                
+                // Atualizar após corte de texto
+                elemento.addEventListener('cut', () => setTimeout(atualizarContador, 10));
+                
+                // Monitorar mudanças via script
+                const observer = new MutationObserver(atualizarContador);
+                observer.observe(elemento, { 
+                    childList: true, 
+                    characterData: true, 
+                    subtree: true 
+                });
             }
         });
-    </script>
+
+        return camposEditaveis;
+    }
+
+    // Define camposEditaveis no escopo principal e inicializa contagem
+    const camposEditaveis = inicializarContagemCaracteres();
+    
+    // Teste para verificar a diferença de contagem em sistemas diferentes
+    function testarContagem() {
+        const textoTeste = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Praesent vel rhoncus nisl. Nunc vel magna nec ex lobortis laoreet.
+        Aenean posuere dui eget purus malesuada, non tempus tellus interdum.
+        Duis varius mauris in lectus scelerisque, ut pharetra lectus venenatis.`;
+        
+        console.log('Teste de contagem:', {
+            length: textoTeste.length,
+            bytes: new Blob([textoTeste]).size,
+            lengthSemEspacos: textoTeste.replace(/\s/g, '').length,
+            linhas: (textoTeste.match(/\n/g) || []).length + 1
+        });
+        
+        // Exibir no console como diferentes sistemas poderiam contar
+        return {
+            "Contagem bruta (todos os caracteres)": textoTeste.length,
+            "Contagem sem espaços e quebras": textoTeste.replace(/\s/g, '').length,
+            "Contagem só sem quebras": textoTeste.replace(/[\r\n]/g, '').length,
+            "Bytes UTF-8": new Blob([textoTeste]).size
+        };
+    }
+    
+    // Executar teste de contagem para comparação
+    console.log('Comparação de métodos de contagem:', testarContagem());
+            
+    // Classe ResumoSentenca para resumir sentenças
+    class ResumoSentenca {
+        constructor() {
+            // Padrões de regex para identificar seções importantes
+            this.padroesImportantes = {
+                processo: [
+                    /Processo\s*n[º°]?\s*([\d./\-]+)/i,
+                    /Autos\s*n[º°]?\s*([\d./\-]+)/i,
+                    /Número\s*dos\s*Autos:\s*([\d./\-]+)/i
+                ],
+                inquerito: [
+                    /Inquérito(?:\s*Policial)?(?:\s*n[º°]?\s*|\s*:)?\s*([\d\/]+)/i,
+                    /Inquérito:\s*([\d\/]+)/i,
+                    /IPL\s*(?:n[º°]?)?\s*([\d\/]+)/i
+                ],
+                orgaoJudiciario: [
+                    /Órgão\s*Judiciário:\s*([^\n]+)/i,
+                    /Vara(?:\s*Criminal)?[:\s]*([^\n]+)/i,
+                    /Comarca\s*de\s*([A-Za-zÀ-ÿ\s-]+)/i
+                ],
+                cabeçalho: [
+                    /Tribunal\s*de\s*Justiça/i,
+                    /Comarca\s*de\s*[A-Za-zÀ-ÿ\s]+/i
+                ],
+                reu: [
+                    /Réu:\s*([^\n]+)/i,
+                    /Nome:\s*([^\n]+)/i,
+                    /Denunciado[:\s]*([^\n]+)/i,
+                    /Acusado[:\s]*([^\n]+)/i,
+                    /SENTENCIADO[:\s]*([^\n]+)/i,
+                    /AUTOR\s*DO\s*FATO[:\s]*([^\n]+)/i
+                ],
+                dispositivo: [
+                    /Dispositivo[:]*\s*(.+?)(?=Pena:|$)/is,
+                    /Decisão[:]*\s*(.+?)(?=Pena:|$)/is,
+                    /JULGO\s+(PROCEDENTE|PARCIALMENTE PROCEDENTE|IMPROCEDENTE)\s+/i,
+                    /Sentença:\s*([^\n]+)/i
+                ],
+                pena: [
+                    /Pena:\s*(.+?)(?=Regime|$)/is,
+                    /Condenado\s*a\s*(.+?)(?=Regime|$)/is,
+                    /(\d+)\s+(ano|anos|mês|meses|dia|dias)\s+(?:e\s+(\d+)\s+(mês|meses|dia|dias))?/i
+                ],
+                artigo: [
+                    /Art(?:igo)?\.?\s*(\d+[^\n,]+)/i,
+                    /Lei\s*n[º°]?\s*(\d+[^\n,]+)/i,
+                    /CP,\s*art(?:igo)?\.?\s*(\d+[^\n,]+)/i,
+                    /Infração\s*Imputada:\s*([^\n]+)/i
+                ],
+                regime: [
+                    /Regime:\s*([A-Za-zÀ-ÿ\s-]+)/i,
+                    /regime\s*(fechado|semi[\s-]?aberto|aberto)/i
+                ],
+                dataPrisao: [
+                    /Data\s*da\s*Prisão:\s*([\d\/]+)/i,
+                    /Foi\s*preso\s*em\s*([\d\/]+)/i
+                ],
+                dataSoltura: [
+                    /Data\s*da\s*Soltura:\s*([\d\/]+)/i,
+                    /Foi\s*solto\s*em\s*([\d\/]+)/i
+                ],
+                datas: [
+                    /Data\s*d[aeo]\s*([^:]+):\s*([\d\/]+)/gi,
+                    /Data\s*([^:]+):\s*([\d\/]+)/gi
+                ]
+            };
+        }
+
+        // Método para extrair seções específicas
+        extrairSecao(texto, secao) {
+            const padroes = this.padroesImportantes[secao];
+            
+            for (const padrao of padroes) {
+                const match = texto.match(padrao);
+                if (match) {
+                    // Retorna o primeiro grupo de captura ou toda a correspondência
+                    return match[1] || match[0];
+                }
+            }
+            
+            return null;
+        }
+
+        // Método principal para resumir sentença
+        resumir(texto) {
+            if (!texto || texto.trim() === '') {
+                return '';
+            }
+            
+            let resumo = '';
+            
+            // Extrair processo
+            const processo = this.extrairSecao(texto, 'processo');
+            if (processo) resumo += `Processo: ${processo}\n\n`;
+            
+            // Extrair cabeçalho
+            const cabeçalho = this.extrairSecao(texto, 'cabeçalho');
+            if (cabeçalho) resumo += `${cabeçalho}\n\n`;
+            
+            // Extrair réu
+            const reu = this.extrairSecao(texto, 'reu');
+            if (reu) resumo += `Réu: ${reu}\n\n`;
+            
+            // Extrair artigos
+            const artigos = this.extrairSecao(texto, 'artigo');
+            if (artigos) resumo += `Artigos: ${artigos}\n\n`;
+            
+            // Extrair dispositivo
+            const dispositivo = this.extrairSecao(texto, 'dispositivo');
+            if (dispositivo) resumo += `Dispositivo: ${dispositivo}\n\n`;
+            
+            // Extrair pena
+            const pena = this.extrairSecao(texto, 'pena');
+            if (pena) resumo += `Pena: ${pena}\n\n`;
+            
+            // Extrair datas importantes
+            const datasMatch = [...texto.matchAll(this.padroesImportantes.datas)];
+            if (datasMatch && datasMatch.length > 0) {
+                for (const match of datasMatch) {
+                    if (match[1] && match[2]) {
+                        resumo += `Data ${match[1].trim()}: ${match[2].trim()}\n`;
+                    }
+                }
+            }
+            
+            return resumo.trim();
+        }
+
+        // Método para validar se o resumo é válido
+        validarResumo(resumo) {
+            if (!resumo || resumo.trim() === '') {
+                return false;
+            }
+            
+            // Critérios mínimos para um resumo válido
+            const criterios = [
+                resumo.includes('Processo'),
+                resumo.includes('Réu'),
+                resumo.includes('Artigos'),
+                resumo.includes('Dispositivo'),
+                resumo.includes('Pena'),
+                resumo.includes('Data')
+            ];
+            
+            return criterios.filter(Boolean).length >= 3;
+        }
+    }
+
+    // Classe PreencherGuia atualizada para preencher o formulário automaticamente
+    class PreencherGuiaAtualizada {
+        constructor() {
+            // Mapeamento de campos do resumo para IDs do formulário
+            this.camposMapeados = {
+                'Órgão Judiciário': 'orgaoJudiciario',
+                'Número dos Autos': 'numeroProcesso',
+                'Inquérito': 'numeroInquerito',
+                'Data da Infração': 'dataInfracao',
+                'Data da Denúncia': null, // Campo não existe diretamente no formulário
+                'Data do Recebimento da Denúncia': 'dataRecebimentoDenuncia',
+                'Data da Sentença': 'dataPublicacaoSentenca',
+                'Data do Transito MP': 'dataTransitoAcusacao',
+                'Data do Transito Defesa': 'dataTransitoDefesa',
+                'Data do Transito Réu': 'dataTransitoReu',
+                'Data da Trânsito em Julgado do Processo': 'dataTransitoRecurso', // Temporário
+                'Data da Decisão do Recurso': 'dataDecisaoRecurso',
+                'Câmara Julgadora do Recurso': 'camaraJulgadora',
+                'Data do Transito do Recurso': 'dataTransitoRecurso',
+                'Tipo de Processo Criminal': 'tipoProcessoCriminal'
+            };
+
+            // Mapeamento para campos de data
+            this.camposData = {
+                'dataInfracao': [
+                    /Data\s*da\s*Infração:\s*([\d\/]+)/i,
+                    /Data\s*do\s*Crime:\s*([\d\/]+)/i,
+                    /Data\s*do\s*Delito:\s*([\d\/]+)/i
+                ],
+                'dataRecebimentoDenuncia': [
+                    /Data\s*do\s*Recebimento\s*da\s*Denúncia:\s*([\d\/]+)/i,
+                    /Recebimento\s*da\s*Denúncia:\s*([\d\/]+)/i
+                ],
+                'dataPublicacaoSentenca': [
+                    /Data\s*da\s*Sentença:\s*([\d\/]+)/i,
+                    /Data\s*de\s*Publicação\s*da\s*Sentença:\s*([\d\/]+)/i
+                ],
+                'dataPublicacaoAcordao': [
+                    /Data\s*de\s*Publicação\s*do\s*Acórdão:\s*([\d\/]+)/i,
+                    /Data\s*do\s*Acórdão:\s*([\d\/]+)/i
+                ],
+                'dataTransitoDefesa': [
+                    /Data\s*do\s*Trânsito\s*em\s*Julgado\s*para\s*Defesa:\s*([\d\/]+)/i,
+                    /Trânsito\s*Defesa:\s*([\d\/]+)/i
+                ],
+                'dataTransitoAcusacao': [
+                    /Data\s*do\s*Trânsito\s*MP:\s*([\d\/]+)/i,
+                    /Data\s*do\s*Trânsito\s*em\s*Julgado\s*da\s*Acusação:\s*([\d\/]+)/i,
+                    /Trânsito\s*MP:\s*([\d\/]+)/i
+                ],
+                'dataTransitoReu': [
+                    /Data\s*do\s*Trânsito\s*Réu:\s*([\d\/]+)/i,
+                    /Data\s*do\s*Trânsito\s*em\s*Julgado\s*do\s*réu:\s*([\d\/]+)/i,
+                    /Trânsito\s*Réu:\s*([\d\/]+)/i
+                ],
+                'dataDecisaoRecurso': [
+                    /Data\s*da\s*Decisão\s*do\s*Recurso:\s*([\d\/]+)/i
+                ],
+                'dataTransitoRecurso': [
+                    /Data\s*do\s*Trânsito\s*do\s*Recurso:\s*([\d\/]+)/i,
+                    /Data\s*da\s*Trânsito\s*em\s*Julgado\s*do\s*Processo:\s*([\d\/]+)/i,
+                    /Trânsito\s*Final:\s*([\d\/]+)/i
+                ],
+                'dataDelito': [
+                    /Data\s*do\s*Delito:\s*([\d\/]+)/i,
+                    /Data\s*da\s*Infração:\s*([\d\/]+)/i
+                ]
+            };
+
+            // Mapeamento de regime prisional
+            this.regimesPrisionais = {
+                'fechado': [/regime\s*fechado/i, /Fechado/i],
+                'semiaberto': [/regime\s*semi[\s-]?aberto/i, /Semi[\s-]?Aberto/i, /semiaberto/i],
+                'aberto': [/regime\s*aberto/i, /Aberto/i]
+            };
+
+            // Mapeamento de tipo de processo criminal
+            this.tiposProcesso = {
+                '283': [/Procedimento\s*Ordinário/i, /Ordinário/i],
+                '284': [/Procedimento\s*Sumário/i, /Sumário/i],
+                '285': [/Procedimento\s*Especial/i, /Especial/i]
+            };
+
+            // Mapeamento de leis penais
+            this.leisPenais = {
+                '2848': [/Código\s*Penal/i, /CP/i],
+                '11343': [/Lei\s*de\s*Drogas/i, /Lei\s*11343/i, /Lei\s*11\.343/i, /Tráfico/i],
+                '8069': [/Estatuto\s*da\s*Criança/i, /ECA/i, /Lei\s*8069/i],
+                '10826': [/Estatuto\s*do\s*Desarmamento/i, /Lei\s*10826/i, /Arma/i],
+                '9605': [/Crimes\s*Ambientais/i, /Lei\s*9605/i]
+            };
+
+            // Padrões para checkboxes
+            this.checkboxPatterns = {
+                'crimeTentado': [/Crime\s*Tentado/i, /Tentado/i, /tentativa/i],
+                'violenciaDomestica': [/Violência\s*Doméstica/i, /Maria\s*da\s*Penha/i],
+                'resultadoMorte': [/Resultado\s*Morte/i, /Seguido\s*de\s*Morte/i],
+                'violenciaGraveAmeaca': [/Violência\s*ou\s*Grave\s*Ameaça/i, /Grave\s*Ameaça/i],
+                'reincidenteComum': [/Reincidente\s*Comum/i, /Reincidência/i],
+                'reincidenteEspecifico': [/Reincidente\s*Específico/i, /Reincidência\s*Específica/i],
+                'comandoOrganizacao': [/Comando\s*Organização\s*Criminosa/i, /Organização\s*Criminosa/i, /Facção/i]
+            };
+            
+            // Padrões para frações de progressão
+            this.fracoesProgressao = {
+                '1/6': [/progressão\s*(?:de)?\s*1\/6/i],
+                '2/5': [/progressão\s*(?:de)?\s*2\/5/i],
+                '3/5': [/progressão\s*(?:de)?\s*3\/5/i],
+                '1/2': [/progressão\s*(?:de)?\s*1\/2/i, /progressão\s*(?:de)?\s*metade/i],
+                '1/3': [/progressão\s*(?:de)?\s*1\/3/i, /progressão\s*(?:de)?\s*um\s*terço/i]
+            };
+            
+            // Padrões para frações de livramento
+            this.fracoesLivramento = {
+                '1/3': [/livramento\s*(?:de)?\s*1\/3/i, /livramento\s*(?:de)?\s*um\s*terço/i],
+                '1/2': [/livramento\s*(?:de)?\s*1\/2/i, /livramento\s*(?:de)?\s*metade/i],
+                '2/3': [/livramento\s*(?:de)?\s*2\/3/i, /livramento\s*(?:de)?\s*dois\s*terços/i],
+                '3/4': [/livramento\s*(?:de)?\s*3\/4/i, /livramento\s*(?:de)?\s*três\s*quartos/i]
+            };
+            
+            // Padrões para tipo de guia
+            this.tiposGuia = {
+                'provisoria': [/Guia\s*de\s*Recolhimento\s*Provisória/i, /Guia\s*Provisória/i],
+                'definitiva': [/Guia\s*de\s*Recolhimento\s*Definitiva/i, /Guia\s*Definitiva/i, /Guia\s*de\s*Execução/i]
+            };
+        }
+
+        // Método principal para processar o resumo e preencher o formulário
+        processarResumo(textoResumo) {
+            if (!textoResumo || textoResumo.trim() === '') {
+                alert('O texto do resumo está vazio.');
+                return;
+            }
+            
+            // Verificar e limpar acentuações e caracteres especiais que possam afetar RegExp
+            const textoNormalizado = textoResumo.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            // Campos a serem preenchidos
+            const camposPreenchidos = [];
+            
+            // 1. Preencher campos mapeados diretamente
+            this.preencherCamposMapeados(textoResumo, camposPreenchidos);
+            
+            // 2. Preencher datas específicas
+            this.preencherDatas(textoResumo, camposPreenchidos);
+            
+            // 3. Processar informações de tipificação penal (lei, artigo)
+            this.processarTipificacao(textoResumo, camposPreenchidos);
+            
+            // 4. Preencher tempo de pena (anos, meses, dias)
+            this.processarPena(textoResumo, camposPreenchidos);
+            
+            // 5. Preencher regime prisional
+            this.preencherRegime(textoResumo, camposPreenchidos);
+            
+            // 6. Preencher checkboxes
+            this.preencherCheckboxes(textoResumo, camposPreenchidos);
+            
+            // 7. Preencher frações de progressão e livramento
+            this.preencherFracoes(textoResumo, camposPreenchidos);
+            
+            // 8. Preencher tipo de processo criminal
+            this.preencherTipoProcesso(textoResumo, camposPreenchidos);
+            
+            // 9. Preencher tipo de guia
+            this.preencherTipoGuia(textoResumo, camposPreenchidos);
+            
+            // Destacar campos preenchidos
+            this.destacarCamposPreenchidos(camposPreenchidos);
+            
+            // Notificação de preenchimento
+            this.notificarPreenchimento(camposPreenchidos.length);
+        }
+
+        // Método para preencher campos mapeados diretamente
+        preencherCamposMapeados(textoResumo, camposPreenchidos) {
+            Object.entries(this.camposMapeados).forEach(([chaveMapeada, idCampo]) => {
+                if (!idCampo) return; // Pular se não tiver ID mapeado
+                
+                const campo = document.getElementById(idCampo);
+                if (!campo) return; // Pular se o campo não existir
+                
+                // Regex para encontrar o valor após o prefixo
+                const regex = new RegExp(`${chaveMapeada}:\\s*([^\\n]+)`, 'i');
+                const match = textoResumo.match(regex);
+                
+                if (match && match[1]) {
+                    let valor = match[1].trim();
+                    
+                    // Verificar se é um campo de data e formatar
+                    if (idCampo.toLowerCase().includes('data') && valor) {
+                        // Verificar se a data está no formato dd/mm/aaaa
+                        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(valor)) {
+                            campo.value = valor;
+                            camposPreenchidos.push(campo);
+                        }
+                    } else {
+                        campo.value = valor;
+                        camposPreenchidos.push(campo);
+                    }
+                }
+            });
+        }
+
+        // Método para preencher datas específicas
+        preencherDatas(textoResumo, camposPreenchidos) {
+            Object.entries(this.camposData).forEach(([campoId, padroes]) => {
+                const campo = document.getElementById(campoId);
+                if (!campo) return;
+                
+                // Verificar cada padrão de data para este campo
+                for (const padrao of padroes) {
+                    const match = textoResumo.match(padrao);
+                    if (match && match[1]) {
+                        campo.value = match[1].trim();
+                        camposPreenchidos.push(campo);
+                        break; // Interromper após encontrar a primeira ocorrência
+                    }
+                }
+            });
+            
+            // Procurar também por datas no formato geral "Data XXX: dd/mm/aaaa"
+            const datasMatch = [...textoResumo.matchAll(/Data\s*(?:d[aeo])?\s*([^:]+):\s*([\d\/]+)/gi)];
+            if (datasMatch && datasMatch.length > 0) {
+                for (const match of datasMatch) {
+                    if (match[1] && match[2]) {
+                        const tipoData = match[1].trim().toLowerCase();
+                        let campoId = null;
+                        
+                        // Mapear tipo de data para ID do campo
+                        if (tipoData.includes('infração') || tipoData.includes('delito')) {
+                            campoId = 'dataInfracao';
+                        } else if (tipoData.includes('denúncia') || tipoData.includes('denuncia')) {
+                            campoId = 'dataRecebimentoDenuncia';
+                        } else if (tipoData.includes('sentença') || tipoData.includes('sentenca')) {
+                            campoId = 'dataPublicacaoSentenca';
+                        } else if (tipoData.includes('acórdão') || tipoData.includes('acordao')) {
+                            campoId = 'dataPublicacaoAcordao';
+                        } else if (tipoData.includes('trânsito') && tipoData.includes('defesa')) {
+                            campoId = 'dataTransitoDefesa';
+                        } else if (tipoData.includes('trânsito') && tipoData.includes('mp')) {
+                            campoId = 'dataTransitoAcusacao';
+                        } else if (tipoData.includes('trânsito') && tipoData.includes('réu')) {
+                            campoId = 'dataTransitoReu';
+                        } else if (tipoData.includes('trânsito') && tipoData.includes('processo')) {
+                            campoId = 'dataTransitoRecurso';
+                        } else if (tipoData.includes('decisão') && tipoData.includes('recurso')) {
+                            campoId = 'dataDecisaoRecurso';
+                        } else if (tipoData.includes('prisão')) {
+                            campoId = 'dataPrisao'; // Campo futuro
+                        } else if (tipoData.includes('soltura')) {
+                            campoId = 'dataSoltura'; // Campo futuro
+                        }
+                        
+                        if (campoId) {
+                            const campo = document.getElementById(campoId);
+                            if (campo) {
+                                campo.value = match[2].trim();
+                                camposPreenchidos.push(campo);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Método para processar tipificação penal
+        processarTipificacao(textoResumo, camposPreenchidos) {
+            // Processar lei
+            const campoLei = document.getElementById('lei');
+            if (campoLei) {
+                // Verificar leis específicas
+                Object.entries(this.leisPenais).some(([valorLei, padroes]) => {
+                    for (const padrao of padroes) {
+                        if (padrao.test(textoResumo)) {
+                            campoLei.value = valorLei;
+                            camposPreenchidos.push(campoLei);
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                
+                // Verificar padrão "Lei Número"
+                const matchLei = textoResumo.match(/Lei\s*(?:n[º°]?)?\s*(\d+)/i);
+                if (matchLei && matchLei[1]) {
+                    // Verificar se o valor está nas opções do select
+                    const opcoes = Array.from(campoLei.options).map(opt => opt.value);
+                    if (opcoes.includes(matchLei[1])) {
+                        campoLei.value = matchLei[1];
+                        camposPreenchidos.push(campoLei);
+                    }
+                }
+            }
+            
+            // Processar artigo
+            const campoArtigo = document.getElementById('artigo');
+            if (campoArtigo) {
+                // Padrão para extrair números de artigos
+                const padraoArtigo = /Art(?:igo)?\.?\s*(\d+)/i;
+                const matchArtigo = textoResumo.match(padraoArtigo);
+                
+                if (matchArtigo && matchArtigo[1]) {
+                    campoArtigo.value = matchArtigo[1].trim();
+                    camposPreenchidos.push(campoArtigo);
+                } else {
+                    // Verificar padrão "Infração Imputada" com Art.
+                    const matchInfracao = textoResumo.match(/Infração\s*Imputada:\s*Art(?:igo)?\.?\s*(\d+)/i);
+                    if (matchInfracao && matchInfracao[1]) {
+                        campoArtigo.value = matchInfracao[1].trim();
+                        camposPreenchidos.push(campoArtigo);
+                    }
+                }
+            }
+            
+            // Processar complemento
+            const campoComplemento = document.getElementById('complemento');
+            if (campoComplemento) {
+                // Tentar extrair o complemento do artigo
+                const matchCompleto = textoResumo.match(/Art(?:igo)?\.?\s*\d+(?:,\s*|\s+)([^,\n]+)/i);
+                if (matchCompleto && matchCompleto[1]) {
+                    // Remover "da Lei" ou similar do complemento
+                    let complemento = matchCompleto[1].trim();
+                    complemento = complemento.replace(/^da\s+Lei\s+[^,]+/i, '').trim();
+                    
+                    // Se ainda há conteúdo, preencher o campo
+                    if (complemento) {
+                        campoComplemento.value = complemento;
+                        camposPreenchidos.push(campoComplemento);
+                    }
+                } else {
+                    // Verificar padrão "Infração Imputada" com complemento
+                    const matchInfracaoCompl = textoResumo.match(/Infração\s*Imputada:\s*Art(?:igo)?\.?\s*\d+(?:,\s*|\s+)([^,\n]+)/i);
+                    if (matchInfracaoCompl && matchInfracaoCompl[1]) {
+                        let complemento = matchInfracaoCompl[1].trim();
+                        complemento = complemento.replace(/^da\s+Lei\s+[^,]+/i, '').trim();
+                        
+                        if (complemento) {
+                            campoComplemento.value = complemento;
+                            camposPreenchidos.push(campoComplemento);
+                        }
+                    }
+                }
+                
+                // Verificar se há c/c no texto (que indica combinação de artigos)
+                const matchCC = textoResumo.match(/c\/c\s*([^,\n]+)/i);
+                if (matchCC && matchCC[1]) {
+                    campoComplemento.value = 'c/c ' + matchCC[1].trim();
+                    camposPreenchidos.push(campoComplemento);
+                }
+            }
+        }
+
+        // Método para processar informações de pena
+        processarPena(textoResumo, camposPreenchidos) {
+            // Procurar por padrões de pena (anos, meses, dias)
+            const anosInput = document.getElementById('anos');
+            const mesesInput = document.getElementById('meses');
+            const diasInput = document.getElementById('dias');
+            
+            // Padrão para pena em anos, meses e dias
+            const penaPadrao1 = /(\d+)\s+anos?(?:\s*,?\s*e?\s*(\d+)\s+meses?)?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
+            // Padrão para pena em meses e dias
+            const penaPadrao2 = /(\d+)\s+meses?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
+            // Padrão para pena em dias apenas
+            const penaPadrao3 = /(\d+)\s+dias?/i;
+            
+            // Tentar extrair a pena do texto do resumo
+            const penaMatch1 = textoResumo.match(penaPadrao1);
+            const penaMatch2 = textoResumo.match(penaPadrao2);
+            const penaMatch3 = textoResumo.match(penaPadrao3);
+            
+            // Processar a correspondência mais específica primeiro
+            if (penaMatch1) {
+                // Pena com anos
+                if (anosInput && penaMatch1[1]) {
+                    anosInput.value = penaMatch1[1];
+                    camposPreenchidos.push(anosInput);
+                }
+                
+                if (mesesInput && penaMatch1[2]) {
+                    mesesInput.value = penaMatch1[2];
+                    camposPreenchidos.push(mesesInput);
+                }
+                
+                if (diasInput && penaMatch1[3]) {
+                    diasInput.value = penaMatch1[3];
+                    camposPreenchidos.push(diasInput);
+                }
+            } else if (penaMatch2) {
+                // Pena com meses
+                if (mesesInput && penaMatch2[1]) {
+                    mesesInput.value = penaMatch2[1];
+                    camposPreenchidos.push(mesesInput);
+                }
+                
+                if (diasInput && penaMatch2[2]) {
+                    diasInput.value = penaMatch2[2];
+                    camposPreenchidos.push(diasInput);
+                }
+            } else if (penaMatch3) {
+                // Pena com dias apenas
+                if (diasInput && penaMatch3[1]) {
+                    diasInput.value = penaMatch3[1];
+                    camposPreenchidos.push(diasInput);
+                }
+            }
+            
+            // Verificar caso especial para "Pena: 5 anos"
+            const penaEspecial = textoResumo.match(/Pena:\s*(\d+)\s+anos?/i);
+            if (penaEspecial && anosInput) {
+                anosInput.value = penaEspecial[1];
+                camposPreenchidos.push(anosInput);
+            }
+        }
+
+        // Método para preencher regime prisional
+        preencherRegime(textoResumo, camposPreenchidos) {
+            const campoRegime = document.getElementById('regimePrisional');
+            if (!campoRegime) return;
+            
+            // Verificar regimes prisionais no texto
+            Object.entries(this.regimesPrisionais).some(([valorRegime, padroes]) => {
+                for (const padrao of padroes) {
+                    if (padrao.test(textoResumo)) {
+                        campoRegime.value = valorRegime;
+                        camposPreenchidos.push(campoRegime);
+                        return true;
+                    }
+                }
+                return false;
+            });
+            
+            // Verificar padrão "Regime: XXX"
+            const matchRegime = textoResumo.match(/Regime:\s*([^\n,]+)/i);
+            if (matchRegime && matchRegime[1]) {
+                const regime = matchRegime[1].trim().toLowerCase();
+                
+                if (regime.includes('fechado')) {
+                    campoRegime.value = 'fechado';
+                } else if (regime.includes('semi') || regime.includes('semiaberto')) {
+                    campoRegime.value = 'semiaberto';
+                } else if (regime.includes('aberto')) {
+                    campoRegime.value = 'aberto';
+                }
+                
+                camposPreenchidos.push(campoRegime);
+            }
+        }
+
+        // Método para preencher checkboxes
+        preencherCheckboxes(textoResumo, camposPreenchidos) {
+            Object.entries(this.checkboxPatterns).forEach(([checkboxId, padroes]) => {
+                const checkbox = document.getElementById(checkboxId);
+                if (!checkbox) return;
+                
+                // Verificar se algum padrão corresponde
+                const encontrado = padroes.some(padrao => 
+                    padrao.test(textoResumo)
+                );
+                
+                if (encontrado) {
+                    checkbox.checked = true;
+                    camposPreenchidos.push(checkbox);
+                }
+            });
+        }
+
+        // Método para preencher frações de progressão e livramento
+        preencherFracoes(textoResumo, camposPreenchidos) {
+            // Preencher fração de progressão
+            const fracaoProgressao = document.getElementById('fracaoProgressao');
+            if (fracaoProgressao) {
+                Object.entries(this.fracoesProgressao).some(([valorFracao, padroes]) => {
+                    for (const padrao of padroes) {
+                        if (padrao.test(textoResumo)) {
+                            fracaoProgressao.value = valorFracao;
+                            camposPreenchidos.push(fracaoProgressao);
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+            
+            // Preencher fração de livramento
+            const fracaoLivramento = document.getElementById('fracaoLivramento');
+            if (fracaoLivramento) {
+                Object.entries(this.fracoesLivramento).some(([valorFracao, padroes]) => {
+                    for (const padrao of padroes) {
+                        if (padrao.test(textoResumo)) {
+                            fracaoLivramento.value = valorFracao;
+                            camposPreenchidos.push(fracaoLivramento);
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+        }
+
+        // Método para preencher tipo de processo criminal
+        preencherTipoProcesso(textoResumo, camposPreenchidos) {
+            const tipoProcessoCriminal = document.getElementById('tipoProcessoCriminal');
+            if (!tipoProcessoCriminal) return;
+            
+            // Verificar tipos de processo
+            Object.entries(this.tiposProcesso).some(([valorTipo, padroes]) => {
+                for (const padrao of padroes) {
+                    if (padrao.test(textoResumo)) {
+                        tipoProcessoCriminal.value = valorTipo;
+                        camposPreenchidos.push(tipoProcessoCriminal);
+                        return true;
+                    }
+                }
+                return false;
+            });
+            
+            // Verificar padrão "Tipo de Processo Criminal: XXX"
+            const matchTipo = textoResumo.match(/Tipo\s*de\s*Processo\s*Criminal:\s*([^\n]+)/i);
+            if (matchTipo && matchTipo[1]) {
+                const tipo = matchTipo[1].trim().toLowerCase();
+                
+                if (tipo.includes('ordinário') || tipo.includes('ordinario')) {
+                    tipoProcessoCriminal.value = '283';
+                } else if (tipo.includes('sumário') || tipo.includes('sumario')) {
+                    tipoProcessoCriminal.value = '284';
+                } else if (tipo.includes('especial')) {
+                    tipoProcessoCriminal.value = '285';
+                }
+                
+                camposPreenchidos.push(tipoProcessoCriminal);
+            }
+        }
+
+        // Método para preencher tipo de guia
+        preencherTipoGuia(textoResumo, camposPreenchidos) {
+            const guiaProvisoria = document.getElementById('guiaProvisoria');
+            const guiaDefinitiva = document.getElementById('guiaDefinitiva');
+            
+            if (!guiaProvisoria || !guiaDefinitiva) return;
+            
+            // Verificar tipo de guia no texto
+            let guiaEncontrada = false;
+            
+            // Verificar primeiro por padrões específicos
+            Object.entries(this.tiposGuia).some(([valorTipo, padroes]) => {
+                for (const padrao of padroes) {
+                    if (padrao.test(textoResumo)) {
+                        if (valorTipo === 'provisoria') {
+                            guiaProvisoria.checked = true;
+                            guiaDefinitiva.checked = false;
+                            camposPreenchidos.push(guiaProvisoria);
+                        } else {
+                            guiaDefinitiva.checked = true;
+                            guiaProvisoria.checked = false;
+                            camposPreenchidos.push(guiaDefinitiva);
+                        }
+                        guiaEncontrada = true;
+                        return true;
+                    }
+                }
+                return false;
+            });
+            
+            // Verificar padrão "Tipo de Guia: XXX"
+            if (!guiaEncontrada) {
+                const matchGuia = textoResumo.match(/Tipo\s*de\s*Guia:\s*([^\n]+)/i);
+                if (matchGuia && matchGuia[1]) {
+                    const tipoGuia = matchGuia[1].trim().toLowerCase();
+                    
+                    if (tipoGuia.includes('provisória') || tipoGuia.includes('provisoria')) {
+                        guiaProvisoria.checked = true;
+                        guiaDefinitiva.checked = false;
+                        camposPreenchidos.push(guiaProvisoria);
+                    } else if (tipoGuia.includes('definitiva') || tipoGuia.includes('execução') || tipoGuia.includes('execucao')) {
+                        guiaDefinitiva.checked = true;
+                        guiaProvisoria.checked = false;
+                        camposPreenchidos.push(guiaDefinitiva);
+                    }
+                }
+            }
+            
+            // Verificar o regime para determinar o tipo de guia, se ainda não foi encontrado
+            if (!guiaEncontrada) {
+                const regime = document.getElementById('regimePrisional')?.value;
+                
+                if (regime === 'fechado') {
+                    // Se é regime fechado, é guia de recolhimento
+                    guiaDefinitiva.checked = true;
+                    guiaProvisoria.checked = false;
+                    camposPreenchidos.push(guiaDefinitiva);
+                } else if (regime === 'semiaberto' || regime === 'aberto') {
+                    // Se é regime semiaberto ou aberto, é guia de execução
+                    guiaDefinitiva.checked = true;
+                    guiaProvisoria.checked = false;
+                    camposPreenchidos.push(guiaDefinitiva);
+                }
+            }
+        }
+
+        // Método para destacar campos preenchidos
+        destacarCamposPreenchidos(campos) {
+            campos.forEach(campo => {
+                campo.classList.add('campo-preenchido-auto');
+                
+                // Evento para remover destaque quando editado
+                const removeDestaque = () => campo.classList.remove('campo-preenchido-auto');
+                
+                if (campo.type === 'checkbox' || campo.type === 'radio') {
+                    campo.addEventListener('change', removeDestaque, {once: true});
+                } else {
+                    campo.addEventListener('input', removeDestaque, {once: true});
+                }
+            });
+        }
+
+        // Método para notificar preenchimento
+        notificarPreenchimento(quantidadeCampos) {
+            // Remover toast existente, se houver
+            const toastExistente = document.getElementById('toast-notificacao');
+            if (toastExistente) {
+                document.body.removeChild(toastExistente);
+            }
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-notificacao';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.backgroundColor = '#4CAF50';
+            toast.style.color = 'white';
+            toast.style.padding = '15px';
+            toast.style.borderRadius = '5px';
+            toast.style.zIndex = '1000';
+            toast.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            toast.textContent = `Preenchimento automático concluído. ${quantidadeCampos} campos atualizados.`;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 3000);
+        }
+    }
+    // Classe para preencher guia (versão antiga)
+    class PreencherGuia {
+        constructor() {
+            // Mapeamento de campos do resumo para IDs do formulário
+            this.camposMapeados = {
+                'Processo': 'numeroProcesso',
+                'Réu': 'nomeReu',
+                'Artigos': 'artigo',
+                'Pena': 'tempoPena',
+                'Dispositivo': 'decisao'
+            };
+
+            // Mapeamento para campos específicos de data
+            this.mapeamentoCampos = {
+                'dataInfracao': [
+                    /data\s*(?:da)?\s*(?:infração|delito|crime)/i,
+                    /ocorrência\s*(?:do)?\s*crime/i
+                ],
+                'dataRecebimentoDenuncia': [
+                    /recebimento\s*(?:da)?\s*den[úu]ncia/i,
+                    /data\s*da\s*den[úu]ncia/i
+                ],
+                'dataPublicacaoSentenca': [
+                    /data\s*(?:da|de)?\s*publica[çc][aã]o\s*(?:da)?\s*senten[çc]a/i,
+                    /senten[çc]a\s*publicada\s*em/i
+                ],
+                'dataPublicacaoAcordao': [
+                    /data\s*(?:da|de)?\s*publica[çc][aã]o\s*(?:do)?\s*ac[óo]rd[ãa]o/i,
+                    /ac[óo]rd[ãa]o\s*publicado\s*em/i
+                ],
+                'dataTransitoDefesa': [
+                    /data\s*(?:do)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:a)?\s*defesa/i,
+                    /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:a)?\s*defesa/i
+                ],
+                'dataTransitoAcusacao': [
+                    /data\s*(?:do|de)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:a)?\s*acusa[çc][ãa]o/i,
+                    /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:a)?\s*acusa[çc][ãa]o/i
+                ],
+                'dataTransitoReu': [
+                    /data\s*(?:do|de)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:o)?\s*r[ée]u/i,
+                    /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:o)?\s*r[ée]u/i
+                ],
+                'lei': [
+                    /(?:Lei|Código)\s*(?:Penal)?/i
+                ]
+            };
+
+            // Padrões para detecção de regime prisional
+            this.regimesPrisionais = {
+                'fechado': ['regime fechado', 'prisão em regime fechado'],
+                'semiaberto': ['regime semiaberto', 'prisão em regime semiaberto'],
+                'aberto': ['regime aberto', 'prisão em regime aberto']
+            };
+
+            // Padrões para checkbox
+            this.checkboxPatterns = {
+                'crimeTentado': ['crime tentado', 'tentativa de crime'],
+                'violenciaDomestica': ['violência doméstica', 'lei maria da penha'],
+                'resultadoMorte': ['resultado morte', 'seguido de morte'],
+                'violenciaGraveAmeaca': ['violência grave ameaça', 'grave ameaça'],
+                'reincidenteComum': ['reincidente comum', 'reincidência'],
+                'reincidenteEspecifico': ['reincidente específico'],
+                'comandoOrganizacao': ['comando organização criminosa', 'organização criminosa']
+            };
+        }
+
+        // Método principal para processar resumo e preencher formulário
+        processarResumo(textoResumo) {
+            if (!textoResumo || textoResumo.trim() === '') {
+                alert('O texto do resumo está vazio.');
+                return;
+            }
+            
+            // Validar o resumo
+            let resumoValidado = textoResumo;
+            
+            // Usar o resumidor se necessário
+            const resumidor = new ResumoSentenca();
+            if (!resumidor.validarResumo(textoResumo)) {
+                resumoValidado = resumidor.resumir(textoResumo);
+            }
+
+            // Campos a serem preenchidos
+            const camposPreenchidos = [];
+
+            // Preencher campos mapeados
+            Object.entries(this.camposMapeados).forEach(([padrao, campoId]) => {
+                const campo = document.getElementById(campoId);
+                if (campo) {
+                    const regex = new RegExp(`${padrao}:\\s*(.+)`, 'i');
+                    const match = resumoValidado.match(regex);
+                    
+                    if (match) {
+                        campo.value = match[1].trim();
+                        camposPreenchidos.push(campo);
+                    }
+                }
+            });
+
+            // Preencher campos por padrões flexíveis
+            Object.entries(this.mapeamentoCampos).forEach(([campoId, padroes]) => {
+                const campo = document.getElementById(campoId);
+                if (campo) {
+                    padroes.some(padrao => {
+                        const regex = new RegExp(`${padrao}[:\\s]*([\\d/]+)`, 'i');
+                        const match = resumoValidado.match(regex);
+                        
+                        if (match) {
+                            campo.value = match[1].trim();
+                            camposPreenchidos.push(campo);
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+            });
+
+            // Preencher tempo de pena (anos, meses, dias)
+            const penaPadrao = /(\d+)\s+anos?(?:\s*,?\s*e?\s*(\d+)\s+meses?)?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
+            const penaPadrao2 = /(\d+)\s+meses?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
+            const penaPadrao3 = /(\d+)\s+dias?/i;
+            
+            const penaMatch = resumoValidado.match(penaPadrao);
+            const penaMatch2 = resumoValidado.match(penaPadrao2);
+            const penaMatch3 = resumoValidado.match(penaPadrao3);
+            
+            if (penaMatch) {
+                const anosInput = document.getElementById('anos');
+                const mesesInput = document.getElementById('meses');
+                const diasInput = document.getElementById('dias');
+                
+                if (anosInput && penaMatch[1]) {
+                    anosInput.value = penaMatch[1];
+                    camposPreenchidos.push(anosInput);
+                }
+                
+                if (mesesInput && penaMatch[2]) {
+                    mesesInput.value = penaMatch[2];
+                    camposPreenchidos.push(mesesInput);
+                }
+                
+                if (diasInput && penaMatch[3]) {
+                    diasInput.value = penaMatch[3];
+                    camposPreenchidos.push(diasInput);
+                }
+            } else if (penaMatch2) {
+                const mesesInput = document.getElementById('meses');
+                const diasInput = document.getElementById('dias');
+                
+                if (mesesInput && penaMatch2[1]) {
+                    mesesInput.value = penaMatch2[1];
+                    camposPreenchidos.push(mesesInput);
+                }
+                
+                if (diasInput && penaMatch2[2]) {
+                    diasInput.value = penaMatch2[2];
+                    camposPreenchidos.push(diasInput);
+                }
+            } else if (penaMatch3) {
+                const diasInput = document.getElementById('dias');
+                
+                if (diasInput && penaMatch3[1]) {
+                    diasInput.value = penaMatch3[1];
+                    camposPreenchidos.push(diasInput);
+                }
+            }
+
+            // Preencher checkboxes
+            Object.entries(this.checkboxPatterns).forEach(([checkboxId, padroes]) => {
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) {
+                    const encontrado = padroes.some(padrao => 
+                        resumoValidado.toLowerCase().includes(padrao.toLowerCase())
+                    );
+                    
+                    if (encontrado) {
+                        checkbox.checked = true;
+                        camposPreenchidos.push(checkbox);
+                    }
+                }
+            });
+
+            // Detectar regime prisional
+            const campoRegime = document.getElementById('regimePrisional');
+            if (campoRegime) {
+                Object.entries(this.regimesPrisionais).some(([valor, padroes]) => {
+                    const encontrado = padroes.some(padrao => 
+                        resumoValidado.toLowerCase().includes(padrao.toLowerCase())
+                    );
+                    
+                    if (encontrado) {
+                        campoRegime.value = valor;
+                        camposPreenchidos.push(campoRegime);
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            // Destacar campos preenchidos
+            this.destacarCamposPreenchidos(camposPreenchidos);
+
+            // Notificação de preenchimento
+            this.notificarPreenchimento(camposPreenchidos.length);
+        }
+
+        // Método para destacar campos preenchidos
+        destacarCamposPreenchidos(campos) {
+            campos.forEach(campo => {
+                campo.classList.add('campo-preenchido-auto');
+                
+                // Evento para remover destaque quando editado
+                const removeDestaque = () => campo.classList.remove('campo-preenchido-auto');
+                
+                if (campo.type === 'checkbox') {
+                    campo.addEventListener('change', removeDestaque, {once: true});
+                } else {
+                    campo.addEventListener('input', removeDestaque, {once: true});
+                }
+            });
+        }
+
+        // Método para notificar preenchimento
+        notificarPreenchimento(quantidadeCampos) {
+            // Remover toast existente, se houver
+            const toastExistente = document.getElementById('toast-notificacao');
+            if (toastExistente) {
+                document.body.removeChild(toastExistente);
+            }
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-notificacao';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.backgroundColor = '#4CAF50';
+            toast.style.color = 'white';
+            toast.style.padding = '15px';
+            toast.style.borderRadius = '5px';
+            toast.style.zIndex = '1000';
+            toast.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            toast.textContent = `Preenchimento automático concluído. ${quantidadeCampos} campos atualizados.`;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 3000);
+        }
+    }
+
+    // Função para concatenar campos
+    document.getElementById('concatenarCampos').addEventListener('click', () => {
+        const denuncia = document.getElementById('denuncia').innerText;
+        const sentenca = document.getElementById('sentenca').innerText;
+        const acordao = document.getElementById('acordao').innerText;
+        const transitoJulgado = document.getElementById('transitoJulgado').innerText;
+        
+        let resumoConcatenado = '';
+        
+        if (denuncia.trim()) {
+            resumoConcatenado += `Denúncia: ${denuncia.trim()}\n\n`;
+        }
+        
+        if (sentenca.trim()) {
+            resumoConcatenado += `Sentença: ${sentenca.trim()}\n\n`;
+        }
+        
+        if (acordao.trim()) {
+            resumoConcatenado += `Acórdão: ${acordao.trim()}\n\n`;
+        }
+        
+        if (transitoJulgado.trim()) {
+            resumoConcatenado += `Trânsito em Julgado: ${transitoJulgado.trim()}\n\n`;
+        }
+        
+        const resumoElement = document.getElementById('resumo');
+        resumoElement.innerText = resumoConcatenado.trim();
+        
+        // Atualizar contagem de caracteres
+        contarCaracteres(resumoElement, 'resumoCount');
+    });
+    
+    // Botão para limpar campos
+    document.getElementById('limparCampos').addEventListener('click', () => {
+        const confirmacao = confirm('Tem certeza que deseja limpar todos os campos?');
+        if (confirmacao) {
+            camposEditaveis.forEach(({ campo }) => {
+                document.getElementById(campo).innerText = '';
+                contarCaracteres(document.getElementById(campo), campo + 'Count');
+            });
+        }
+    });
+    
+    // Botão para salvar resumo
+    document.getElementById('salvarResumo').addEventListener('click', () => {
+        const resumo = document.getElementById('resumo').innerText;
+        if (!resumo.trim()) {
+            alert('O resumo está vazio. Não há nada para salvar.');
+            return;
+        }
+        
+        // Salvar em localStorage
+        localStorage.setItem('resumoSalvo', resumo);
+        alert('Resumo salvo com sucesso!');
+    });
+
+    // Botão Resumir Sentença
+    document.getElementById('resumirSentenca').addEventListener('click', () => {
+        const sentencaField = document.getElementById('sentenca');
+        const textoOriginal = sentencaField.innerText;
+        
+        if (!textoOriginal.trim()) {
+            alert('O campo de sentença está vazio. Não há nada para resumir.');
+            return;
+        }
+        
+        // Resumir sentença
+        const resumidor = new ResumoSentenca();
+        const resumo = resumidor.resumir(textoOriginal);
+        
+        // Atualizar campo de resumo
+        const resumoField = document.getElementById('resumo');
+        resumoField.innerText = resumo;
+        
+        // Atualizar contagem de caracteres
+        contarCaracteres(resumoField, 'resumoCount');
+    });
+
+    // Botões de inserção de exemplos (para testes)
+    const insercoes = {
+        'inserirDenuncia': 'Réu: João da Silva\nData da infração: 15/01/2025\nArtigo 157 do Código Penal\nDescrição: Acusado de roubo qualificado com uso de arma de fogo.',
+        'inserirSentenca': 'Processo nº 0001234-56.2025.8.17.0001\nTribunal de Justiça de Pernambuco\nData da publicação da sentença: 20/02/2025\nDispositivo: Condenação por roubo qualificado\nPena: 8 anos e 6 meses de reclusão em regime fechado.',
+        'inserirAcordao': 'Apelação Criminal nº 2025.123456-7\nÓrgão Julgador: 1ª Câmara Criminal\nData de publicação do acórdão: 10/03/2025\nDecisão: Negado provimento ao recurso, mantida a condenação.',
+        'inserirTransito': 'Data do trânsito em julgado para defesa: 25/03/2025\nData do trânsito em julgado para acusação: 20/03/2025\nData do trânsito em julgado do réu: 25/03/2025'
+    };
+    
+    Object.entries(insercoes).forEach(([botaoId, texto]) => {
+        const botao = document.getElementById(botaoId);
+        if (botao) {
+            botao.addEventListener('click', () => {
+                const alvo = botaoId.replace('inserir', '').toLowerCase();
+                const elemento = document.getElementById(alvo);
+                if (elemento) {
+                    elemento.innerText = texto;
+                    contarCaracteres(elemento, alvo + 'Count');
+                }
+            });
+        }
+    });
+    
+    // Inicializar preenchedor de guia e adicionar evento ao botão
+    const preenchedor = new PreencherGuiaAtualizada();
+    const botaoPreenchimento = document.getElementById('preencherAutomatico');
+    if (botaoPreenchimento) {
+        botaoPreenchimento.addEventListener('click', () => {
+            const resumoField = document.getElementById('resumo');
+            const resumoTexto = resumoField.innerText;
+
+            if (!resumoTexto.trim()) {
+                alert('O campo de resumo está vazio. Preencha o resumo primeiro.');
+                return;
+            }
+
+            preenchedor.processarResumo(resumoTexto);
+        });
+    }
+    
+    // Funcionalidade para os botões de limpar campos
+    document.querySelectorAll('.clear-button').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const input = e.target.closest('.input-with-clear').querySelector('input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        });
+    });
+    
+    // Botão adicionar parágrafo
+    document.getElementById('adicionarParagrafo').addEventListener('click', () => {
+        alert('Funcionalidade para adicionar novo parágrafo de tipificação a ser implementada.');
+        // Aqui você pode implementar a lógica para adicionar um novo parágrafo de tipificação
+    });
+    
+    // Eventos para botões de formulário
+    document.getElementById('cancelarForm').addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja cancelar? Todas as alterações serão perdidas.')) {
+            window.location.reload();
+        }
+    });
+    
+    document.getElementById('salvarRascunho').addEventListener('click', () => {
+        alert('Rascunho salvo com sucesso!');
+        // Aqui poderia implementar o salvamento real
+    });
+    
+    document.getElementById('guiaRecolhimentoForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        alert('Formulário enviado com sucesso!');
+        // Aqui poderia implementar o envio real do formulário
+    });
+});
+</script>
 </body>
 </html>
