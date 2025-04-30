@@ -1,0 +1,657 @@
+/* Estilos para ajuste de impressão */
+@media print {
+    body {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .container {
+        box-shadow: none;
+        max-width: 100%;
+    }
+    
+    .btn, .form-actions, .clear-button, .editable-section {
+        display: none;
+    }
+    
+    .form-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* Estilos para campos de data */
+input[type="text"][placeholder="dd/mm/aaaa"] {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+}
+
+/* Estilos para campos obrigatórios */
+input:required, select:required {
+    border-left: 3px solid #6200ee;
+}
+
+input:required:valid, select:required:valid {
+    border-left: 3px solid #4CAF50;
+}
+
+/* Estilos gerais */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 300px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.form-check-input {
+    margin-top: 3px;
+    margin-right: 8px;
+}
+
+.form-check-label {
+    font-size: 14px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+}
+
+.radio-option input {
+    margin-right: 5px;
+}
+
+.clear-button {
+    border: none;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.input-with-clear {
+    position: relative;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #6200ee;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #5000c9;
+}
+
+.text-right {
+    text-align: right;
+}
+
+h2 {
+    margin-top: 30px;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+.editable-section {
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.editable-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 14px;
+}
+
+.editable-content {
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-height: 80px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.editable-content:focus {
+    outline: none;
+    border-color: #6200ee;
+    box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
+    background-color: #fff;
+}
+
+.editable-content:empty:before {
+    content: "Clique para adicionar texto...";
+    color: #999;
+    font-style: italic;
+}
+
+.editable-content[data-placeholder]:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    font-style: italic;
+}
+
+.form-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.form-actions button {
+    margin-left: 10px;
+}
+
+.character-count {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.character-count.limit-exceeded {
+    color: #e53935;
+    font-weight: bold;
+}
+
+.invalid {
+    border-color: #e53935 !important;
+    background-color: #ffebee !important;
+}
+
+.editable-content.invalid {
+    border-color: #e53935 !important;
+    background-color: #ffebee !important;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.field-title {
+    font-weight: bold;
+}
+
+.campo-preenchido-auto {
+    background-color: #e8f5e9 !important;
+    border-color: #4CAF50 !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Toast de notificação */
+#toast-notificacao {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes fadeOut {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .form-group {
+        min-width: 100%;
+    }
+    
+    .radio-group, .checkbox-group {
+        flex-direction: column;
+    }
+    
+    .actions-row {
+        flex-direction: column;
+    }
+    
+    .actions-row button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* Estilos para ajuste de impressão */
+@media print {
+    body {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .container {
+        box-shadow: none;
+        max-width: 100%;
+    }
+    
+    .btn, .form-actions, .clear-button, .editable-section {
+        display: none;
+    }
+    
+    .form-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* Estilos gerais */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 300px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.form-check-input {
+    margin-top: 3px;
+    margin-right: 8px;
+}
+
+.form-check-label {
+    font-size: 14px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+}
+
+.radio-option input {
+    margin-right: 5px;
+}
+
+.clear-button {
+    border: none;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.input-with-clear {
+    position: relative;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #6200ee;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #5000c9;
+}
+
+.text-right {
+    text-align: right;
+}
+
+h2 {
+    margin-top: 30px;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+.editable-section {
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.editable-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 14px;
+}
+
+.editable-content {
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-height: 80px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.editable-content:focus {
+    outline: none;
+    border-color: #6200ee;
+    box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
+    background-color: #fff;
+}
+
+.editable-content:empty:before {
+    content: "Clique para adicionar texto...";
+    color: #999;
+    font-style: italic;
+}
+
+.editable-content[data-placeholder]:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    font-style: italic;
+}
+
+.form-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.form-actions button {
+    margin-left: 10px;
+}
+
+.character-count {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.character-count.limit-exceeded {
+    color: #e53935;
+    font-weight: bold;
+}
+
+.invalid {
+    border-color: #e53935 !important;
+    background-color: #ffebee !important;
+}
+
+.editable-content.invalid {
+    border-color: #e53935 !important;
+    background-color: #ffebee !important;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.field-title {
+    font-weight: bold;
+}
+
+.campo-preenchido-auto {
+    background-color: #e8f5e9 !important;
+    border-color: #4CAF50 !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Toast de notificação */
+#toast-notificacao {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes fadeOut {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}
+
+/* Estilos para campos de data */
+input[type="text"][placeholder="dd/mm/aaaa"] {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+}
+
+/* Estilos para campos obrigatórios */
+input:required, select:required {
+    border-left: 3px solid #6200ee;
+}
+
+input:required:valid, select:required:valid {
+    border-left: 3px solid #4CAF50;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .form-group {
+        min-width: 100%;
+    }
+    
+    .radio-group, .checkbox-group {
+        flex-direction: column;
+    }
+    
+    .actions-row {
+        flex-direction: column;
+    }
+    
+    .actions-row button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
