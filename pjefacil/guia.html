@@ -4,213 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulário Carta Guia</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .form-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-            gap: 15px;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 300px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 12px;
-            color: #666;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .form-check {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-        .form-check-input {
-            margin-top: 3px;
-            margin-right: 8px;
-        }
-        .form-check-label {
-            font-size: 14px;
-        }
-        .radio-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        .radio-option {
-            display: flex;
-            align-items: center;
-        }
-        .radio-option input {
-            margin-right: 5px;
-        }
-        .clear-button {
-            border: none;
-            background: transparent;
-            color: #666;
-            cursor: pointer;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        .input-with-clear {
-            position: relative;
-        }
-        .btn {
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-primary {
-            background-color: #6200ee;
-            color: white;
-            border: none;
-        }
-        .btn-primary:hover {
-            background-color: #5000c9;
-        }
-        .text-right {
-            text-align: right;
-        }
-        h2 {
-            margin-top: 30px;
-            color: #333;
-            font-size: 18px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .actions-row {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 30px;
-        }
-        .btn-secondary {
-            background-color: #f5f5f5;
-            color: #333;
-            border: 1px solid #ccc;
-        }
-        .btn-secondary:hover {
-            background-color: #e0e0e0;
-        }
-        .editable-section {
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        .editable-label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 14px;
-        }
-        .editable-content {
-            border: 1px solid #ddd;
-            padding: 10px;
-            min-height: 80px;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            margin-bottom: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .editable-content:focus {
-            outline: none;
-            border-color: #6200ee;
-            box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
-            background-color: #fff;
-        }
-        .editable-content:empty:before {
-            content: "Clique para adicionar texto...";
-            color: #999;
-            font-style: italic;
-        }
-        .editable-content[data-placeholder]:empty:before {
-            content: attr(data-placeholder);
-            color: #999;
-            font-style: italic;
-        }
-        .form-actions {
-            text-align: right;
-            margin-top: 10px;
-        }
-        .form-actions button {
-            margin-left: 10px;
-        }
-        .character-count {
-            font-size: 12px;
-            color: #666;
-            text-align: right;
-            margin-top: 5px;
-        }
-        .character-count.limit-exceeded {
-            color: #e53935;
-            font-weight: bold;
-        }
-        .invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-        .editable-content.invalid {
-            border-color: #e53935 !important;
-            background-color: #ffebee !important;
-        }
-        .field-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .field-title {
-            font-weight: bold;
-        }
-        .campo-preenchido-auto {
-            background-color: #e8f5e9 !important;
-            border-color: #4CAF50 !important;
-            transition: background-color 0.3s ease;
-        }
-    </style>
+    <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
     <div class="container">
@@ -296,8 +90,8 @@
                 <div class="form-group">
                     <label for="regimePrisional">Regime Prisional</label>
                     <select id="regimePrisional" class="form-control">
-                        <option value="fechado" selected>Fechado</option>
-                        <option value="semiaberto">Semiaberto</option>
+                        <option value="fechado">Fechado</option>
+                        <option value="semiaberto" selected>Semiaberto</option>
                         <option value="aberto">Aberto</option>
                     </select>
                 </div>
@@ -671,503 +465,103 @@
     </div>
 
     <!-- Scripts -->
+    <script src="resumir_sentenca.js"></script>
+    <script src="preencher_guia.js"></script>
     <script>
-
-document.addEventListener('DOMContentLoaded', function() {
-    /**
-     * Função para contar caracteres brutos sem qualquer processamento
-     * Para garantir a contagem mais alta e precisa possível
-     * 
-     * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
-     * @param {string} contadorId - ID do elemento que exibirá a contagem
-     * @param {number} limiteAviso - Limite para exibir aviso de excesso de caracteres
-     * @returns {number} - Número de caracteres
-     */
-    function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
-        // Obter texto bruto sem processamento adicional
-        let texto;
-        
-        if (typeof elemento === 'string') {
-            texto = elemento;
-        } else {
-            // Para elementos HTML, capturar o HTML interno completo
-            const htmlCompleto = elemento.innerHTML;
-            
-            // Processar o HTML para obter texto puro preservando quebras de linha
-            const temp = document.createElement('div');
-            temp.innerHTML = htmlCompleto;
-            
-            // Usar textContent que preserva espaços em branco e quebras
-            texto = temp.textContent || "";
-            
-            // Verificação de backup se textContent estiver vazio
-            if (!texto.trim() && elemento.innerText) {
-                texto = elemento.innerText;
-            }
-        }
-        
-        // Contar caracteres brutos sem qualquer processamento
-        const numCaracteres = texto.length;
-        
-        // Atualizar o contador
-        const contador = document.getElementById(contadorId);
-        if (contador) {
-            contador.textContent = numCaracteres + ' caracteres (brutos)';
-            
-            if (numCaracteres > limiteAviso) {
-                contador.classList.add('limit-exceeded');
-            } else {
-                contador.classList.remove('limit-exceeded');
-            }
-            
-            contador.title = `Contagem total: ${numCaracteres} caracteres`;
-        }
-        
-        return numCaracteres;
-    }
-
-    // Função auxiliar para inicializar a contagem em múltiplos campos
-    function inicializarContagemCaracteres() {
-        const camposEditaveis = [
-            { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
-            { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
-            { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
-            { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
-            { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
-        ];
-        
-        camposEditaveis.forEach(({ campo, contador, limite }) => {
-            const elemento = document.getElementById(campo);
-            if (elemento) {
-                const atualizarContador = () => contarCaracteres(elemento, contador, limite);
+        document.addEventListener('DOMContentLoaded', function() {
+            /**
+             * Função para contar caracteres brutos sem qualquer processamento
+             * 
+             * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
+             * @param {string} contadorId - ID do elemento que exibirá a contagem
+             * @param {number} limiteAviso - Limite para exibir aviso de excesso de caracteres
+             * @returns {number} - Número de caracteres
+             */
+            function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
+                // Obter texto bruto sem processamento adicional
+                let texto;
                 
-                // Contar caracteres iniciais
-                atualizarContador();
-                
-                // Atualizar contador ao digitar
-                elemento.addEventListener('input', atualizarContador);
-                
-                // Atualizar contador após colar (com pequeno atraso)
-                elemento.addEventListener('paste', () => setTimeout(atualizarContador, 10));
-                
-                // Atualizar após corte de texto
-                elemento.addEventListener('cut', () => setTimeout(atualizarContador, 10));
-                
-                // Monitorar mudanças via script
-                const observer = new MutationObserver(atualizarContador);
-                observer.observe(elemento, { 
-                    childList: true, 
-                    characterData: true, 
-                    subtree: true 
-                });
-            }
-        });
-
-        return camposEditaveis;
-    }
-
-
-
-        // Define camposEditaveis no escopo principal e inicializa contagem
-        const camposEditaveis = inicializarContagemCaracteres();
-    
-        // Teste para verificar a diferença de contagem em sistemas diferentes
-        function testarContagem() {
-            const textoTeste = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Praesent vel rhoncus nisl. Nunc vel magna nec ex lobortis laoreet.
-            Aenean posuere dui eget purus malesuada, non tempus tellus interdum.
-            Duis varius mauris in lectus scelerisque, ut pharetra lectus venenatis.`;
-            
-            console.log('Teste de contagem:', {
-                length: textoTeste.length,
-                bytes: new Blob([textoTeste]).size,
-                lengthSemEspacos: textoTeste.replace(/\s/g, '').length,
-                linhas: (textoTeste.match(/\n/g) || []).length + 1
-            });
-            
-            // Exibir no console como diferentes sistemas poderiam contar
-            return {
-                "Contagem bruta (todos os caracteres)": textoTeste.length,
-                "Contagem sem espaços e quebras": textoTeste.replace(/\s/g, '').length,
-                "Contagem só sem quebras": textoTeste.replace(/[\r\n]/g, '').length,
-                "Bytes UTF-8": new Blob([textoTeste]).size
-            };
-        }
-        
-        // Executar teste de contagem para comparação
-        console.log('Comparação de métodos de contagem:', testarContagem());
-            
-        // Classe ResumoSentenca para resumir sentenças
-        class ResumoSentenca {
-            constructor() {
-                // Padrões de regex para identificar seções importantes
-                this.padroesImportantes = {
-                    processo: [
-                        /Processo\s*n[º°]?\s*([\d./\-]+)/i,
-                        /Autos\s*n[º°]?\s*([\d./\-]+)/i
-                    ],
-                    cabeçalho: [
-                        /Tribunal\s*de\s*Justiça/i,
-                        /Comarca\s*de\s*[A-Za-zÀ-ÿ\s]+/i
-                    ],
-                    reu: [
-                        /Réu:\s*([^\n]+)/i,
-                        /Denunciado[:\s]*([^\n]+)/i,
-                        /Acusado[:\s]*([^\n]+)/i
-                    ],
-                    dispositivo: [
-                        /Dispositivo[:]*\s*(.+?)(?=Pena:|$)/is,
-                        /Decisão[:]*\s*(.+?)(?=Pena:|$)/is,
-                        /JULGO\s+(PROCEDENTE|PARCIALMENTE PROCEDENTE|IMPROCEDENTE)\s+/i
-                    ],
-                    pena: [
-                        /Pena:\s*(.+?)(?=Regime|$)/is,
-                        /Condenado\s*a\s*(.+?)(?=Regime|$)/is,
-                        /(\d+)\s+(ano|anos|mês|meses|dia|dias)\s+(?:e\s+(\d+)\s+(mês|meses|dia|dias))?/i
-                    ],
-                    artigo: [
-                        /Art(?:igo)?\.?\s*(\d+[^\n,]+)/i,
-                        /Lei\s*n[º°]?\s*(\d+[^\n,]+)/i,
-                        /CP,\s*art(?:igo)?\.?\s*(\d+[^\n,]+)/i
-                    ],
-                    datas: [
-                        /Data\s*d[aeo]\s*([^:]+):\s*([\d\/]+)/gi
-                    ]
-                };
-            }
-
-            // Método para extrair seções específicas
-            extrairSecao(texto, secao) {
-                const padroes = this.padroesImportantes[secao];
-                
-                for (const padrao of padroes) {
-                    const match = texto.match(padrao);
-                    if (match) {
-                        // Retorna o primeiro grupo de captura ou toda a correspondência
-                        return match[1] || match[0];
+                if (typeof elemento === 'string') {
+                    texto = elemento;
+                } else {
+                    // Para elementos HTML, capturar o HTML interno completo
+                    const htmlCompleto = elemento.innerHTML;
+                    
+                    // Processar o HTML para obter texto puro preservando quebras de linha
+                    const temp = document.createElement('div');
+                    temp.innerHTML = htmlCompleto;
+                    
+                    // Usar textContent que preserva espaços em branco e quebras
+                    texto = temp.textContent || "";
+                    
+                    // Verificação de backup se textContent estiver vazio
+                    if (!texto.trim() && elemento.innerText) {
+                        texto = elemento.innerText;
                     }
                 }
                 
-                return null;
+                // Contar caracteres brutos sem qualquer processamento
+                const numCaracteres = texto.length;
+                
+                // Atualizar o contador
+                const contador = document.getElementById(contadorId);
+                if (contador) {
+                    contador.textContent = numCaracteres + ' caracteres (brutos)';
+                    
+                    if (numCaracteres > limiteAviso) {
+                        contador.classList.add('limit-exceeded');
+                    } else {
+                        contador.classList.remove('limit-exceeded');
+                    }
+                    
+                    contador.title = `Contagem total: ${numCaracteres} caracteres`;
+                }
+                
+                return numCaracteres;
             }
 
-            // Método principal para resumir sentença
-            resumir(texto) {
-                if (!texto || texto.trim() === '') {
-                    return '';
-                }
+            // Função auxiliar para inicializar a contagem em múltiplos campos
+            function inicializarContagemCaracteres() {
+                const camposEditaveis = [
+                    { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
+                    { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
+                    { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
+                    { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
+                    { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
+                ];
                 
-                let resumo = '';
-                
-                // Extrair processo
-                const processo = this.extrairSecao(texto, 'processo');
-                if (processo) resumo += `Processo: ${processo}\n\n`;
-                
-                // Extrair cabeçalho
-                const cabeçalho = this.extrairSecao(texto, 'cabeçalho');
-                if (cabeçalho) resumo += `${cabeçalho}\n\n`;
-                
-                // Extrair réu
-                const reu = this.extrairSecao(texto, 'reu');
-                if (reu) resumo += `Réu: ${reu}\n\n`;
-                
-                // Extrair artigos
-                const artigos = this.extrairSecao(texto, 'artigo');
-                if (artigos) resumo += `Artigos: ${artigos}\n\n`;
-                
-                // Extrair dispositivo
-                const dispositivo = this.extrairSecao(texto, 'dispositivo');
-                if (dispositivo) resumo += `Dispositivo: ${dispositivo}\n\n`;
-                
-                // Extrair pena
-                const pena = this.extrairSecao(texto, 'pena');
-                if (pena) resumo += `Pena: ${pena}\n\n`;
-                
-                // Extrair datas importantes
-                const datasMatch = [...texto.matchAll(this.padroesImportantes.datas)];
-                if (datasMatch && datasMatch.length > 0) {
-                    for (const match of datasMatch) {
-                        if (match[1] && match[2]) {
-                            resumo += `Data ${match[1].trim()}: ${match[2].trim()}\n`;
-                        }
-                    }
-                }
-                
-                return resumo.trim();
-            }
-
-                // Método para validar se o resumo é válido
-                validarResumo(resumo) {
-                    if (!resumo || resumo.trim() === '') {
-                        return false;
-                    }
-                    
-                    // Critérios mínimos para um resumo válido
-                    const criterios = [
-                        resumo.includes('Processo'),
-                        resumo.includes('Réu'),
-                        resumo.includes('Artigos'),
-                        resumo.includes('Dispositivo'),
-                        resumo.includes('Pena'),
-                        resumo.includes('Data')
-                    ];
-                    
-                    return criterios.filter(Boolean).length >= 3;
-                }
-            }
-
-            // Classe PreencherGuia para preencher o formulário automaticamente
-            class PreencherGuia {
-                constructor() {
-                    // Mapeamento de campos do resumo para IDs do formulário
-                    this.camposMapeados = {
-                        'Processo': 'numeroProcesso',
-                        'Réu': 'nomeReu',
-                        'Artigos': 'artigo',
-                        'Pena': 'tempoPena',
-                        'Dispositivo': 'decisao'
-                    };
-
-                    // Mapeamento para campos específicos de data
-                    this.mapeamentoCampos = {
-                        'dataInfracao': [
-                            /data\s*(?:da)?\s*(?:infração|delito|crime)/i,
-                            /ocorrência\s*(?:do)?\s*crime/i
-                        ],
-                        'dataRecebimentoDenuncia': [
-                            /recebimento\s*(?:da)?\s*den[úu]ncia/i,
-                            /data\s*da\s*den[úu]ncia/i
-                        ],
-                        'dataPublicacaoSentenca': [
-                            /data\s*(?:da|de)?\s*publica[çc][aã]o\s*(?:da)?\s*senten[çc]a/i,
-                            /senten[çc]a\s*publicada\s*em/i
-                        ],
-                        'dataPublicacaoAcordao': [
-                            /data\s*(?:da|de)?\s*publica[çc][aã]o\s*(?:do)?\s*ac[óo]rd[ãa]o/i,
-                            /ac[óo]rd[ãa]o\s*publicado\s*em/i
-                        ],
-                        'dataTransitoDefesa': [
-                            /data\s*(?:do)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:a)?\s*defesa/i,
-                            /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:a)?\s*defesa/i
-                        ],
-                        'dataTransitoAcusacao': [
-                            /data\s*(?:do|de)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:a)?\s*acusa[çc][ãa]o/i,
-                            /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:a)?\s*acusa[çc][ãa]o/i
-                        ],
-                        'dataTransitoReu': [
-                            /data\s*(?:do|de)?\s*tr[âa]nsito\s*(?:em\s*julgado)?\s*(?:para\s*)?(?:o)?\s*r[ée]u/i,
-                            /tr[âa]nsito\s*em\s*julgado\s*(?:para\s*)?(?:o)?\s*r[ée]u/i
-                        ],
-                        'lei': [
-                            /(?:Lei|Código)\s*(?:Penal)?/i
-                        ]
-                    };
-
-                    // Padrões para detecção de regime prisional
-                    this.regimesPrisionais = {
-                        'fechado': ['regime fechado', 'prisão em regime fechado'],
-                        'semiaberto': ['regime semiaberto', 'prisão em regime semiaberto'],
-                        'aberto': ['regime aberto', 'prisão em regime aberto']
-                    };
-
-                    // Padrões para checkbox
-                    this.checkboxPatterns = {
-                        'crimeTentado': ['crime tentado', 'tentativa de crime'],
-                        'violenciaDomestica': ['violência doméstica', 'lei maria da penha'],
-                        'resultadoMorte': ['resultado morte', 'seguido de morte'],
-                        'violenciaGraveAmeaca': ['violência grave ameaça', 'grave ameaça'],
-                        'reincidenteComum': ['reincidente comum', 'reincidência'],
-                        'reincidenteEspecifico': ['reincidente específico'],
-                        'comandoOrganizacao': ['comando organização criminosa', 'organização criminosa']
-                    };
-                }
-
-                // Método principal para processar resumo e preencher formulário
-                processarResumo(textoResumo) {
-                    if (!textoResumo || textoResumo.trim() === '') {
-                        alert('O texto do resumo está vazio.');
-                        return;
-                    }
-                    
-                    // Validar o resumo
-                    let resumoValidado = textoResumo;
-                    
-                    // Usar o resumidor se necessário
-                    const resumidor = new ResumoSentenca();
-                    if (!resumidor.validarResumo(textoResumo)) {
-                        resumoValidado = resumidor.resumir(textoResumo);
-                    }
-
-                    // Campos a serem preenchidos
-                    const camposPreenchidos = [];
-
-                    // Preencher campos mapeados
-                    Object.entries(this.camposMapeados).forEach(([padrao, campoId]) => {
-                        const campo = document.getElementById(campoId);
-                        if (campo) {
-                            const regex = new RegExp(`${padrao}:\\s*(.+)`, 'i');
-                            const match = resumoValidado.match(regex);
-                            
-                            if (match) {
-                                campo.value = match[1].trim();
-                                camposPreenchidos.push(campo);
-                            }
-                        }
-                    });
-
-                    // Preencher campos por padrões flexíveis
-                    Object.entries(this.mapeamentoCampos).forEach(([campoId, padroes]) => {
-                        const campo = document.getElementById(campoId);
-                        if (campo) {
-                            padroes.some(padrao => {
-                                const regex = new RegExp(`${padrao}[:\\s]*([\\d/]+)`, 'i');
-                                const match = resumoValidado.match(regex);
-                                
-                                if (match) {
-                                    campo.value = match[1].trim();
-                                    camposPreenchidos.push(campo);
-                                    return true;
-                                }
-                                return false;
-                            });
-                        }
-                    });
-
-                    // Preencher tempo de pena (anos, meses, dias)
-                    const penaPadrao = /(\d+)\s+anos?(?:\s*,?\s*e?\s*(\d+)\s+meses?)?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
-                    const penaPadrao2 = /(\d+)\s+meses?(?:\s*,?\s*e?\s*(\d+)\s+dias?)?/i;
-                    const penaPadrao3 = /(\d+)\s+dias?/i;
-                    
-                    const penaMatch = resumoValidado.match(penaPadrao);
-                    const penaMatch2 = resumoValidado.match(penaPadrao2);
-                    const penaMatch3 = resumoValidado.match(penaPadrao3);
-                    
-                    if (penaMatch) {
-                        const anosInput = document.getElementById('anos');
-                        const mesesInput = document.getElementById('meses');
-                        const diasInput = document.getElementById('dias');
+                camposEditaveis.forEach(({ campo, contador, limite }) => {
+                    const elemento = document.getElementById(campo);
+                    if (elemento) {
+                        const atualizarContador = () => contarCaracteres(elemento, contador, limite);
                         
-                        if (anosInput && penaMatch[1]) {
-                            anosInput.value = penaMatch[1];
-                            camposPreenchidos.push(anosInput);
-                        }
+                        // Contar caracteres iniciais
+                        atualizarContador();
                         
-                        if (mesesInput && penaMatch[2]) {
-                            mesesInput.value = penaMatch[2];
-                            camposPreenchidos.push(mesesInput);
-                        }
+                        // Atualizar contador ao digitar
+                        elemento.addEventListener('input', atualizarContador);
                         
-                        if (diasInput && penaMatch[3]) {
-                            diasInput.value = penaMatch[3];
-                            camposPreenchidos.push(diasInput);
-                        }
-                    } else if (penaMatch2) {
-                        const mesesInput = document.getElementById('meses');
-                        const diasInput = document.getElementById('dias');
+                      // Atualizar contador após colar (com pequeno atraso)
+                        elemento.addEventListener('paste', () => setTimeout(atualizarContador, 10));
                         
-                        if (mesesInput && penaMatch2[1]) {
-                            mesesInput.value = penaMatch2[1];
-                            camposPreenchidos.push(mesesInput);
-                        }
+                        // Atualizar após corte de texto
+                        elemento.addEventListener('cut', () => setTimeout(atualizarContador, 10));
                         
-                        if (diasInput && penaMatch2[2]) {
-                            diasInput.value = penaMatch2[2];
-                            camposPreenchidos.push(diasInput);
-                        }
-                    } else if (penaMatch3) {
-                        const diasInput = document.getElementById('dias');
-                        
-                        if (diasInput && penaMatch3[1]) {
-                            diasInput.value = penaMatch3[1];
-                            camposPreenchidos.push(diasInput);
-                        }
-                    }
-
-                    // Preencher checkboxes
-                    Object.entries(this.checkboxPatterns).forEach(([checkboxId, padroes]) => {
-                        const checkbox = document.getElementById(checkboxId);
-                        if (checkbox) {
-                            const encontrado = padroes.some(padrao => 
-                                resumoValidado.toLowerCase().includes(padrao.toLowerCase())
-                            );
-                            
-                            if (encontrado) {
-                                checkbox.checked = true;
-                                camposPreenchidos.push(checkbox);
-                            }
-                        }
-                    });
-
-                    // Detectar regime prisional
-                    const campoRegime = document.getElementById('regimePrisional');
-                    if (campoRegime) {
-                        Object.entries(this.regimesPrisionais).some(([valor, padroes]) => {
-                            const encontrado = padroes.some(padrao => 
-                                resumoValidado.toLowerCase().includes(padrao.toLowerCase())
-                            );
-                            
-                            if (encontrado) {
-                                campoRegime.value = valor;
-                                camposPreenchidos.push(campoRegime);
-                                return true;
-                            }
-                            return false;
+                        // Monitorar mudanças via script
+                        const observer = new MutationObserver(atualizarContador);
+                        observer.observe(elemento, { 
+                            childList: true, 
+                            characterData: true, 
+                            subtree: true 
                         });
                     }
+                });
 
-                    // Destacar campos preenchidos
-                    this.destacarCamposPreenchidos(camposPreenchidos);
-
-                    // Notificação de preenchimento
-                    this.notificarPreenchimento(camposPreenchidos.length);
-                }
-
-                // Método para destacar campos preenchidos
-                destacarCamposPreenchidos(campos) {
-                    campos.forEach(campo => {
-                        campo.classList.add('campo-preenchido-auto');
-                        
-                        // Evento para remover destaque quando editado
-                        const removeDestaque = () => campo.classList.remove('campo-preenchido-auto');
-                        
-                        if (campo.type === 'checkbox') {
-                            campo.addEventListener('change', removeDestaque, {once: true});
-                        } else {
-                            campo.addEventListener('input', removeDestaque, {once: true});
-                        }
-                    });
-                }
-
-                // Método para notificar preenchimento
-                notificarPreenchimento(quantidadeCampos) {
-                    // Remover toast existente, se houver
-                    const toastExistente = document.getElementById('toast-notificacao');
-                    if (toastExistente) {
-                        document.body.removeChild(toastExistente);
-                    }
-
-                    const toast = document.createElement('div');
-                    toast.id = 'toast-notificacao';
-                    toast.style.position = 'fixed';
-                    toast.style.bottom = '20px';
-                    toast.style.right = '20px';
-                    toast.style.backgroundColor = '#4CAF50';
-                    toast.style.color = 'white';
-                    toast.style.padding = '15px';
-                    toast.style.borderRadius = '5px';
-                    toast.style.zIndex = '1000';
-                    toast.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                    toast.textContent = `Preenchimento automático concluído. ${quantidadeCampos} campos atualizados.`;
-                    
-                    document.body.appendChild(toast);
-                    
-                    setTimeout(() => {
-                        if (document.body.contains(toast)) {
-                            document.body.removeChild(toast);
-                        }
-                    }, 3000);
-                }
+                return camposEditaveis;
             }
+
+            // Define camposEditaveis no escopo principal e inicializa contagem
+            const camposEditaveis = inicializarContagemCaracteres();
 
             // Função para concatenar campos
             document.getElementById('concatenarCampos').addEventListener('click', () => {
@@ -1235,6 +629,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
+                // Verificar se a classe ResumoSentenca está disponível
+                if (typeof ResumoSentenca === 'undefined') {
+                    alert('Erro: Módulo de resumo não encontrado. Verifique se o arquivo resumir_sentenca.js foi carregado corretamente.');
+                    return;
+                }
+                
                 // Resumir sentença
                 const resumidor = new ResumoSentenca();
                 const resumo = resumidor.resumir(textoOriginal);
@@ -1269,23 +669,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Inicializar preenchedor de guia e adicionar evento ao botão
-            const preenchedor = new PreencherGuia();
-            const botaoPreenchimento = document.getElementById('preencherAutomatico');
-            if (botaoPreenchimento) {
-                botaoPreenchimento.addEventListener('click', () => {
-                    const resumoField = document.getElementById('resumo');
-                    const resumoTexto = resumoField.innerText;
-
-                    if (!resumoTexto.trim()) {
-                        alert('O campo de resumo está vazio. Preencha o resumo primeiro.');
-                        return;
-                    }
-
-                    preenchedor.processarResumo(resumoTexto);
-                });
-            }
-            
             // Funcionalidade para os botões de limpar campos
             document.querySelectorAll('.clear-button').forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -1317,9 +700,49 @@ document.addEventListener('DOMContentLoaded', function() {
             
             document.getElementById('guiaRecolhimentoForm').addEventListener('submit', (e) => {
                 e.preventDefault();
+                
+                // Validar campos obrigatórios
+                const camposObrigatorios = document.querySelectorAll('[required]');
+                let todosValidos = true;
+                
+                camposObrigatorios.forEach(campo => {
+                    if (!campo.value.trim()) {
+                        campo.classList.add('invalid');
+                        todosValidos = false;
+                    } else {
+                        campo.classList.remove('invalid');
+                    }
+                });
+                
+                if (!todosValidos) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
                 alert('Formulário enviado com sucesso!');
                 // Aqui poderia implementar o envio real do formulário
             });
+            
+            // Verificar se os módulos foram carregados corretamente
+            if (typeof ResumoSentenca === 'undefined') {
+                console.warn('Módulo de resumo não encontrado!');
+            }
+            
+            if (typeof PreencherGuiaAtualizada === 'undefined' && typeof PreencherGuia === 'undefined') {
+                console.warn('Módulo de preenchimento não encontrado!');
+                
+                // Adicionar aviso visual
+                const aviso = document.createElement('div');
+                aviso.style.backgroundColor = '#f8d7da';
+                aviso.style.color = '#721c24';
+                aviso.style.padding = '10px';
+                aviso.style.marginBottom = '15px';
+                aviso.style.borderRadius = '4px';
+                aviso.innerText = 'Atenção: Módulos de processamento não carregados corretamente. Algumas funcionalidades podem não estar disponíveis.';
+                
+                const container = document.querySelector('.container');
+                container.insertBefore(aviso, container.firstChild);
+            }
         });
     </script>
 </body>
