@@ -26,7 +26,6 @@
                 <button type="button" class="btn btn-secondary" id="resumirSentenca">Resumir</button>
                 <button type="button" class="btn btn-secondary btn-sm" id="inserirSentenca">Inserir</button>
             </div>
-            
             <div id="sentenca" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
             <div class="character-count" id="sentencaCount">0 caracteres</div>
             
@@ -48,15 +47,18 @@
                 <button type="button" class="btn btn-primary" id="concatenarCampos">Concatenar Campos</button>
             </div>
             
-            <label class="editable-label" for="resumo">Resumo</label>
-            <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
-            <div class="character-count" id="resumoCount">0 caracteres</div>
+            <div class="form-group">
+                <label class="editable-label" for="resumo">Resumo</label>
+                <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
+                <div class="character-count" id="resumoCount">0 caracteres</div>
+            </div>
             
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="limparCampos">Limpar Campos</button>
                 <button type="button" class="btn btn-primary" id="salvarResumo">Salvar Resumo</button>
             </div>
         </div>
+        
         <div class="form-actions" style="margin-top: 20px; text-align: center;">
             <button type="button" id="preencherAutomatico" class="btn btn-primary" style="background-color: #4CAF50;">
                 Preencher Formulário a partir do Resumo
@@ -469,279 +471,24 @@
     <script src="preencher_guia.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            /**
-             * Função para contar caracteres brutos sem qualquer processamento
-             * 
-             * @param {HTMLElement|string} elemento - Elemento HTML ou texto para contar caracteres
-             * @param {string} contadorId - ID do elemento que exibirá a contagem
-             * @param {number} limiteAviso - Limite para exibir aviso de excesso de caracteres
-             * @returns {number} - Número de caracteres
-             */
-            function contarCaracteres(elemento, contadorId, limiteAviso = 5000) {
-                // Obter texto bruto sem processamento adicional
-                let texto;
-                
-                if (typeof elemento === 'string') {
-                    texto = elemento;
-                } else {
-                    // Para elementos HTML, capturar o HTML interno completo
-                    const htmlCompleto = elemento.innerHTML;
-                    
-                    // Processar o HTML para obter texto puro preservando quebras de linha
-                    const temp = document.createElement('div');
-                    temp.innerHTML = htmlCompleto;
-                    
-                    // Usar textContent que preserva espaços em branco e quebras
-                    texto = temp.textContent || "";
-                    
-                    // Verificação de backup se textContent estiver vazio
-                    if (!texto.trim() && elemento.innerText) {
-                        texto = elemento.innerText;
-                    }
-                }
-                
-                // Contar caracteres brutos sem qualquer processamento
-                const numCaracteres = texto.length;
-                
-                // Atualizar o contador
-                const contador = document.getElementById(contadorId);
-                if (contador) {
-                    contador.textContent = numCaracteres + ' caracteres (brutos)';
-                    
-                    if (numCaracteres > limiteAviso) {
-                        contador.classList.add('limit-exceeded');
-                    } else {
-                        contador.classList.remove('limit-exceeded');
-                    }
-                    
-                    contador.title = `Contagem total: ${numCaracteres} caracteres`;
-                }
-                
-                return numCaracteres;
-            }
-
-            // Função auxiliar para inicializar a contagem em múltiplos campos
-            function inicializarContagemCaracteres() {
-                const camposEditaveis = [
-                    { campo: 'denuncia', contador: 'denunciaCount', limite: 10000 },
-                    { campo: 'sentenca', contador: 'sentencaCount', limite: 15000 },
-                    { campo: 'acordao', contador: 'acordaoCount', limite: 15000 },
-                    { campo: 'transitoJulgado', contador: 'transitoJulgadoCount', limite: 5000 },
-                    { campo: 'resumo', contador: 'resumoCount', limite: 20000 }
-                ];
-                
-                camposEditaveis.forEach(({ campo, contador, limite }) => {
-                    const elemento = document.getElementById(campo);
-                    if (elemento) {
-                        const atualizarContador = () => contarCaracteres(elemento, contador, limite);
-                        
-                        // Contar caracteres iniciais
-                        atualizarContador();
-                        
-                        // Atualizar contador ao digitar
-                        elemento.addEventListener('input', atualizarContador);
-                        
-                      // Atualizar contador após colar (com pequeno atraso)
-                        elemento.addEventListener('paste', () => setTimeout(atualizarContador, 10));
-                        
-                        // Atualizar após corte de texto
-                        elemento.addEventListener('cut', () => setTimeout(atualizarContador, 10));
-                        
-                        // Monitorar mudanças via script
-                        const observer = new MutationObserver(atualizarContador);
-                        observer.observe(elemento, { 
-                            childList: true, 
-                            characterData: true, 
-                            subtree: true 
-                        });
-                    }
-                });
-
-                return camposEditaveis;
-            }
-
-            // Define camposEditaveis no escopo principal e inicializa contagem
-            const camposEditaveis = inicializarContagemCaracteres();
-
-            // Função para concatenar campos
-            document.getElementById('concatenarCampos').addEventListener('click', () => {
-                const denuncia = document.getElementById('denuncia').innerText;
-                const sentenca = document.getElementById('sentenca').innerText;
-                const acordao = document.getElementById('acordao').innerText;
-                const transitoJulgado = document.getElementById('transitoJulgado').innerText;
-                
-                let resumoConcatenado = '';
-                
-                if (denuncia.trim()) {
-                    resumoConcatenado += `Denúncia: ${denuncia.trim()}\n\n`;
-                }
-                
-                if (sentenca.trim()) {
-                    resumoConcatenado += `Sentença: ${sentenca.trim()}\n\n`;
-                }
-                
-                if (acordao.trim()) {
-                    resumoConcatenado += `Acórdão: ${acordao.trim()}\n\n`;
-                }
-                
-                if (transitoJulgado.trim()) {
-                    resumoConcatenado += `Trânsito em Julgado: ${transitoJulgado.trim()}\n\n`;
-                }
-                
-                const resumoElement = document.getElementById('resumo');
-                resumoElement.innerText = resumoConcatenado.trim();
-                
-                // Atualizar contagem de caracteres
-                contarCaracteres(resumoElement, 'resumoCount');
-            });
-            
-            // Botão para limpar campos
-            document.getElementById('limparCampos').addEventListener('click', () => {
-                const confirmacao = confirm('Tem certeza que deseja limpar todos os campos?');
-                if (confirmacao) {
-                    camposEditaveis.forEach(({ campo }) => {
-                        document.getElementById(campo).innerText = '';
-                        contarCaracteres(document.getElementById(campo), campo + 'Count');
-                    });
-                }
-            });
-            
-            // Botão para salvar resumo
-            document.getElementById('salvarResumo').addEventListener('click', () => {
-                const resumo = document.getElementById('resumo').innerText;
-                if (!resumo.trim()) {
-                    alert('O resumo está vazio. Não há nada para salvar.');
-                    return;
-                }
-                
-                // Salvar em localStorage
-                localStorage.setItem('resumoSalvo', resumo);
-                alert('Resumo salvo com sucesso!');
-            });
-
-            // Botão Resumir Sentença
-            document.getElementById('resumirSentenca').addEventListener('click', () => {
-                const sentencaField = document.getElementById('sentenca');
-                const textoOriginal = sentencaField.innerText;
-                
-                if (!textoOriginal.trim()) {
-                    alert('O campo de sentença está vazio. Não há nada para resumir.');
-                    return;
-                }
-                
-                // Verificar se a classe ResumoSentenca está disponível
-                if (typeof ResumoSentenca === 'undefined') {
-                    alert('Erro: Módulo de resumo não encontrado. Verifique se o arquivo resumir_sentenca.js foi carregado corretamente.');
-                    return;
-                }
-                
-                // Resumir sentença
-                const resumidor = new ResumoSentenca();
-                const resumo = resumidor.resumir(textoOriginal);
-                
-                // Atualizar campo de resumo
-                const resumoField = document.getElementById('resumo');
-                resumoField.innerText = resumo;
-                
-                // Atualizar contagem de caracteres
-                contarCaracteres(resumoField, 'resumoCount');
-            });
-
-            // Botões de inserção de exemplos (para testes)
-            const insercoes = {
-                'inserirDenuncia': 'Réu: João da Silva\nData da infração: 15/01/2025\nArtigo 157 do Código Penal\nDescrição: Acusado de roubo qualificado com uso de arma de fogo.',
-                'inserirSentenca': 'Processo nº 0001234-56.2025.8.17.0001\nTribunal de Justiça de Pernambuco\nData da publicação da sentença: 20/02/2025\nDispositivo: Condenação por roubo qualificado\nPena: 8 anos e 6 meses de reclusão em regime fechado.',
-                'inserirAcordao': 'Apelação Criminal nº 2025.123456-7\nÓrgão Julgador: 1ª Câmara Criminal\nData de publicação do acórdão: 10/03/2025\nDecisão: Negado provimento ao recurso, mantida a condenação.',
-                'inserirTransito': 'Data do trânsito em julgado para defesa: 25/03/2025\nData do trânsito em julgado para acusação: 20/03/2025\nData do trânsito em julgado do réu: 25/03/2025'
-            };
-            
-            Object.entries(insercoes).forEach(([botaoId, texto]) => {
-                const botao = document.getElementById(botaoId);
-                if (botao) {
-                    botao.addEventListener('click', () => {
-                        const alvo = botaoId.replace('inserir', '').toLowerCase();
-                        const elemento = document.getElementById(alvo);
-                        if (elemento) {
-                            elemento.innerText = texto;
-                            contarCaracteres(elemento, alvo + 'Count');
-                        }
-                    });
-                }
-            });
-            
-            // Funcionalidade para os botões de limpar campos
-            document.querySelectorAll('.clear-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const input = e.target.closest('.input-with-clear').querySelector('input');
-                    if (input) {
-                        input.value = '';
-                        input.focus();
-                    }
-                });
-            });
-            
-            // Botão adicionar parágrafo
-            document.getElementById('adicionarParagrafo').addEventListener('click', () => {
-                alert('Funcionalidade para adicionar novo parágrafo de tipificação a ser implementada.');
-                // Aqui você pode implementar a lógica para adicionar um novo parágrafo de tipificação
-            });
-            
-            // Eventos para botões de formulário
-            document.getElementById('cancelarForm').addEventListener('click', () => {
-                if (confirm('Tem certeza que deseja cancelar? Todas as alterações serão perdidas.')) {
-                    window.location.reload();
-                }
-            });
-            
-            document.getElementById('salvarRascunho').addEventListener('click', () => {
-                alert('Rascunho salvo com sucesso!');
-                // Aqui poderia implementar o salvamento real
-            });
-            
-            document.getElementById('guiaRecolhimentoForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                // Validar campos obrigatórios
-                const camposObrigatorios = document.querySelectorAll('[required]');
-                let todosValidos = true;
-                
-                camposObrigatorios.forEach(campo => {
-                    if (!campo.value.trim()) {
-                        campo.classList.add('invalid');
-                        todosValidos = false;
-                    } else {
-                        campo.classList.remove('invalid');
-                    }
-                });
-                
-                if (!todosValidos) {
-                    alert('Por favor, preencha todos os campos obrigatórios.');
-                    return;
-                }
-                
-                alert('Formulário enviado com sucesso!');
-                // Aqui poderia implementar o envio real do formulário
-            });
-            
             // Verificar se os módulos foram carregados corretamente
-            if (typeof ResumoSentenca === 'undefined') {
-                console.warn('Módulo de resumo não encontrado!');
-            }
-            
-            if (typeof PreencherGuiaAtualizada === 'undefined' && typeof PreencherGuia === 'undefined') {
-                console.warn('Módulo de preenchimento não encontrado!');
+            if (typeof PreencherGuiaAtualizada !== 'undefined') {
+                const preencherGuia = new PreencherGuiaAtualizada();
+                window.preencherGuia = preencherGuia;
+                preencherGuia.iniciar();
                 
-                // Adicionar aviso visual
-                const aviso = document.createElement('div');
-                aviso.style.backgroundColor = '#f8d7da';
-                aviso.style.color = '#721c24';
-                aviso.style.padding = '10px';
-                aviso.style.marginBottom = '15px';
-                aviso.style.borderRadius = '4px';
-                aviso.innerText = 'Atenção: Módulos de processamento não carregados corretamente. Algumas funcionalidades podem não estar disponíveis.';
-                
-                const container = document.querySelector('.container');
-                container.insertBefore(aviso, container.firstChild);
+                // Adicionar evento redundante para garantir funcionamento
+                document.getElementById('preencherAutomatico').addEventListener('click', function() {
+                    const resumo = document.getElementById('resumo').innerText;
+                    if (!resumo.trim()) {
+                        alert('O campo de resumo está vazio. Preencha o resumo primeiro.');
+                        return;
+                    }
+                    preencherGuia.processarResumo(resumo);
+                });
+            } else {
+                console.error('Módulo de preenchimento não encontrado!');
+                alert('Erro: Funcionalidade de preenchimento automático não disponível');
             }
         });
     </script>
