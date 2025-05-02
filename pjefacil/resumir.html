@@ -21,9 +21,14 @@
         .input-group {
             margin-bottom: 20px;
         }
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
         label {
             display: block;
-            margin-bottom: 8px;
             font-weight: bold;
             color: #2c3e50;
         }
@@ -67,6 +72,14 @@
         button:hover {
             background-color: #1a2530;
         }
+        .btn-clean {
+            background-color: #27ae60;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        .btn-clean:hover {
+            background-color: #219653;
+        }
         #resultado {
             margin-top: 20px;
             padding: 20px;
@@ -99,6 +112,11 @@
         }
         .cache-hit { color: #27ae60; }
         .cache-miss { color: #e67e22; }
+        .stats-container {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -187,8 +205,12 @@
     </div>
     
     <div class="input-group">
-        <label for="sentenca">Sentença Judicial:</label>
+        <div class="input-header">
+            <label for="sentenca">Sentença Judicial:</label>
+            <button onclick="limparTextoSentenca()" class="btn btn-clean">Limpar Texto</button>
+        </div>
         <textarea id="sentenca" placeholder="Cole aqui o texto completo da sentença judicial..."></textarea>
+        <div id="texto-stats" class="stats-container">Caracteres: 0 | Palavras: 0</div>
     </div>
     
     <div class="controls">
@@ -213,6 +235,72 @@
     <script>
         // Cache simples em memória
         const cache = new Map();
+        
+        // Função para limpar e otimizar texto
+        function limparTextoSentenca() {
+            const sentencaTextarea = document.getElementById('sentenca');
+            const texto = sentencaTextarea.value;
+            
+            if (!texto.trim()) {
+                alert("Não há texto para limpar!");
+                return;
+            }
+            
+            // Obter estatísticas antes da limpeza
+            const caracteresAntes = texto.length;
+            const palavrasAntes = texto.split(/\s+/).filter(word => word.length > 0).length;
+            
+            // Realizar limpezas no texto:
+            let textoLimpo = texto
+                // Remover múltiplos espaços em branco
+                .replace(/\s+/g, ' ')
+                // Remover espaços no início e fim
+                .trim()
+                // Normalizar quebras de linha (uma única quebra entre parágrafos)
+                .replace(/(\r\n|\r|\n)+/g, '\n')
+                // Remover espaços no início de cada linha
+                .replace(/^[ \t]+/gm, '')
+                // Remover espaços no fim de cada linha
+                .replace(/[ \t]+$/gm, '')
+                // Remover linhas completamente vazias
+                .replace(/\n\s*\n/g, '\n');
+            
+            // Atualizar o texto no textarea
+            sentencaTextarea.value = textoLimpo;
+            
+            // Obter estatísticas após a limpeza
+            const caracteresDepois = textoLimpo.length;
+            const palavrasDepois = textoLimpo.split(/\s+/).filter(word => word.length > 0).length;
+            
+            // Calcular redução
+            const reducaoCaracteres = caracteresAntes - caracteresDepois;
+            const percentualReducao = ((reducaoCaracteres / caracteresAntes) * 100).toFixed(1);
+            
+            // Atualizar estatísticas de texto
+            atualizarEstatisticasTexto(textoLimpo);
+            
+            // Mostrar resumo da limpeza
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<span class="success">✅ Texto otimizado! Redução de ${reducaoCaracteres} caracteres (${percentualReducao}%)</span>`;
+        }
+        
+        // Função para atualizar estatísticas do texto
+        function atualizarEstatisticasTexto(texto = null) {
+            const statsDiv = document.getElementById('texto-stats');
+            if (!texto) {
+                texto = document.getElementById('sentenca').value;
+            }
+            
+            const caracteres = texto.length;
+            const palavras = texto.split(/\s+/).filter(word => word.length > 0).length;
+            
+            statsDiv.textContent = `Caracteres: ${caracteres} | Palavras: ${palavras}`;
+        }
+        
+        // Monitorar mudanças no textarea de sentença
+        document.getElementById('sentenca').addEventListener('input', function() {
+            atualizarEstatisticasTexto();
+        });
         
         async function processarSentenca() {
             const prompt = document.getElementById('prompt').value.trim();
@@ -309,6 +397,9 @@
             }
             return hash;
         }
+        
+        // Inicializar estatísticas
+        atualizarEstatisticasTexto();
     </script>
 </body>
 </html>
