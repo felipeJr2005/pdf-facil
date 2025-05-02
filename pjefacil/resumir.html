@@ -250,20 +250,21 @@
             const caracteresAntes = texto.length;
             const palavrasAntes = texto.split(/\s+/).filter(word => word.length > 0).length;
             
-            // Realizar limpezas no texto:
+            // Realizar limpezas mais agressivas no texto:
             let textoLimpo = texto
+                // Converter quebras de linha para espaços
+                .replace(/[\r\n]+/g, ' ')
                 // Remover múltiplos espaços em branco
                 .replace(/\s+/g, ' ')
                 // Remover espaços no início e fim
-                .trim()
-                // Normalizar quebras de linha (uma única quebra entre parágrafos)
-                .replace(/(\r\n|\r|\n)+/g, '\n')
-                // Remover espaços no início de cada linha
-                .replace(/^[ \t]+/gm, '')
-                // Remover espaços no fim de cada linha
-                .replace(/[ \t]+$/gm, '')
-                // Remover linhas completamente vazias
-                .replace(/\n\s*\n/g, '\n');
+                .trim();
+            
+            // Tratamento especial para preservar estrutura básica do documento
+            // Adicionar quebra de linha apenas após pontuação final de frases
+            textoLimpo = textoLimpo
+                .replace(/\.\s+([A-Z])/g, '.\n$1')
+                .replace(/\?\s+([A-Z])/g, '?\n$1')
+                .replace(/\!\s+([A-Z])/g, '!\n$1');
             
             // Atualizar o texto no textarea
             sentencaTextarea.value = textoLimpo;
