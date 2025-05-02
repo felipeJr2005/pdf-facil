@@ -1,1 +1,384 @@
 
+/* Estilos compartilhados para todas as páginas */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    line-height: 1.6;
+    color: #333;
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+#prompt {
+    height: 150px;
+    background-color: #f8f9fa;
+}
+
+#sentenca {
+    height: 250px;
+}
+
+.controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.button-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+button {
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #1a2530;
+}
+
+.btn {
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background-color: #1a2530;
+}
+
+.btn-primary {
+    background-color: #2c3e50;
+}
+
+.btn-primary:hover {
+    background-color: #1a2530;
+}
+
+.btn-secundary {
+    background-color: #3498db;
+}
+
+.btn-secundary:hover {
+    background-color: #2980b9;
+}
+
+.btn-clean {
+    background-color: #27ae60;
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.btn-clean:hover {
+    background-color: #219653;
+}
+
+#resultado {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-left: 4px solid #2c3e50;
+    white-space: pre-wrap;
+    font-family: monospace;
+    min-height: 100px;
+}
+
+.status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.loading { 
+    color: #7f8c8d;
+    background-color: #f5f5f5;
+}
+
+.error { 
+    color: #e74c3c;
+    background-color: #fdecea;
+}
+
+.success { 
+    color: #27ae60;
+    background-color: #e8f5e9;
+}
+
+.cache-info {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.cache-hit { color: #27ae60; }
+.cache-miss { color: #e67e22; }
+
+.stats-container {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+/* Estilos para modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 900px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: black;
+    text-decoration: none;
+}
+
+/* Estilos adicionais para formulários */
+.form-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 300px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Estilos adicionais para a editable-section */
+.editable-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.editable-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 14px;
+}
+
+.editable-content {
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-height: 80px;
+    border-radius: 4px;
+    background-color: #fff;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.editable-content:focus {
+    outline: none;
+    border-color: #6200ee;
+    box-shadow: 0 0 5px rgba(98, 0, 238, 0.3);
+    background-color: #fff;
+}
+
+.editable-content:empty:before {
+    content: "Clique para adicionar texto...";
+    color: #999;
+    font-style: italic;
+}
+
+.editable-content[data-placeholder]:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    font-style: italic;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.field-title {
+    font-weight: bold;
+}
+
+.form-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.form-actions button {
+    margin-left: 10px;
+}
+
+.character-count {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.character-count.limit-exceeded {
+    color: #e53935;
+    font-weight: bold;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.form-check-input {
+    margin-top: 3px;
+    margin-right: 8px;
+}
+
+.form-check-label {
+    font-size: 14px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+}
+
+.radio-option input {
+    margin-right: 5px;
+}
+
+.input-with-clear {
+    position: relative;
+}
+
+.clear-button {
+    border: none;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.campo-preenchido-auto {
+    background-color: #e8f5e9 !important;
+    border-color: #4CAF50 !important;
+    transition: background-color 0.3s ease;
+}
