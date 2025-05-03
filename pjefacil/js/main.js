@@ -1,16 +1,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Referências aos elementos
     const editor = document.getElementById('editor');
+    const editorPlaceholder = document.getElementById('editor-placeholder');
     const btnAudiencia = document.getElementById('btn-audiencia');
     const btnDespacho = document.getElementById('btn-despacho');
-    const btnConsulta = document.getElementById('btn-consulta');
+    const btnCartaGuia = document.getElementById('btn-carta-guia');
     const contentDisplay = document.getElementById('content-display');
     
-    // URLs dos conteúdos (nesse momento, são placeholders)
+    // URLs dos conteúdos
     const conteudos = {
-        audiencia: 'components/audiencia.html',
-        despacho: 'components/despacho.html',
-        consulta: 'components/consulta.html'
+        audiencia: 'audiencia.html',
+        despacho: 'despacho.html',
+        cartaGuia: 'carta-guia.html'
     };
     
     // Função para carregar conteúdo
@@ -19,12 +20,18 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.text())
             .then(html => {
                 contentDisplay.innerHTML = html;
+                
                 // Inicializa os scripts do componente se necessário
-                const scripts = contentDisplay.querySelectorAll('script');
+                const scripts = Array.from(contentDisplay.querySelectorAll('script'));
                 scripts.forEach(script => {
                     const newScript = document.createElement('script');
-                    newScript.textContent = script.textContent;
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else {
+                        newScript.textContent = script.textContent;
+                    }
                     document.body.appendChild(newScript);
+                    script.remove(); // Remove o script original para evitar duplicação
                 });
             })
             .catch(error => {
@@ -43,19 +50,35 @@ document.addEventListener('DOMContentLoaded', function() {
         carregarConteudo(conteudos.despacho);
     });
     
-    btnConsulta.addEventListener('click', function() {
+    btnCartaGuia.addEventListener('click', function() {
         setActiveButton(this);
-        carregarConteudo(conteudos.consulta);
+        carregarConteudo(conteudos.cartaGuia);
     });
     
     // Função para definir o botão ativo
     function setActiveButton(button) {
         // Remove a classe active de todos os botões
-        document.querySelectorAll('.nav-btn').forEach(btn => {
+        document.querySelectorAll('.btn-primary').forEach(btn => {
             btn.classList.remove('active');
         });
         // Adiciona a classe active ao botão clicado
         button.classList.add('active');
+    }
+    
+    // Placeholder do editor
+    editor.addEventListener('focus', function() {
+        editorPlaceholder.style.display = 'none';
+    });
+    
+    editor.addEventListener('blur', function() {
+        if (editor.innerHTML.trim() === '') {
+            editorPlaceholder.style.display = 'block';
+        }
+    });
+    
+    // Verificar se o editor já tem conteúdo ao carregar a página
+    if (editor.innerHTML.trim() !== '') {
+        editorPlaceholder.style.display = 'none';
     }
     
     // Manipulação de cola de texto e imagens
@@ -84,6 +107,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     range.collapse(false);
                     selection.removeAllRanges();
                     selection.addRange(range);
+                    
+                    // Ocultar o placeholder quando houver conteúdo
+                    editorPlaceholder.style.display = 'none';
                 };
                 reader.readAsDataURL(blob);
             }
@@ -92,6 +118,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isImagePasted) {
             const plainText = clipboardData.getData("text/plain");
             document.execCommand("insertText", false, plainText);
+            
+            // Ocultar o placeholder quando houver conteúdo
+            if (plainText.trim() !== '') {
+                editorPlaceholder.style.display = 'none';
+            }
         }
     });
 });
