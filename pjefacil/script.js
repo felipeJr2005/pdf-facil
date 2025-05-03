@@ -123,61 +123,425 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Funções para inicializar funcionalidades após carregamento
     function inicializarFuncionalidadesAudiencia() {
-        const btnGerarTexto = document.getElementById('gerarTextoCumprimento');
-        const btnLimpar = document.getElementById('limparCumprimento');
-        const resultadoAudiencia = document.getElementById('resultado-audiencia');
-        
-        if (btnGerarTexto) {
-            btnGerarTexto.addEventListener('click', function() {
-                // Coleta os valores do formulário
-                const numeroProcesso = document.getElementById('numeroProcesso').value.trim();
-                const vara = document.getElementById('vara').value.trim();
-                const cidade = document.getElementById('cidade').value.trim();
-                const dataAudiencia = document.getElementById('dataAudiencia').value;
-                const horaAudiencia = document.getElementById('horaAudiencia').value;
-                const tipoAudiencia = document.getElementById('tipoAudiencia').value;
-                const reclamante = document.getElementById('reclamante').value.trim();
-                const reclamada = document.getElementById('reclamada').value.trim();
-                const advogadoReclamante = document.getElementById('advogadoReclamante').value.trim();
-                const preposto = document.getElementById('preposto').value.trim();
-                const advogadoReclamada = document.getElementById('advogadoReclamada').value.trim();
+        // Adicionando funções ao escopo global para que possam ser chamadas pelos botões onclick
+        window.addAssistenteAcusacao = function() {
+            const container = document.getElementById('assistente-acusacao-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="pessoa-container" id="assistente-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Assistente de Acusação</h4>
+                        <button class="btn btn-danger" onclick="removerElemento('assistente-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome:</label>
+                        <input type="text" class="assistente-nome">
+                    </div>
+                    <div class="input-group">
+                        <label>Representante:</label>
+                        <input type="text" class="assistente-representante">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="intimado-assistente-${id}" class="assistente-intimado">
+                        <label for="intimado-assistente-${id}">Intimado</label>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.addVitima = function() {
+            const container = document.getElementById('vitimas-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="vitima-container" id="vitima-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Vítima</h4>
+                        <button class="btn btn-danger" onclick="removerElemento('vitima-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome:</label>
+                        <input type="text" class="vitima-nome">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="presente-vitima-${id}" class="vitima-presente">
+                        <label for="presente-vitima-${id}">Presente</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="intimado-vitima-${id}" class="vitima-intimado">
+                        <label for="intimado-vitima-${id}">Intimado</label>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.addTestemunha = function(tipo) {
+            const container = document.getElementById(`testemunhas-${tipo}-container`);
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="testemunha-container" id="testemunha-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Testemunha ${tipo === 'mp' ? 'MP' : 'Defesa'}</h4>
+                        <button class="btn btn-danger" onclick="removerElemento('testemunha-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome:</label>
+                        <input type="text" class="testemunha-nome" data-tipo="${tipo}">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="presente-testemunha-${id}" class="testemunha-presente">
+                        <label for="presente-testemunha-${id}">Presente</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="intimado-testemunha-${id}" class="testemunha-intimado">
+                        <label for="intimado-testemunha-${id}">Intimado</label>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.addPolicial = function() {
+            const container = document.getElementById('policiais-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="policial-container" id="policial-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Policial</h4>
+                        <button class="btn btn-danger" onclick="removerElemento('policial-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome:</label>
+                        <input type="text" class="policial-nome">
+                    </div>
+                    <div class="input-group">
+                        <label>Matrícula:</label>
+                        <input type="text" class="policial-matricula">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="presente-policial-${id}" class="policial-presente">
+                        <label for="presente-policial-${id}">Presente</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="intimado-policial-${id}" class="policial-intimado">
+                        <label for="intimado-policial-${id}">Intimado</label>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.addReu = function() {
+            const container = document.getElementById('reus-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="reu-container" id="reu-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Réu</h4>
+                        <button class="btn btn-danger" onclick="removerElemento('reu-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Nome:</label>
+                        <input type="text" class="reu-nome">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="presente-reu-${id}" class="reu-presente">
+                        <label for="presente-reu-${id}">Presente</label>
+                    </div>
+                    <div class="input-group">
+                        <label>Advogado:</label>
+                        <input type="text" class="reu-advogado">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="intimado-reu-${id}" class="reu-intimado">
+                        <label for="intimado-reu-${id}">Intimado</label>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.removerElemento = function(id) {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.remove();
+            }
+        };
+
+        window.gerarTextoCumprimento = function() {
+            // Coletando dados do formulário
+            const intimadoMP = document.getElementById('intimado_mp').checked;
+            
+            // Coletando assistentes de acusação
+            const assistentes = [];
+            document.querySelectorAll('.pessoa-container').forEach(el => {
+                const nome = el.querySelector('.assistente-nome').value;
+                const representante = el.querySelector('.assistente-representante').value;
+                const intimado = el.querySelector('.assistente-intimado').checked;
                 
-                // Verifica se os campos obrigatórios estão preenchidos
-                if (!numeroProcesso || !vara || !cidade || !dataAudiencia || !horaAudiencia || 
-                    !reclamante || !reclamada) {
-                    alert('Por favor, preencha todos os campos obrigatórios.');
-                    return;
+                if (nome) {
+                    assistentes.push({
+                        nome: nome,
+                        representante: representante,
+                        intimado: intimado
+                    });
                 }
+            });
+            
+            // Coletando vítimas
+            const vitimas = [];
+            document.querySelectorAll('.vitima-container').forEach(el => {
+                const nome = el.querySelector('.vitima-nome').value;
+                const presente = el.querySelector('.vitima-presente').checked;
+                const intimado = el.querySelector('.vitima-intimado').checked;
                 
-                // Formata a data para exibição
-                const dataObj = new Date(dataAudiencia);
-                const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+                if (nome) {
+                    vitimas.push({
+                        nome: nome,
+                        presente: presente,
+                        intimado: intimado
+                    });
+                }
+            });
+            
+            // Coletando testemunhas do MP
+            const testemunhasMP = [];
+            document.querySelectorAll('.testemunha-nome[data-tipo="mp"]').forEach(el => {
+                const container = el.closest('.testemunha-container');
+                const nome = el.value;
+                const presente = container.querySelector('.testemunha-presente').checked;
+                const intimado = container.querySelector('.testemunha-intimado').checked;
                 
-                // Mapeia os tipos de audiência para texto mais amigável
-                const tiposAudiencia = {
-                    'una': 'Una',
-                    'inicial': 'Inicial',
-                    'instrucao': 'Instrução',
-                    'julgamento': 'Julgamento',
-                    'conciliacao': 'Conciliação'
-                };
+                if (nome) {
+                    testemunhasMP.push({
+                        nome: nome,
+                        presente: presente,
+                        intimado: intimado
+                    });
+                }
+            });
+            
+            // Coletando policiais
+            const policiais = [];
+            document.querySelectorAll('.policial-container').forEach(el => {
+                const nome = el.querySelector('.policial-nome').value;
+                const matricula = el.querySelector('.policial-matricula').value;
+                const presente = el.querySelector('.policial-presente').checked;
+                const intimado = el.querySelector('.policial-intimado').checked;
                 
-                const tipoAudienciaTexto = tiposAudiencia[tipoAudiencia] || tipoAudiencia;
+                if (nome) {
+                    policiais.push({
+                        nome: nome,
+                        matricula: matricula,
+                        presente: presente,
+                        intimado: intimado
+                    });
+                }
+            });
+            
+            // Coletando réus
+            const reus = [];
+            document.querySelectorAll('.reu-container').forEach(el => {
+                const nome = el.querySelector('.reu-nome').value;
+                const presente = el.querySelector('.reu-presente').checked;
+                const advogado = el.querySelector('.reu-advogado').value;
+                const intimado = el.querySelector('.reu-intimado').checked;
                 
-                // Gera o texto com base nos valores do formulário
-                let textoGerado = `
-                    <h3>CUMPRIMENTO DE AUDIÊNCIA</h3>
-                    <p>Processo nº: ${numeroProcesso}</p>
-                    <p>${vara} de ${cidade}</p>
-                    <p>Data: ${dataFormatada} às ${horaAudiencia}</p>
-                    <p>Audiência de ${tipoAudienciaTexto}</p>
-                    <br>
-                    <p><strong>Reclamante:</strong> ${reclamante}</p>
-                    <p><strong>Advogado(a) do Reclamante:</strong> ${advogadoReclamante || 'Não informado'}</p>
-                    <br>
-                    <p><strong>Reclamada:</strong> ${reclamada}</p>
-                    <p><strong>Preposto:</strong> ${preposto || 'Não informado'}</p>
-                    <p><strong>Advogado(a) da Reclamada:</strong> ${advogadoReclamada || 'Não informado'}</p>
+                if (nome) {
+                    reus.push({
+                        nome: nome,
+                        presente: presente,
+                        advogado: advogado,
+                        intimado: intimado
+                    });
+                }
+            });
+            
+            // Coletando testemunhas da defesa
+            const testemunhasDefesa = [];
+            document.querySelectorAll('.testemunha-nome[data-tipo="defesa"]').forEach(el => {
+                const container = el.closest('.testemunha-container');
+                const nome = el.value;
+                const presente = container.querySelector('.testemunha-presente').checked;
+                const intimado = container.querySelector('.testemunha-intimado').checked;
+                
+                if (nome) {
+                    testemunhasDefesa.push({
+                        nome: nome,
+                        presente: presente,
+                        intimado: intimado
+                    });
+                }
+            });
+            
+            // Coletando observações
+            const observacoesMP = document.getElementById('observacoes-mp').value;
+            const observacoesDefesa = document.getElementById('observacoes-defesa').value;
+            
+            // Gerando o texto
+            const hoje = new Date();
+            const dataFormatada = hoje.toLocaleDateString('pt-BR');
+            
+            let texto = `
+                <h2>CUMPRIMENTO DE AUDIÊNCIA - ${dataFormatada}</h2>
+                
+                <h3>ACUSAÇÃO</h3>
+                
+                <p><strong>Ministério Público:</strong> ${intimadoMP ? 'Intimado' : 'Não intimado'}</p>
+            `;
+            
+            // Adicionando assistentes de acusação
+            if (assistentes.length > 0) {
+                texto += `<h4>Assistentes de Acusação:</h4>`;
+                assistentes.forEach(assistente => {
+                    texto += `
+                        <p>- ${assistente.nome}
+                        ${assistente.representante ? ` (Representante: ${assistente.representante})` : ''}
+                        ${assistente.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando vítimas
+            if (vitimas.length > 0) {
+                texto += `<h4>Vítimas:</h4>`;
+                vitimas.forEach(vitima => {
+                    texto += `
+                        <p>- ${vitima.nome}
+                        ${vitima.presente ? ' - Presente' : ' - Ausente'}
+                        ${vitima.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando testemunhas do MP
+            if (testemunhasMP.length > 0) {
+                texto += `<h4>Testemunhas do MP:</h4>`;
+                testemunhasMP.forEach(testemunha => {
+                    texto += `
+                        <p>- ${testemunha.nome}
+                        ${testemunha.presente ? ' - Presente' : ' - Ausente'}
+                        ${testemunha.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando policiais
+            if (policiais.length > 0) {
+                texto += `<h4>Policiais:</h4>`;
+                policiais.forEach(policial => {
+                    texto += `
+                        <p>- ${policial.nome}
+                        ${policial.matricula ? ` (Matrícula: ${policial.matricula})` : ''}
+                        ${policial.presente ? ' - Presente' : ' - Ausente'}
+                        ${policial.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando observações do MP
+            if (observacoesMP) {
+                texto += `
+                    <h4>Observações do MP:</h4>
+                    <p>${observacoesMP.replace(/\n/g, '<br>')}</p>
+                `;
+            }
+            
+            texto += `<h3>DEFESA</h3>`;
+            
+            // Adicionando réus
+            if (reus.length > 0) {
+                texto += `<h4>Réus:</h4>`;
+                reus.forEach(reu => {
+                    texto += `
+                        <p>- ${reu.nome}
+                        ${reu.presente ? ' - Presente' : ' - Ausente'}
+                        ${reu.advogado ? ` - Advogado: ${reu.advogado}` : ''}
+                        ${reu.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando testemunhas da defesa
+            if (testemunhasDefesa.length > 0) {
+                texto += `<h4>Testemunhas da Defesa:</h4>`;
+                testemunhasDefesa.forEach(testemunha => {
+                    texto += `
+                        <p>- ${testemunha.nome}
+                        ${testemunha.presente ? ' - Presente' : ' - Ausente'}
+                        ${testemunha.intimado ? ' - Intimado' : ' - Não intimado'}</p>
+                    `;
+                });
+            }
+            
+            // Adicionando observações da defesa
+            if (observacoesDefesa) {
+                texto += `
+                    <h4>Observações da Defesa:</h4>
+                    <p>${observacoesDefesa.replace(/\n/g, '<br>')}</p>
+                `;
+            }
+            
+            // Exibindo o resultado
+            const resultadoAudiencia = document.getElementById('resultado-audiencia');
+            resultadoAudiencia.innerHTML = texto;
+            resultadoAudiencia.style.display = 'block';
+            
+            // Adicionando o texto ao editor principal
+            const editor = document.getElementById('editor');
+            if (editor) {
+                // Se o usuário estiver na página principal, adiciona o texto ao editor
+                editor.innerHTML = texto;
+                
+                // Fecha o container dinâmico após um tempo
+                setTimeout(() => {
+                    const conteudoDinamico = document.getElementById('conteudo-dinamico');
+                    if (conteudoDinamico) {
+                        conteudoDinamico.style.display = 'none';
+                    }
+                }, 1000);
+            }
+        };
+
+        window.limparFormulario = function() {
+            if (confirm('Deseja realmente limpar todos os campos?')) {
+                // Limpando checkbox do MP
+                document.getElementById('intimado_mp').checked = false;
+                
+                // Limpando containers
+                document.getElementById('assistente-acusacao-container').innerHTML = '';
+                document.getElementById('vitimas-container').innerHTML = '';
+                document.getElementById('testemunhas-mp-container').innerHTML = '';
+                document.getElementById('policiais-container').innerHTML = '';
+                document.getElementById('reus-container').innerHTML = '';
+                document.getElementById('testemunhas-defesa-container').innerHTML = '';
+                
+                // Limpando textareas
+                document.getElementById('observacoes-mp').value = '';
+                document.getElementById('observacoes-defesa').value = '';
+                
+                // Escondendo resultado
+                document.getElementById('resultado-audiencia').style.display = 'none';
+            }
+        };
+
+        // Função para salvar dados no localStorage
+        window.salvarDados = function() {
+            // Implementação futura - salvamento de dados
+            alert('Funcionalidade de salvamento será implementada em uma versão futura.');
+        };
+    } Reclamada:</strong> ${advogadoReclamada || 'Não informado'}</p>
                     <br>
                     <p>Compareci à audiência designada, acompanhando a parte ${reclamada ? 'Reclamada' : 'Reclamante'}, conforme designado.</p>
                     <p>Resultado da Audiência: </p>
