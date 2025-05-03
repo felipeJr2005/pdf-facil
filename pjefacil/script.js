@@ -123,49 +123,105 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Funções para inicializar funcionalidades após carregamento
     function inicializarFuncionalidadesAudiencia() {
-        const btnGerarTexto = document.getElementById('gerar-texto-audiencia');
-        const btnLimpar = document.getElementById('limpar-audiencia');
+        const btnGerarTexto = document.getElementById('gerarTextoCumprimento');
+        const btnLimpar = document.getElementById('limparCumprimento');
         const resultadoAudiencia = document.getElementById('resultado-audiencia');
         
         if (btnGerarTexto) {
             btnGerarTexto.addEventListener('click', function() {
                 // Coleta os valores do formulário
-                const dataAudiencia = document.getElementById('data-audiencia').value;
-                const numeroProcesso = document.getElementById('numero-processo').value;
-                const nomeCliente = document.getElementById('nome-cliente').value;
-                const tipoAudiencia = document.getElementById('tipo-audiencia').value;
-                const localAudiencia = document.getElementById('local-audiencia').value;
-                const observacoes = document.getElementById('observacoes').value;
+                const numeroProcesso = document.getElementById('numeroProcesso').value.trim();
+                const vara = document.getElementById('vara').value.trim();
+                const cidade = document.getElementById('cidade').value.trim();
+                const dataAudiencia = document.getElementById('dataAudiencia').value;
+                const horaAudiencia = document.getElementById('horaAudiencia').value;
+                const tipoAudiencia = document.getElementById('tipoAudiencia').value;
+                const reclamante = document.getElementById('reclamante').value.trim();
+                const reclamada = document.getElementById('reclamada').value.trim();
+                const advogadoReclamante = document.getElementById('advogadoReclamante').value.trim();
+                const preposto = document.getElementById('preposto').value.trim();
+                const advogadoReclamada = document.getElementById('advogadoReclamada').value.trim();
+                
+                // Verifica se os campos obrigatórios estão preenchidos
+                if (!numeroProcesso || !vara || !cidade || !dataAudiencia || !horaAudiencia || 
+                    !reclamante || !reclamada) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
                 
                 // Formata a data para exibição
-                const dataFormatada = dataAudiencia ? new Date(dataAudiencia).toLocaleDateString('pt-BR') : '';
+                const dataObj = new Date(dataAudiencia);
+                const dataFormatada = dataObj.toLocaleDateString('pt-BR');
                 
-                // Gera o texto
+                // Mapeia os tipos de audiência para texto mais amigável
+                const tiposAudiencia = {
+                    'una': 'Una',
+                    'inicial': 'Inicial',
+                    'instrucao': 'Instrução',
+                    'julgamento': 'Julgamento',
+                    'conciliacao': 'Conciliação'
+                };
+                
+                const tipoAudienciaTexto = tiposAudiencia[tipoAudiencia] || tipoAudiencia;
+                
+                // Gera o texto com base nos valores do formulário
                 let textoGerado = `
-                    <h3>Informações da Audiência</h3>
-                    <p><strong>Data:</strong> ${dataFormatada}</p>
-                    <p><strong>Processo:</strong> ${numeroProcesso}</p>
-                    <p><strong>Cliente:</strong> ${nomeCliente}</p>
-                    <p><strong>Tipo de Audiência:</strong> ${document.getElementById('tipo-audiencia').options[document.getElementById('tipo-audiencia').selectedIndex].text}</p>
-                    <p><strong>Local:</strong> ${localAudiencia}</p>
-                    <p><strong>Observações:</strong> ${observacoes}</p>
+                    <h3>CUMPRIMENTO DE AUDIÊNCIA</h3>
+                    <p>Processo nº: ${numeroProcesso}</p>
+                    <p>${vara} de ${cidade}</p>
+                    <p>Data: ${dataFormatada} às ${horaAudiencia}</p>
+                    <p>Audiência de ${tipoAudienciaTexto}</p>
+                    <br>
+                    <p><strong>Reclamante:</strong> ${reclamante}</p>
+                    <p><strong>Advogado(a) do Reclamante:</strong> ${advogadoReclamante || 'Não informado'}</p>
+                    <br>
+                    <p><strong>Reclamada:</strong> ${reclamada}</p>
+                    <p><strong>Preposto:</strong> ${preposto || 'Não informado'}</p>
+                    <p><strong>Advogado(a) da Reclamada:</strong> ${advogadoReclamada || 'Não informado'}</p>
+                    <br>
+                    <p>Compareci à audiência designada, acompanhando a parte ${reclamada ? 'Reclamada' : 'Reclamante'}, conforme designado.</p>
+                    <p>Resultado da Audiência: </p>
+                    <p>[Adicione aqui o resultado da audiência]</p>
+                    <br>
+                    <p>Próxima audiência (se houver): </p>
+                    <p>[Data, hora e tipo da próxima audiência, se aplicável]</p>
                 `;
                 
                 // Exibe o resultado
                 resultadoAudiencia.innerHTML = textoGerado;
                 resultadoAudiencia.style.display = 'block';
+                
+                // Adiciona o texto gerado ao editor principal
+                const editor = document.getElementById('editor');
+                if (editor) {
+                    // Se o usuário estiver na página principal, adiciona o texto ao editor
+                    editor.innerHTML = textoGerado;
+                    
+                    // Fecha o container dinâmico
+                    setTimeout(() => {
+                        const conteudoDinamico = document.getElementById('conteudo-dinamico');
+                        if (conteudoDinamico) {
+                            conteudoDinamico.style.display = 'none';
+                        }
+                    }, 1000);
+                }
             });
         }
         
         if (btnLimpar) {
             btnLimpar.addEventListener('click', function() {
                 // Limpa os campos do formulário
-                document.getElementById('data-audiencia').value = '';
-                document.getElementById('numero-processo').value = '';
-                document.getElementById('nome-cliente').value = '';
-                document.getElementById('tipo-audiencia').selectedIndex = 0;
-                document.getElementById('local-audiencia').value = '';
-                document.getElementById('observacoes').value = '';
+                document.getElementById('numeroProcesso').value = '';
+                document.getElementById('vara').value = '';
+                document.getElementById('cidade').value = '';
+                document.getElementById('dataAudiencia').value = '';
+                document.getElementById('horaAudiencia').value = '';
+                document.getElementById('tipoAudiencia').selectedIndex = 0;
+                document.getElementById('reclamante').value = '';
+                document.getElementById('reclamada').value = '';
+                document.getElementById('advogadoReclamante').value = '';
+                document.getElementById('preposto').value = '';
+                document.getElementById('advogadoReclamada').value = '';
                 
                 // Esconde o resultado
                 resultadoAudiencia.style.display = 'none';
