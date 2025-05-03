@@ -93,24 +93,53 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Função para exibir conteúdo no container
-    async function exibirConteudo(arquivo) {
-        // Mostra indicador de carregamento
-        conteudoDinamico.style.display = 'block';
-        conteudoDinamico.innerHTML = '<div class="carregando">Carregando...</div>';
-        
-        // Carrega o conteúdo
-        const html = await carregarConteudo(arquivo);
-        
-        // Exibe o conteúdo
-        conteudoDinamico.innerHTML = html;
-        
-        // Inicializa funcionalidades específicas após carregamento
-        if (arquivo === 'cumprir-audiencia.html') {
-            inicializarFuncionalidadesAudiencia();
-        } else if (arquivo === 'carta-guia.html') {
-            inicializarFuncionalidadesCarta();
-        }
+   // Substitua a função exibirConteudo por esta versão
+async function exibirConteudo(tipo) {
+    const conteudoDinamico = document.getElementById('conteudo-dinamico');
+    conteudoDinamico.style.display = 'block';
+
+    if (tipo === 'audiencia') {
+        conteudoDinamico.innerHTML = `
+        <div class="conteudo-audiencia">
+            <h2>Cumprir Audiência</h2>
+            
+            <div class="form-content visible">
+                <!-- Lado Acusatório -->
+                <div class="panel">
+                    <h2 class="section-title">Acusação</h2>
+                    <div class="section">
+                        <div class="linha" style="justify-content: space-between; align-items: center;">
+                            <h3 class="section-title">Ministério Público</h3>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" id="intimado_mp">
+                                    <label for="intimado_mp">Intimado</label>
+                                </div>
+                                <button class="btn btn-primary" onclick="addAssistenteAcusacao()">
+                                    Assistente de Acusação
+                                </button>
+                            </div>
+                        </div>
+                        <div id="assistente-acusacao-container"></div>
+                    </div>
+                    <!-- Restante do seu HTML de audiência -->
+                    <!-- ... (coloque aqui todo o HTML que você postou anteriormente) ... -->
+                </div>
+            </div>
+            
+            <div id="resultado-audiencia" class="resultado-texto" style="display: none;">
+                <!-- O texto gerado será inserido aqui -->
+            </div>
+        </div>
+        `;
+        inicializarFuncionalidadesAudiencia();
     }
+}
+
+// Modifique o event listener do botão para:
+document.getElementById('btn-cumprir-audiencia').addEventListener('click', function() {
+    exibirConteudo('audiencia');
+});
 
     // Event listeners para os botões
     btnCumprirAudiencia.addEventListener('click', function() {
