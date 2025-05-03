@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resumidor Jurídico Avançado</title>
-    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Referência ao CSS modular -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/layout.css">
 </head>
 <body>
     <h1>Resumidor Jurídico Avançado</h1>
@@ -102,25 +107,24 @@ Tipo de Processo Criminal: [Ordinário/Sumário/Sumaríssimo]</textarea>
         <button onclick="processarSentenca()" class="btn btn-primary">Extrair Dados</button>
     </div>
 
-    <div class="button-container">
-        <button id="btn-audiencia" class="btn btn-secundary">Cumprir Audiência</button>
-        <button id="btn-carta-guia" class="btn btn-secundary">Carta Guia</button>
+    <!-- Área para botões de funcionalidades adicionais -->
+    <div class="function-buttons">
+        <button id="btn-audiencia" class="btn btn-secondary">Cumprir Audiência</button>
+        <button id="btn-carta-guia" class="btn btn-secondary">Carta Guia</button>
     </div>
     
+    <!-- Área de exibição do resultado -->
     <div id="resultado">Os dados extraídos aparecerão aqui...</div>
     
+    <!-- Área de status e estatísticas -->
     <div id="status" class="status"></div>
     <div id="cache-stats" class="cache-info"></div>
 
-    <!-- Carregamento de scripts modulares -->
+    <!-- Área onde o conteúdo das funcionalidades será carregado -->
+    <div id="content-container" class="module-content" style="display: none;"></div>
+
+    <!-- Scripts JS -->
     <script src="js/util.js"></script>
     <script src="js/notas.js"></script>
-    <script>
-        // Inicialização após carregamento do DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            // Iniciar o módulo principal
-            NotasModule.init();
-        });
-    </script>
 </body>
 </html>
