@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Jurídico</title>
+    <title>Resumidor Jurídico</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container main-container">
+    <div class="container">
         <!-- Área 1: Editor Panel (mantido como está) -->
         <div class="editor panel">
             <div id="editor" contenteditable="true"></div>
-            <div class="editor-hint">Cole aqui o texto do processo. Use Ctrl+V para colar.</div>
+            <div id="editor-placeholder">Cole aqui o texto do processo. Use Ctrl+V para colar.</div>
         </div>
         
         <!-- Área 2: Container de Botões -->
-        <div class="buttons-container">
-            <button id="btn-audiencia" class="nav-btn">Cumprir Audiência</button>
-            <button id="btn-despacho" class="nav-btn">Despacho</button>
-            <button id="btn-carta-guia" class="nav-btn">Carta Guia</button>
+        <div class="buttons-container panel">
+            <button id="btn-audiencia" class="btn btn-primary">Cumprir Audiência</button>
+            <button id="btn-despacho" class="btn btn-primary">Despacho</button>
+            <button id="btn-carta-guia" class="btn btn-primary">Carta Guia</button>
         </div>
         
         <!-- Área 3: Área de Exibição de Conteúdo -->
-        <div id="content-display" class="content-area">
+        <div id="content-display" class="content-area panel">
             <!-- O conteúdo será carregado aqui dinamicamente -->
         </div>
     </div>
