@@ -1,4 +1,4 @@
-<div class="form-content">
+<div class="form-content visible">
     <!-- Lado Acusatório -->
     <div class="panel">
         <h2 class="section-title">Acusação</h2>
@@ -212,7 +212,7 @@
             document.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
 
             // Limpar os selects
-            document.querySelectorAll('select').forEach(el => el.value = '');
+            document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
 
             // Limpar o campo de nome do advogado (se houver)
             document.querySelectorAll('.nome-advogado').forEach(el => {
