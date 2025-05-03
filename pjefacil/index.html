@@ -3,30 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumidor Jurídico</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Editor de Notas</title>
+    <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Área 1: Editor Panel (mantido como está) -->
-        <div class="editor panel">
-            <div id="editor" contenteditable="true"></div>
-            <div id="editor-placeholder">Cole aqui o texto do processo. Use Ctrl+V para colar.</div>
-        </div>
-        
-        <!-- Área 2: Container de Botões -->
-        <div class="buttons-container panel">
-            <button id="btn-audiencia" class="btn btn-primary">Cumprir Audiência</button>
-            <button id="btn-despacho" class="btn btn-primary">Despacho</button>
-            <button id="btn-carta-guia" class="btn btn-primary">Carta Guia</button>
-        </div>
-        
-        <!-- Área 3: Área de Exibição de Conteúdo -->
-        <div id="content-display" class="content-area panel">
-            <!-- O conteúdo será carregado aqui dinamicamente -->
+    <!-- Primeira parte: Editor -->
+    <div class="container editor-container">
+        <div class="editor-wrapper">
+            <div class="toolbar">
+                <button id="bold" title="Negrito"><strong>B</strong></button>
+                <button id="italic" title="Itálico"><em>I</em></button>
+                <button id="underline" title="Sublinhado"><u>U</u></button>
+                <button id="strikethrough" title="Tachado"><s>T</s></button>
+                <button id="justifyLeft" title="Alinhar à esquerda">⟵</button>
+                <button id="justifyCenter" title="Centralizar">↔</button>
+                <button id="justifyRight" title="Alinhar à direita">⟶</button>
+                <button id="insertUnorderedList" title="Lista com marcadores">•</button>
+                <button id="insertOrderedList" title="Lista numerada">1.</button>
+                <button id="outdent" title="Diminuir recuo">↤</button>
+                <button id="indent" title="Aumentar recuo">↦</button>
+                <select id="fontSize">
+                    <option value="1">Tamanho 1</option>
+                    <option value="2">Tamanho 2</option>
+                    <option value="3" selected>Tamanho 3</option>
+                    <option value="4">Tamanho 4</option>
+                    <option value="5">Tamanho 5</option>
+                    <option value="6">Tamanho 6</option>
+                    <option value="7">Tamanho 7</option>
+                </select>
+                <button id="save" title="Salvar">Salvar</button>
+                <button id="load" title="Carregar">Carregar</button>
+                <button id="clear" title="Limpar">Limpar</button>
+            </div>
+            <div id="editor" contenteditable="true" class="editor-area">
+                <p>Digite seu texto aqui...</p>
+            </div>
         </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <!-- Segunda parte: Botões -->
+    <div class="container botoes-container">
+        <button id="btn-cumprir-audiencia" class="botao-acao">Cumprir Audiência</button>
+        <button id="btn-carta-guia" class="botao-acao">Carta Guia</button>
+    </div>
+
+    <!-- Terceira parte: Container invisível que receberá conteúdo dos botões -->
+    <div class="container conteudo-container" id="conteudo-dinamico" style="display: none;">
+        <!-- O conteúdo será inserido aqui quando um botão for clicado -->
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
