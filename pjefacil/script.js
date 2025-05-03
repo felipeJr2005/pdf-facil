@@ -1,203 +1,5 @@
-// Funções para inicializar funcionalidades da Carta Guia
-    function inicializarFuncionalidadesCarta() {
-        // Adicionando funções ao escopo global para que possam ser chamadas pelos botões onclick
-        window.addAnexo = function() {
-            const container = document.getElementById('anexos-container');
-            const id = new Date().getTime();
-            
-            const html = `
-                <div class="anexo-container" id="anexo-${id}">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4>Anexo</h4>
-                        <button class="btn btn-danger" onclick="removerElementoCarta('anexo-${id}')">Remover</button>
-                    </div>
-                    <div class="input-group">
-                        <label>Descrição:</label>
-                        <input type="text" class="anexo-descricao" placeholder="Ex: Cópia da Certidão">
-                    </div>
-                    <div class="input-group">
-                        <label>Quantidade de páginas:</label>
-                        <input type="number" class="anexo-paginas" min="1" value="1">
-                    </div>
-                </div>
-            `;
-            
-            container.insertAdjacentHTML('beforeend', html);
-        };
-
-        window.removerElementoCarta = function(id) {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.remove();
-            }
-        };
-
-        window.gerarCartaGuia = function() {
-            // Coletando dados do formulário
-            const dataCarta = document.getElementById('data-carta').value;
-            const numeroProcesso = document.getElementById('numero-processo-carta').value.trim();
-            const vara = document.getElementById('vara-carta').value.trim();
-            const comarca = document.getElementById('comarca-carta').value.trim();
-            const destinatario = document.getElementById('destinatario').value.trim();
-            const endereco = document.getElementById('endereco-destinatario').value.trim();
-            const responsavel = document.getElementById('responsavel').value.trim();
-            const assunto = document.getElementById('assunto').value.trim();
-            const referencia = document.getElementById('ref').value.trim();
-            const conteudo = document.getElementById('conteudo').value.trim();
-            const remetente = document.getElementById('remetente').value.trim();
-            const cargo = document.getElementById('cargo').value.trim();
-            const identificacao = document.getElementById('identificacao').value.trim();
-            
-            // Verificando campos obrigatórios
-            if (!dataCarta || !numeroProcesso || !vara || !comarca || !destinatario || 
-                !endereco || !assunto || !conteudo || !remetente) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            // Formata a data para exibição
-            const dataObj = new Date(dataCarta);
-            const dataFormatada = dataObj.toLocaleDateString('pt-BR');
-            
-            // Coletando anexos
-            const anexos = [];
-            document.querySelectorAll('.anexo-container').forEach(el => {
-                const descricao = el.querySelector('.anexo-descricao').value;
-                const paginas = el.querySelector('.anexo-paginas').value;
-                
-                if (descricao) {
-                    anexos.push({
-                        descricao: descricao,
-                        paginas: paginas
-                    });
-                }
-            });
-            
-            // Gerando o texto da carta
-            let texto = `
-                <div class="carta-formal">
-                    <div class="cabecalho-carta">
-                        <p class="direita">${comarca}, ${dataFormatada}</p>
-                        
-                        <p class="referencia">Processo nº: ${numeroProcesso}</p>
-                        ${referencia ? `<p class="referencia">Ref.: ${referencia}</p>` : ''}
-                        
-                        <div class="destinatario">
-                            <p><strong>${destinatario}</strong></p>
-                            <p>${endereco.replace(/\n/g, '<br>')}</p>
-                            ${responsavel ? `<p>A/C: ${responsavel}</p>` : ''}
-                        </div>
-                        
-                        <p class="assunto"><strong>Assunto:</strong> ${assunto}</p>
-                    </div>
-                    
-                    <div class="corpo-carta">
-                        <p>Excelentíssimo(a) Senhor(a),</p>
-                        
-                        <p class="texto-conteudo">${conteudo.replace(/\n/g, '<br>')}</p>
-                    </div>
-            `;
-            
-            // Adicionando anexos, se houver
-            if (anexos.length > 0) {
-                texto += `
-                    <div class="anexos-carta">
-                        <p><strong>Anexos:</strong></p>
-                        <ul>
-                `;
-                
-                anexos.forEach(anexo => {
-                    texto += `<li>${anexo.descricao} - ${anexo.paginas} página${anexo.paginas > 1 ? 's' : ''}</li>`;
-                });
-                
-                texto += `
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            // Finalizando a carta
-            texto += `
-                    <div class="assinatura">
-                        <p>Atenciosamente,</p>
-                        
-                        <div class="assinante">
-                            <p class="nome-assinante">${remetente}</p>
-                            <p class="cargo-assinante">${cargo}</p>
-                            ${identificacao ? `<p class="identificacao">${identificacao}</p>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Exibindo o resultado
-            const resultadoCarta = document.getElementById('resultado-carta');
-            resultadoCarta.innerHTML = texto;
-            resultadoCarta.style.display = 'block';
-            
-            // Adicionando o texto ao editor principal
-            const editor = document.getElementById('editor');
-            if (editor) {
-                // Se o usuário estiver na página principal, adiciona o texto ao editor
-                editor.innerHTML = texto;
-                
-                // Fecha o container dinâmico após um tempo
-                setTimeout(() => {
-                    const conteudoDinamico = document.getElementById('conteudo-dinamico');
-                    if (conteudoDinamico) {
-                        conteudoDinamico.style.display = 'none';
-                    }
-                }, 1000);
-            }
-        };
-
-        window.limparCartaGuia = function() {
-            if (confirm('Deseja realmente limpar todos os campos?')) {
-                // Limpando campos
-                document.getElementById('data-carta').value = '';
-                document.getElementById('numero-processo-carta').value = '';
-                document.getElementById('vara-carta').value = '';
-                document.getElementById('comarca-carta').value = '';
-                document.getElementById('destinatario').value = '';
-                document.getElementById('endereco-destinatario').value = '';
-                document.getElementById('responsavel').value = '';
-                document.getElementById('assunto').value = '';
-                document.getElementById('ref').value = '';
-                document.getElementById('conteudo').value = '';
-                document.getElementById('remetente').value = '';
-                document.getElementById('cargo').value = '';
-                document.getElementById('identificacao').value = '';
-                
-                // Limpando anexos
-                document.getElementById('anexos-container').innerHTML = '';
-                
-                // Escondendo resultado
-                document.getElementById('resultado-carta').style.display = 'none';
-            }
-        };
-
-        window.salvarCartaGuia = function() {
-            try {
-                // Coletando todos os dados do formulário
-                const dados = {
-                    dataCarta: document.getElementById('data-carta').value,
-                    numeroProcesso: document.getElementById('numero-processo-carta').value,
-                    vara: document.getElementById('vara-carta').value,
-                    comarca: document.getElementById('comarca-carta').value,
-                    destinatario: document.getElementById('destinatario').value,
-                    endereco: document.getElementById('endereco-destinatario').value,
-                    responsavel: document.getElementById('responsavel').value,
-                    assunto: document.getElementById('assunto').value,
-                    referencia: document.getElementById('ref').value,
-                    conteudo: document.getElementById('conteudo').value,
-                    remetente: document.getElementById('remetente').value,
-                    cargo: document.getElementById('cargo').value,
-                    identificacao: document.getElementById('identificacao').value,
-                    
-                    // Coletando anexos
-                    anexos: Array.from(document.querySelectorAll('.anexo-container')).map(el => ({
-                        descricao: el.querySelector('.anexo-descricdocument.addEventListener('DOMContentLoaded', function() {
-    // Inicialização do editor
+document.addEventListener('DOMContentLoaded', function() {
+    // Parte 1: Editor de Texto
     const editor = document.getElementById('editor');
     const buttons = document.querySelectorAll('.toolbar button');
     const fontSizeSelect = document.getElementById('fontSize');
@@ -256,7 +58,7 @@
         }
     }
 
-    // Implementação dos botões de ação usando Fetch API
+    // Parte 2: Botões de Ação
     const btnCumprirAudiencia = document.getElementById('btn-cumprir-audiencia');
     const btnCartaGuia = document.getElementById('btn-carta-guia');
     const conteudoDinamico = document.getElementById('conteudo-dinamico');
@@ -316,14 +118,14 @@
     });
 
     btnCartaGuia.addEventListener('click', function() {
-        // Função desativada temporariamente
-        // exibirConteudo('carta-guia.html');
-        alert('Funcionalidade "Carta Guia" será implementada em breve.');
+        exibirConteudo('carta-guia.html');
     });
+    
+    // Parte 3: Funcionalidades dos formulários dinâmicos
     
     // Funções para inicializar funcionalidades após carregamento
     function inicializarFuncionalidadesAudiencia() {
-        // Adicionando funções ao escopo global para que possam ser chamadas pelos botões onclick
+        // Implementação das funções para o formulário de audiência
         window.addAssistenteAcusacao = function() {
             const container = document.getElementById('assistente-acusacao-container');
             const id = new Date().getTime();
@@ -701,7 +503,6 @@
             // Adicionando o texto ao editor principal
             const editor = document.getElementById('editor');
             if (editor) {
-                // Se o usuário estiver na página principal, adiciona o texto ao editor
                 editor.innerHTML = texto;
                 
                 // Fecha o container dinâmico após um tempo
@@ -736,119 +537,108 @@
             }
         };
 
-        // Função para salvar dados no localStorage
         window.salvarDados = function() {
-            // Implementação futura - salvamento de dados
             alert('Funcionalidade de salvamento será implementada em uma versão futura.');
         };
-    } Reclamada:</strong> ${advogadoReclamada || 'Não informado'}</p>
-                    <br>
-                    <p>Compareci à audiência designada, acompanhando a parte ${reclamada ? 'Reclamada' : 'Reclamante'}, conforme designado.</p>
-                    <p>Resultado da Audiência: </p>
-                    <p>[Adicione aqui o resultado da audiência]</p>
-                    <br>
-                    <p>Próxima audiência (se houver): </p>
-                    <p>[Data, hora e tipo da próxima audiência, se aplicável]</p>
-                `;
-                
-                // Exibe o resultado
-                resultadoAudiencia.innerHTML = textoGerado;
-                resultadoAudiencia.style.display = 'block';
-                
-                // Adiciona o texto gerado ao editor principal
-                const editor = document.getElementById('editor');
-                if (editor) {
-                    // Se o usuário estiver na página principal, adiciona o texto ao editor
-                    editor.innerHTML = textoGerado;
-                    
-                    // Fecha o container dinâmico
-                    setTimeout(() => {
-                        const conteudoDinamico = document.getElementById('conteudo-dinamico');
-                        if (conteudoDinamico) {
-                            conteudoDinamico.style.display = 'none';
-                        }
-                    }, 1000);
-                }
-            });
-        }
-        
-        if (btnLimpar) {
-            btnLimpar.addEventListener('click', function() {
-                // Limpa os campos do formulário
-                document.getElementById('numeroProcesso').value = '';
-                document.getElementById('vara').value = '';
-                document.getElementById('cidade').value = '';
-                document.getElementById('dataAudiencia').value = '';
-                document.getElementById('horaAudiencia').value = '';
-                document.getElementById('tipoAudiencia').selectedIndex = 0;
-                document.getElementById('reclamante').value = '';
-                document.getElementById('reclamada').value = '';
-                document.getElementById('advogadoReclamante').value = '';
-                document.getElementById('preposto').value = '';
-                document.getElementById('advogadoReclamada').value = '';
-                
-                // Esconde o resultado
-                resultadoAudiencia.style.display = 'none';
-            });
-        }
     }
-    
+
     function inicializarFuncionalidadesCarta() {
-        const btnGerarCarta = document.getElementById('gerar-carta');
-        const btnLimparCarta = document.getElementById('limpar-carta');
-        const resultadoCarta = document.getElementById('resultado-carta');
-        
-        if (btnGerarCarta) {
-            btnGerarCarta.addEventListener('click', function() {
-                // Coleta os valores do formulário
-                const dataCarta = document.getElementById('data-carta').value;
-                const destinatario = document.getElementById('destinatario').value;
-                const endereco = document.getElementById('endereco-destinatario').value;
-                const referencia = document.getElementById('numero-referencia').value;
-                const assunto = document.getElementById('assunto').value;
-                const conteudo = document.getElementById('conteudo-carta').value;
-                const remetente = document.getElementById('remetente').value;
-                const cargo = document.getElementById('cargo-remetente').value;
-                
-                // Formata a data para exibição
-                const dataFormatada = dataCarta ? new Date(dataCarta).toLocaleDateString('pt-BR') : '';
-                
-                // Gera o texto da carta
-                let cartaGerada = `
-                    <div class="carta">
-                        <div class="cabecalho-carta">
-                            <p class="data-carta">${dataFormatada}</p>
-                            
-                            <div class="destinatario">
-                                <p>${destinatario}</p>
-                                <p>${endereco.replace(/\n/g, '<br>')}</p>
-                            </div>
-                            
-                            <p class="referencia">Ref: ${referencia}</p>
-                            
-                            <p class="assunto"><strong>Assunto:</strong> ${assunto}</p>
-                        </div>
-                        
-                        <div class="corpo-carta">
-                            <p>${conteudo.replace(/\n/g, '<br>')}</p>
-                        </div>
-                        
-                        <div class="assinatura">
-                            <p>Atenciosamente,</p>
-                            <p class="remetente">${remetente}</p>
-                            <p class="cargo">${cargo}</p>
-                        </div>
+        // Implementação das funções para o formulário de carta guia
+        window.addAnexo = function() {
+            const container = document.getElementById('anexos-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="anexo-container" id="anexo-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4>Anexo</h4>
+                        <button class="btn btn-danger" onclick="removerElementoCarta('anexo-${id}')">Remover</button>
                     </div>
-                `;
+                    <div class="input-group">
+                        <label>Descrição:</label>
+                        <input type="text" class="anexo-descricao" placeholder="Ex: Cópia da Certidão">
+                    </div>
+                    <div class="input-group">
+                        <label>Quantidade de páginas:</label>
+                        <input type="number" class="anexo-paginas" min="1" value="1">
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.removerElementoCarta = function(id) {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.remove();
+            }
+        };
+
+        window.gerarCartaGuia = function() {
+            // Coletando dados do formulário
+            const dataCarta = document.getElementById('data-carta').value;
+            const destinatario = document.getElementById('destinatario').value;
+            const endereco = document.getElementById('endereco-destinatario').value;
+            const referencia = document.getElementById('numero-referencia').value;
+            const assunto = document.getElementById('assunto').value;
+            const conteudo = document.getElementById('conteudo-carta').value;
+            const remetente = document.getElementById('remetente').value;
+            const cargo = document.getElementById('cargo-remetente').value;
+            
+            // Formata a data para exibição
+            const dataFormatada = dataCarta ? new Date(dataCarta).toLocaleDateString('pt-BR') : '';
+            
+            // Gera o texto da carta
+            let cartaGerada = `
+                <div class="carta">
+                    <div class="cabecalho-carta">
+                        <p class="data-carta">${dataFormatada}</p>
+                        
+                        <div class="destinatario">
+                            <p>${destinatario}</p>
+                            <p>${endereco.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        
+                        <p class="referencia">Ref: ${referencia}</p>
+                        
+                        <p class="assunto"><strong>Assunto:</strong> ${assunto}</p>
+                    </div>
+                    
+                    <div class="corpo-carta">
+                        <p>${conteudo.replace(/\n/g, '<br>')}</p>
+                    </div>
+                    
+                    <div class="assinatura">
+                        <p>Atenciosamente,</p>
+                        <p class="remetente">${remetente}</p>
+                        <p class="cargo">${cargo}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Exibe o resultado
+            const resultadoCarta = document.getElementById('resultado-carta');
+            resultadoCarta.innerHTML = cartaGerada;
+            resultadoCarta.style.display = 'block';
+            
+            // Adiciona o texto ao editor principal
+            const editor = document.getElementById('editor');
+            if (editor) {
+                editor.innerHTML = cartaGerada;
                 
-                // Exibe o resultado
-                resultadoCarta.innerHTML = cartaGerada;
-                resultadoCarta.style.display = 'block';
-            });
-        }
-        
-        if (btnLimparCarta) {
-            btnLimparCarta.addEventListener('click', function() {
+                // Fecha o container dinâmico após um tempo
+                setTimeout(() => {
+                    const conteudoDinamico = document.getElementById('conteudo-dinamico');
+                    if (conteudoDinamico) {
+                        conteudoDinamico.style.display = 'none';
+                    }
+                }, 1000);
+            }
+        };
+
+        window.limparCartaGuia = function() {
+            if (confirm('Deseja realmente limpar todos os campos?')) {
                 // Limpa os campos do formulário
                 document.getElementById('data-carta').value = '';
                 document.getElementById('destinatario').value = '';
@@ -860,8 +650,11 @@
                 document.getElementById('cargo-remetente').value = '';
                 
                 // Esconde o resultado
-                resultadoCarta.style.display = 'none';
-            });
-        }
+                const resultadoCarta = document.getElementById('resultado-carta');
+                if (resultadoCarta) {
+                    resultadoCarta.style.display = 'none';
+                }
+            }
+        };
     }
 });
