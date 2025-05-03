@@ -1,1 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário Carta Guia</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="editable-section">
+            <div class="form-group">
+                <label class="editable-label" for="numeroInquerito">Número de Inquérito</label>
+                <input type="text" id="numeroInquerito" class="form-control">
+            </div>
+            
+            <div class="field-header">
+                <label class="editable-label field-title" for="denuncia">Denúncia</label>
+                <button type="button" class="btn btn-secondary btn-sm" id="inserirDenuncia">Inserir</button>
+            </div>
+            <div id="denuncia" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da denúncia..."></div>
+            <div class="character-count" id="denunciaCount">0 caracteres</div>
+            
+            <div class="field-header">
+                <label class="editable-label field-title" for="sentenca">Sentença</label>
+                <button type="button" class="btn btn-secondary" id="resumirSentenca">Resumir</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="inserirSentenca">Inserir</button>
+            </div>
+            
+            <div id="sentenca" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
+            <div class="character-count" id="sentencaCount">0 caracteres</div>
+            
+            <div class="field-header">
+                <label class="editable-label field-title" for="acordao">Acórdão</label>
+                <button type="button" class="btn btn-secondary btn-sm" id="inserirAcordao">Inserir</button>
+            </div>
+            <div id="acordao" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do acórdão..."></div>
+            <div class="character-count" id="acordaoCount">0 caracteres</div>
+            
+            <div class="field-header">
+                <label class="editable-label field-title" for="transitoJulgado">Trânsito em Julgado</label>
+                <button type="button" class="btn btn-secondary btn-sm" id="inserirTransito">Inserir</button>
+            </div>
+            <div id="transitoJulgado" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do trânsito em julgado..."></div>
+            <div class="character-count" id="transitoJulgadoCount">0 caracteres</div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="concatenarCampos">Concatenar Campos</button>
+            </div>
+            
+            <label class="editable-label" for="resumo">Resumo</label>
+            <div id="resumo" class="editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
+            <div class="character-count" id="resumoCount">0 caracteres</div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="limparCampos">Limpar Campos</button>
+                <button type="button" class="btn btn-primary" id="salvarResumo">Salvar Resumo</button>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top: 20px; text-align: center;">
+            <button type="button" id="preencherAutomatico" class="btn btn-primary" style="background-color: #4CAF50;">
+                Preencher Formulário a partir do Resumo
+            </button>
+        </div>
 
+        <h2>Dados da Peça</h2>
+        
+        <form id="guiaRecolhimentoForm">
+            <!-- Tipo de Peça -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="tipoPeca">Tipo de peça</label>
+                    <input type="text" id="tipoPeca" class="form-control" value="Guia de Recolhimento" readonly>
+                </div>
+                
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="guiaProvisoria" name="tipoGuia" value="provisoria">
+                        <label for="guiaProvisoria">Guia de Recolhimento Provisória</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="guiaDefinitiva" name="tipoGuia" value="definitiva" checked>
+                        <label for="guiaDefinitiva">Guia de Recolhimento Definitiva</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Regime Prisional -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="regimePrisional">Regime Prisional</label>
+                    <select id="regimePrisional" class="form-control">
+                        <option value="fechado">Fechado</option>
+                        <option value="semiaberto" selected>Semiaberto</option>
+                        <option value="aberto">Aberto</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Mandado de Prisão -->
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mandadoPrisao">Mandado de Prisão/Internação ou Guia de Recolhimento Provisório</label>
+                        <input type="text" id="mandadoPrisao" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orgaoJudiciario">Órgão Judiciário</label>
+                        <input type="text" id="orgaoJudiciario" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-check">
+                    <input type="checkbox" id="expedicaoExcepcional">
+                    <label for="expedicaoExcepcional">Expedição excepcional sem mandado cumprido, por determinação judicial</label>
+                </div>
+            </div>
+            
+            <!-- Processo -->
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="numeroProcesso">Nº do Processo *</label>
+                        <input type="text" id="numeroProcesso" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataExpedicao">Data de Expedição *</label>
+                        <input type="text" id="dataExpedicao" class="form-control" value="15/04/2025 14:10" required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Localização -->
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="uf">UF</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="uf" class="form-control" value="Pernambuco">
+                            <button type="button" class="clear-button">✕</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="municipio">Município</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="municipio" class="form-control">
+                            <button type="button" class="clear-button">✕</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="localCustodia">Local da Custódia</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="localCustodia" class="form-control">
+                            <button type="button" class="clear-button">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados do Processo Criminal -->
+            <h2>Dados do Processo Criminal</h2>
+            
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="tipoProcessoCriminal">Tipo de Processo Criminal*</label>
+                    <select id="tipoProcessoCriminal" class="form-control" required>
+                        <option value="" selected>Selecione</option>
+                        <option value="283">283 - Ação Penal - Procedimento Ordinário</option>
+                        <option value="284">284 - Ação Penal - Procedimento Sumário</option>
+                        <option value="285">285 - Ação Penal - Procedimento Especial</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="revisaoCriminal">Revisão Criminal? *</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="revisaoSim" name="revisaoCriminal" value="sim">
+                            <label for="revisaoSim">Sim</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="revisaoNao" name="revisaoCriminal" value="nao" checked>
+                            <label for="revisaoNao">Não</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Datas do Processo -->
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataInfracao">Data da Infração *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataInfracao" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataRecebimentoDenuncia">Data de Recebimento da Denúncia/Queixa *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataRecebimentoDenuncia" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataPublicacaoPronuncia">Data do Publicação da Pronúncia</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataPublicacaoPronuncia" class="form-control" placeholder="dd/mm/aaaa">
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataPublicacaoSentenca">Data de Publicação da Sentença *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataPublicacaoSentenca" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataPublicacaoAcordao">Data de Publicação do Acórdão</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataPublicacaoAcordao" class="form-control" placeholder="dd/mm/aaaa">
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataTransitoDefesa">Data do Trânsito em Julgado para Defesa *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataTransitoDefesa" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataTransitoAcusacao">Data de Trânsito em Julgado da Acusação *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataTransitoAcusacao" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataTransitoAssistente">Data de Trânsito em Julgado da Assistente de Acusação</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataTransitoAssistente" class="form-control" placeholder="dd/mm/aaaa">
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dataTransitoReu">Data de Trânsito em Julgado do réu *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="dataTransitoReu" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button type="button" class="clear-button">📅</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cadastro da Sentença -->
+            <h2>Cadastro da Sentença</h2>
+            
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="tipoPena">Tipo da Pena *</label>
+                    <select id="tipoPena" class="form-control" required>
+                        <option value="apelacao" selected>Apelação Criminal</option>
+                        <option value="recurso">Recurso Ordinário Criminal</option>
+                        <option value="outra">Outra</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="numeroRecurso">Nº do Recurso*</label>
+                    <input type="text" id="numeroRecurso" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recorrentesRecurso">Recorrentes do Recurso *</label>
+                    <select id="recorrentesRecurso" class="form-control" required>
+                        <option value="reu" selected>O Réu</option>
+                        <option value="mp">Ministério Público</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dataDecisaoRecurso">Data de Decisão do Recurso *</label>
+                    <div class="input-with-clear">
+                        <input type="text" id="dataDecisaoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
+                        <button type="button" class="clear-button">📅</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="orgaoJudiciarioRecurso">Órgão Judiciário *</label>
+                    <input type="text" id="orgaoJudiciarioRecurso" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="camaraJulgadora">Câmara Julgadora do Recurso *</label>
+                    <input type="text" id="camaraJulgadora" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dataTransitoRecurso">Data de Trânsito em Julgado do Recurso *</label>
+                    <div class="input-with-clear">
+                        <input type="text" id="dataTransitoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
+                        <button type="button" class="clear-button">📅</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tipificação Penal -->
+            <h2>Tipificação Penal</h2>
+            
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lei">Lei*</label>
+                        <select id="lei" class="form-control" required>
+                            <option value="" selected>Selecione</option>
+                            <option value="2848">Lei 2848 - Código Penal</option>
+                            <option value="11343">Lei 11343 - Lei de Drogas</option>
+                            <option value="8069">Lei 8069 - Estatuto da Criança e do Adolescente</option>
+                            <option value="10826">Lei 10826 - Estatuto do Desarmamento</option>
+                            <option value="9605">Lei 9605 - Lei de Crimes Ambientais</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="artigo">Artigo *</label>
+                        <div class="input-with-clear">
+                            <input type="text" id="artigo" class="form-control" required>
+                            <button type="button" class="clear-button">✕</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="complemento">Complemento</label>
+                    <input type="text" id="complemento" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="dataDelito">Data do Delito</label>
+                    <div class="input-with-clear">
+                        <input type="text" id="dataDelito" class="form-control" placeholder="dd/mm/aaaa">
+                        <button type="button" class="clear-button">📅</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="crimeTentado" class="form-check-input">
+                            <label for="crimeTentado" class="form-check-label">Crime Tentado</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="violenciaDomestica" class="form-check-input">
+                            <label for="violenciaDomestica" class="form-check-label">Violência Doméstica</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="resultadoMorte" class="form-check-input">
+                            <label for="resultadoMorte" class="form-check-label">Resultado da Morte</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="violenciaGraveAmeaca" class="form-check-input">
+                            <label for="violenciaGraveAmeaca" class="form-check-label">Com Violência ou Grave Ameaça</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="reincidenteComum" class="form-check-input">
+                            <label for="reincidenteComum" class="form-check-label">Reincidente Comum</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="reincidenteEspecifico" class="form-check-input">
+                            <label for="reincidenteEspecifico" class="form-check-label">Reincidente Específico</label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" id="comandoOrganizacao" class="form-check-input">
+                            <label for="comandoOrganizacao" class="form-check-label">Condenado por exercer o comando organização criminosa para cometimento de crime hediondo</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fracaoProgressao">Fração Progressão Regime</label>
+                    <select id="fracaoProgressao" class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="1/6">1/6</option>
+                        <option value="2/5">2/5</option>
+                        <option value="3/5">3/5</option>
+                        <option value="1/2">1/2</option>
+                        <option value="1/3">1/3</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fracaoLivramento">Fração Livramento Condicional</label>
+                    <select id="fracaoLivramento" class="form-control">
+                        <option value="">Selecione</option>
+                        <option value="1/3">1/3</option>
+                        <option value="1/2">1/2</option>
+                        <option value="2/3">2/3</option>
+                        <option value="3/4">3/4</option>
+                    </select>
+                </div>
+                
+               <div class="form-group">
+                    <label for="tempoPena">Tempo de Pena</label>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1; margin-right: 10px;">
+                            <label for="anos">Anos</label>
+                            <input type="number" id="anos" class="form-control" min="0">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-right: 10px;">
+                            <label for="meses">Meses</label>
+                            <input type="number" id="meses" class="form-control" min="0" max="11">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="dias">Dias</label>
+                            <input type="number" id="dias" class="form-control" min="0" max="30">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group text-right">
+                    <button type="button" class="btn btn-primary" id="adicionarParagrafo">+ Adicionar Parágrafo</button>
+                </div>
+            </div>
+            
+            <!-- Botões de ação -->
+            <div class="actions-row">
+                <button type="button" class="btn btn-secondary" id="cancelarForm">Cancelar</button>
+                <button type="button" class="btn btn-secondary" id="salvarRascunho">Salvar como Rascunho</button>
+                <button type="submit" class="btn btn-primary" id="salvarFormulario">Salvar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/util.js"></script>
+    <script src="js/carta-guia.js"></script>
+</body>
+</html>
