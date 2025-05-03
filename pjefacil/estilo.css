@@ -1,1 +1,101 @@
+/* Estilos Globais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
 
+body {
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+/* Estilos do Editor */
+.editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+}
+
+.toolbar button, .toolbar select {
+    padding: 6px 10px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.toolbar button:hover {
+    background-color: #ebebeb;
+}
+
+.editor-area {
+    min-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #ffffff;
+}
+
+/* Estilos dos Botões de Ação */
+.botoes-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding: 15px;
+}
+
+.botao-acao {
+    padding: 12px 24px;
+    font-size: 16px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.botao-acao:hover {
+    background-color: #3a7bc8;
+}
+
+/* Estilos do Container de Conteúdo Dinâmico */
+.conteudo-container {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-height: 200px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .toolbar {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+    
+    .botoes-container {
+        flex-direction: column;
+    }
+}
