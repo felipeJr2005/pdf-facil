@@ -1,0 +1,75 @@
+<div class="conteudo-audiencia">
+    <h2>Cumprir Audiência</h2>
+    
+    <div id="form-content" class="visible">
+        <div class="input-group">
+            <label for="numeroProcesso">Número do Processo:</label>
+            <input type="text" id="numeroProcesso" placeholder="0000000-00.0000.0.00.0000">
+        </div>
+        
+        <div class="input-group">
+            <label for="vara">Vara:</label>
+            <input type="text" id="vara" placeholder="Ex: 1ª Vara do Trabalho">
+        </div>
+        
+        <div class="input-group">
+            <label for="cidade">Cidade:</label>
+            <input type="text" id="cidade" placeholder="Ex: São Paulo">
+        </div>
+        
+        <div class="input-group">
+            <label for="dataAudiencia">Data da Audiência:</label>
+            <input type="date" id="dataAudiencia">
+        </div>
+        
+        <div class="input-group">
+            <label for="horaAudiencia">Hora da Audiência:</label>
+            <input type="time" id="horaAudiencia">
+        </div>
+        
+        <div class="input-group">
+            <label for="tipoAudiencia">Tipo de Audiência:</label>
+            <select id="tipoAudiencia">
+                <option value="una">Una</option>
+                <option value="inicial">Inicial</option>
+                <option value="instrucao">Instrução</option>
+                <option value="julgamento">Julgamento</option>
+                <option value="conciliacao">Conciliação</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label for="reclamante">Reclamante:</label>
+            <input type="text" id="reclamante" placeholder="Nome do(a) Reclamante">
+        </div>
+        
+        <div class="input-group">
+            <label for="reclamada">Reclamada:</label>
+            <input type="text" id="reclamada" placeholder="Nome da Reclamada">
+        </div>
+        
+        <div class="input-group">
+            <label for="advogadoReclamante">Advogado do Reclamante:</label>
+            <input type="text" id="advogadoReclamante" placeholder="Nome do Advogado">
+        </div>
+        
+        <div class="input-group">
+            <label for="preposto">Preposto da Reclamada:</label>
+            <input type="text" id="preposto" placeholder="Nome do Preposto">
+        </div>
+        
+        <div class="input-group">
+            <label for="advogadoReclamada">Advogado da Reclamada:</label>
+            <input type="text" id="advogadoReclamada" placeholder="Nome do Advogado">
+        </div>
+        
+        <div class="button-group">
+            <button id="gerarTextoCumprimento" class="btn-primary">Gerar Texto</button>
+            <button id="limparCumprimento" class="btn-secondary">Limpar Campos</button>
+        </div>
+    </div>
+    
+    <div id="resultado-audiencia" class="resultado-texto" style="display: none;">
+        <!-- O texto gerado será inserido aqui -->
+    </div>
+</div>
