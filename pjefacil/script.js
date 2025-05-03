@@ -1,4 +1,202 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Funções para inicializar funcionalidades da Carta Guia
+    function inicializarFuncionalidadesCarta() {
+        // Adicionando funções ao escopo global para que possam ser chamadas pelos botões onclick
+        window.addAnexo = function() {
+            const container = document.getElementById('anexos-container');
+            const id = new Date().getTime();
+            
+            const html = `
+                <div class="anexo-container" id="anexo-${id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4>Anexo</h4>
+                        <button class="btn btn-danger" onclick="removerElementoCarta('anexo-${id}')">Remover</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Descrição:</label>
+                        <input type="text" class="anexo-descricao" placeholder="Ex: Cópia da Certidão">
+                    </div>
+                    <div class="input-group">
+                        <label>Quantidade de páginas:</label>
+                        <input type="number" class="anexo-paginas" min="1" value="1">
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        };
+
+        window.removerElementoCarta = function(id) {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.remove();
+            }
+        };
+
+        window.gerarCartaGuia = function() {
+            // Coletando dados do formulário
+            const dataCarta = document.getElementById('data-carta').value;
+            const numeroProcesso = document.getElementById('numero-processo-carta').value.trim();
+            const vara = document.getElementById('vara-carta').value.trim();
+            const comarca = document.getElementById('comarca-carta').value.trim();
+            const destinatario = document.getElementById('destinatario').value.trim();
+            const endereco = document.getElementById('endereco-destinatario').value.trim();
+            const responsavel = document.getElementById('responsavel').value.trim();
+            const assunto = document.getElementById('assunto').value.trim();
+            const referencia = document.getElementById('ref').value.trim();
+            const conteudo = document.getElementById('conteudo').value.trim();
+            const remetente = document.getElementById('remetente').value.trim();
+            const cargo = document.getElementById('cargo').value.trim();
+            const identificacao = document.getElementById('identificacao').value.trim();
+            
+            // Verificando campos obrigatórios
+            if (!dataCarta || !numeroProcesso || !vara || !comarca || !destinatario || 
+                !endereco || !assunto || !conteudo || !remetente) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            // Formata a data para exibição
+            const dataObj = new Date(dataCarta);
+            const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+            
+            // Coletando anexos
+            const anexos = [];
+            document.querySelectorAll('.anexo-container').forEach(el => {
+                const descricao = el.querySelector('.anexo-descricao').value;
+                const paginas = el.querySelector('.anexo-paginas').value;
+                
+                if (descricao) {
+                    anexos.push({
+                        descricao: descricao,
+                        paginas: paginas
+                    });
+                }
+            });
+            
+            // Gerando o texto da carta
+            let texto = `
+                <div class="carta-formal">
+                    <div class="cabecalho-carta">
+                        <p class="direita">${comarca}, ${dataFormatada}</p>
+                        
+                        <p class="referencia">Processo nº: ${numeroProcesso}</p>
+                        ${referencia ? `<p class="referencia">Ref.: ${referencia}</p>` : ''}
+                        
+                        <div class="destinatario">
+                            <p><strong>${destinatario}</strong></p>
+                            <p>${endereco.replace(/\n/g, '<br>')}</p>
+                            ${responsavel ? `<p>A/C: ${responsavel}</p>` : ''}
+                        </div>
+                        
+                        <p class="assunto"><strong>Assunto:</strong> ${assunto}</p>
+                    </div>
+                    
+                    <div class="corpo-carta">
+                        <p>Excelentíssimo(a) Senhor(a),</p>
+                        
+                        <p class="texto-conteudo">${conteudo.replace(/\n/g, '<br>')}</p>
+                    </div>
+            `;
+            
+            // Adicionando anexos, se houver
+            if (anexos.length > 0) {
+                texto += `
+                    <div class="anexos-carta">
+                        <p><strong>Anexos:</strong></p>
+                        <ul>
+                `;
+                
+                anexos.forEach(anexo => {
+                    texto += `<li>${anexo.descricao} - ${anexo.paginas} página${anexo.paginas > 1 ? 's' : ''}</li>`;
+                });
+                
+                texto += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Finalizando a carta
+            texto += `
+                    <div class="assinatura">
+                        <p>Atenciosamente,</p>
+                        
+                        <div class="assinante">
+                            <p class="nome-assinante">${remetente}</p>
+                            <p class="cargo-assinante">${cargo}</p>
+                            ${identificacao ? `<p class="identificacao">${identificacao}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Exibindo o resultado
+            const resultadoCarta = document.getElementById('resultado-carta');
+            resultadoCarta.innerHTML = texto;
+            resultadoCarta.style.display = 'block';
+            
+            // Adicionando o texto ao editor principal
+            const editor = document.getElementById('editor');
+            if (editor) {
+                // Se o usuário estiver na página principal, adiciona o texto ao editor
+                editor.innerHTML = texto;
+                
+                // Fecha o container dinâmico após um tempo
+                setTimeout(() => {
+                    const conteudoDinamico = document.getElementById('conteudo-dinamico');
+                    if (conteudoDinamico) {
+                        conteudoDinamico.style.display = 'none';
+                    }
+                }, 1000);
+            }
+        };
+
+        window.limparCartaGuia = function() {
+            if (confirm('Deseja realmente limpar todos os campos?')) {
+                // Limpando campos
+                document.getElementById('data-carta').value = '';
+                document.getElementById('numero-processo-carta').value = '';
+                document.getElementById('vara-carta').value = '';
+                document.getElementById('comarca-carta').value = '';
+                document.getElementById('destinatario').value = '';
+                document.getElementById('endereco-destinatario').value = '';
+                document.getElementById('responsavel').value = '';
+                document.getElementById('assunto').value = '';
+                document.getElementById('ref').value = '';
+                document.getElementById('conteudo').value = '';
+                document.getElementById('remetente').value = '';
+                document.getElementById('cargo').value = '';
+                document.getElementById('identificacao').value = '';
+                
+                // Limpando anexos
+                document.getElementById('anexos-container').innerHTML = '';
+                
+                // Escondendo resultado
+                document.getElementById('resultado-carta').style.display = 'none';
+            }
+        };
+
+        window.salvarCartaGuia = function() {
+            try {
+                // Coletando todos os dados do formulário
+                const dados = {
+                    dataCarta: document.getElementById('data-carta').value,
+                    numeroProcesso: document.getElementById('numero-processo-carta').value,
+                    vara: document.getElementById('vara-carta').value,
+                    comarca: document.getElementById('comarca-carta').value,
+                    destinatario: document.getElementById('destinatario').value,
+                    endereco: document.getElementById('endereco-destinatario').value,
+                    responsavel: document.getElementById('responsavel').value,
+                    assunto: document.getElementById('assunto').value,
+                    referencia: document.getElementById('ref').value,
+                    conteudo: document.getElementById('conteudo').value,
+                    remetente: document.getElementById('remetente').value,
+                    cargo: document.getElementById('cargo').value,
+                    identificacao: document.getElementById('identificacao').value,
+                    
+                    // Coletando anexos
+                    anexos: Array.from(document.querySelectorAll('.anexo-container')).map(el => ({
+                        descricao: el.querySelector('.anexo-descricdocument.addEventListener('DOMContentLoaded', function() {
     // Inicialização do editor
     const editor = document.getElementById('editor');
     const buttons = document.querySelectorAll('.toolbar button');
@@ -118,7 +316,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     btnCartaGuia.addEventListener('click', function() {
-        exibirConteudo('carta-guia.html');
+        // Função desativada temporariamente
+        // exibirConteudo('carta-guia.html');
+        alert('Funcionalidade "Carta Guia" será implementada em breve.');
     });
     
     // Funções para inicializar funcionalidades após carregamento
