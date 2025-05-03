@@ -88,6 +88,143 @@ body {
     min-height: 200px;
 }
 
+/* Estilos para Formulários */
+.form-audiencia,
+.form-carta-guia {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.grupo-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.grupo-formulario label {
+    font-weight: bold;
+    color: #444;
+}
+
+.grupo-formulario input,
+.grupo-formulario select,
+.grupo-formulario textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.grupo-formulario textarea {
+    resize: vertical;
+}
+
+.acoes-formulario {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.botao-primario {
+    padding: 10px 20px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.botao-secundario {
+    padding: 10px 20px;
+    background-color: #f1f1f1;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.botao-primario:hover {
+    background-color: #3a7bc8;
+}
+
+.botao-secundario:hover {
+    background-color: #e5e5e5;
+}
+
+.resultado-texto {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+/* Estilos específicos para a carta */
+.carta {
+    font-family: 'Times New Roman', Times, serif;
+    line-height: 1.5;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+.cabecalho-carta {
+    margin-bottom: 30px;
+}
+
+.data-carta {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.destinatario {
+    margin-bottom: 20px;
+}
+
+.referencia, .assunto {
+    margin-bottom: 10px;
+}
+
+.corpo-carta {
+    margin-bottom: 30px;
+    text-align: justify;
+}
+
+.assinatura {
+    margin-top: 40px;
+}
+
+.remetente {
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+.cargo {
+    color: #555;
+}
+
+/* Estilo para carregamento */
+.carregando {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.erro {
+    color: #d9534f;
+    padding: 15px;
+    background-color: #f9f2f2;
+    border-radius: 4px;
+    border-left: 4px solid #d9534f;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .toolbar {
