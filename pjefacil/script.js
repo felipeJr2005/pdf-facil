@@ -68,90 +68,26 @@ document.addEventListener('DOMContentLoaded', function() {
         conteudoDinamico.style.display = 'block';
 
         if (tipo === 'audiencia') {
-            conteudoDinamico.innerHTML = `
-                <div class="conteudo-audiencia">
-                    <h2>Cumprir Audiência</h2>
-                    
-                    <div class="form-content visible">
-                        <div class="panel">
-                            <h2 class="section-title">Acusação</h2>
-                            <div class="section">
-                                <div class="linha" style="justify-content: space-between; align-items: center;">
-                                    <h3 class="section-title">Ministério Público</h3>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <div class="checkbox-container">
-                                            <input type="checkbox" id="intimado_mp">
-                                            <label for="intimado_mp">Intimado</label>
-                                        </div>
-                                        <button class="btn btn-primary" onclick="addAssistenteAcusacao()">
-                                            Assistente de Acusação
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="assistente-acusacao-container"></div>
-                            </div>
-                            <div class="section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Vítimas</h3>
-                                    <button class="btn btn-primary btn-add" onclick="addVitima()">
-                                        <span>Adicionar Vítima</span>
-                                    </button>
-                                </div>
-                                <div id="vitimas-container"></div>
-                            </div>
-                            <div class="section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Testemunhas</h3>
-                                    <button class="btn btn-primary btn-add" onclick="addTestemunha('mp')">
-                                        <span>Adicionar Testemunha</span>
-                                    </button>
-                                </div>
-                                <div id="testemunhas-mp-container"></div>
-                            </div>
-                            <div class="section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Policiais</h3>
-                                    <button class="btn btn-primary btn-add" onclick="addPolicial()">
-                                        <span>Adicionar Policial</span>
-                                    </button>
-                                </div>
-                                <div id="policiais-container"></div>
-                            </div>
-                            <textarea id="observacoes-mp" placeholder="Digite as observações do MP" style="min-height: 150px;"></textarea>
+            fetch('cumprir-audiencia.html')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Falha ao carregar o arquivo');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    conteudoDinamico.innerHTML = html;
+                    inicializarFuncionalidadesAudiencia();
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar o formulário:', error);
+                    conteudoDinamico.innerHTML = `
+                        <div class="erro">
+                            <p>Não foi possível carregar o formulário de audiência.</p>
+                            <p>Erro: ${error.message}</p>
                         </div>
-                        <div class="panel">
-                            <h2 class="section-title">Defesa</h2>
-                            <div class="section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Réus</h3>
-                                    <button class="btn btn-primary btn-add" onclick="addReu()">
-                                        <span>Adicionar Réu</span>
-                                    </button>
-                                </div>
-                                <div id="reus-container"></div>
-                            </div>
-                            <div class="section">
-                                <div class="section-header">
-                                    <h3 class="section-title">Testemunhas</h3>
-                                    <button class="btn btn-primary btn-add" onclick="addTestemunha('defesa')">
-                                        <span>Adicionar Testemunha</span>
-                                    </button>
-                                </div>
-                                <div id="testemunhas-defesa-container"></div>
-                            </div>
-                            <textarea id="observacoes-defesa" placeholder="Digite as observações da defesa" style="min-height: 150px;"></textarea>
-                            <div class="acoes">
-                                <button onclick="gerarTextoCumprimento()" class="btn btn-primary">Gerar Texto</button>
-                                <button onclick="salvarDados()" class="btn btn-success">Salvar</button>
-                                <button onclick="limparFormulario()" class="btn btn-danger">Limpar</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="resultado-audiencia" class="resultado-texto" style="display: none;"></div>
-                </div>
-            `;
-            inicializarFuncionalidadesAudiencia();
+                    `;
+                });
         } else if (tipo === 'carta') {
             conteudoDinamico.innerHTML = `
                 <div class="conteudo-carta">
