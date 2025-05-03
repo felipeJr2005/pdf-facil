@@ -90,7 +90,8 @@ body {
 
 /* Estilos para Formulários */
 .form-audiencia,
-.form-carta-guia {
+.form-carta-guia,
+#form-content {
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -98,37 +99,47 @@ body {
     margin: 0 auto;
 }
 
-.grupo-formulario {
+.grupo-formulario,
+.input-group {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    margin-bottom: 10px;
 }
 
-.grupo-formulario label {
+.grupo-formulario label,
+.input-group label {
     font-weight: bold;
     color: #444;
 }
 
 .grupo-formulario input,
 .grupo-formulario select,
-.grupo-formulario textarea {
+.grupo-formulario textarea,
+.input-group input,
+.input-group select,
+.input-group textarea {
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    width: 100%;
 }
 
-.grupo-formulario textarea {
+.grupo-formulario textarea,
+.input-group textarea {
     resize: vertical;
 }
 
-.acoes-formulario {
+.acoes-formulario,
+.button-group {
     display: flex;
     gap: 10px;
     margin-top: 15px;
 }
 
-.botao-primario {
+.botao-primario,
+.btn-primary {
     padding: 10px 20px;
     background-color: #4a90e2;
     color: white;
@@ -138,7 +149,8 @@ body {
     font-size: 16px;
 }
 
-.botao-secundario {
+.botao-secundario,
+.btn-secondary {
     padding: 10px 20px;
     background-color: #f1f1f1;
     color: #333;
@@ -148,20 +160,40 @@ body {
     font-size: 16px;
 }
 
-.botao-primario:hover {
+.botao-primario:hover,
+.btn-primary:hover {
     background-color: #3a7bc8;
 }
 
-.botao-secundario:hover {
+.botao-secundario:hover,
+.btn-secondary:hover {
     background-color: #e5e5e5;
 }
 
-.resultado-texto {
-    margin-top: 20px;
-    padding: 15px;
+#resultado-audiencia {
+    margin-top: 30px;
+    padding: 25px;
     border: 1px solid #ddd;
     border-radius: 4px;
     background-color: #f9f9f9;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+#resultado-audiencia h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+#resultado-audiencia p {
+    margin-bottom: 8px;
+}
+
+#resultado-audiencia strong {
+    font-weight: bold;
 }
 
 /* Estilos específicos para a carta */
