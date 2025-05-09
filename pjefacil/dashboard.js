@@ -48,18 +48,16 @@ document.addEventListener('DOMContentLoaded', function() {
         funcao05: {
             title: 'Função 05',
             description: 'Descrição da quinta função.',
-            template: 'funcoes/funcao05.html',
-            module: 'js/funcao05.js'
+            template: '/pjefacil/funcoes/funcao05.html',
+            module: '/pjefacil/js/funcao05.js'
         },
         funcao06: {
             title: 'Função 06',
             description: 'Descrição da sexta função.',
-            template: 'funcoes/funcao06.html',
-            module: 'js/funcao06.js'
+            template: '/pjefacil/funcoes/funcao06.html',
+            module: '/pjefacil/js/funcao06.js'
         }
-    };
-
-   
+    };   
     
     // Registro para módulos ativos
     window.activeModule = null;
