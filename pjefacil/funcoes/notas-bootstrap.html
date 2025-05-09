@@ -1,0 +1,25 @@
+<!-- Template para Notas utilizando Bootstrap -->
+<div class="container-fluid px-0">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- Editor de Notas -->
+            <div id="notas-editor" class="form-control notas-editor mb-3" contenteditable="true" data-placeholder="Digite ou cole suas notas aqui..."></div>
+            
+            <!-- Botões de Ação -->
+            <div class="d-flex gap-2 justify-content-end">
+                <button id="clearBtn" class="btn btn-outline-secondary">
+                    <i class="fas fa-eraser me-1"></i> Limpar
+                </button>
+                <button id="printBtn" class="btn btn-outline-secondary">
+                    <i class="fas fa-print me-1"></i> Imprimir
+                </button>
+                <button id="saveBtn" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Salvar
+                </button>
+            </div>
+            
+            <!-- Mensagem de Status -->
+            <div id="statusMessage" class="alert mt-3 d-none" role="alert"></div>
+        </div>
+    </div>
+</div>
