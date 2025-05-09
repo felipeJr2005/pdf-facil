@@ -22,50 +22,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     
     // Configurações das páginas - USANDO CAMINHOS FLEXÍVEIS
-    const pages = {
-        funcao01: {
-            title: 'Função 01',
-            description: 'Descrição da primeira função.',
-            template: 'funcoes/funcao01-bootstrap.html',
-            module: './js/funcao01.js'
-        },
-        notas: {
-            title: 'Notas',
-            description: 'Editor de notas com suporte para texto e imagens.',
-            template: 'funcoes/notas-bootstrap.html',
-            module: './js/notas.js'
-        },
-        Audiencia: {
-            title: 'Audiência',
-            description: 'Cumprir Audiencia.',
-            template: 'funcoes/audiencia-bootstrap.html',
-            module: './js/audiencia.js'
-        },
-        Guia: {
-            title: 'Carta Guia',
-            description: 'Carta Guia Sentenciado.',
-            template: 'funcoes/guia-bootstrap.html',
-            module: './js/guia.js'
-        },
-        funcao05: {
-            title: 'Função 05',
-            description: 'Descrição da quinta função.',
-            template: 'funcoes/funcao05.html',
-            module: './js/funcao05.js'
-        },
-        funcao06: {
-            title: 'Função 06',
-            description: 'Descrição da sexta função.',
-            template: 'funcoes/funcao06.html',
-            module: './js/funcao06.js'
-        },
-        diagnostico: {
-            title: 'Diagnóstico',
-            description: 'Ferramenta de diagnóstico do sistema.',
-            template: 'funcoes/diagnostico.html', // Este arquivo precisará ser criado
-            module: './js/diagnostico.js'
-        }
-    };
+   const pages = {
+    funcao01: {
+        title: 'Função 01',
+        description: 'Descrição da primeira função.',
+        template: 'funcoes/funcao01-bootstrap.html',
+        module: './js/funcao01.js'
+    },
+    notas: {
+        title: 'Notas',
+        description: 'Editor de notas com suporte para texto e imagens.',
+        template: 'funcoes/notas-bootstrap.html',
+        module: './js/notas.js'
+    },
+    Audiencia: {
+        title: 'Audiência',
+        description: 'Cumprir Audiencia.',
+        template: 'funcoes/audiencia-bootstrap.html',
+        module: './js/audiencia.js'
+    },
+    Guia: {
+        title: 'Carta Guia',
+        description: 'Carta Guia Sentenciado.',
+        template: 'funcoes/guia-bootstrap.html',
+        module: './js/guia.js'
+    },
+    funcao05: {
+        title: 'Função 05',
+        description: 'Descrição da quinta função.',
+        template: 'funcoes/funcao05.html',
+        module: './js/funcao05.js'
+    },
+    funcao06: {
+        title: 'Função 06',
+        description: 'Descrição da sexta função.',
+        template: 'funcoes/funcao06.html',
+        module: './js/funcao06.js'
+    },
+    // NOVA ENTRADA - Ferramenta de Diagnóstico
+    diagnostico: {
+        title: 'Diagnóstico',
+        description: 'Ferramenta de diagnóstico do sistema.',
+        template: 'funcoes/diagnostico.html',
+        module: './js/diagnostico.js'
+    }
+};
     
     // Registro para módulos ativos
     window.activeModule = null;
