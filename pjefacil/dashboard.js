@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'Notas',
             description: 'Editor de notas com suporte para texto e imagens.',
             template: 'funcoes/notas-bootstrap.html',
-            module: 'js/notas.js'
+            module: 'https://pdffacil.com/js/notas.js'
         },
         Audiencia: {
             title: 'Audiência',
