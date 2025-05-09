@@ -23,27 +23,27 @@ document.addEventListener('DOMContentLoaded', function() {
         funcao01: {
             title: 'Função 01',
             description: 'Descrição da primeira função.',
-            template: 'funcoes/funcao01-bootstrap.html',
-            module: 'js/funcao01.js'
+            template: '/pjefacil/funcoes/funcao01-bootstrap.html',
+           module: '/pjefacil/js/funcao01.js'
         },
+             
         notas: {
             title: 'Notas',
             description: 'Editor de notas com suporte para texto e imagens.',
-            template: 'funcoes/notas-bootstrap.html',
-            module: './pdffacil.com/pjefacil/js/notas.js'
-           
+            template: '/pjefacil/funcoes/notas-bootstrap.html',
+            module: '/pjefacil/js/notas.js'              
         },
         Audiencia: {
             title: 'Audiência',
             description: 'Cumprir Audiencia.',
-            template: 'funcoes/audiencia-bootstrap.html',
-            module: 'pjefacil/js/audiencia.js'
+             template: '/pjefacil/funcoes/audiencia-bootstrap.html',
+        module: '/pjefacil/js/audiencia.js'
         },
         Guia: {
             title: 'Carta Guia',
             description: 'Carta Guia Sentenciado.',
-            template: 'funcoes/guia-bootstrap.html',
-            module: 'pjefacil/js/guia.js'
+             template: '/pjefacil/funcoes/guia-bootstrap.html',
+        module: '/pjefacil/js/guia.js'
         },
         funcao05: {
             title: 'Função 05',
@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
             module: 'js/funcao06.js'
         }
     };
+
+   
     
     // Registro para módulos ativos
     window.activeModule = null;
