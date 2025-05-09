@@ -1,7 +1,7 @@
 /**
  * Dashboard - Script principal
  * Gerencia o carregamento dinâmico de módulos e funcionalidades
- * Atualizado para funcionar com Bootstrap
+ * Atualizado para funcionar com Bootstrap e caminhos corretos para GitHub Pages/Railway
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,46 +18,71 @@ document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.dashboard-header');
     const sidebar = document.querySelector('.sidebar');
     
+    // Configuração da base URL para funcionar em ambiente local e produção
+    function getBaseUrl() {
+        // Detecta se estamos em ambiente de produção (GitHub Pages/Railway)
+        const isProduction = window.location.hostname !== 'localhost' && 
+                          !window.location.hostname.includes('127.0.0.1');
+        
+        if (isProduction) {
+            // Em produção, vamos verificar o pathname para determinar a base URL
+            const pathname = window.location.pathname;
+            // Extrair o caminho base até o diretório atual (incluindo o / final)
+            const lastSlash = pathname.lastIndexOf('/');
+            return pathname.substring(0, lastSlash + 1);
+        } else {
+            // Em ambiente local, vamos assumir que estamos na raiz
+            return './';
+        }
+    }
+    
+    // Obter a base URL
+    const baseUrl = getBaseUrl();
+    
+    // Log para diagnóstico
+    console.log('Dashboard inicializado com:');
+    console.log('- URL atual:', window.location.href);
+    console.log('- Base URL detectada:', baseUrl);
+    
     // Configurações das páginas
     const pages = {
         funcao01: {
             title: 'Função 01',
             description: 'Descrição da primeira função.',
-            template: '/pjefacil/funcoes/funcao01-bootstrap.html',
-           module: '/pjefacil/js/funcao01.js'
+            template: 'funcoes/funcao01-bootstrap.html',
+            module: 'js/funcao01.js'
         },
-           
         notas: {
             title: 'Notas',
             description: 'Editor de notas com suporte para texto e imagens.',
-            template: '/pjefacil/funcoes/notas-bootstrap.html',
-            module: '/pjefacil/js/notas.js'              
+            template: 'funcoes/notas-bootstrap.html',
+            module: 'js/notas.js'
         },
         Audiencia: {
             title: 'Audiência',
             description: 'Cumprir Audiencia.',
-             template: '/pjefacil/funcoes/audiencia-bootstrap.html',
-        module: '/pjefacil/js/audiencia.js'
+            template: 'funcoes/audiencia-bootstrap.html',
+            module: 'js/audiencia.js'
         },
         Guia: {
             title: 'Carta Guia',
             description: 'Carta Guia Sentenciado.',
-             template: '/pjefacil/funcoes/guia-bootstrap.html',
-        module: '/pjefacil/js/guia.js'
+            template: 'funcoes/guia-bootstrap.html',
+            module: 'js/guia.js'
         },
         funcao05: {
             title: 'Função 05',
             description: 'Descrição da quinta função.',
-            template: '/pjefacil/funcoes/funcao05.html',
-            module: '/pjefacil/js/funcao05.js'
+            template: 'funcoes/funcao05.html',
+            module: 'js/funcao05.js'
         },
         funcao06: {
             title: 'Função 06',
             description: 'Descrição da sexta função.',
-            template: '/pjefacil/funcoes/funcao06.html',
-            module: '/pjefacil/js/funcao06.js'
+            template: 'funcoes/funcao06.html',
+            module: 'js/funcao06.js'
         }
-    };   
+    };
     
     // Registro para módulos ativos
     window.activeModule = null;
@@ -77,13 +102,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (header) header.classList.remove('bg-white');
             if (sidebar) sidebar.classList.remove('bg-white');
             
-            // Adicione aqui outros elementos que precisam ter bg-white removido
+            // Substitui o logo por uma versão branca para o tema escuro
+            const sidebarLogo = document.querySelector('.sidebar-logo');
+            if (sidebarLogo) {
+                sidebarLogo.style.filter = 'invert(1) brightness(0.8)';
+            }
         } else {
             // No modo claro, garantimos que as classes originais estão presentes
             if (header) header.classList.add('bg-white');
             if (sidebar) sidebar.classList.add('bg-white');
             
-            // Adicione aqui outros elementos que precisam ter bg-white adicionado
+            // Restaura o logo original para o tema claro
+            const sidebarLogo = document.querySelector('.sidebar-logo');
+            if (sidebarLogo) {
+                sidebarLogo.style.filter = '';
+            }
         }
         
         // Salva a preferência
@@ -115,11 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // Carrega o template HTML
-            const templateResponse = await fetch(page.template);
+            // Carrega o template HTML com caminho relativo à base URL
+            console.log(`Carregando template: ${baseUrl}${page.template}`);
+            const templateResponse = await fetch(`${baseUrl}${page.template}`);
             
             if (!templateResponse.ok) {
-                throw new Error(`Não foi possível carregar o template: ${templateResponse.status}`);
+                throw new Error(`Não foi possível carregar o template: ${templateResponse.status} - ${templateResponse.statusText}`);
             }
             
             // Renderiza o HTML
@@ -131,9 +165,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.activeModule.cleanup();
             }
             
-            // Carrega e inicializa o módulo JavaScript
+            // Carrega e inicializa o módulo JavaScript com caminho relativo à base URL
             try {
-                const module = await import(`/${page.module}`);
+                console.log(`Carregando módulo: ${baseUrl}${page.module}`);
+                
+                // Método 1: Import dinâmico com caminho relativo
+                const module = await import(`${baseUrl}${page.module}`);
                 
                 if (module && typeof module.initialize === 'function') {
                     module.initialize(contentContainer);
@@ -143,6 +180,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (moduleError) {
                 console.error(`Erro ao carregar o módulo JavaScript: ${moduleError}`);
+                console.error(`Caminho tentado: ${baseUrl}${page.module}`);
+                
+                // Fallback para exibir informação de erro
+                contentContainer.innerHTML += `
+                    <div class="alert alert-warning">
+                        <h4 class="alert-heading">Erro ao carregar o módulo</h4>
+                        <p>Não foi possível carregar o módulo JavaScript para esta função.</p>
+                        <hr>
+                        <p class="mb-0">Detalhes técnicos: ${moduleError.message}</p>
+                        <p class="mb-0">Caminho: ${baseUrl}${page.module}</p>
+                    </div>
+                `;
             }
             
             // Inicializa os tooltips do Bootstrap na nova página carregada
@@ -169,7 +218,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="alert alert-danger d-flex align-items-center" role="alert">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <div>
-                        Ocorreu um erro ao carregar esta funcionalidade.
+                        <strong>Ocorreu um erro ao carregar esta funcionalidade.</strong>
+                        <p>${error.message}</p>
+                        <p>Caminho: ${baseUrl}${page.template}</p>
                     </div>
                 </div>
             `;
