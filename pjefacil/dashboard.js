@@ -18,31 +18,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.dashboard-header');
     const sidebar = document.querySelector('.sidebar');
     
-    // Configuração da base URL para funcionar em ambiente local e produção
-    function getBaseUrl() {
-        // Detecta se estamos em ambiente de produção (GitHub Pages/Railway)
-        const isProduction = window.location.hostname !== 'localhost' && 
-                          !window.location.hostname.includes('127.0.0.1');
-        
-        if (isProduction) {
-            // Em produção, vamos verificar o pathname para determinar a base URL
-            const pathname = window.location.pathname;
-            // Extrair o caminho base até o diretório atual (incluindo o / final)
-            const lastSlash = pathname.lastIndexOf('/');
-            return pathname.substring(0, lastSlash + 1);
-        } else {
-            // Em ambiente local, vamos assumir que estamos na raiz
-            return './';
-        }
-    }
-    
-    // Obter a base URL
-    const baseUrl = getBaseUrl();
+    // ===== DEFINIÇÃO EXPLÍCITA DOS CAMINHOS =====
+    // Aqui definimos explicitamente o caminho base para os módulos e templates
+    // Modifique esta variável para apontar para o diretório correto onde estão seus arquivos
+    const BASE_PATH = '/pjefacil/';
     
     // Log para diagnóstico
     console.log('Dashboard inicializado com:');
     console.log('- URL atual:', window.location.href);
-    console.log('- Base URL detectada:', baseUrl);
+    console.log('- Caminho base configurado:', BASE_PATH);
     
     // Configurações das páginas
     const pages = {
@@ -124,6 +108,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
+     * Constrói um caminho absoluto com base no caminho base definido
+     */
+    function buildPath(relativePath) {
+        // Remove qualquer barra inicial do caminho relativo
+        const cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+        return BASE_PATH + cleanPath;
+    }
+    
+    /**
      * Carrega uma página pela identificação
      */
     async function loadPage(pageName) {
@@ -148,9 +141,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // Carrega o template HTML com caminho relativo à base URL
-            console.log(`Carregando template: ${baseUrl}${page.template}`);
-            const templateResponse = await fetch(`${baseUrl}${page.template}`);
+            // Constrói o caminho completo para o template
+            const templatePath = buildPath(page.template);
+            console.log(`Carregando template: ${templatePath}`);
+            
+            // Carrega o template HTML
+            const templateResponse = await fetch(templatePath);
             
             if (!templateResponse.ok) {
                 throw new Error(`Não foi possível carregar o template: ${templateResponse.status} - ${templateResponse.statusText}`);
@@ -165,22 +161,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.activeModule.cleanup();
             }
             
-            // Carrega e inicializa o módulo JavaScript com caminho relativo à base URL
+            // Constrói o caminho completo para o módulo JS
+            const modulePath = buildPath(page.module);
+            console.log(`Carregando módulo: ${modulePath}`);
+            
+            // Carrega e inicializa o módulo JavaScript
             try {
-                console.log(`Carregando módulo: ${baseUrl}${page.module}`);
+                // Método alternativo mais básico para importar módulos
+                // Criar um elemento script dinamicamente
+                const script = document.createElement('script');
+                script.type = 'module';
                 
-                // Método 1: Import dinâmico com caminho relativo
-                const module = await import(`${baseUrl}${page.module}`);
+                // Este script irá importar o módulo e atribuí-lo a uma variável global temporária
+                script.textContent = `
+                    import * as mod from '${modulePath}';
+                    window._tempModule = mod;
+                    // Após carregar, disparar um evento para notificar
+                    document.dispatchEvent(new CustomEvent('moduleLoaded', { detail: '${pageName}' }));
+                `;
                 
-                if (module && typeof module.initialize === 'function') {
-                    module.initialize(contentContainer);
-                    window.activeModule = module;
-                } else {
-                    console.warn(`Módulo ${page.module} não tem função de inicialização.`);
-                }
+                // Adiciona o script à página
+                document.head.appendChild(script);
+                
+                // Escuta o evento de carregamento do módulo
+                document.addEventListener('moduleLoaded', function handler(e) {
+                    if (e.detail === pageName) {
+                        document.removeEventListener('moduleLoaded', handler);
+                        
+                        // Uso do módulo carregado
+                        const module = window._tempModule;
+                        if (module && typeof module.initialize === 'function') {
+                            module.initialize(contentContainer);
+                            window.activeModule = module;
+                        } else {
+                            console.warn(`Módulo ${page.module} não tem função de inicialização.`);
+                        }
+                        
+                        // Limpa a variável temporária
+                        delete window._tempModule;
+                    }
+                });
+                
+                // Trata erros de carregamento do script
+                script.onerror = function(error) {
+                    throw new Error(`Falha ao carregar o script: ${error}`);
+                };
             } catch (moduleError) {
                 console.error(`Erro ao carregar o módulo JavaScript: ${moduleError}`);
-                console.error(`Caminho tentado: ${baseUrl}${page.module}`);
+                console.error(`Caminho tentado: ${modulePath}`);
                 
                 // Fallback para exibir informação de erro
                 contentContainer.innerHTML += `
@@ -189,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>Não foi possível carregar o módulo JavaScript para esta função.</p>
                         <hr>
                         <p class="mb-0">Detalhes técnicos: ${moduleError.message}</p>
-                        <p class="mb-0">Caminho: ${baseUrl}${page.module}</p>
+                        <p class="mb-0">Caminho: ${modulePath}</p>
                     </div>
                 `;
             }
@@ -220,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div>
                         <strong>Ocorreu um erro ao carregar esta funcionalidade.</strong>
                         <p>${error.message}</p>
-                        <p>Caminho: ${baseUrl}${page.template}</p>
+                        <p>Caminho tentado: ${buildPath(page.template)}</p>
                     </div>
                 </div>
             `;
