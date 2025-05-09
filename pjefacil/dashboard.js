@@ -30,19 +30,20 @@ document.addEventListener('DOMContentLoaded', function() {
             title: 'Notas',
             description: 'Editor de notas com suporte para texto e imagens.',
             template: 'funcoes/notas-bootstrap.html',
-            module: 'https://pdffacil.com/js/notas.js'
+            module: './pdffacil.com/pjefacil/js/notas.js'
+           
         },
         Audiencia: {
             title: 'Audiência',
             description: 'Cumprir Audiencia.',
             template: 'funcoes/audiencia-bootstrap.html',
-            module: 'js/audiencia.js'
+            module: 'pjefacil/js/audiencia.js'
         },
         Guia: {
             title: 'Carta Guia',
             description: 'Carta Guia Sentenciado.',
             template: 'funcoes/guia-bootstrap.html',
-            module: 'js/guia.js'
+            module: 'pjefacil/js/guia.js'
         },
         funcao05: {
             title: 'Função 05',
