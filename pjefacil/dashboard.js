@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
             template: '/pjefacil/funcoes/funcao01-bootstrap.html',
            module: '/pjefacil/js/funcao01.js'
         },
-             
+           
         notas: {
             title: 'Notas',
             description: 'Editor de notas com suporte para texto e imagens.',
