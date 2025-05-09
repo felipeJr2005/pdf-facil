@@ -1,84 +1,113 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
+ * Versão corrigida para funcionar com caminhos relativos
  */
 
 // Função de inicialização do módulo
 export function initialize(container) {
   console.log('Módulo audiencia.js inicializado');
   
-  // Configurar os event listeners
-  
-  // Assistente de Acusação
-  const addAssistenteBtn = container.querySelector('[id="addAssistenteBtn"], [onclick*="addAssistenteAcusacao"]');
-  if (addAssistenteBtn) {
-    addAssistenteBtn.addEventListener('click', function() {
-      addAssistenteAcusacao(container);
-    });
-  }
-  
-  // Vítima
-  const addVitimaBtn = container.querySelector('[id="addVitimaBtn"], [onclick*="addVitima"]');
-  if (addVitimaBtn) {
-    addVitimaBtn.addEventListener('click', function() {
-      addVitima(container);
-    });
-  }
-  
-  // Testemunha MP
-  const addTestemunhaMpBtn = container.querySelector('#addTestemunhaMpBtn, [onclick*="addTestemunha(\'mp\')"]');
-  if (addTestemunhaMpBtn) {
-    addTestemunhaMpBtn.addEventListener('click', function() {
-      addTestemunha(container, 'mp');
-    });
-  }
-  
-  // Policial
-  const addPolicialBtn = container.querySelector('#addPolicialBtn, [onclick*="addPolicial"]');
-  if (addPolicialBtn) {
-    addPolicialBtn.addEventListener('click', function() {
-      addPolicial(container);
-    });
-  }
-  
-  // Réu
-  const addReuBtn = container.querySelector('#addReuBtn, [onclick*="addReu"]');
-  if (addReuBtn) {
-    addReuBtn.addEventListener('click', function() {
-      addReu(container);
-    });
-  }
-  
-  // Testemunha Defesa
-  const addTestemunhaDefesaBtn = container.querySelector('#addTestemunhaDefesaBtn, [onclick*="addTestemunha(\'defesa\')"]');
-  if (addTestemunhaDefesaBtn) {
-    addTestemunhaDefesaBtn.addEventListener('click', function() {
-      addTestemunha(container, 'defesa');
-    });
-  }
-  
-  // Salvar
-  const salvarBtn = container.querySelector('#salvarBtn, [onclick*="salvarDados"]');
-  if (salvarBtn) {
-    salvarBtn.addEventListener('click', function() {
-      salvarDados();
-    });
-  }
-  
-  // Limpar
-  const limparBtn = container.querySelector('#limparBtn, [onclick*="limparFormulario"]');
-  if (limparBtn) {
-    limparBtn.addEventListener('click', function() {
-      limparFormulario(container);
-    });
-  }
-  
-  // Registrar eventos de remoção para elementos existentes
-  setupRemoveButtons(container);
+  // Configurar os event listeners - MÉTODO MELHORADO
+  configurarEventListeners(container);
   
   // Adicionar classe ao contentor principal para o estilo específico da função
   container.closest('.main-content').classList.add('audiencia-mode');
   
   console.log('Módulo de Audiência pronto para uso');
+}
+
+// Função para configurar todos os event listeners
+function configurarEventListeners(container) {
+  // Assistente de Acusação - usar querySelector diretamente
+  const addAssistenteBtn = container.querySelector('#addAssistenteBtn');
+  if (addAssistenteBtn) {
+    console.log('Botão Assistente de Acusação encontrado e configurado');
+    addAssistenteBtn.addEventListener('click', function() {
+      addAssistenteAcusacao(container);
+    });
+  } else {
+    console.warn('Botão Assistente de Acusação não encontrado');
+  }
+  
+  // Vítima
+  const addVitimaBtn = container.querySelector('#addVitimaBtn');
+  if (addVitimaBtn) {
+    console.log('Botão Adicionar Vítima encontrado e configurado');
+    addVitimaBtn.addEventListener('click', function() {
+      addVitima(container);
+    });
+  } else {
+    console.warn('Botão Adicionar Vítima não encontrado');
+  }
+  
+  // Testemunha MP
+  const addTestemunhaMpBtn = container.querySelector('#addTestemunhaMpBtn');
+  if (addTestemunhaMpBtn) {
+    console.log('Botão Adicionar Testemunha MP encontrado e configurado');
+    addTestemunhaMpBtn.addEventListener('click', function() {
+      addTestemunha(container, 'mp');
+    });
+  } else {
+    console.warn('Botão Adicionar Testemunha MP não encontrado');
+  }
+  
+  // Policial
+  const addPolicialBtn = container.querySelector('#addPolicialBtn');
+  if (addPolicialBtn) {
+    console.log('Botão Adicionar Policial encontrado e configurado');
+    addPolicialBtn.addEventListener('click', function() {
+      addPolicial(container);
+    });
+  } else {
+    console.warn('Botão Adicionar Policial não encontrado');
+  }
+  
+  // Réu
+  const addReuBtn = container.querySelector('#addReuBtn');
+  if (addReuBtn) {
+    console.log('Botão Adicionar Réu encontrado e configurado');
+    addReuBtn.addEventListener('click', function() {
+      addReu(container);
+    });
+  } else {
+    console.warn('Botão Adicionar Réu não encontrado');
+  }
+  
+  // Testemunha Defesa
+  const addTestemunhaDefesaBtn = container.querySelector('#addTestemunhaDefesaBtn');
+  if (addTestemunhaDefesaBtn) {
+    console.log('Botão Adicionar Testemunha Defesa encontrado e configurado');
+    addTestemunhaDefesaBtn.addEventListener('click', function() {
+      addTestemunha(container, 'defesa');
+    });
+  } else {
+    console.warn('Botão Adicionar Testemunha Defesa não encontrado');
+  }
+  
+  // Salvar
+  const salvarBtn = container.querySelector('#salvarBtn');
+  if (salvarBtn) {
+    console.log('Botão Salvar encontrado e configurado');
+    salvarBtn.addEventListener('click', function() {
+      salvarDados();
+    });
+  } else {
+    console.warn('Botão Salvar não encontrado');
+  }
+  
+  // Limpar
+  const limparBtn = container.querySelector('#limparBtn');
+  if (limparBtn) {
+    console.log('Botão Limpar encontrado e configurado');
+    limparBtn.addEventListener('click', function() {
+      limparFormulario(container);
+    });
+  } else {
+    console.warn('Botão Limpar não encontrado');
+  }
+  
+  // Registrar eventos de remoção para elementos existentes
+  setupRemoveButtons(container);
 }
 
 // Função para criar linha de assistente de acusação
@@ -105,8 +134,10 @@ function criarLinhaAssistenteAcusacao() {
 
 // Função para adicionar assistente de acusação
 function addAssistenteAcusacao(container) {
+  console.log('Função addAssistenteAcusacao chamada');
   const assistenteContainer = container.querySelector('#assistente-acusacao-container');
   if (assistenteContainer) {
+    console.log('Container de assistente encontrado');
     const linha = criarLinhaAssistenteAcusacao();
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
@@ -117,6 +148,8 @@ function addAssistenteAcusacao(container) {
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
+  } else {
+    console.error('Container de assistente (#assistente-acusacao-container) não encontrado');
   }
 }
 
@@ -144,8 +177,10 @@ function criarLinha(tipo, extras = '') {
 
 // Função para adicionar vítima
 function addVitima(container) {
+  console.log('Função addVitima chamada');
   const vitimasContainer = container.querySelector('#vitimas-container');
   if (vitimasContainer) {
+    console.log('Container de vítimas encontrado');
     const linha = criarLinha('vitima');
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
@@ -156,13 +191,17 @@ function addVitima(container) {
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
+  } else {
+    console.error('Container de vítimas (#vitimas-container) não encontrado');
   }
 }
 
 // Função para adicionar testemunha
 function addTestemunha(container, tipo) {
+  console.log(`Função addTestemunha chamada para tipo: ${tipo}`);
   const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
   if (testemunhasContainer) {
+    console.log(`Container de testemunhas ${tipo} encontrado`);
     const linha = criarLinha('testemunha');
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
@@ -173,13 +212,17 @@ function addTestemunha(container, tipo) {
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
+  } else {
+    console.error(`Container de testemunhas (#testemunhas-${tipo}-container) não encontrado`);
   }
 }
 
 // Função para adicionar policial
 function addPolicial(container) {
+  console.log('Função addPolicial chamada');
   const policiaisContainer = container.querySelector('#policiais-container');
   if (policiaisContainer) {
+    console.log('Container de policiais encontrado');
     const extras = `
       <select class="tipo-policial">
         <option value="pm">PM</option>
@@ -199,13 +242,17 @@ function addPolicial(container) {
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
+  } else {
+    console.error('Container de policiais (#policiais-container) não encontrado');
   }
 }
 
 // Função para adicionar réu
 function addReu(container) {
+  console.log('Função addReu chamada');
   const reusContainer = container.querySelector('#reus-container');
   if (reusContainer) {
+    console.log('Container de réus encontrado');
     const reuContainer = document.createElement('div');
     reuContainer.className = 'reu-item';
     
@@ -255,6 +302,8 @@ function addReu(container) {
     setTimeout(() => {
       reuContainer.classList.add('active');
     }, 10);
+  } else {
+    console.error('Container de réus (#reus-container) não encontrado');
   }
 }
 
@@ -277,6 +326,7 @@ function setupRemoveButtons(container) {
 
 // Função para salvar dados (imprimir)
 function salvarDados() {
+  console.log('Função salvarDados chamada');
   // Mostrar overlay de processamento
   const processingOverlay = document.getElementById('processingOverlay');
   const processingText = document.getElementById('processingText');
@@ -437,13 +487,17 @@ function salvarDados() {
       });
       
       // Mostrar mensagem de sucesso após a impressão
-      mostrarMensagem(document.querySelector('#content-container'), 'Documento salvo com sucesso!', 'success');
+      const container = document.querySelector('#content-container');
+      if (container) {
+        mostrarMensagem(container, 'Documento salvo com sucesso!', 'success');
+      }
     }, 1000);
   }, 500);
 }
 
 // Função para limpar o formulário
 function limparFormulario(container) {
+  console.log('Função limparFormulario chamada');
   if (confirm('Tem certeza que deseja limpar todos os dados?')) {
     // Mostrar overlay de processamento
     const processingOverlay = document.getElementById('processingOverlay');
