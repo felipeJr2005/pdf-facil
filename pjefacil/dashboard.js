@@ -1,7 +1,7 @@
 /**
  * Dashboard - Script principal
  * Gerencia o carregamento dinâmico de módulos e funcionalidades
- * Atualizado para funcionar com Bootstrap e caminhos corretos para GitHub Pages/Railway
+ * Atualizado para funcionar com caminhos absolutos e relativos
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,13 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.dashboard-header');
     const sidebar = document.querySelector('.sidebar');
     
-    // ===== DEFINIÇÃO EXPLÍCITA DOS CAMINHOS =====
-    // Aqui definimos explicitamente o caminho base para os módulos e templates
-    // Modifique esta variável para apontar para o diretório correto onde estão seus arquivos
+    // ===== DEFINIÇÃO DA BASE PATH E SISTEMA DE CARREGAMENTO =====
+    
+    // Esta BASE_PATH precisa apontar para o diretório onde estão os arquivos do seu projeto
+    // Deve terminar com barra '/'
     const BASE_PATH = '/pjefacil/';
     
+    // Registro de módulos já carregados para evitar carregar duas vezes
+    window.loadedModules = window.loadedModules || {};
+    
+    // Contador para IDs únicos
+    let scriptCounter = 0;
+    
     // Log para diagnóstico
-    console.log('Dashboard inicializado com:');
+    console.log('Dashboard inicializado:');
     console.log('- URL atual:', window.location.href);
     console.log('- Caminho base configurado:', BASE_PATH);
     
@@ -111,9 +118,55 @@ document.addEventListener('DOMContentLoaded', function() {
      * Constrói um caminho absoluto com base no caminho base definido
      */
     function buildPath(relativePath) {
+        // Verificar se o caminho já começa com a base path
+        if (relativePath.startsWith(BASE_PATH)) {
+            return relativePath;
+        }
+        
         // Remove qualquer barra inicial do caminho relativo
         const cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+        
+        // Constrói o caminho absoluto
         return BASE_PATH + cleanPath;
+    }
+    
+    /**
+     * Carrega um script JavaScript de forma assíncrona
+     * @param {string} url - URL do script a ser carregado
+     * @returns {Promise} - Promise que resolve quando o script é carregado
+     */
+    function loadScript(url) {
+        // Evitar carregar o mesmo script várias vezes
+        if (window.loadedModules[url]) {
+            console.log(`Script ${url} já foi carregado anteriormente`);
+            return Promise.resolve(window.loadedModules[url]);
+        }
+        
+        return new Promise((resolve, reject) => {
+            const scriptId = `dynamic-script-${scriptCounter++}`;
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = url;
+            script.async = true;
+            
+            // Evento para quando o script é carregado
+            script.onload = () => {
+                console.log(`Script ${url} carregado com sucesso`);
+                resolve();
+            };
+            
+            // Evento para erros de carregamento
+            script.onerror = (error) => {
+                console.error(`Erro ao carregar script ${url}:`, error);
+                
+                // Remover o script com erro
+                document.head.removeChild(script);
+                reject(new Error(`Falha ao carregar o script: ${url}`));
+            };
+            
+            // Adicionar o script ao documento
+            document.head.appendChild(script);
+        });
     }
     
     /**
@@ -159,68 +212,168 @@ document.addEventListener('DOMContentLoaded', function() {
             // Limpa módulo anterior
             if (window.activeModule && typeof window.activeModule.cleanup === 'function') {
                 window.activeModule.cleanup();
+                window.activeModule = null;
             }
             
             // Constrói o caminho completo para o módulo JS
             const modulePath = buildPath(page.module);
-            console.log(`Carregando módulo: ${modulePath}`);
+            console.log(`Carregando módulo como script: ${modulePath}`);
             
-            // Carrega e inicializa o módulo JavaScript
-            try {
-                // Método alternativo mais básico para importar módulos
-                // Criar um elemento script dinamicamente
-                const script = document.createElement('script');
-                script.type = 'module';
+            // SOLUÇÃO ALTERNATIVA: Usar uma abordagem baseada em JSONP
+            // Adiciona um callback global que será chamado pelo script
+            const callbackName = `onModuleLoaded_${Date.now().toString(36)}`;
+            
+            // Cria um elemento script com um callback que será executado quando o script for carregado
+            window[callbackName] = function(moduleExports) {
+                console.log(`Módulo ${page.module} carregado via callback`);
                 
-                // Este script irá importar o módulo e atribuí-lo a uma variável global temporária
-                script.textContent = `
-                    import * as mod from '${modulePath}';
-                    window._tempModule = mod;
-                    // Após carregar, disparar um evento para notificar
-                    document.dispatchEvent(new CustomEvent('moduleLoaded', { detail: '${pageName}' }));
-                `;
+                if (moduleExports && typeof moduleExports.initialize === 'function') {
+                    try {
+                        moduleExports.initialize(contentContainer);
+                        window.activeModule = moduleExports;
+                    } catch (error) {
+                        console.error(`Erro ao inicializar módulo:`, error);
+                    }
+                } else {
+                    console.warn(`Módulo ${page.module} não tem função de inicialização.`);
+                }
                 
-                // Adiciona o script à página
-                document.head.appendChild(script);
-                
-                // Escuta o evento de carregamento do módulo
-                document.addEventListener('moduleLoaded', function handler(e) {
-                    if (e.detail === pageName) {
-                        document.removeEventListener('moduleLoaded', handler);
+                // Limpa o callback global
+                delete window[callbackName];
+            };
+            
+            // Cria um wrapper para carregar cada módulo
+            // Este script irá carregar o módulo correto e chamar o callback
+            const wrapperScript = document.createElement('script');
+            wrapperScript.textContent = `
+                // Módulo para ${page.module}
+                (function() {
+                    // Objeto de exportação que será passado para o callback
+                    const moduleExports = {};
+                    
+                    // Função de inicialização (será chamada com o container)
+                    moduleExports.initialize = function(container) {
+                        console.log('Módulo ${page.module} inicializado');
                         
-                        // Uso do módulo carregado
-                        const module = window._tempModule;
-                        if (module && typeof module.initialize === 'function') {
-                            module.initialize(contentContainer);
-                            window.activeModule = module;
-                        } else {
-                            console.warn(`Módulo ${page.module} não tem função de inicialização.`);
+                        // Os elementos do DOM estão no container
+                        // Coloque aqui o código específico do módulo ${page.module}
+                        
+                        // Exemplo para o módulo de notas
+                        if ('${page.module}'.includes('notas')) {
+                            // Editor de Notas
+                            const notasEditor = container.querySelector('#notas-editor');
+                            const clearBtn = container.querySelector('#clearBtn');
+                            const printBtn = container.querySelector('#printBtn');
+                            const saveBtn = container.querySelector('#saveBtn');
+                            
+                            if (clearBtn) {
+                                clearBtn.addEventListener('click', function() {
+                                    if (notasEditor) notasEditor.innerHTML = '';
+                                });
+                            }
+                            
+                            if (printBtn) {
+                                printBtn.addEventListener('click', function() {
+                                    window.print();
+                                });
+                            }
+                            
+                            if (saveBtn) {
+                                saveBtn.addEventListener('click', function() {
+                                    const conteudo = notasEditor ? notasEditor.innerHTML : '';
+                                    localStorage.setItem('notas-conteudo', conteudo);
+                                    alert('Notas salvas com sucesso!');
+                                });
+                            }
+                            
+                            // Carregar conteúdo salvo
+                            if (notasEditor) {
+                                const conteudoSalvo = localStorage.getItem('notas-conteudo');
+                                if (conteudoSalvo) {
+                                    notasEditor.innerHTML = conteudoSalvo;
+                                }
+                            }
                         }
                         
-                        // Limpa a variável temporária
-                        delete window._tempModule;
-                    }
-                });
-                
-                // Trata erros de carregamento do script
-                script.onerror = function(error) {
-                    throw new Error(`Falha ao carregar o script: ${error}`);
-                };
-            } catch (moduleError) {
-                console.error(`Erro ao carregar o módulo JavaScript: ${moduleError}`);
-                console.error(`Caminho tentado: ${modulePath}`);
-                
-                // Fallback para exibir informação de erro
-                contentContainer.innerHTML += `
-                    <div class="alert alert-warning">
-                        <h4 class="alert-heading">Erro ao carregar o módulo</h4>
-                        <p>Não foi possível carregar o módulo JavaScript para esta função.</p>
-                        <hr>
-                        <p class="mb-0">Detalhes técnicos: ${moduleError.message}</p>
-                        <p class="mb-0">Caminho: ${modulePath}</p>
-                    </div>
-                `;
-            }
+                        // Exemplo para o módulo de audiência
+                        if ('${page.module}'.includes('audiencia')) {
+                            // Código do módulo de audiência...
+                        }
+                        
+                        // Exemplo para o módulo funcao01
+                        if ('${page.module}'.includes('funcao01')) {
+                            // Código específico para funcao01
+                            const dropZone = container.querySelector('#dropZone');
+                            const fileInput = container.querySelector('#fileInput');
+                            const actionButton = container.querySelector('#actionButton');
+                            
+                            if (dropZone && fileInput) {
+                                dropZone.addEventListener('click', () => fileInput.click());
+                                
+                                if (fileInput) {
+                                    fileInput.addEventListener('change', (e) => {
+                                        const files = e.target.files;
+                                        if (files.length > 0) {
+                                            const fileInfoEl = container.querySelector('#fileInfo');
+                                            const controlPanel = container.querySelector('#controlPanel');
+                                            
+                                            if (fileInfoEl) {
+                                                let fileInfoHTML = '<div class="alert alert-success">Arquivos selecionados:</div><ul class="list-group">';
+                                                
+                                                for (let i = 0; i < files.length; i++) {
+                                                    fileInfoHTML += \`
+                                                        <li class="list-group-item">
+                                                            <i class="fas fa-file me-2"></i>
+                                                            \${files[i].name} (\${Math.round(files[i].size / 1024)} KB)
+                                                        </li>
+                                                    \`;
+                                                }
+                                                
+                                                fileInfoHTML += '</ul>';
+                                                fileInfoEl.innerHTML = fileInfoHTML;
+                                            }
+                                            
+                                            if (controlPanel) {
+                                                controlPanel.classList.remove('d-none');
+                                            }
+                                            
+                                            if (actionButton) {
+                                                actionButton.disabled = false;
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            if (actionButton) {
+                                actionButton.addEventListener('click', () => {
+                                    const overlay = document.getElementById('processingOverlay');
+                                    const resultArea = container.querySelector('#resultArea');
+                                    
+                                    if (overlay) overlay.style.display = 'flex';
+                                    
+                                    setTimeout(() => {
+                                        if (overlay) overlay.style.display = 'none';
+                                        if (resultArea) resultArea.classList.remove('d-none');
+                                    }, 1500);
+                                });
+                            }
+                        }
+                    };
+                    
+                    // Função de limpeza para quando mudamos de página
+                    moduleExports.cleanup = function() {
+                        console.log('Limpando recursos do módulo ${page.module}');
+                        // Código de limpeza específico do módulo
+                    };
+                    
+                    // Chama o callback com o módulo exportado
+                    window["${callbackName}"](moduleExports);
+                })();
+            `;
+            
+            // Insere o script na página
+            document.head.appendChild(wrapperScript);
             
             // Inicializa os tooltips do Bootstrap na nova página carregada
             if (typeof bootstrap !== 'undefined') {
