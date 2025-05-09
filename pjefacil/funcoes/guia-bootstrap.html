@@ -1,0 +1,621 @@
+<!-- Template para Função Guia utilizando Bootstrap -->
+<div class="container-fluid px-0">
+    <!-- Formulário da Carta Guia -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary-subtle">
+            <h5 class="card-title text-primary mb-0">
+                <i class="fas fa-file-alt me-2"></i> Edição de Conteúdo
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Seção da Edição de Texto -->
+            <div class="row mb-3">
+                <div class="col-md-6 mb-3">
+                    <label for="numeroInquerito" class="form-label">Número de Inquérito</label>
+                    <input type="text" id="numeroInquerito" class="form-control">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="recebimentoDenuncia" class="form-label">Recebimento da denúncia</label>
+                    <input type="text" id="recebimentoDenuncia" class="form-control">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Denúncia</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-expandir" data-target="denuncia">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                </div>
+                <div id="denuncia" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da denúncia..."></div>
+                <div class="text-muted small text-end mt-1" id="denunciaCount">0 caracteres</div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Sentença</label>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-expandir" data-target="sentenca">
+                            <i class="fas fa-expand-alt"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="resumirSentenca">
+                            <i class="fas fa-compress-alt me-1"></i> Resumir
+                        </button>
+                    </div>
+                </div>
+                <div id="sentenca" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da sentença..."></div>
+                <div class="text-muted small text-end mt-1" id="sentencaCount">0 caracteres</div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Acórdão</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-expandir" data-target="acordao">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                </div>
+                <div id="acordao" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do acórdão..."></div>
+                <div class="text-muted small text-end mt-1" id="acordaoCount">0 caracteres</div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Trânsito em Julgado</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-expandir" data-target="transitoJulgado">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                </div>
+                <div id="transitoJulgado" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos do trânsito em julgado..."></div>
+                <div class="text-muted small text-end mt-1" id="transitoJulgadoCount">0 caracteres</div>
+            </div>
+            
+            <div class="d-grid mb-3">
+                <button type="button" class="btn btn-primary" id="concatenarCampos">
+                    <i class="fas fa-object-group me-1"></i> Concatenar Campos
+                </button>
+            </div>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="resumo">Resumo</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-expandir" data-target="resumo">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                </div>
+                <div id="resumo" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="O resumo concatenado aparecerá aqui..."></div>
+                <div class="text-muted small text-end mt-1" id="resumoCount">0 caracteres</div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="limparCampos">
+                    <i class="fas fa-eraser me-1"></i> Limpar Campos
+                </button>
+                <button type="button" class="btn btn-primary" id="salvarResumo">
+                    <i class="fas fa-save me-1"></i> Salvar Resumo
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-grid mb-4">
+        <button type="button" id="preencherAutomatico" class="btn btn-success">
+            <i class="fas fa-magic me-1"></i> Preencher Formulário
+        </button>
+    </div>
+
+    <!-- Dados da Peça -->
+    <form id="guiaRecolhimentoForm">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary-subtle">
+                <h5 class="card-title text-primary mb-0">
+                    <i class="fas fa-file-invoice me-2"></i> Dados da Peça
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Tipo de Peça -->
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="tipoPeca" class="form-label">Tipo de peça</label>
+                        <select id="tipoPeca" class="form-select">
+                            <option value="recolhimento">Guia de Recolhimento</option>
+                            <option value="execucao">Guia de Execução Definitiva</option>
+                            <option value="internacao">Guia de Internação</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label d-block">Tipo de Guia</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" id="guiaProvisoria" name="tipoGuia" value="provisoria">
+                            <label class="form-check-label" for="guiaProvisoria">Provisória</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" id="guiaDefinitiva" name="tipoGuia" value="definitiva" checked>
+                            <label class="form-check-label" for="guiaDefinitiva">Definitiva</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Regime Prisional -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="regimePrisional" class="form-label">Regime Prisional</label>
+                        <select id="regimePrisional" class="form-select">
+                            <option value="fechado">Fechado</option>
+                            <option value="semiaberto" selected>Semiaberto</option>
+                            <option value="aberto">Aberto</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Mandado de Prisão -->
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="mandadoPrisao" class="form-label">Mandado de Prisão/Internação</label>
+                        <input type="text" id="mandadoPrisao" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="orgaoJudiciario" class="form-label">Órgão Judiciário</label>
+                        <input type="text" id="orgaoJudiciario" class="form-control">
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="expedicaoExcepcional">
+                            <label class="form-check-label" for="expedicaoExcepcional">
+                                Expedição excepcional sem mandado cumprido, por determinação judicial
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Processo -->
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="numeroProcesso" class="form-label">Nº do Processo *</label>
+                        <input type="text" id="numeroProcesso" class="form-control" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataExpedicao" class="form-label">Data de Expedição *</label>
+                        <input type="text" id="dataExpedicao" class="form-control" value="15/04/2025 14:10" required>
+                    </div>
+                </div>
+                
+                <!-- Localização -->
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label for="uf" class="form-label">UF</label>
+                        <div class="input-group">
+                            <input type="text" id="uf" class="form-control" value="Pernambuco">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="municipio" class="form-label">Município</label>
+                        <div class="input-group">
+                            <input type="text" id="municipio" class="form-control">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="localCustodia" class="form-label">Local da Custódia</label>
+                        <div class="input-group">
+                            <input type="text" id="localCustodia" class="form-control">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados do Processo Criminal -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary-subtle">
+                <h5 class="card-title text-primary mb-0">
+                    <i class="fas fa-gavel me-2"></i> Dados do Processo Criminal
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="tipoProcessoCriminal" class="form-label">Tipo de Processo Criminal*</label>
+                        <select id="tipoProcessoCriminal" class="form-select" required>
+                            <option value="" selected>Selecione</option>
+                            <option value="283">283 - Ação Penal - Procedimento Ordinário</option>
+                            <option value="284">284 - Ação Penal - Procedimento Sumário</option>
+                            <option value="285">285 - Ação Penal - Procedimento Especial</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Revisão Criminal? *</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" id="revisaoSim" name="revisaoCriminal" value="sim">
+                                <label class="form-check-label" for="revisaoSim">Sim</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" id="revisaoNao" name="revisaoCriminal" value="nao" checked>
+                                <label class="form-check-label" for="revisaoNao">Não</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Datas do Processo -->
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataInfracao" class="form-label">Data da Infração *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataInfracao" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataRecebimentoDenuncia" class="form-label">Data de Recebimento da Denúncia/Queixa *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataRecebimentoDenuncia" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataPublicacaoPronuncia" class="form-label">Data do Publicação da Pronúncia</label>
+                        <div class="input-group">
+                            <input type="text" id="dataPublicacaoPronuncia" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataPublicacaoSentenca" class="form-label">Data de Publicação da Sentença *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataPublicacaoSentenca" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataTransitoAcusacao" class="form-label">Data de Trânsito em Julgado da Acusação *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataTransitoAcusacao" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataTransitoAssistente" class="form-label">Data de Trânsito em Julgado da Assistente de Acusação</label>
+                        <div class="input-group">
+                            <input type="text" id="dataTransitoAssistente" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataTransitoReu" class="form-label">Data de Trânsito em Julgado do réu *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataTransitoReu" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataTransitoDefesa" class="form-label">Data do Trânsito em Julgado para Defesa *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataTransitoDefesa" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataPublicacaoAcordao" class="form-label">Data de Publicação do Acórdão</label>
+                        <div class="input-group">
+                            <input type="text" id="dataPublicacaoAcordao" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cadastro da Sentença -->
+                <h5 class="border-bottom pb-2 mb-3">Cadastro da Sentença</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="tipoPena" class="form-label">Tipo da Pena *</label>
+                        <select id="tipoPena" class="form-select" required>
+                            <option value="originaria">Originária</option>
+                            <option value="apelacao" selected>Apelação Criminal</option>
+                            <option value="revisao">Revisão Criminal</option>
+                            <option value="recurso">Recurso Especial</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="numeroRecurso" class="form-label">Nº do Recurso *</label>
+                        <input type="text" id="numeroRecurso" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="recorrentesRecurso" class="form-label">Recorrentes do Recurso *</label>
+                        <select id="recorrentesRecurso" class="form-select" required>
+                            <option value="reu" selected>O Réu</option>
+                            <option value="mp">Ministério Público</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="dataDecisaoRecurso" class="form-label">Data de Decisão do Recurso *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataDecisaoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="orgaoJudiciarioRecurso" class="form-label">Órgão Judiciário *</label>
+                        <input type="text" id="orgaoJudiciarioRecurso" class="form-control" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="camaraJulgadora" class="form-label">Câmara Julgadora do Recurso *</label>
+                        <input type="text" id="camaraJulgadora" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataTransitoRecurso" class="form-label">Data de Trânsito em Julgado do Recurso *</label>
+                        <div class="input-group">
+                            <input type="text" id="dataTransitoRecurso" class="form-control" placeholder="dd/mm/aaaa" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tipificação Penal -->
+                <h5 class="border-bottom pb-2 mb-3">Tipificação Penal</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="lei" class="form-label">Lei *</label>
+                        <select id="lei" class="form-select" required>
+                            <option value="" selected>Selecione</option>
+                            <option value="2848">Lei 2848 - Código Penal</option>
+                            <option value="11343">Lei 11343 - Lei de Drogas</option>
+                            <option value="8069">Lei 8069 - Estatuto da Criança e do Adolescente</option>
+                            <option value="10826">Lei 10826 - Estatuto do Desarmamento</option>
+                            <option value="9605">Lei 9605 - Lei de Crimes Ambientais</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="artigo" class="form-label">Artigo *</label>
+                        <div class="input-group">
+                            <input type="text" id="artigo" class="form-control" required>
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="complemento" class="form-label">Complemento</label>
+                        <input type="text" id="complemento" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataDelito" class="form-label">Data do Delito</label>
+                        <div class="input-group">
+                            <input type="text" id="dataDelito" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Características do Crime</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="crimeTentado">
+                                <label class="form-check-label" for="crimeTentado">Crime Tentado</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="violenciaDomestica">
+                                <label class="form-check-label" for="violenciaDomestica">Violência Doméstica</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="resultadoMorte">
+                                <label class="form-check-label" for="resultadoMorte">Resultado da Morte</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="violenciaGraveAmeaca">
+                                <label class="form-check-label" for="violenciaGraveAmeaca">Com Violência ou Grave Ameaça</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="reincidenteComum">
+                                <label class="form-check-label" for="reincidenteComum">Reincidente Comum</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="reincidenteEspecifico">
+                                <label class="form-check-label" for="reincidenteEspecifico">Reincidente Específico</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="comandoOrganizacao">
+                                <label class="form-check-label" for="comandoOrganizacao">Condenado por exercer o comando organização criminosa para cometimento de crime hediondo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="fracaoProgressao" class="form-label">Fração Progressão Regime</label>
+                        <select id="fracaoProgressao" class="form-select">
+                            <option value="">Selecione</option>
+                            <option value="1/6">1/6</option>
+                            <option value="2/5">2/5</option>
+                            <option value="3/5">3/5</option>
+                            <option value="1/2">1/2</option>
+                            <option value="1/3">1/3</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="fracaoLivramento" class="form-label">Fração Livramento Condicional</label>
+                        <select id="fracaoLivramento" class="form-select">
+                            <option value="">Selecione</option>
+                            <option value="1/3">1/3</option>
+                            <option value="1/2">1/2</option>
+                            <option value="2/3">2/3</option>
+                            <option value="3/4">3/4</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Tempo de Pena</label>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="anos" class="form-label">Anos</label>
+                            <input type="number" id="anos" class="form-control" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="meses" class="form-label">Meses</label>
+                            <input type="number" id="meses" class="form-control" min="0" max="11">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="dias" class="form-label">Dias</label>
+                            <input type="number" id="dias" class="form-control" min="0" max="30">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-primary" id="adicionarParagrafo">
+                        <i class="fas fa-plus me-1"></i> Adicionar Parágrafo
+                    </button>
+                </div>
+                
+                <!-- Cadastro das Prisões -->
+                <h5 class="border-bottom pb-2 mb-3">Cadastro das Prisões</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataPrisao" class="form-label">Data da Prisão</label>
+                        <div class="input-group">
+                            <input type="text" id="dataPrisao" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="motivoPrisao" class="form-label">Motivo</label>
+                        <select id="motivoPrisao" class="form-select">
+                            <option value="">Selecione</option>
+                            <option value="conversao-flagrante">Conversão da prisão em flagrante em preventiva</option>
+                            <option value="conversao-temporaria">Conversão da prisão temporária em preventiva</option>
+                            <option value="conversao-internacao">Conversão de prisão em internação</option>
+                            <option value="condenacao-nao-transitada">Decorrente de condenação não transitada em julgado</option>
+                            <option value="condenacao-transitada">Definitiva decorrente de condenação transitada em julgado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="dataSoltura" class="form-label">Data da Soltura</label>
+                        <div class="input-group">
+                            <input type="text" id="dataSoltura" class="form-control" placeholder="dd/mm/aaaa">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="motivoSoltura" class="form-label">Motivo</label>
+                        <select id="motivoSoltura" class="form-select">
+                            <option value="">Selecione</option>
+                            <option value="absolvicao">Absolvição</option>
+                            <option value="tratamento-ambulatorial">Aplicação de medida de tratamento ambulatorial</option>
+                            <option value="semiaberto-condicoes">Concessão de regime semiaberto com condições</option>
+                            <option value="regime-aberto">Condenação em regime aberto</option>
+                            <option value="conversao-tipo">Conversão do tipo de prisão</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-flex gap-2 justify-content-end mt-4">
+                    <button type="button" class="btn btn-outline-secondary" id="cancelarForm">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="salvarRascunho">
+                        <i class="fas fa-save me-1"></i> Salvar como Rascunho
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="salvarFormulario">
+                        <i class="fas fa-check me-1"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
