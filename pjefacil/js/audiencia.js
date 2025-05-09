@@ -1,124 +1,128 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
- * Versão corrigida para funcionar com caminhos relativos
+ * Versão universal para funcionar em todos os ambientes
  */
 
 // Função de inicialização do módulo
 export function initialize(container) {
-  console.log('Módulo audiencia.js inicializado');
+  console.log('[Audiência] Módulo inicializado');
   
-  // Configurar os event listeners - MÉTODO MELHORADO
-  configurarEventListeners(container);
+  // Referência para depuração
+  window.audienciaContainer = container;
   
-  // Adicionar classe ao contentor principal para o estilo específico da função
-  container.closest('.main-content').classList.add('audiencia-mode');
+  // Garantir que o container está definido
+  if (!container) {
+    console.error('[Audiência] Container não fornecido');
+    return;
+  }
   
-  console.log('Módulo de Audiência pronto para uso');
-}
-
-// Função para configurar todos os event listeners
-function configurarEventListeners(container) {
-  // Assistente de Acusação - usar querySelector diretamente
-  const addAssistenteBtn = container.querySelector('#addAssistenteBtn');
-  if (addAssistenteBtn) {
-    console.log('Botão Assistente de Acusação encontrado e configurado');
-    addAssistenteBtn.addEventListener('click', function() {
-      addAssistenteAcusacao(container);
+  // ===== Event Listeners Principais =====
+  
+  // Assistente de Acusação
+  const btnAssistente = container.querySelector('#addAssistenteBtn');
+  if (btnAssistente) {
+    console.log('[Audiência] Botão Assistente encontrado');
+    btnAssistente.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Assistente');
+      adicionarAssistenteAcusacao(container);
     });
   } else {
-    console.warn('Botão Assistente de Acusação não encontrado');
+    console.warn('[Audiência] Botão Assistente NÃO encontrado');
   }
   
   // Vítima
-  const addVitimaBtn = container.querySelector('#addVitimaBtn');
-  if (addVitimaBtn) {
-    console.log('Botão Adicionar Vítima encontrado e configurado');
-    addVitimaBtn.addEventListener('click', function() {
-      addVitima(container);
+  const btnVitima = container.querySelector('#addVitimaBtn');
+  if (btnVitima) {
+    console.log('[Audiência] Botão Vítima encontrado');
+    btnVitima.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Vítima');
+      adicionarVitima(container);
     });
-  } else {
-    console.warn('Botão Adicionar Vítima não encontrado');
   }
   
   // Testemunha MP
-  const addTestemunhaMpBtn = container.querySelector('#addTestemunhaMpBtn');
-  if (addTestemunhaMpBtn) {
-    console.log('Botão Adicionar Testemunha MP encontrado e configurado');
-    addTestemunhaMpBtn.addEventListener('click', function() {
-      addTestemunha(container, 'mp');
+  const btnTestemunhaMP = container.querySelector('#addTestemunhaMpBtn');
+  if (btnTestemunhaMP) {
+    console.log('[Audiência] Botão Testemunha MP encontrado');
+    btnTestemunhaMP.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Testemunha MP');
+      adicionarTestemunha(container, 'mp');
     });
-  } else {
-    console.warn('Botão Adicionar Testemunha MP não encontrado');
   }
   
   // Policial
-  const addPolicialBtn = container.querySelector('#addPolicialBtn');
-  if (addPolicialBtn) {
-    console.log('Botão Adicionar Policial encontrado e configurado');
-    addPolicialBtn.addEventListener('click', function() {
-      addPolicial(container);
+  const btnPolicial = container.querySelector('#addPolicialBtn');
+  if (btnPolicial) {
+    console.log('[Audiência] Botão Policial encontrado');
+    btnPolicial.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Policial');
+      adicionarPolicial(container);
     });
-  } else {
-    console.warn('Botão Adicionar Policial não encontrado');
   }
   
   // Réu
-  const addReuBtn = container.querySelector('#addReuBtn');
-  if (addReuBtn) {
-    console.log('Botão Adicionar Réu encontrado e configurado');
-    addReuBtn.addEventListener('click', function() {
-      addReu(container);
+  const btnReu = container.querySelector('#addReuBtn');
+  if (btnReu) {
+    console.log('[Audiência] Botão Réu encontrado');
+    btnReu.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Réu');
+      adicionarReu(container);
     });
-  } else {
-    console.warn('Botão Adicionar Réu não encontrado');
   }
   
   // Testemunha Defesa
-  const addTestemunhaDefesaBtn = container.querySelector('#addTestemunhaDefesaBtn');
-  if (addTestemunhaDefesaBtn) {
-    console.log('Botão Adicionar Testemunha Defesa encontrado e configurado');
-    addTestemunhaDefesaBtn.addEventListener('click', function() {
-      addTestemunha(container, 'defesa');
+  const btnTestemunhaDefesa = container.querySelector('#addTestemunhaDefesaBtn');
+  if (btnTestemunhaDefesa) {
+    console.log('[Audiência] Botão Testemunha Defesa encontrado');
+    btnTestemunhaDefesa.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Adicionar Testemunha Defesa');
+      adicionarTestemunha(container, 'defesa');
     });
-  } else {
-    console.warn('Botão Adicionar Testemunha Defesa não encontrado');
   }
   
   // Salvar
-  const salvarBtn = container.querySelector('#salvarBtn');
-  if (salvarBtn) {
-    console.log('Botão Salvar encontrado e configurado');
-    salvarBtn.addEventListener('click', function() {
+  const btnSalvar = container.querySelector('#salvarBtn');
+  if (btnSalvar) {
+    console.log('[Audiência] Botão Salvar encontrado');
+    btnSalvar.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Salvar');
       salvarDados();
     });
-  } else {
-    console.warn('Botão Salvar não encontrado');
   }
   
   // Limpar
-  const limparBtn = container.querySelector('#limparBtn');
-  if (limparBtn) {
-    console.log('Botão Limpar encontrado e configurado');
-    limparBtn.addEventListener('click', function() {
+  const btnLimpar = container.querySelector('#limparBtn');
+  if (btnLimpar) {
+    console.log('[Audiência] Botão Limpar encontrado');
+    btnLimpar.addEventListener('click', function() {
+      console.log('[Audiência] Clique em Limpar');
       limparFormulario(container);
     });
-  } else {
-    console.warn('Botão Limpar não encontrado');
   }
   
-  // Registrar eventos de remoção para elementos existentes
-  setupRemoveButtons(container);
+  // Registrar eventos para botões de remoção existentes
+  configurarBotoesRemover(container);
+  
+  // Adicionar classe ao contentor principal
+  const mainContent = container.closest('.main-content');
+  if (mainContent) {
+    mainContent.classList.add('audiencia-mode');
+  }
+  
+  console.log('[Audiência] Módulo pronto para uso');
 }
+
+// ===== FUNÇÕES AUXILIARES =====
 
 // Função para criar linha de assistente de acusação
 function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
   linha.className = 'linha';
-
+  
   const timestamp = Date.now();
   const checkboxId = `intimado_${timestamp}`;
   
-  const baseHtml = `
+  linha.innerHTML = `
     <input type="text" placeholder="Nome do Assistente" class="nome">
     <input type="text" placeholder="OAB" class="oab">
     <div class="checkbox-container">
@@ -127,37 +131,50 @@ function criarLinhaAssistenteAcusacao() {
     </div>
     <button class="btn btn-danger remove-btn">×</button>
   `;
-
-  linha.innerHTML = baseHtml;
+  
   return linha;
 }
 
 // Função para adicionar assistente de acusação
-function addAssistenteAcusacao(container) {
-  console.log('Função addAssistenteAcusacao chamada');
-  const assistenteContainer = container.querySelector('#assistente-acusacao-container');
-  if (assistenteContainer) {
-    console.log('Container de assistente encontrado');
-    const linha = criarLinhaAssistenteAcusacao();
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
+function adicionarAssistenteAcusacao(container) {
+  console.log('[Audiência] Função adicionarAssistenteAcusacao chamada');
+  
+  // Encontrar o container
+  const containerAssistente = container.querySelector('#assistente-acusacao-container');
+  if (!containerAssistente) {
+    console.error('[Audiência] Container assistente-acusacao-container não encontrado');
+    mostrarMensagem(container, 'Erro ao encontrar container de assistente', 'error');
+    return;
+  }
+  
+  // Criar e adicionar a linha
+  const linha = criarLinhaAssistenteAcusacao();
+  
+  // Adicionar listener ao botão remover
+  const btnRemover = linha.querySelector('.remove-btn');
+  if (btnRemover) {
+    btnRemover.addEventListener('click', function() {
+      console.log('[Audiência] Removendo assistente');
       linha.remove();
     });
-    assistenteContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  } else {
-    console.error('Container de assistente (#assistente-acusacao-container) não encontrado');
   }
+  
+  // Adicionar ao DOM
+  containerAssistente.appendChild(linha);
+  
+  // Efeito de animação
+  setTimeout(function() {
+    linha.classList.add('active');
+  }, 10);
+  
+  console.log('[Audiência] Assistente adicionado com sucesso');
 }
 
 // Função para criar linha genérica
 function criarLinha(tipo, extras = '') {
   const linha = document.createElement('div');
   linha.className = 'linha';
-
+  
   const timestamp = Date.now();
   const checkboxId = `intimado_${timestamp}`;
   
@@ -170,147 +187,182 @@ function criarLinha(tipo, extras = '') {
     </div>
     <button class="btn btn-danger remove-btn">×</button>
   `;
-
+  
   linha.innerHTML = extras + baseHtml;
   return linha;
 }
 
 // Função para adicionar vítima
-function addVitima(container) {
-  console.log('Função addVitima chamada');
-  const vitimasContainer = container.querySelector('#vitimas-container');
-  if (vitimasContainer) {
-    console.log('Container de vítimas encontrado');
-    const linha = criarLinha('vitima');
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
+function adicionarVitima(container) {
+  console.log('[Audiência] Função adicionarVitima chamada');
+  
+  const containerVitimas = container.querySelector('#vitimas-container');
+  if (!containerVitimas) {
+    console.error('[Audiência] Container vitimas-container não encontrado');
+    mostrarMensagem(container, 'Erro ao encontrar container de vítimas', 'error');
+    return;
+  }
+  
+  const linha = criarLinha('vitima');
+  
+  const btnRemover = linha.querySelector('.remove-btn');
+  if (btnRemover) {
+    btnRemover.addEventListener('click', function() {
       linha.remove();
     });
-    vitimasContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  } else {
-    console.error('Container de vítimas (#vitimas-container) não encontrado');
   }
+  
+  containerVitimas.appendChild(linha);
+  
+  setTimeout(function() {
+    linha.classList.add('active');
+  }, 10);
+  
+  console.log('[Audiência] Vítima adicionada com sucesso');
 }
 
 // Função para adicionar testemunha
-function addTestemunha(container, tipo) {
-  console.log(`Função addTestemunha chamada para tipo: ${tipo}`);
-  const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
-  if (testemunhasContainer) {
-    console.log(`Container de testemunhas ${tipo} encontrado`);
-    const linha = criarLinha('testemunha');
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
+function adicionarTestemunha(container, tipo) {
+  console.log(`[Audiência] Função adicionarTestemunha chamada para tipo: ${tipo}`);
+  
+  const containerTestemunhas = container.querySelector(`#testemunhas-${tipo}-container`);
+  if (!containerTestemunhas) {
+    console.error(`[Audiência] Container testemunhas-${tipo}-container não encontrado`);
+    mostrarMensagem(container, `Erro ao encontrar container de testemunhas ${tipo}`, 'error');
+    return;
+  }
+  
+  const linha = criarLinha('testemunha');
+  
+  const btnRemover = linha.querySelector('.remove-btn');
+  if (btnRemover) {
+    btnRemover.addEventListener('click', function() {
       linha.remove();
     });
-    testemunhasContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  } else {
-    console.error(`Container de testemunhas (#testemunhas-${tipo}-container) não encontrado`);
   }
+  
+  containerTestemunhas.appendChild(linha);
+  
+  setTimeout(function() {
+    linha.classList.add('active');
+  }, 10);
+  
+  console.log(`[Audiência] Testemunha ${tipo} adicionada com sucesso`);
 }
 
 // Função para adicionar policial
-function addPolicial(container) {
-  console.log('Função addPolicial chamada');
-  const policiaisContainer = container.querySelector('#policiais-container');
-  if (policiaisContainer) {
-    console.log('Container de policiais encontrado');
-    const extras = `
-      <select class="tipo-policial">
-        <option value="pm">PM</option>
-        <option value="pc">PC</option>
-        <option value="pf">PF</option>
-        <option value="prf">PRF</option>
-      </select>
-    `;
-    const linha = criarLinha('policial', extras);
-    linha.querySelector('.endereco').placeholder = 'Matrícula/RG';
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
+function adicionarPolicial(container) {
+  console.log('[Audiência] Função adicionarPolicial chamada');
+  
+  const containerPoliciais = container.querySelector('#policiais-container');
+  if (!containerPoliciais) {
+    console.error('[Audiência] Container policiais-container não encontrado');
+    mostrarMensagem(container, 'Erro ao encontrar container de policiais', 'error');
+    return;
+  }
+  
+  const extras = `
+    <select class="tipo-policial">
+      <option value="pm">PM</option>
+      <option value="pc">PC</option>
+      <option value="pf">PF</option>
+      <option value="prf">PRF</option>
+    </select>
+  `;
+  
+  const linha = criarLinha('policial', extras);
+  linha.querySelector('.endereco').placeholder = 'Matrícula/RG';
+  
+  const btnRemover = linha.querySelector('.remove-btn');
+  if (btnRemover) {
+    btnRemover.addEventListener('click', function() {
       linha.remove();
     });
-    policiaisContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  } else {
-    console.error('Container de policiais (#policiais-container) não encontrado');
   }
+  
+  containerPoliciais.appendChild(linha);
+  
+  setTimeout(function() {
+    linha.classList.add('active');
+  }, 10);
+  
+  console.log('[Audiência] Policial adicionado com sucesso');
 }
 
 // Função para adicionar réu
-function addReu(container) {
-  console.log('Função addReu chamada');
-  const reusContainer = container.querySelector('#reus-container');
-  if (reusContainer) {
-    console.log('Container de réus encontrado');
-    const reuContainer = document.createElement('div');
-    reuContainer.className = 'reu-item';
-    
-    const timestamp = Date.now();
-    const checkboxReuId = `intimado_reu_${timestamp}`;
-    const checkboxAdvId = `intimado_adv_${timestamp}`;
-    
-    reuContainer.innerHTML = `
-      <div class="linha">
-        <input type="text" placeholder="Nome" class="nome">
-        <input type="text" placeholder="Endereço" class="endereco">
-        <div class="checkbox-container">
-          <input type="checkbox" id="${checkboxReuId}" class="intimado">
-          <label for="${checkboxReuId}">Intimado</label>
-        </div>
-        <button class="btn btn-danger remove-btn">×</button>
+function adicionarReu(container) {
+  console.log('[Audiência] Função adicionarReu chamada');
+  
+  const containerReus = container.querySelector('#reus-container');
+  if (!containerReus) {
+    console.error('[Audiência] Container reus-container não encontrado');
+    mostrarMensagem(container, 'Erro ao encontrar container de réus', 'error');
+    return;
+  }
+  
+  const reuContainer = document.createElement('div');
+  reuContainer.className = 'reu-item';
+  
+  const timestamp = Date.now();
+  const checkboxReuId = `intimado_reu_${timestamp}`;
+  const checkboxAdvId = `intimado_adv_${timestamp}`;
+  
+  reuContainer.innerHTML = `
+    <div class="linha">
+      <input type="text" placeholder="Nome" class="nome">
+      <input type="text" placeholder="Endereço" class="endereco">
+      <div class="checkbox-container">
+        <input type="checkbox" id="${checkboxReuId}" class="intimado">
+        <label for="${checkboxReuId}">Intimado</label>
       </div>
-      <div class="linha">
-        <select class="tipo-defesa">
-          <option value="defensoria" selected>Defensoria Pública</option>
-          <option value="particular">Advogado Particular</option>
-        </select>
-        <input type="text" placeholder="Nome do Advogado" class="nome-advogado" style="display: none;">
-        <div class="checkbox-container">
-          <input type="checkbox" id="${checkboxAdvId}" class="intimado-advogado">
-          <label for="${checkboxAdvId}">Intimado</label>
-        </div>
+      <button class="btn btn-danger remove-btn">×</button>
+    </div>
+    <div class="linha">
+      <select class="tipo-defesa">
+        <option value="defensoria" selected>Defensoria Pública</option>
+        <option value="particular">Advogado Particular</option>
+      </select>
+      <input type="text" placeholder="Nome do Advogado" class="nome-advogado" style="display: none;">
+      <div class="checkbox-container">
+        <input type="checkbox" id="${checkboxAdvId}" class="intimado-advogado">
+        <label for="${checkboxAdvId}">Intimado</label>
       </div>
-    `;
-    
-    // Event listener para botão de remover
-    reuContainer.querySelector('.remove-btn').addEventListener('click', function() {
+    </div>
+  `;
+  
+  // Event listener para botão de remover
+  const btnRemover = reuContainer.querySelector('.remove-btn');
+  if (btnRemover) {
+    btnRemover.addEventListener('click', function() {
       reuContainer.remove();
     });
-    
-    // Event listener para tipo de defesa
-    const tipoDefesaSelect = reuContainer.querySelector('.tipo-defesa');
-    const nomeAdvogadoInput = reuContainer.querySelector('.nome-advogado');
-    
-    tipoDefesaSelect.addEventListener('change', function() {
-      nomeAdvogadoInput.style.display = this.value === 'particular' ? 'block' : 'none';
-    });
-    
-    reusContainer.appendChild(reuContainer);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      reuContainer.classList.add('active');
-    }, 10);
-  } else {
-    console.error('Container de réus (#reus-container) não encontrado');
   }
+  
+  // Event listener para tipo de defesa
+  const selectTipoDefesa = reuContainer.querySelector('.tipo-defesa');
+  const inputNomeAdvogado = reuContainer.querySelector('.nome-advogado');
+  
+  if (selectTipoDefesa && inputNomeAdvogado) {
+    selectTipoDefesa.addEventListener('change', function() {
+      inputNomeAdvogado.style.display = this.value === 'particular' ? 'block' : 'none';
+    });
+  }
+  
+  containerReus.appendChild(reuContainer);
+  
+  setTimeout(function() {
+    reuContainer.classList.add('active');
+  }, 10);
+  
+  console.log('[Audiência] Réu adicionado com sucesso');
 }
 
-// Registrar event listeners para botões de remover
-function setupRemoveButtons(container) {
-  container.querySelectorAll('.remove-btn').forEach(button => {
-    button.addEventListener('click', function() {
+// Configurar botões de remover existentes
+function configurarBotoesRemover(container) {
+  const botoesRemover = container.querySelectorAll('.remove-btn');
+  
+  botoesRemover.forEach(botao => {
+    botao.addEventListener('click', function() {
       const linha = this.closest('.linha');
       if (linha) {
         linha.remove();
@@ -322,11 +374,14 @@ function setupRemoveButtons(container) {
       }
     });
   });
+  
+  console.log(`[Audiência] ${botoesRemover.length} botões de remover configurados`);
 }
 
 // Função para salvar dados (imprimir)
 function salvarDados() {
-  console.log('Função salvarDados chamada');
+  console.log('[Audiência] Função salvarDados chamada');
+  
   // Mostrar overlay de processamento
   const processingOverlay = document.getElementById('processingOverlay');
   const processingText = document.getElementById('processingText');
@@ -338,7 +393,7 @@ function salvarDados() {
     }
   }
   
-  // Ocultar elementos antes da impressão
+  // Guardar estilos originais
   const originalStyles = {
     header: document.querySelector('.dashboard-header')?.style.display,
     footer: document.querySelector('.dashboard-footer')?.style.display,
@@ -348,26 +403,20 @@ function salvarDados() {
     removeButtons: []
   };
   
-  // Ocultar cabeçalho e rodapé
-  if (document.querySelector('.dashboard-header')) {
-    document.querySelector('.dashboard-header').style.display = 'none';
-  }
+  // Ocultar cabeçalho, rodapé e sidebar
+  const elements = {
+    header: document.querySelector('.dashboard-header'),
+    footer: document.querySelector('.dashboard-footer'),
+    sidebar: document.querySelector('.sidebar'),
+    contentHeader: document.querySelector('.content-header')
+  };
   
-  if (document.querySelector('.dashboard-footer')) {
-    document.querySelector('.dashboard-footer').style.display = 'none';
-  }
+  if (elements.header) elements.header.style.display = 'none';
+  if (elements.footer) elements.footer.style.display = 'none';
+  if (elements.sidebar) elements.sidebar.style.display = 'none';
+  if (elements.contentHeader) elements.contentHeader.style.marginBottom = '0';
   
-  // Ocultar sidebar
-  if (document.querySelector('.sidebar')) {
-    document.querySelector('.sidebar').style.display = 'none';
-  }
-  
-  // Reduzir espaçamento do content-header
-  if (document.querySelector('.content-header')) {
-    document.querySelector('.content-header').style.marginBottom = '0';
-  }
-  
-  // Ocultar botões de ação
+  // Ocultar botões
   document.querySelectorAll('.btn').forEach((btn, index) => {
     if (!btn.classList.contains('remove-btn')) {
       originalStyles.botoes.push({el: btn, display: btn.style.display});
@@ -386,17 +435,14 @@ function salvarDados() {
   printStyle.id = 'print-styles';
   printStyle.innerHTML = `
     @media print {
-      /* Reset de margens da página */
       @page {
         margin: 1cm;
       }
       
-      /* Ocultar elementos do dashboard */
       .dashboard-header, .dashboard-footer, .sidebar, .btn, .remove-btn {
         display: none !important;
       }
       
-      /* Remover espaçamento excessivo */
       .content-header {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
@@ -407,30 +453,25 @@ function salvarDados() {
         padding-top: 0 !important;
       }
       
-      /* Formatar layout para impressão */
       .audiencia-grid {
         display: block !important;
       }
       
-      /* Alinhar o Ministério Público à esquerda */
       .section h3.section-title,
       .section .linha {
         text-align: left !important;
         justify-content: flex-start !important;
       }
       
-      /* Evitar quebra de página dentro dos elementos */
       .panel {
         page-break-inside: avoid;
         margin-bottom: 20px;
       }
       
-      /* Ajustes de fonte */
       body, html {
         font-size: 12pt !important;
       }
       
-      /* Reduzir espaçamentos gerais */
       .section {
         margin-bottom: 10px !important;
         padding: 8px !important;
@@ -462,21 +503,10 @@ function salvarDados() {
       document.getElementById('print-styles')?.remove();
       
       // Restaurar os elementos ocultos
-      if (document.querySelector('.dashboard-header')) {
-        document.querySelector('.dashboard-header').style.display = originalStyles.header || '';
-      }
-      
-      if (document.querySelector('.dashboard-footer')) {
-        document.querySelector('.dashboard-footer').style.display = originalStyles.footer || '';
-      }
-      
-      if (document.querySelector('.sidebar')) {
-        document.querySelector('.sidebar').style.display = originalStyles.sidebar || '';
-      }
-      
-      if (document.querySelector('.content-header')) {
-        document.querySelector('.content-header').style.marginBottom = originalStyles.contentHeader || '';
-      }
+      if (elements.header) elements.header.style.display = originalStyles.header || '';
+      if (elements.footer) elements.footer.style.display = originalStyles.footer || '';
+      if (elements.sidebar) elements.sidebar.style.display = originalStyles.sidebar || '';
+      if (elements.contentHeader) elements.contentHeader.style.marginBottom = originalStyles.contentHeader || '';
       
       originalStyles.botoes.forEach(item => {
         item.el.style.display = item.display || '';
@@ -497,7 +527,8 @@ function salvarDados() {
 
 // Função para limpar o formulário
 function limparFormulario(container) {
-  console.log('Função limparFormulario chamada');
+  console.log('[Audiência] Função limparFormulario chamada');
+  
   if (confirm('Tem certeza que deseja limpar todos os dados?')) {
     // Mostrar overlay de processamento
     const processingOverlay = document.getElementById('processingOverlay');
@@ -511,8 +542,16 @@ function limparFormulario(container) {
     }
     
     // Limpar os containers dinâmicos com animação
-    ['assistente-acusacao-container', 'vitimas-container', 'testemunhas-mp-container', 
-     'policiais-container', 'reus-container', 'testemunhas-defesa-container'].forEach(id => {
+    const containersLimpar = [
+      'assistente-acusacao-container', 
+      'vitimas-container', 
+      'testemunhas-mp-container', 
+      'policiais-container', 
+      'reus-container', 
+      'testemunhas-defesa-container'
+    ];
+    
+    containersLimpar.forEach(id => {
       const element = container.querySelector(`#${id}`);
       if (element) {
         // Adicionar classe de fade-out a todos os elementos filhos
@@ -543,9 +582,9 @@ function limparFormulario(container) {
     container.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
     
     // Limpar os selects
-    container.querySelectorAll('select').forEach(el => el.value = '');
+    container.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
     
-    // Limpar o campo de nome do advogado (se houver)
+    // Limpar o campo de nome do advogado
     container.querySelectorAll('.nome-advogado').forEach(el => {
       el.value = '';
       el.style.display = 'none';
@@ -631,7 +670,7 @@ function mostrarMensagem(container, mensagem, tipo = 'info') {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js');
+  console.log('[Audiência] Limpando recursos do módulo audiencia.js');
   
   // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
@@ -641,4 +680,7 @@ export function cleanup() {
   
   // Remover classe específica do modo audiência
   document.querySelector('.main-content')?.classList.remove('audiencia-mode');
+  
+  // Limpar referência global
+  window.audienciaContainer = null;
 }
