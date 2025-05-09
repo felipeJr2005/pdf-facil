@@ -1,10 +1,13 @@
 /**
  * Dashboard - Script principal
  * Gerencia o carregamento dinâmico de módulos e funcionalidades
- * Versão com caminhos relativos para funcionamento em qualquer pasta
+ * Versão modificada para usar o adaptador de módulos
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Definir uma flag para indicar se estamos em modo de compatibilidade
+    window.usingCompatMode = false;
+    
     // Elementos do DOM
     const sidebarToggle = document.getElementById('sidebar-toggle');
     const themeToggle = document.getElementById('theme-toggle');
@@ -18,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.dashboard-header');
     const sidebar = document.querySelector('.sidebar');
     
-    // Configurações das páginas - USANDO APENAS CAMINHOS RELATIVOS
+    // Configurações das páginas - USANDO CAMINHOS FLEXÍVEIS
     const pages = {
         funcao01: {
             title: 'Função 01',
@@ -55,11 +58,55 @@ document.addEventListener('DOMContentLoaded', function() {
             description: 'Descrição da sexta função.',
             template: 'funcoes/funcao06.html',
             module: './js/funcao06.js'
+        },
+        diagnostico: {
+            title: 'Diagnóstico',
+            description: 'Ferramenta de diagnóstico do sistema.',
+            template: 'funcoes/diagnostico.html', // Este arquivo precisará ser criado
+            module: './js/diagnostico.js'
         }
     };
     
     // Registro para módulos ativos
     window.activeModule = null;
+    
+    // Verificar se devemos carregar o adaptador de módulos
+    async function loadModuleAdapter() {
+        try {
+            // Primeiro, tentamos verificar se o import dinâmico funciona
+            const testModule = await import('./js/test-import.js').catch(e => {
+                throw new Error('Import dinâmico não suportado');
+            });
+            console.log('Import dinâmico funciona, não precisamos do adaptador');
+            return false;
+        } catch (error) {
+            console.warn('Import dinâmico falhou, carregando adaptador de módulos', error);
+            
+            // Carregar o adaptador de módulos
+            try {
+                const script = document.createElement('script');
+                script.src = './js/module-adapter.js';
+                script.async = true;
+                
+                // Criar uma promise para aguardar o carregamento
+                return new Promise((resolve, reject) => {
+                    script.onload = () => {
+                        console.log('Adaptador de módulos carregado com sucesso');
+                        window.usingCompatMode = true;
+                        resolve(true);
+                    };
+                    script.onerror = (e) => {
+                        console.error('Erro ao carregar adaptador de módulos', e);
+                        reject(e);
+                    };
+                    document.head.appendChild(script);
+                });
+            } catch (adapterError) {
+                console.error('Erro ao configurar adaptador de módulos', adapterError);
+                return false;
+            }
+        }
+    }
     
     // ===== FUNÇÕES AUXILIARES =====
     
@@ -123,17 +170,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Limpa módulo anterior
             if (window.activeModule && typeof window.activeModule.cleanup === 'function') {
-                window.activeModule.cleanup();
+                try {
+                    window.activeModule.cleanup();
+                } catch (cleanupError) {
+                    console.warn('Erro ao limpar módulo anterior:', cleanupError);
+                }
             }
             
             // Carrega e inicializa o módulo JavaScript
             try {
                 console.log(`Tentando carregar módulo: ${page.module}`);
                 
-                // Usamos import com caminho relativo
-                const module = await import(page.module);
+                let module;
+                
+                // Escolher o método de carregamento baseado no modo
+                if (window.usingCompatMode && window.loadModule) {
+                    console.log(`Usando adaptador de módulos para: ${page.module}`);
+                    module = await window.loadModule(page.module);
+                } else {
+                    // Usar import dinâmico padrão
+                    module = await import(page.module);
+                }
                 
                 if (module && typeof module.initialize === 'function') {
+                    console.log(`Inicializando módulo: ${page.module}`);
                     module.initialize(contentContainer);
                     window.activeModule = module;
                 } else {
@@ -141,14 +201,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (moduleError) {
                 console.error(`Erro ao carregar o módulo JavaScript (${page.module}):`, moduleError);
-                console.error('Detalhes:', moduleError.stack || moduleError);
+                console.error('Stack trace:', moduleError.stack || moduleError);
                 
+                // Se falhar com o método padrão e não estamos em modo de compatibilidade,
+                // tente novamente com o adaptador
+                if (!window.usingCompatMode) {
+                    try {
+                        console.log('Tentando carregar adaptador de módulos para falha de carregamento');
+                        
+                        // Carregar adaptador e tentar novamente
+                        const adapterLoaded = await loadModuleAdapter();
+                        if (adapterLoaded && window.loadModule) {
+                            console.log(`Tentando novamente com adaptador: ${page.module}`);
+                            const moduleViaAdapter = await window.loadModule(page.module);
+                            
+                            if (moduleViaAdapter && typeof moduleViaAdapter.initialize === 'function') {
+                                moduleViaAdapter.initialize(contentContainer);
+                                window.activeModule = moduleViaAdapter;
+                                return; // Sucesso com adaptador
+                            }
+                        }
+                    } catch (adapterError) {
+                        console.error('Falha ao usar adaptador como contingência:', adapterError);
+                    }
+                }
+                
+                // Exibir erro para o usuário
                 contentContainer.innerHTML = `
                     <div class="alert alert-danger d-flex align-items-center" role="alert">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                         <div>
-                            Erro ao carregar o módulo JavaScript: ${moduleError.message}
+                            <strong>Erro ao carregar o módulo:</strong> ${moduleError.message}
+                            <br><br>
+                            <button class="btn btn-sm btn-outline-danger" onclick="document.getElementById('error-details').style.display='block'">
+                                Detalhes técnicos
+                            </button>
+                            <div id="error-details" class="mt-2 p-2 bg-light rounded" style="display:none; font-family:monospace; white-space:pre-wrap; font-size:12px;">
+                                ${moduleError.stack || moduleError}
+                            </div>
                         </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <strong>Sugestão:</strong> Você pode tentar a <a href="#diagnostico">ferramenta de diagnóstico</a> para identificar e resolver problemas.
                     </div>
                 `;
             }
@@ -180,6 +275,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <strong>Erro ao carregar a funcionalidade:</strong> ${error.message}
                     </div>
                 </div>
+                
+                <div class="alert alert-info mt-3">
+                    <strong>Sugestão:</strong> Você pode tentar a <a href="#diagnostico">ferramenta de diagnóstico</a> para identificar e resolver problemas.
+                </div>
             `;
         }
     }
@@ -197,99 +296,126 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ===== INICIALIZAÇÃO E EVENTOS =====
     
-    // Toggle da sidebar
-    sidebarToggle.addEventListener('click', function() {
-        body.classList.toggle('sidebar-collapsed');
-        body.classList.toggle('sidebar-open');
-        
-        // Gerencia overlay para dispositivos móveis
-        if (body.classList.contains('sidebar-open')) {
-            if (!document.querySelector('.sidebar-overlay')) {
-                const overlay = document.createElement('div');
-                overlay.className = 'sidebar-overlay';
-                overlay.addEventListener('click', function() {
-                    body.classList.remove('sidebar-open');
-                    this.remove();
-                });
-                body.appendChild(overlay);
-            }
-        } else {
-            const overlay = document.querySelector('.sidebar-overlay');
-            if (overlay) overlay.remove();
+    // Inicialização principal - assíncrona para poder verificar compatibilidade
+    async function init() {
+        // Primeiro, verificamos se precisamos do adaptador de módulos
+        try {
+            await loadModuleAdapter();
+        } catch (e) {
+            console.warn('Erro ao verificar compatibilidade de módulos:', e);
         }
-    });
-    
-    // Toggle do tema (claro/escuro)
-    themeToggle.addEventListener('change', function() {
-        applyTheme(this.checked);
-    });
-    
-    // Carrega tema salvo
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        themeToggle.checked = true;
-        applyTheme(true);
-    } else {
-        themeToggle.checked = false;
-        applyTheme(false);
-    }
-    
-    // Navegação entre páginas
-    sidebarItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
+        
+        // Toggle da sidebar
+        sidebarToggle.addEventListener('click', function() {
+            body.classList.toggle('sidebar-collapsed');
+            body.classList.toggle('sidebar-open');
             
-            const pageName = this.getAttribute('data-page');
-            
-            // Carrega a página
-            loadPage(pageName);
-            
-            // Atualiza item ativo
-            sidebarItems.forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Fecha sidebar em dispositivos móveis
-            if (window.innerWidth <= 768) {
-                body.classList.remove('sidebar-open');
+            // Gerencia overlay para dispositivos móveis
+            if (body.classList.contains('sidebar-open')) {
+                if (!document.querySelector('.sidebar-overlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'sidebar-overlay';
+                    overlay.addEventListener('click', function() {
+                        body.classList.remove('sidebar-open');
+                        this.remove();
+                    });
+                    body.appendChild(overlay);
+                }
+            } else {
                 const overlay = document.querySelector('.sidebar-overlay');
                 if (overlay) overlay.remove();
             }
         });
-    });
-    
-    // Navegação pelo histórico
-    window.addEventListener('popstate', function(event) {
-        if (event.state && event.state.page) {
-            loadPage(event.state.page);
-            
-            // Atualiza item ativo
-            sidebarItems.forEach(item => {
-                if (item.getAttribute('data-page') === event.state.page) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
+        
+        // Toggle do tema (claro/escuro)
+        themeToggle.addEventListener('change', function() {
+            applyTheme(this.checked);
+        });
+        
+        // Carrega tema salvo
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            themeToggle.checked = true;
+            applyTheme(true);
+        } else {
+            themeToggle.checked = false;
+            applyTheme(false);
+        }
+        
+        // Navegação entre páginas
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const pageName = this.getAttribute('data-page');
+                
+                // Carrega a página
+                loadPage(pageName);
+                
+                // Atualiza item ativo
+                sidebarItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Fecha sidebar em dispositivos móveis
+                if (window.innerWidth <= 768) {
+                    body.classList.remove('sidebar-open');
+                    const overlay = document.querySelector('.sidebar-overlay');
+                    if (overlay) overlay.remove();
                 }
             });
-        }
-    });
+        });
+        
+        // Navegação pelo histórico
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.page) {
+                loadPage(event.state.page);
+                
+                // Atualiza item ativo
+                sidebarItems.forEach(item => {
+                    if (item.getAttribute('data-page') === event.state.page) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+        });
+        
+        // Inicialização responsiva
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        
+        // Carrega página inicial ou da URL
+        const hash = window.location.hash.substring(1);
+        const initialPage = hash && pages[hash] ? hash : 'notas';
+        
+        // Carrega a página inicial
+        loadPage(initialPage);
+        
+        // Marca o item correto como ativo
+        sidebarItems.forEach(item => {
+            if (item.getAttribute('data-page') === initialPage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
     
-    // Inicialização responsiva
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    // Carrega página inicial ou da URL
-    const hash = window.location.hash.substring(1);
-    const initialPage = hash && pages[hash] ? hash : 'notas';
-    
-    // Carrega a página inicial
-    loadPage(initialPage);
-    
-    // Marca o item correto como ativo
-    sidebarItems.forEach(item => {
-        if (item.getAttribute('data-page') === initialPage) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
+    // Iniciar o dashboard
+    init().catch(error => {
+        console.error('Erro na inicialização do dashboard:', error);
+        
+        // Mostrar mensagem de erro em caso de falha na inicialização
+        if (contentContainer) {
+            contentContainer.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Erro de Inicialização</h4>
+                    <p>Ocorreu um erro ao inicializar o dashboard. Por favor, recarregue a página ou entre em contato com o suporte.</p>
+                    <hr>
+                    <p class="mb-0">Detalhes técnicos: ${error.message}</p>
+                </div>
+            `;
         }
     });
 });
