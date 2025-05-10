@@ -1,0 +1,119 @@
+<!-- Template para Audiência utilizando Bootstrap -->
+<div class="container-fluid px-0">
+  <div class="audiencia-grid">
+    <!-- Lado Acusatório -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary-subtle">
+        <h5 class="card-title text-primary mb-0">
+          <i class="fas fa-gavel me-2"></i> Acusação
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Ministério Público</h6>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="intimado_mp">
+              <label class="form-check-label" for="intimado_mp">Intimado</label>
+            </div>
+          </div>
+          <div class="card-body">
+            <button class="btn btn-sm btn-outline-primary" id="addAssistenteBtn">
+              <i class="fas fa-user-plus me-1"></i> Assistente de Acusação
+            </button>
+            <div id="assistente-acusacao-container" class="mt-2"></div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Vítimas</h6>
+            <button class="btn btn-sm btn-outline-primary" id="addVitimaBtn">
+              <i class="fas fa-plus me-1"></i> Adicionar Vítima
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="vitimas-container"></div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Testemunhas</h6>
+            <button class="btn btn-sm btn-outline-primary" id="addTestemunhaMpBtn">
+              <i class="fas fa-plus me-1"></i> Adicionar Testemunha
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="testemunhas-mp-container"></div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Policiais</h6>
+            <button class="btn btn-sm btn-outline-primary" id="addPolicialBtn">
+              <i class="fas fa-plus me-1"></i> Adicionar Policial
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="policiais-container"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="observacoes-mp" class="form-label">Observações do Ministério Público</label>
+          <textarea id="observacoes-mp" class="form-control" placeholder="Digite as observações do MP" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lado Defesa -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary-subtle">
+        <h5 class="card-title text-primary mb-0">
+          <i class="fas fa-shield-alt me-2"></i> Defesa
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Réus</h6>
+            <button class="btn btn-sm btn-outline-primary" id="addReuBtn">
+              <i class="fas fa-plus me-1"></i> Adicionar Réu
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="reus-container"></div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Testemunhas</h6>
+            <button class="btn btn-sm btn-outline-primary" id="addTestemunhaDefesaBtn">
+              <i class="fas fa-plus me-1"></i> Adicionar Testemunha
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="testemunhas-defesa-container"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="observacoes-defesa" class="form-label">Observações da Defesa</label>
+          <textarea id="observacoes-defesa" class="form-control" placeholder="Digite as observações da defesa" rows="3"></textarea>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+          <button id="limparBtn" class="btn btn-outline-secondary">
+            <i class="fas fa-eraser me-1"></i> Limpar
+          </button>
+          <button id="salvarBtn" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i> Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
