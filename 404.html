@@ -3,48 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Página Não Encontrada | PDF FACIL</title>
+    <title>PjeFacil - Redirecionando...</title>
+    <script>
+        // Esta função ajuda a lidar com redirecionamentos em aplicações SPA no GitHub Pages
+        (function() {
+            // Obter o URL atual
+            var pathSegments = window.location.pathname.split('/');
+            var repoName = 'pdf-facil'; // Seu nome de repositório
+            
+            // Verificar se o caminho contém o nome do repositório
+            var repoIndex = pathSegments.indexOf(repoName);
+            
+            if (repoIndex !== -1) {
+                // Reconstruir o caminho base
+                var basePath = pathSegments.slice(0, repoIndex + 1).join('/');
+                
+                // Reconstruir qualquer hash ou query string
+                var queryString = window.location.search || '';
+                var hash = window.location.hash || '';
+                
+                // Redirecionar para o arquivo principal com o hash (se necessário)
+                window.location.href = basePath + '/pjefacil/notas.html' + queryString + hash;
+            } else {
+                // Fallback para o início se não conseguir determinar o caminho
+                window.location.href = '/pdf-facil/pjefacil/notas.html';
+            }
+        })();
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
             text-align: center;
-            line-height: 1.6;
+            padding: 50px;
+            background-color: #f8f9fa;
         }
-        .error-title {
-            color: #5c95ce;
-            font-size: 2.5em;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4361ee;
+        }
+        p {
             margin-bottom: 20px;
         }
-        .error-description {
-            color: #333;
-            font-size: 1.2em;
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4361ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
-        .error-links {
-            margin-top: 30px;
-        }
-        .error-links a {
-            color: #5c95ce;
-            text-decoration: none;
-            margin: 0 10px;
-            font-weight: bold;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
-        <h1 class="error-title">Erro 404</h1>
-        <h2>Ops, Não encontramos essa página!</h2>
-        <p class="error-description">
-            Parece que a página que você está procurando foi movida ou nunca existiu, 
-            certifique-se que digitou o endereço corretamente ou seguiu um link válido.
-        </p>
-        <div class="error-links">
-            <a href="/">Página Inicial</a>
-            <a href="/sobre-nos.html">Conheça-nos</a>
-        </div>
+    <div class="container">
+        <h1>PjeFacil</h1>
+        <p>Redirecionando para o sistema...</p>
+        <div class="loader"></div>
+        <p>Se você não for redirecionado automaticamente, <a href="/pdf-facil/pjefacil/notas.html">clique aqui</a>.</p>
     </div>
 </body>
 </html>
