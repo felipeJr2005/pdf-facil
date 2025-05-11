@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Registro para módulos ativos
     window.activeModule = null;
     
+
+
     // ===== FUNÇÕES AUXILIARES =====
     
     /**
