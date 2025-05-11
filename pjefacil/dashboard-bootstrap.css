@@ -351,3 +351,62 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+
+
+
+
+
+/* Adicione estas regras ao final do arquivo dashboard-bootstrap.css */
+@media (max-width: 768px) {
+    /* Estado comprimido - sidebar visível com ícones */
+    .sidebar-collapsed .sidebar {
+        width: var(--sidebar-collapsed-width);
+        transform: none;
+        display: block;
+        visibility: visible;
+    }
+    
+    /* Estado expandido - esconde completamente o sidebar */
+    body:not(.sidebar-collapsed) .sidebar {
+        width: 0;
+        overflow: hidden;
+        visibility: hidden;
+        opacity: 0;
+    }
+    
+    /* Ajuste das margens do conteúdo principal */
+    .sidebar-collapsed .main-content {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+    
+    body:not(.sidebar-collapsed) .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    /* NOVO: Eliminar overlay cinza e efeitos de sombreamento */
+    body:not(.sidebar-collapsed) .main-content::before,
+    body:not(.sidebar-collapsed) .main-content::after {
+        display: none;
+        content: none;
+        background: none;
+        opacity: 0;
+    }
+    
+    /* NOVO: Remover o overlay explicitamente */
+    .sidebar-overlay {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    /* NOVO: Garantir que o conteúdo não tenha sombreamento ou opacidade */
+    body:not(.sidebar-collapsed) .main-content,
+    body:not(.sidebar-collapsed) .content-header,
+    body:not(.sidebar-collapsed) #content-container {
+        opacity: 1 !important;
+        filter: none !important;
+        background-color: var(--bs-body-bg) !important;
+    }
+}
