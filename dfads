@@ -1,0 +1,321 @@
+[1mdiff --git a/pjefacil/js/guia.js b/pjefacil/js/guia.js[m
+[1mindex 49e7387..bd636af 100644[m
+[1m--- a/pjefacil/js/guia.js[m
+[1m+++ b/pjefacil/js/guia.js[m
+[36m@@ -613,6 +613,8 @@[m [mfunction limparCamposEditor(container) {[m
+ [m
+ [m
+ [m
+[32m+[m[32m// Função para preencher o formulário automaticamente a partir do resumo[m
+[32m+[m
+ // Função para preencher o formulário automaticamente a partir do resumo[m
+ function preencherFormularioAutomatico(container, textoResumo) {[m
+     if (!textoResumo || textoResumo.trim() === '') {[m
+[36m@@ -622,6 +624,11 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     console.log('Iniciando preenchimento automático...');[m
+     [m
+[32m+[m[32m    // Limpar o HTML do texto antes de processar[m
+[32m+[m[32m    const tempElement = document.createElement('div');[m
+[32m+[m[32m    tempElement.innerHTML = textoResumo;[m
+[32m+[m[32m    const textoSemHTML = tempElement.textContent;[m
+[32m+[m[41m    [m
+     // Função auxiliar para extrair valores diretamente pelo formato "Campo: Valor"[m
+     function extrairValorCampo(texto, nomeCampo) {[m
+         // Expressão regular para extrair o valor após o nome do campo até a quebra de linha ou fim do texto[m
+[36m@@ -659,7 +666,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+    [m
+     // Extrair número do processo[m
+     const processoRegex = /\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4}/;[m
+[31m-    const matchProcesso = textoResumo.match(processoRegex);[m
+[32m+[m[32m    const matchProcesso = textoSemHTML.match(processoRegex);[m
+     if (matchProcesso) {[m
+         const numeroProcesso = container.querySelector('#numeroProcesso');[m
+         if (numeroProcesso) {[m
+[36m@@ -669,7 +676,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Órgão Judiciário - extrair diretamente pelo formato específico[m
+[31m-    const orgaoJudiciarioValor = extrairValorCampo(textoResumo, 'Órgão Judiciário');[m
+[32m+[m[32m    const orgaoJudiciarioValor = extrairValorCampo(textoSemHTML, 'Órgão Judiciário');[m
+     if (orgaoJudiciarioValor) {[m
+         const orgaoJudiciario = container.querySelector('#orgaoJudiciario');[m
+         if (orgaoJudiciario) {[m
+[36m@@ -686,7 +693,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Fallback para o método anterior[m
+         const orgaoRegex = /(Vara|Juizado|Tribunal).+?(?=\n)/i;[m
+[31m-        const matchOrgao = textoResumo.match(orgaoRegex);[m
+[32m+[m[32m        const matchOrgao = textoSemHTML.match(orgaoRegex);[m
+         if (matchOrgao) {[m
+             const orgaoJudiciario = container.querySelector('#orgaoJudiciario');[m
+             if (orgaoJudiciario) {[m
+[36m@@ -706,7 +713,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     // Extrair UF e Município[m
+     // UF[m
+     const ufRegex = /(?:UF|estado)[\s:]*([A-Za-zÀ-ÖØ-öø-ÿ\s]+)(?=\n|,|\.|\s-)/i;[m
+[31m-    const matchUF = textoResumo.match(ufRegex);[m
+[32m+[m[32m    const matchUF = textoSemHTML.match(ufRegex);[m
+     if (matchUF && matchUF[1]) {[m
+         const ufField = container.querySelector('#uf');[m
+         if (ufField) {[m
+[36m@@ -717,7 +724,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Município[m
+     const municipioRegex = /(?:munic[íi]pio|cidade)[\s:]*([A-Za-zÀ-ÖØ-öø-ÿ\s]+)(?=\n|,|\.|\s-)/i;[m
+[31m-    const matchMunicipio = textoResumo.match(municipioRegex);[m
+[32m+[m[32m    const matchMunicipio = textoSemHTML.match(municipioRegex);[m
+     if (matchMunicipio && matchMunicipio[1]) {[m
+         const municipioField = container.querySelector('#municipio');[m
+         if (municipioField) {[m
+[36m@@ -728,7 +735,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Local de Custódia[m
+     const custodiaRegex = /(?:local\s*(?:de|da)\s*cust[óo]dia|estabelecimento\s*(?:prisional|penal)|pres[íi]dio|cadeia)[\s:]*([A-Za-zÀ-ÖØ-öø-ÿ\s\d\-\.]+)(?=\n|,|\.|\s-)/i;[m
+[31m-    const matchCustodia = textoResumo.match(custodiaRegex);[m
+[32m+[m[32m    const matchCustodia = textoSemHTML.match(custodiaRegex);[m
+     if (matchCustodia && matchCustodia[1]) {[m
+         const custodiaField = container.querySelector('#localCustodia');[m
+         if (custodiaField) {[m
+[36m@@ -738,7 +745,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Câmara Julgadora - corrigir a expressão regular para não capturar texto extra[m
+[31m-    const camaraValor = extrairValorCampo(textoResumo, 'Câmara Julgadora do Recurso');[m
+[32m+[m[32m    const camaraValor = extrairValorCampo(textoSemHTML, 'Câmara Julgadora do Recurso');[m
+     if (camaraValor) {[m
+         const camara = container.querySelector('#camaraJulgadora');[m
+         if (camara) {[m
+[36m@@ -749,7 +756,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Expressão regular melhorada para não capturar texto além do esperado[m
+         const camaraRegex = /C[âa]mara\s*(?:Julgadora|Criminal|Regional)?\s*(?:do\s*Recurso)?[:\s]*([^,\n\.;]+?)(?=\s*Data|\s*\n|$)/i;[m
+[31m-        const matchCamara = textoResumo.match(camaraRegex);[m
+[32m+[m[32m        const matchCamara = textoSemHTML.match(camaraRegex);[m
+         if (matchCamara && matchCamara[1]) {[m
+             const camara = container.querySelector('#camaraJulgadora');[m
+             if (camara) {[m
+[36m@@ -761,7 +768,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Extrair tipo processo criminal[m
+[31m-    const tipoProcessoValor = extrairValorCampo(textoResumo, 'Tipo de Processo Criminal');[m
+[32m+[m[32m    const tipoProcessoValor = extrairValorCampo(textoSemHTML, 'Tipo de Processo Criminal');[m
+     if (tipoProcessoValor) {[m
+         const tipoProcesso = container.querySelector('#tipoProcessoCriminal');[m
+         if (tipoProcesso) {[m
+[36m@@ -783,7 +790,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Fallback para o método anterior[m
+         const tipoProcessoRegex = /a[çc][ãa]o\s*penal\s*(?:-|–)?\s*(ordin[áa]ri[ao]|sum[áa]ri[ao]|sumar[ií]ssim[ao])/i;[m
+[31m-        const matchTipoProcesso = textoResumo.match(tipoProcessoRegex);[m
+[32m+[m[32m        const matchTipoProcesso = textoSemHTML.match(tipoProcessoRegex);[m
+         if (matchTipoProcesso && matchTipoProcesso[1]) {[m
+             const tipoProcesso = container.querySelector('#tipoProcessoCriminal');[m
+             if (tipoProcesso) {[m
+[36m@@ -807,7 +814,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Extrair revisão criminal[m
+     const revisaoRegex = /revis[ãa]o\s*criminal[\s:]*(sim|n[ãa]o)/i;[m
+[31m-    const matchRevisao = textoResumo.match(revisaoRegex);[m
+[32m+[m[32m    const matchRevisao = textoSemHTML.match(revisaoRegex);[m
+     if (matchRevisao && matchRevisao[1]) {[m
+         const revisaoSim = container.querySelector('#revisaoSim');[m
+         const revisaoNao = container.querySelector('#revisaoNao');[m
+[36m@@ -826,7 +833,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Extrair datas usando o formato padronizado "Campo: Valor"[m
+     // Data da Infração - extrair e preencher data do delito[m
+[31m-    const dataInfracaoValor = extrairValorCampo(textoResumo, 'Data da Infração');[m
+[32m+[m[32m    const dataInfracaoValor = extrairValorCampo(textoSemHTML, 'Data da Infração');[m
+     if (dataInfracaoValor && dataInfracaoValor.match(/\d{2}\/\d{2}\/\d{4}/)) {[m
+         // Preencher dataInfracao[m
+         const dataInfracao = container.querySelector('#dataInfracao');[m
+[36m@@ -845,7 +852,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Data de Trânsito em Julgado da Acusação - extrair da Data do Transito MP[m
+[31m-    const transitoMPValor = extrairValorCampo(textoResumo, 'Data do Transito MP');[m
+[32m+[m[32m    const transitoMPValor = extrairValorCampo(textoSemHTML, 'Data do Transito MP');[m
+     if (transitoMPValor && transitoMPValor.match(/\d{2}\/\d{2}\/\d{4}/)) {[m
+         const transitoAcusacao = container.querySelector('#dataTransitoAcusacao');[m
+         if (transitoAcusacao) {[m
+[36m@@ -878,7 +885,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+         [m
+         const campo = container.querySelector(`#${campoId}`);[m
+         if (campo) {[m
+[31m-            const valorDireto = extrairValorCampo(textoResumo, nomeCampo);[m
+[32m+[m[32m            const valorDireto = extrairValorCampo(textoSemHTML, nomeCampo);[m
+             if (valorDireto && valorDireto.match(/\d{2}\/\d{2}\/\d{4}/)) {[m
+                 campo.value = valorDireto;[m
+                 camposPreenchidos.push(campo);[m
+[36m@@ -888,7 +895,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     });[m
+     [m
+     // Extrair Data do Transito do Recurso para determinar o Tipo da Pena[m
+[31m-    const dataTransitoRecursoValor = extrairValorCampo(textoResumo, 'Data do Transito do Recurso');[m
+[32m+[m[32m    const dataTransitoRecursoValor = extrairValorCampo(textoSemHTML, 'Data do Transito do Recurso');[m
+     [m
+     // Determinar o Tipo da Pena com base na Data do Transito do Recurso[m
+     const tipoPena = container.querySelector('#tipoPena');[m
+[36m@@ -907,7 +914,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Número do Recurso[m
+     const numRecursoRegex = /(?:n[°º]|n[úu]mero)\s*(?:do)?\s*recurso[:\s]*(\d+[-./]?\d*)/i;[m
+[31m-    const matchNumRecurso = textoResumo.match(numRecursoRegex);[m
+[32m+[m[32m    const matchNumRecurso = textoSemHTML.match(numRecursoRegex);[m
+     if (matchNumRecurso && matchNumRecurso[1]) {[m
+         const numRecurso = container.querySelector('#numeroRecurso');[m
+         if (numRecurso) {[m
+[36m@@ -918,7 +925,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Recorrentes do Recurso[m
+     const recorrentesRegex = /recorrente[s]?[:\s]*((?:o\s*r[ée]u|(?:minist[ée]rio\s*p[úu]blico|mp)|defensor(?:ia)?|advogado))/i;[m
+[31m-    const matchRecorrentes = textoResumo.match(recorrentesRegex);[m
+[32m+[m[32m    const matchRecorrentes = textoSemHTML.match(recorrentesRegex);[m
+     if (matchRecorrentes && matchRecorrentes[1]) {[m
+         const recorrentes = container.querySelector('#recorrentesRecurso');[m
+         if (recorrentes) {[m
+[36m@@ -938,7 +945,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Lei[m
+     const leiRegex = /(?:lei|c[óo]digo)\s*(?:n[°º]?)?\s*(\d+)/i;[m
+[31m-    const matchLei = textoResumo.match(leiRegex);[m
+[32m+[m[32m    const matchLei = textoSemHTML.match(leiRegex);[m
+     if (matchLei && matchLei[1]) {[m
+         const lei = container.querySelector('#lei');[m
+         if (lei) {[m
+[36m@@ -958,7 +965,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Complemento com Infração Imputada[m
+[31m-    const infracaoImputadaValor = extrairValorCampo(textoResumo, 'Infração Imputada');[m
+[32m+[m[32m    const infracaoImputadaValor = extrairValorCampo(textoSemHTML, 'Infração Imputada');[m
+     if (infracaoImputadaValor) {[m
+         // Preencher o complemento com a infração imputada completa[m
+         const complemento = container.querySelector('#complemento');[m
+[36m@@ -980,7 +987,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Artigo - fallback[m
+         const artigoRegex = /(?:art(?:igo)?\.?|§)\s*(\d+(?:[,.\-]\d+)?)/i;[m
+[31m-        const matchArtigo = textoResumo.match(artigoRegex);[m
+[32m+[m[32m        const matchArtigo = textoSemHTML.match(artigoRegex);[m
+         if (matchArtigo && matchArtigo[1]) {[m
+             const artigo = container.querySelector('#artigo');[m
+             if (artigo) {[m
+[36m@@ -991,7 +998,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+         [m
+         // Complemento - fallback[m
+         const complementoRegex = /(?:(?:art(?:igo)?\.?|§)\s*\d+[,.\-]\d+)\s*([^,.\n]+)(?=,|\.|$)/i;[m
+[31m-        const matchComplemento = textoResumo.match(complementoRegex);[m
+[32m+[m[32m        const matchComplemento = textoSemHTML.match(complementoRegex);[m
+         if (matchComplemento && matchComplemento[1]) {[m
+             const complemento = container.querySelector('#complemento');[m
+             if (complemento) {[m
+[36m@@ -1015,7 +1022,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     Object.entries(checkboxMap).forEach(([checkboxId, padroes]) => {[m
+         const checkbox = container.querySelector(`#${checkboxId}`);[m
+         if (checkbox) {[m
+[31m-            const encontrado = padroes.some(padrao => padrao.test(textoResumo));[m
+[32m+[m[32m            const encontrado = padroes.some(padrao => padrao.test(textoSemHTML));[m
+             if (encontrado) {[m
+                 checkbox.checked = true;[m
+                 camposPreenchidos.push(checkbox);[m
+[36m@@ -1027,7 +1034,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Fração Progressão Regime[m
+     const progressaoRegex = /(?:fra[çc][ãa]o|percentual)\s*(?:para)?\s*progress[ãa]o\s*(?:de|do)?\s*regime[:\s]*(\d+\/\d+)/i;[m
+[31m-    const matchProgressao = textoResumo.match(progressaoRegex);[m
+[32m+[m[32m    const matchProgressao = textoSemHTML.match(progressaoRegex);[m
+     if (matchProgressao && matchProgressao[1]) {[m
+         const progressao = container.querySelector('#fracaoProgressao');[m
+         if (progressao) {[m
+[36m@@ -1047,7 +1054,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     [m
+     // Fração Livramento Condicional[m
+     const livramentoRegex = /(?:fra[çc][ãa]o|percentual)\s*(?:para)?\s*livramento\s*condicional[:\s]*(\d+\/\d+)/i;[m
+[31m-    const matchLivramento = textoResumo.match(livramentoRegex);[m
+[32m+[m[32m    const matchLivramento = textoSemHTML.match(livramentoRegex);[m
+     if (matchLivramento && matchLivramento[1]) {[m
+         const livramento = container.querySelector('#fracaoLivramento');[m
+         if (livramento) {[m
+[36m@@ -1066,7 +1073,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Extrair Pena[m
+[31m-    const penaValor = extrairValorCampo(textoResumo, 'Pena');[m
+[32m+[m[32m    const penaValor = extrairValorCampo(textoSemHTML, 'Pena');[m
+     if (penaValor) {[m
+         // Tentar extrair os componentes da pena (anos, meses, dias)[m
+         const penaPadrao = /(\d+)(?:\s*anos?)?(?:\s*(?:,|e)?\s*(\d+)\s*meses?)?(?:\s*(?:,|e)?\s*(\d+)\s*dias?)?/i;[m
+[36m@@ -1110,7 +1117,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Fallback para o método anterior[m
+         const penaPadrao = /(?:pena|condena[çc][ãa]o|condena(?:do|da))\s*(?:de|a)?\s*(\d+)\s*anos?(?:\s*(?:,|e)?\s*(\d+)\s*meses?)?(?:\s*(?:,|e)?\s*(\d+)\s*dias?)?/i;[m
+[31m-        const matchPena = textoResumo.match(penaPadrao);[m
+[32m+[m[32m        const matchPena = textoSemHTML.match(penaPadrao);[m
+         [m
+         if (matchPena) {[m
+             if (matchPena[1]) {[m
+[36m@@ -1140,7 +1147,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Extrair Tipo de Guia[m
+[31m-    const tipoGuiaValor = extrairValorCampo(textoResumo, 'Tipo de Guia');[m
+[32m+[m[32m    const tipoGuiaValor = extrairValorCampo(textoSemHTML, 'Tipo de Guia');[m
+     if (tipoGuiaValor) {[m
+         const tipoPeca = container.querySelector('#tipoPeca');[m
+         if (tipoPeca) {[m
+[36m@@ -1152,6 +1159,8 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+             } else if (tipoGuiaTexto.includes('execução') || tipoGuiaTexto.includes('execucao')) {[m
+                 tipoPeca.value = 'execucao';[m
+                 camposPreenchidos.push(tipoPeca);[m
+[32m+[m[32mtipoPeca.value = 'execucao';[m
+[32m+[m[32m                camposPreenchidos.push(tipoPeca);[m
+                 console.log('Tipo de Peça preenchido: Guia de Execução Definitiva');[m
+             } else if (tipoGuiaTexto.includes('internação') || tipoGuiaTexto.includes('internacao')) {[m
+                 tipoPeca.value = 'internacao';[m
+[36m@@ -1161,7 +1170,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+         }[m
+     }[m
+     // Extrair Regime[m
+[31m-    const regimeValor = extrairValorCampo(textoResumo, 'Regime');[m
+[32m+[m[32m    const regimeValor = extrairValorCampo(textoSemHTML, 'Regime');[m
+     if (regimeValor) {[m
+         const regimePrisional = container.querySelector('#regimePrisional');[m
+         if (regimePrisional) {[m
+[36m@@ -1178,7 +1187,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     } else {[m
+         // Fallback para o método anterior[m
+         const regimeRegex = /regime\s*(fechado|semi[- ]?aberto|aberto)/i;[m
+[31m-        const matchRegime = textoResumo.match(regimeRegex);[m
+[32m+[m[32m        const matchRegime = textoSemHTML.match(regimeRegex);[m
+         if (matchRegime && matchRegime[1]) {[m
+             const regimePrisional = container.querySelector('#regimePrisional');[m
+             if (regimePrisional) {[m
+[36m@@ -1196,7 +1205,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     }[m
+     [m
+     // Extrair dados de prisão e soltura[m
+[31m-    const dataPrisaoValor = extrairValorCampo(textoResumo, 'Data da Prisão');[m
+[32m+[m[32m    const dataPrisaoValor = extrairValorCampo(textoSemHTML, 'Data da Prisão');[m
+     if (dataPrisaoValor && dataPrisaoValor.match(/\d{2}\/\d{2}\/\d{4}/)) {[m
+         const dataPrisao = container.querySelector('#dataPrisao');[m
+         if (dataPrisao) {[m
+[36m@@ -1205,7 +1214,7 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+         }[m
+     }[m
+     [m
+[31m-    const dataSolturaValor = extrairValorCampo(textoResumo, 'Data da Soltura');[m
+[32m+[m[32m    const dataSolturaValor = extrairValorCampo(textoSemHTML, 'Data da Soltura');[m
+     if (dataSolturaValor && dataSolturaValor.match(/\d{2}\/\d{2}\/\d{4}/)) {[m
+         const dataSoltura = container.querySelector('#dataSoltura');[m
+         if (dataSoltura) {[m
+[36m@@ -1221,7 +1230,6 @@[m [mfunction preencherFormularioAutomatico(container, textoResumo) {[m
+     mostrarMensagem(container, 'success', `Preenchimento automático concluído. ${camposPreenchidos.length} campos atualizados.`);[m
+     console.log('Preenchimento automático concluído com sucesso.');[m
+ }[m
+[31m-[m
+ // Função para destacar campos preenchidos automaticamente[m
+ function destacarCamposPreenchidos(campos) {[m
+     campos.forEach(campo => {[m
