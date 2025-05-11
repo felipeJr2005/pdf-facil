@@ -84,24 +84,27 @@ export function initialize(container) {
 // Função para criar linha de assistente de acusação
 function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
-  linha.className = 'linha';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
 
   const timestamp = Date.now();
   const checkboxId = `intimado_${timestamp}`;
   
   const baseHtml = `
-    <input type="text" placeholder="Nome do Assistente" class="nome">
-    <input type="text" placeholder="OAB" class="oab">
-    <div class="checkbox-container">
-      <input type="checkbox" id="${checkboxId}" class="intimado">
-      <label for="${checkboxId}">Intimado</label>
+    <input type="text" placeholder="Nome do Assistente" class="form-control nome">
+    <input type="text" placeholder="OAB" class="form-control oab">
+    <div class="d-flex align-items-center ms-auto">
+      <input type="checkbox" id="${checkboxId}" class="form-check-input intimado">
+      <label class="form-check-label ms-1" for="${checkboxId}">Intimado</label>
     </div>
-    <button class="btn btn-danger remove-btn">×</button>
+    <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+      <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+    </button>
   `;
 
   linha.innerHTML = baseHtml;
   return linha;
 }
+
 
 // Função para adicionar assistente de acusação
 function addAssistenteAcusacao(container) {
@@ -123,19 +126,21 @@ function addAssistenteAcusacao(container) {
 // Função para criar linha genérica
 function criarLinha(tipo, extras = '') {
   const linha = document.createElement('div');
-  linha.className = 'linha';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
 
   const timestamp = Date.now();
   const checkboxId = `intimado_${timestamp}`;
   
   const baseHtml = `
-    <input type="text" placeholder="Nome" class="nome">
-    <input type="text" placeholder="Endereço" class="endereco">
-    <div class="checkbox-container">
-      <input type="checkbox" id="${checkboxId}" class="intimado">
-      <label for="${checkboxId}">Intimado</label>
+    <input type="text" placeholder="Nome" class="form-control nome">
+    <input type="text" placeholder="Endereço" class="form-control endereco">
+    <div class="d-flex align-items-center ms-auto">
+      <input type="checkbox" id="${checkboxId}" class="form-check-input intimado">
+      <label class="form-check-label ms-1" for="${checkboxId}">Intimado</label>
     </div>
-    <button class="btn btn-danger remove-btn">×</button>
+    <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+      <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+    </button>
   `;
 
   linha.innerHTML = extras + baseHtml;
@@ -181,7 +186,7 @@ function addPolicial(container) {
   const policiaisContainer = container.querySelector('#policiais-container');
   if (policiaisContainer) {
     const extras = `
-      <select class="tipo-policial">
+      <select class="form-select tipo-policial" style="width: auto; min-width: 100px;">
         <option value="pm">PM</option>
         <option value="pc">PC</option>
         <option value="pf">PF</option>
@@ -207,31 +212,31 @@ function addReu(container) {
   const reusContainer = container.querySelector('#reus-container');
   if (reusContainer) {
     const reuContainer = document.createElement('div');
-    reuContainer.className = 'reu-item';
+    reuContainer.className = 'reu-item mb-3';
     
     const timestamp = Date.now();
     const checkboxReuId = `intimado_reu_${timestamp}`;
     const checkboxAdvId = `intimado_adv_${timestamp}`;
     
     reuContainer.innerHTML = `
-      <div class="linha">
-        <input type="text" placeholder="Nome" class="nome">
-        <input type="text" placeholder="Endereço" class="endereco">
-        <div class="checkbox-container">
-          <input type="checkbox" id="${checkboxReuId}" class="intimado">
-          <label for="${checkboxReuId}">Intimado</label>
+      <div class="d-flex align-items-center gap-2 mb-2 w-100">
+        <input type="text" placeholder="Nome" class="form-control nome">
+        <input type="text" placeholder="Endereço" class="form-control endereco">
+        <div class="d-flex align-items-center ms-auto">
+          <input type="checkbox" id="${checkboxReuId}" class="form-check-input intimado">
+          <label class="form-check-label ms-1" for="${checkboxReuId}">Intimado</label>
         </div>
-        <button class="btn btn-danger remove-btn">×</button>
+        <button class="btn btn-danger btn-sm d-flex align-items-center justify-content-center remove-btn" style="width: 24px; height: 24px;">×</button>
       </div>
-      <div class="linha">
-        <select class="tipo-defesa">
+      <div class="d-flex align-items-center gap-2 mt-2 w-100">
+        <select class="form-select tipo-defesa" style="width: auto; min-width: 180px;">
           <option value="defensoria" selected>Defensoria Pública</option>
           <option value="particular">Advogado Particular</option>
         </select>
-        <input type="text" placeholder="Nome do Advogado" class="nome-advogado" style="display: none;">
-        <div class="checkbox-container">
-          <input type="checkbox" id="${checkboxAdvId}" class="intimado-advogado">
-          <label for="${checkboxAdvId}">Intimado</label>
+        <input type="text" placeholder="Nome do Advogado" class="form-control nome-advogado" style="display: none;">
+        <div class="d-flex align-items-center ms-auto">
+          <input type="checkbox" id="${checkboxAdvId}" class="form-check-input intimado-advogado">
+          <label class="form-check-label ms-1" for="${checkboxAdvId}">Intimado</label>
         </div>
       </div>
     `;
@@ -262,7 +267,7 @@ function addReu(container) {
 function setupRemoveButtons(container) {
   container.querySelectorAll('.remove-btn').forEach(button => {
     button.addEventListener('click', function() {
-      const linha = this.closest('.linha');
+      const linha = this.closest('.linha, .d-flex');
       if (linha) {
         linha.remove();
       } else {
