@@ -1,10 +1,27 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
+ * Versão com IDs fixos para Text Blaze
  */
+
+// Contadores para IDs previsíveis
+let contadorTestemunhaMP = 0;
+let contadorTestemunhaDefesa = 0;
+let contadorReu = 0;
+let contadorVitima = 0;
+let contadorAssistente = 0;
+let contadorPolicial = 0;
 
 // Função de inicialização do módulo
 export function initialize(container) {
   console.log('Módulo audiencia.js inicializado');
+  
+  // Resetar contadores ao inicializar o módulo
+  contadorTestemunhaMP = 0;
+  contadorTestemunhaDefesa = 0;
+  contadorReu = 0;
+  contadorVitima = 0;
+  contadorAssistente = 0;
+  contadorPolicial = 0;
   
   // Configurar os event listeners
   
@@ -85,16 +102,26 @@ export function initialize(container) {
 function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
-
-  const timestamp = Date.now();
-  const checkboxId = `intimado_${timestamp}`;
   
+  // Incrementar contador para ID único
+  contadorAssistente++;
+  const currentIndex = contadorAssistente;
+  
+  // Criar IDs fixos e previsíveis
+  const assistenteId = `assistente-acusacao-${currentIndex}`;
+  const nomeId = `assistente-nome-${currentIndex}`;
+  const oabId = `assistente-oab-${currentIndex}`;
+  const intimadoId = `assistente-intimado-${currentIndex}`;
+  
+  linha.setAttribute('data-index', currentIndex);
+  linha.id = assistenteId;
+
   const baseHtml = `
-    <input type="text" placeholder="Nome do Assistente" class="form-control nome">
-    <input type="text" placeholder="OAB" class="form-control oab">
+    <input type="text" placeholder="Nome do Assistente" class="form-control nome" id="${nomeId}" data-textblaze-assistente="${currentIndex}">
+    <input type="text" placeholder="OAB" class="form-control oab" id="${oabId}" data-textblaze-assistente-oab="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
-      <input type="checkbox" id="${checkboxId}" class="form-check-input intimado">
-      <label class="form-check-label ms-1" for="${checkboxId}">Intimado</label>
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-assistente-intimado="${currentIndex}">
+      <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
     </div>
     <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
@@ -104,7 +131,6 @@ function criarLinhaAssistenteAcusacao() {
   linha.innerHTML = baseHtml;
   return linha;
 }
-
 
 // Função para adicionar assistente de acusação
 function addAssistenteAcusacao(container) {
@@ -123,20 +149,50 @@ function addAssistenteAcusacao(container) {
   }
 }
 
-// Função para criar linha genérica
+// Função para criar linha genérica com IDs previsíveis
 function criarLinha(tipo, extras = '') {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
-
-  const timestamp = Date.now();
-  const checkboxId = `intimado_${timestamp}`;
+  
+  // Identificador e contador com base no tipo
+  let currentIndex;
+  
+  switch (tipo) {
+    case 'vitima':
+      contadorVitima++;
+      currentIndex = contadorVitima;
+      break;
+    case 'testemunha-mp':
+      contadorTestemunhaMP++;
+      currentIndex = contadorTestemunhaMP;
+      break;
+    case 'testemunha-defesa':
+      contadorTestemunhaDefesa++;
+      currentIndex = contadorTestemunhaDefesa;
+      break;
+    case 'policial':
+      contadorPolicial++;
+      currentIndex = contadorPolicial;
+      break;
+    default:
+      currentIndex = Date.now();
+  }
+  
+  // Definir IDs previsíveis
+  const itemId = `${tipo}-${currentIndex}`;
+  const nomeId = `${tipo}-nome-${currentIndex}`;
+  const enderecoId = `${tipo}-endereco-${currentIndex}`;
+  const intimadoId = `${tipo}-intimado-${currentIndex}`;
+  
+  linha.id = itemId;
+  linha.setAttribute('data-index', currentIndex);
   
   const baseHtml = `
-    <input type="text" placeholder="Nome" class="form-control nome">
-    <input type="text" placeholder="Endereço" class="form-control endereco">
+    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-${tipo}="${currentIndex}">
+    <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-${tipo}-endereco="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
-      <input type="checkbox" id="${checkboxId}" class="form-check-input intimado">
-      <label class="form-check-label ms-1" for="${checkboxId}">Intimado</label>
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-${tipo}-intimado="${currentIndex}">
+      <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
     </div>
     <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
@@ -164,11 +220,13 @@ function addVitima(container) {
   }
 }
 
-// Função para adicionar testemunha
+// Função para adicionar testemunha (MP ou defesa)
 function addTestemunha(container, tipo) {
+  const tipoIdentificador = tipo === 'mp' ? 'testemunha-mp' : 'testemunha-defesa';
   const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
+  
   if (testemunhasContainer) {
-    const linha = criarLinha('testemunha');
+    const linha = criarLinha(tipoIdentificador);
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
     });
@@ -185,14 +243,20 @@ function addTestemunha(container, tipo) {
 function addPolicial(container) {
   const policiaisContainer = container.querySelector('#policiais-container');
   if (policiaisContainer) {
+    contadorPolicial++;
+    const currentIndex = contadorPolicial;
+    
+    const tipoId = `policial-tipo-${currentIndex}`;
+    
     const extras = `
-      <select class="form-select tipo-policial" style="width: auto; min-width: 100px;">
+      <select class="form-select tipo-policial" style="width: auto; min-width: 100px;" id="${tipoId}" data-textblaze-policial-tipo="${currentIndex}">
         <option value="pm">PM</option>
         <option value="pc">PC</option>
         <option value="pf">PF</option>
         <option value="prf">PRF</option>
       </select>
     `;
+    
     const linha = criarLinha('policial', extras);
     linha.querySelector('.endereco').placeholder = 'Matrícula/RG';
     linha.querySelector('.remove-btn').addEventListener('click', function() {
@@ -211,32 +275,41 @@ function addPolicial(container) {
 function addReu(container) {
   const reusContainer = container.querySelector('#reus-container');
   if (reusContainer) {
+    contadorReu++;
+    const currentIndex = contadorReu;
+    
     const reuContainer = document.createElement('div');
     reuContainer.className = 'reu-item mb-3';
+    reuContainer.id = `reu-${currentIndex}`;
+    reuContainer.setAttribute('data-index', currentIndex);
     
-    const timestamp = Date.now();
-    const checkboxReuId = `intimado_reu_${timestamp}`;
-    const checkboxAdvId = `intimado_adv_${timestamp}`;
+    // IDs previsíveis para cada elemento
+    const reuNomeId = `reu-nome-${currentIndex}`;
+    const reuEnderecoId = `reu-endereco-${currentIndex}`;
+    const reuIntimadoId = `reu-intimado-${currentIndex}`;
+    const tipoDefesaId = `reu-tipo-defesa-${currentIndex}`;
+    const nomeAdvogadoId = `reu-advogado-nome-${currentIndex}`;
+    const intimadoAdvId = `reu-advogado-intimado-${currentIndex}`;
     
     reuContainer.innerHTML = `
       <div class="d-flex align-items-center gap-2 mb-2 w-100">
-        <input type="text" placeholder="Nome" class="form-control nome">
-        <input type="text" placeholder="Endereço" class="form-control endereco">
+        <input type="text" placeholder="Nome" class="form-control nome" id="${reuNomeId}" data-textblaze-reu="${currentIndex}">
+        <input type="text" placeholder="Endereço" class="form-control endereco" id="${reuEnderecoId}" data-textblaze-reu-endereco="${currentIndex}">
         <div class="d-flex align-items-center ms-auto">
-          <input type="checkbox" id="${checkboxReuId}" class="form-check-input intimado">
-          <label class="form-check-label ms-1" for="${checkboxReuId}">Intimado</label>
+          <input type="checkbox" id="${reuIntimadoId}" class="form-check-input intimado" data-textblaze-reu-intimado="${currentIndex}">
+          <label class="form-check-label ms-1" for="${reuIntimadoId}">Intimado</label>
         </div>
         <button class="btn btn-danger btn-sm d-flex align-items-center justify-content-center remove-btn" style="width: 24px; height: 24px;">×</button>
       </div>
       <div class="d-flex align-items-center gap-2 mt-2 w-100">
-        <select class="form-select tipo-defesa" style="width: auto; min-width: 180px;">
+        <select class="form-select tipo-defesa" style="width: auto; min-width: 180px;" id="${tipoDefesaId}" data-textblaze-reu-defesa-tipo="${currentIndex}">
           <option value="defensoria" selected>Defensoria Pública</option>
           <option value="particular">Advogado Particular</option>
         </select>
-        <input type="text" placeholder="Nome do Advogado" class="form-control nome-advogado" style="display: none;">
+        <input type="text" placeholder="Nome do Advogado" class="form-control nome-advogado" id="${nomeAdvogadoId}" data-textblaze-reu-advogado="${currentIndex}" style="display: none;">
         <div class="d-flex align-items-center ms-auto">
-          <input type="checkbox" id="${checkboxAdvId}" class="form-check-input intimado-advogado">
-          <label class="form-check-label ms-1" for="${checkboxAdvId}">Intimado</label>
+          <input type="checkbox" id="${intimadoAdvId}" class="form-check-input intimado-advogado" data-textblaze-reu-advogado-intimado="${currentIndex}">
+          <label class="form-check-label ms-1" for="${intimadoAdvId}">Intimado</label>
         </div>
       </div>
     `;
@@ -460,6 +533,14 @@ function limparFormulario(container) {
         processingText.textContent = 'Limpando formulário...';
       }
     }
+    
+    // Resetar contadores ao limpar o formulário
+    contadorTestemunhaMP = 0;
+    contadorTestemunhaDefesa = 0;
+    contadorReu = 0;
+    contadorVitima = 0;
+    contadorAssistente = 0;
+    contadorPolicial = 0;
     
     // Limpar os containers dinâmicos com animação
     ['assistente-acusacao-container', 'vitimas-container', 'testemunhas-mp-container', 

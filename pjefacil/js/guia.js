@@ -629,37 +629,44 @@ function preencherFormularioAutomatico(container, textoResumo) {
     tempElement.innerHTML = textoResumo;
     const textoSemHTML = tempElement.textContent;
     
-    // Função auxiliar para extrair valores diretamente pelo formato "Campo: Valor"
-    function extrairValorCampo(texto, nomeCampo) {
-        // Expressão regular para extrair o valor após o nome do campo até a quebra de linha ou fim do texto
-        const regex = new RegExp(`${nomeCampo}\\s*:\\s*([^\\n]+)`, 'i');
-        const match = texto.match(regex);
-        if (match && match[1]) {
-            // Garante que pegamos apenas até o final da linha ou até encontrar outro "Campo:"
-            let valor = match[1].trim();
-            
-            // Verifica se há outro "Data" na mesma linha e corta o texto nesse ponto
-            const dataIndex = valor.search(/Data\s+d[aeoi]/i);
-            if (dataIndex > -1) {
-                valor = valor.substring(0, dataIndex).trim();
+    // Modificação para a função extrairValorCampo no código existente:
+function extrairValorCampo(texto, nomeCampo) {
+    const regex = new RegExp(`${nomeCampo}\\s*:\\s*([^\\n]+)`, 'i');
+    const match = texto.match(regex);
+    if (match && match[1]) {
+        // Garante que pegamos apenas até o final da linha ou até encontrar outro "Campo:"
+        let valor = match[1].trim();
+        
+        // NOVA LÓGICA: Se o campo é uma data, extrair apenas o formato DD/MM/AAAA
+        if (nomeCampo.toLowerCase().includes('data')) {
+            const dataMatch = valor.match(/(\d{2}\/\d{2}\/\d{4})/);
+            if (dataMatch && dataMatch[1]) {
+                return dataMatch[1]; // Retorna apenas a data no formato DD/MM/AAAA
             }
-            
-            // Verifica se há outro campo com letra maiúscula seguido de dois pontos na mesma linha
-            const proximoCampoIndex = valor.search(/\s+[A-ZÀ-Ú][a-zà-ú\s]*:/);
-            if (proximoCampoIndex > -1) {
-                valor = valor.substring(0, proximoCampoIndex).trim();
-            }
-            
-            // Verifica se há "Número dos" na mesma linha (caso específico)
-            const numeroIndex = valor.search(/Número\s+dos/i);
-            if (numeroIndex > -1) {
-                valor = valor.substring(0, numeroIndex).trim();
-            }
-            
-            return valor;
         }
-        return null;
+        
+        // Verificar se há outro "Data" na mesma linha e corta o texto nesse ponto
+        const dataIndex = valor.search(/Data\s+d[aeoi]/i);
+        if (dataIndex > -1) {
+            valor = valor.substring(0, dataIndex).trim();
+        }
+        
+        // Verificar se há outro campo com letra maiúscula seguido de dois pontos na mesma linha
+        const proximoCampoIndex = valor.search(/\s+[A-ZÀ-Ú][a-zà-ú\s]*:/);
+        if (proximoCampoIndex > -1) {
+            valor = valor.substring(0, proximoCampoIndex).trim();
+        }
+        
+        // Verificar se há "Número dos" na mesma linha (caso específico)
+        const numeroIndex = valor.search(/Número\s+dos/i);
+        if (numeroIndex > -1) {
+            valor = valor.substring(0, numeroIndex).trim();
+        }
+        
+        return valor;
     }
+    return null;
+}
     
     // Campos preenchidos com sucesso
     const camposPreenchidos = [];

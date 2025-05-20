@@ -1,4 +1,4 @@
-<!-- Template para Audiência utilizando Bootstrap -->
+<!-- Template para Audiência utilizando Bootstrap com IDs fixos para Text Blaze -->
 <div class="container-fluid px-0">
   <div class="audiencia-grid">
     <!-- Lado Acusatório -->
@@ -13,7 +13,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0">Ministério Público</h6>
             <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="intimado_mp">
+              <input type="checkbox" class="form-check-input" id="intimado_mp" data-textblaze-mp="intimado">
               <label class="form-check-label" for="intimado_mp">Intimado</label>
             </div>
           </div>
@@ -21,7 +21,7 @@
             <button class="btn btn-sm btn-outline-primary" id="addAssistenteBtn">
               <i class="fas fa-user-plus me-1"></i> Assistente de Acusação
             </button>
-            <div id="assistente-acusacao-container" class="mt-2"></div>
+            <div id="assistente-acusacao-container" class="mt-2" data-textblaze-container="assistente"></div>
           </div>
         </div>
 
@@ -33,7 +33,7 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="vitimas-container"></div>
+            <div id="vitimas-container" data-textblaze-container="vitima"></div>
           </div>
         </div>
 
@@ -45,7 +45,7 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="testemunhas-mp-container"></div>
+            <div id="testemunhas-mp-container" data-textblaze-container="testemunha-mp"></div>
           </div>
         </div>
 
@@ -57,13 +57,13 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="policiais-container"></div>
+            <div id="policiais-container" data-textblaze-container="policial"></div>
           </div>
         </div>
 
         <div class="mb-3">
           <label for="observacoes-mp" class="form-label">Observações do Ministério Público</label>
-          <textarea id="observacoes-mp" class="form-control" placeholder="Digite as observações do MP" rows="3"></textarea>
+          <textarea id="observacoes-mp" class="form-control" placeholder="Digite as observações do MP" rows="3" data-textblaze-mp="observacoes"></textarea>
         </div>
       </div>
     </div>
@@ -84,7 +84,7 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="reus-container"></div>
+            <div id="reus-container" data-textblaze-container="reu"></div>
           </div>
         </div>
 
@@ -96,13 +96,13 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="testemunhas-defesa-container"></div>
+            <div id="testemunhas-defesa-container" data-textblaze-container="testemunha-defesa"></div>
           </div>
         </div>
 
         <div class="mb-3">
           <label for="observacoes-defesa" class="form-label">Observações da Defesa</label>
-          <textarea id="observacoes-defesa" class="form-control" placeholder="Digite as observações da defesa" rows="3"></textarea>
+          <textarea id="observacoes-defesa" class="form-control" placeholder="Digite as observações da defesa" rows="3" data-textblaze-defesa="observacoes"></textarea>
         </div>
 
         <div class="d-flex gap-2 justify-content-end">
