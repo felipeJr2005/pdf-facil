@@ -239,13 +239,14 @@ function addTestemunha(container, tipo) {
   }
 }
 
-// Função para adicionar policial
+// Na função addPolicial, modifique assim:
 function addPolicial(container) {
   const policiaisContainer = container.querySelector('#policiais-container');
   if (policiaisContainer) {
     contadorPolicial++;
     const currentIndex = contadorPolicial;
     
+    // Use o mesmo valor de currentIndex para o ID do tipo
     const tipoId = `policial-tipo-${currentIndex}`;
     
     const extras = `
@@ -257,7 +258,9 @@ function addPolicial(container) {
       </select>
     `;
     
+    // Certifique-se de que o ID da linha e seu conteúdo usem o mesmo índice
     const linha = criarLinha('policial', extras);
+    linha.id = `policial-${currentIndex}`; // Garantir que o ID da linha use o mesmo índice
     linha.querySelector('.endereco').placeholder = 'Matrícula/RG';
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
