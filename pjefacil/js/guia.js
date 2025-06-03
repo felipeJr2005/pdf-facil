@@ -509,111 +509,69 @@ function setupFormButtons(container) {
     }
 }
   
-// SUBSTITUIÇÃO DA FUNÇÃO concatenarCampos EXISTENTE - LINHA 649
+
+
 
 /**
- * Função modificada para concatenar campos com tratamento especial para erros de OCR
+ * Função para verificar se o Scribe.js está realmente disponível e funcional
+ */
+function isScribeAvailable() {
+    // Verificar se o objeto global 'scribe' existe
+    if (typeof window.scribe === 'undefined') {
+        console.warn('Objeto global scribe não encontrado.');
+        return false;
+    }
+    
+    // Verificar se o método extractText está disponível
+    if (typeof window.scribe.extractText !== 'function') {
+        console.warn('Método scribe.extractText não encontrado.');
+        return false;
+    }
+    
+    return true;
+}
+
+
+
+
+
+
+
+/**
+ * Versão simplificada e robusta da função concatenarCampos
+ * Não depende diretamente do Scribe.js para funcionar
  */
 async function concatenarCampos(container) {
-    // Mostrar overlay de processamento se existir
+    // Mostrar overlay de processamento
     const processingOverlay = document.getElementById('processingOverlay');
     const processingText = document.getElementById('processingText');
     
     if (processingOverlay && processingText) {
         processingOverlay.style.display = 'flex';
-        processingText.textContent = 'Analisando campos...';
+        processingText.textContent = 'Iniciando processamento...';
     }
     
     try {
-        // 1. Coletar dados dos campos simples
+        // 1. Verificar se o Scribe está disponível
+        const scribeDisponivel = isScribeAvailable();
+        
+        if (!scribeDisponivel) {
+            if (processingText) {
+                processingText.textContent = 'Scribe.js não disponível. Usando modo alternativo...';
+            }
+            console.warn('Scribe.js não está disponível. Usando modo alternativo sem processamento de PDF.');
+        } else {
+            console.log('Scribe.js disponível. Prosseguindo com processamento completo.');
+        }
+        
+        // 2. Coletar dados dos campos simples
         const numeroInquerito = container.querySelector('#numeroInquerito')?.value || '';
         const recebimentoDenuncia = container.querySelector('#recebimentoDenuncia')?.value || '';
         const dataSentenca = container.querySelector('#dataSentenca')?.value || '';
         
-        // 2. Verificar disponibilidade do Scribe.js
-        const isScribeAvailable = typeof scribe !== 'undefined';
-        let isScribeWorking = isScribeAvailable;
-        
-        if (!isScribeAvailable) {
-            console.warn('Scribe.js não está disponível. Será usado o modo alternativo sem processamento de PDF.');
-            // Mostrar mensagem de aviso ao usuário
-            if (processingText) {
-                processingText.textContent = 'Scribe.js não disponível. Usando modo alternativo...';
-            }
-        }
-        
-        // 3. Definir ordem de processamento (do mais rápido para o mais lento)
-        const camposParaProcessar = [
-            { id: 'transitoJulgado', nome: 'Trânsito em Julgado', prioridade: 1 },
-            { id: 'denuncia', nome: 'Denúncia', prioridade: 2 },
-            { id: 'acordao', nome: 'Acórdão', prioridade: 3 },
-            { id: 'sentenca', nome: 'Sentença', prioridade: 4 }
-        ];
-        
-        // 4. Processar cada campo sequencialmente
-        const resultados = {};
-        let errosOCR = 0;
-        
-        for (const campo of camposParaProcessar) {
-            const elemento = container.querySelector(`#${campo.id}`);
-            if (elemento) {
-                const conteudo = elemento.textContent || elemento.innerHTML || '';
-                
-                if (processingText) {
-                    processingText.textContent = `Processando ${campo.nome}...`;
-                }
-                
-                // Verificar se é link e processar
-                if (isLink(conteudo)) {
-                    console.log(`Processando conteúdo: ${campo.nome} - ${conteudo}`);
-                    if (isScribeWorking) {
-                        try {
-                            // Usar Scribe se disponível
-                            resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
-                            
-                            // Verificar se a resposta indica um erro
-                            if (resultados[campo.id].includes('[Não foi possível extrair texto')) {
-                                errosOCR++;
-                                // Se tivermos muitos erros, desabilitar o Scribe para os próximos campos
-                                if (errosOCR >= 2) {
-                                    isScribeWorking = false;
-                                    console.warn('Múltiplos erros de OCR detectados. Desabilitando processamento via Scribe.');
-                                    if (processingText) {
-                                        processingText.textContent = 'Erros de OCR detectados. Usando modo alternativo...';
-                                    }
-                                }
-                            }
-                        } catch (ocrError) {
-                            console.error(`Erro de OCR no campo ${campo.nome}:`, ocrError);
-                            resultados[campo.id] = `[Link ${campo.nome}]: ${conteudo}`;
-                            errosOCR++;
-                            
-                            // Se tivermos muitos erros, desabilitar o Scribe
-                            if (errosOCR >= 2) {
-                                isScribeWorking = false;
-                            }
-                        }
-                    } else {
-                        // Alternativa: armazenar o link como está
-                        resultados[campo.id] = `[Link ${campo.nome}]: ${conteudo}`;
-                    }
-                } else if (conteudo.trim()) {
-                    console.log(`Usando texto existente: ${campo.nome}`);
-                    resultados[campo.id] = conteudo.trim();
-                } else {
-                    resultados[campo.id] = '';
-                }
-            }
-        }
-        
-        // 5. Montar resumo concatenado
-        if (processingText) {
-            processingText.textContent = 'Montando resumo final...';
-        }
-        
+        // 3. Iniciar o resumo com os campos básicos
         let resumoConcatenado = '';
         
-        // Adicionar campos simples
         if (numeroInquerito.trim()) {
             resumoConcatenado += `<strong>Inquérito:</strong><br>${numeroInquerito.trim()}<br><br>`;
         }
@@ -626,56 +584,90 @@ async function concatenarCampos(container) {
             resumoConcatenado += `<strong>Data da Sentença:</strong><br>${dataSentenca.trim()}<br><br>`;
         }
         
-        // Adicionar campos processados (na ordem original)
-        const ordemOriginal = ['denuncia', 'sentenca', 'acordao', 'transitoJulgado'];
-        const nomes = {
-            'denuncia': 'Denúncia',
-            'sentenca': 'Sentença', 
-            'acordao': 'Acórdão',
-            'transitoJulgado': 'Trânsito em Julgado'
-        };
+        // 4. Adicionar os campos de documentos (com ou sem processamento)
+        const documentos = [
+            { id: 'denuncia', nome: 'Denúncia' },
+            { id: 'sentenca', nome: 'Sentença' },
+            { id: 'acordao', nome: 'Acórdão' },
+            { id: 'transitoJulgado', nome: 'Trânsito em Julgado' }
+        ];
         
-        ordemOriginal.forEach(campoId => {
-            const texto = resultados[campoId];
-            if (texto && texto.trim()) {
-                resumoConcatenado += `<strong>${nomes[campoId]}:</strong><br>${texto.trim()}<br><br>`;
+        for (const doc of documentos) {
+            if (processingText) {
+                processingText.textContent = `Processando ${doc.nome}...`;
             }
-        });
+            
+            const elemento = container.querySelector(`#${doc.id}`);
+            if (!elemento) continue;
+            
+            const conteudo = elemento.textContent || elemento.innerHTML || '';
+            if (!conteudo.trim()) continue;
+            
+            let textoProcessado = '';
+            
+            // Verificar se é um link e como processá-lo
+            if (conteudo.trim().startsWith('http') || conteudo.includes('pje.tj')) {
+                if (scribeDisponivel) {
+                    try {
+                        // Tentativa de usar o Scribe.js
+                        textoProcessado = await processarLink(conteudo, doc.nome);
+                    } catch (error) {
+                        console.error(`Erro ao processar ${doc.nome}:`, error);
+                        textoProcessado = `[Link ${doc.nome}]: ${conteudo}\n\n(Não foi possível processar automaticamente)`;
+                    }
+                } else {
+                    // Scribe não disponível, usar o link direto
+                    textoProcessado = `[Link ${doc.nome}]: ${conteudo}`;
+                }
+            } else {
+                // Não é link, usar o conteúdo como está
+                textoProcessado = conteudo.trim();
+            }
+            
+            // Adicionar ao resumo
+            resumoConcatenado += `<strong>${doc.nome}:</strong><br>${textoProcessado}<br><br>`;
+        }
         
-        // 6. Atualizar campo resumo
+        // 5. Atualizar o campo de resumo
         const resumoElement = container.querySelector('#resumo');
         if (resumoElement) {
             resumoElement.innerHTML = resumoConcatenado.trim();
             
             // Atualizar contagem de caracteres
-            atualizarContagemCaracteresScribe(resumoElement, container);
+            const contadorElement = container.querySelector('#resumoCount');
+            if (contadorElement) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = resumoConcatenado;
+                const textoSemTags = tempDiv.textContent || tempDiv.innerText || '';
+                
+                const count = textoSemTags.trim().length;
+                contadorElement.textContent = count + ' caracteres';
+                
+                if (count > 5000) {
+                    contadorElement.classList.add('limit-exceeded');
+                } else {
+                    contadorElement.classList.remove('limit-exceeded');
+                }
+            }
         }
         
-        // Mensagem baseada nos resultados
-        let mensagemStatus = 'Campos concatenados com sucesso!';
-        if (!isScribeAvailable) {
-            mensagemStatus = 'Campos concatenados com sucesso (modo alternativo - Scribe.js não disponível)';
-        } else if (!isScribeWorking) {
-            mensagemStatus = 'Campos concatenados com sucesso (modo alternativo - Problemas detectados com OCR)';
-        } else if (errosOCR > 0) {
-            mensagemStatus = `Campos concatenados com alguns problemas (${errosOCR} erro(s) de OCR)`;
-        }
+        // 6. Mostrar mensagem de sucesso apropriada
+        const msgSucesso = scribeDisponivel 
+            ? 'Campos concatenados com sucesso!' 
+            : 'Campos concatenados com sucesso (sem processamento de PDF - Scribe.js não disponível)';
         
-        // Mostrar mensagem de sucesso
-        mostrarMensagem(container, errosOCR > 0 ? 'warning' : 'success', mensagemStatus);
+        mostrarMensagem(container, 'success', msgSucesso);
         
     } catch (error) {
-        console.error('Erro na concatenação:', error);
-        mostrarMensagem(container, 'error', `Erro durante processamento: ${error.message}`);
+        console.error('Erro ao concatenar campos:', error);
+        mostrarMensagem(container, 'error', `Ocorreu um erro: ${error.message}`);
     } finally {
-        // Ocultar overlay
+        // Esconder overlay de processamento
         if (processingOverlay) {
             processingOverlay.style.display = 'none';
         }
     }
 }
-
-
 
 
 
@@ -1615,85 +1607,45 @@ function isLink(conteudo) {
     return linkPJEPattern.test(texto);
 }
 
-async function processarPDFComScribe(url, nomeDocumento) {
+/**
+ * Função simplificada para processar links com o Scribe.js
+ * Esta função lida apenas com a parte de processamento de links
+ */
+async function processarLink(url, nomeDocumento) {
     try {
-        console.log(`Iniciando processamento com Scribe.js: ${nomeDocumento}`);
+        console.log(`Processando ${nomeDocumento}: ${url}`);
         
-        // Verificar se Scribe.js está disponível
-        if (typeof scribe === 'undefined') {
-            throw new Error('Scribe.js não carregado. Verifique a importação do script.');
+        if (!url || !url.trim()) {
+            return `[Link vazio para ${nomeDocumento}]`;
         }
         
-        // Verificar se o URL é válido
-        if (!url || typeof url !== 'string' || !url.trim()) {
-            throw new Error('URL inválido ou vazio');
+        // Se o Scribe não estiver disponível, retornar o link
+        if (typeof window.scribe === 'undefined' || typeof window.scribe.extractText !== 'function') {
+            throw new Error('Scribe.js não disponível');
         }
         
-        // Tratamento para URLs que não são HTTP/HTTPS
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            return `[Link não processável ${nomeDocumento}]: ${url}`;
-        }
-        
-        // Configuração de opções para o Scribe.js
+        // Configurar opções para extração
         const options = {
-            timeout: 60000,     // 60 segundos de timeout
-            pages: 'all',       // Processar todas as páginas
-            ocr: false,         // Inicialmente desativar OCR para tentar extração direta primeiro
-            scale: 1.5,         // Escala melhorada para extração de texto
-            verbose: true       // Ativar logs detalhados para diagnóstico
+            timeout: 30000,   // 30 segundos de timeout
+            pages: 'all'      // Processar todas as páginas
         };
         
-        let resultado;
+        // Adicionar timeout manual como segurança adicional
+        const resultado = await Promise.race([
+            window.scribe.extractText(url, options),
+            new Promise((_, reject) => setTimeout(() => 
+                reject(new Error('Timeout ao processar documento')), 35000)
+            )
+        ]);
         
-        try {
-            // Primeira tentativa: extração sem OCR (mais rápida)
-            console.log(`Tentando extrair texto sem OCR de: ${nomeDocumento}`);
-            resultado = await Promise.race([
-                scribe.extractText(url, options),
-                new Promise((_, reject) => setTimeout(() => 
-                    reject(new Error('Timeout na extração sem OCR')), 20000)
-                )
-            ]);
-            
-            // Verificar se o resultado tem conteúdo utilizável
-            if (!resultado || !resultado.text || resultado.text.trim().length < 20) {
-                console.log(`Texto insuficiente extraído sem OCR de ${nomeDocumento}, tentando com OCR...`);
-                throw new Error('Texto insuficiente sem OCR');
-            }
-            
-        } catch (noOcrError) {
-            console.warn(`Falha na extração sem OCR: ${noOcrError.message}. Tentando com OCR...`);
-            
-            try {
-                // Segunda tentativa: usar OCR (mais lenta, mas mais confiável para alguns documentos)
-                options.ocr = true;
-                
-                resultado = await Promise.race([
-                    scribe.extractText(url, options),
-                    new Promise((_, reject) => setTimeout(() => 
-                        reject(new Error('Timeout na extração com OCR')), 40000)
-                    )
-                ]);
-                
-            } catch (ocrError) {
-                console.error(`Erro na extração com OCR: ${ocrError.message}`);
-                throw new Error(`Falha na extração de texto com OCR: ${ocrError.message}`);
-            }
-        }
-        
-        // Verificação final do resultado
-        if (resultado && resultado.text && resultado.text.trim()) {
-            console.log(`PDF processado com sucesso: ${nomeDocumento} - ${resultado.text.length} caracteres`);
+        if (resultado && resultado.text) {
             return resultado.text.trim();
         } else {
-            throw new Error('Nenhum texto utilizável extraído do documento');
+            throw new Error('Não foi possível extrair texto');
         }
-        
     } catch (error) {
-        console.error(`Erro ao processar PDF ${nomeDocumento}:`, error);
-        
-        // Retornar link original com indicação de erro
-        return `[Não foi possível extrair texto do ${nomeDocumento}]: ${url}\n\nErro: ${error.message}\n\nSugestão: Tente acessar o documento diretamente.`;
+        console.error(`Erro ao processar ${nomeDocumento}:`, error);
+        return `[Link ${nomeDocumento}]: ${url}\n\n(Erro: ${error.message})`;
     }
 }
 
