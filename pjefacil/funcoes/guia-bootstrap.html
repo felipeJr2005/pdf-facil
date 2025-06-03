@@ -9,16 +9,25 @@
         </div>
         <div class="card-body">
             <!-- Seção da Edição de Texto -->
-            <div class="row mb-3">
+            <div clas="row mb-3">
+                <!-- Botão Receber Dados como primeiro elemento -->
+                <div class="col-md-6 mb-3">
+                    <label for="receberDados" class="form-label">Receber Dados</label>
+                    <button type="button" id="receberDados" class="btn btn-info w-100">
+                        <i class="fas fa-clipboard me-1"></i> Receber Dados do Clipboard
+                    </button>
+                </div>
+                
+                <!-- Número de Inquérito à direita -->
                 <div class="col-md-6 mb-3">
                     <label for="numeroInquerito" class="form-label">Número de Inquérito</label>
                     <input type="text" id="numeroInquerito" class="form-control">
                 </div>
-                
-                <div class="col-md-6 mb-3">
-                    <label for="recebimentoDenuncia" class="form-label">Recebimento da denúncia</label>
-                    <input type="text" id="recebimentoDenuncia" class="form-control">
-                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="recebimentoDenuncia" class="form-label">Recebimento da denúncia</label>
+                <input type="text" id="recebimentoDenuncia" class="form-control">
             </div>
             
             <div class="mb-3">
@@ -30,6 +39,12 @@
                 </div>
                 <div id="denuncia" class="form-control editable-content" contenteditable="true" spellcheck="true" data-placeholder="Descreva os termos da denúncia..."></div>
                 <div class="text-muted small text-end mt-1" id="denunciaCount">0 caracteres</div>
+            </div>
+            
+            <!-- Campo Data da Sentença -->
+            <div class="mb-3">
+                <label for="dataSentenca" class="form-label">Data Sentença</label>
+                <input type="text" id="dataSentenca" class="form-control">
             </div>
             
             <div class="mb-3">

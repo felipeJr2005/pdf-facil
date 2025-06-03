@@ -1,6 +1,6 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
- * Versão com IDs fixos para Text Blaze
+ * Versão com IDs fixos e grupos separados para Text Blaze
  */
 
 // Contadores para IDs previsíveis
@@ -13,7 +13,7 @@ let contadorPolicial = 0;
 
 // Função de inicialização do módulo
 export function initialize(container) {
-  console.log('Módulo audiencia.js inicializado');
+  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -107,7 +107,7 @@ function criarLinhaAssistenteAcusacao() {
   contadorAssistente++;
   const currentIndex = contadorAssistente;
   
-  // Criar IDs fixos e previsíveis
+  // Criar IDs fixos e previsíveis com prefixo exclusivo do grupo
   const assistenteId = `assistente-acusacao-${currentIndex}`;
   const nomeId = `assistente-nome-${currentIndex}`;
   const oabId = `assistente-oab-${currentIndex}`;
@@ -117,10 +117,10 @@ function criarLinhaAssistenteAcusacao() {
   linha.id = assistenteId;
 
   const baseHtml = `
-    <input type="text" placeholder="Nome do Assistente" class="form-control nome" id="${nomeId}" data-textblaze-assistente="${currentIndex}">
-    <input type="text" placeholder="OAB" class="form-control oab" id="${oabId}" data-textblaze-assistente-oab="${currentIndex}">
+    <input type="text" placeholder="Nome do Assistente" class="form-control nome" id="${nomeId}" data-textblaze-acusacao-assistente="${currentIndex}">
+    <input type="text" placeholder="OAB" class="form-control oab" id="${oabId}" data-textblaze-acusacao-assistente-oab="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
-      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-assistente-intimado="${currentIndex}">
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-acusacao-assistente-intimado="${currentIndex}">
       <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
     </div>
     <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
@@ -149,49 +149,29 @@ function addAssistenteAcusacao(container) {
   }
 }
 
-// Função para criar linha genérica com IDs previsíveis
-function criarLinha(tipo, extras = '') {
+// Função para criar linha vítima
+function criarLinhaVitima() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Identificador e contador com base no tipo
-  let currentIndex;
+  // Incrementar contador para ID único
+  contadorVitima++;
+  const currentIndex = contadorVitima;
   
-  switch (tipo) {
-    case 'vitima':
-      contadorVitima++;
-      currentIndex = contadorVitima;
-      break;
-    case 'testemunha-mp':
-      contadorTestemunhaMP++;
-      currentIndex = contadorTestemunhaMP;
-      break;
-    case 'testemunha-defesa':
-      contadorTestemunhaDefesa++;
-      currentIndex = contadorTestemunhaDefesa;
-      break;
-    case 'policial':
-      contadorPolicial++;
-      currentIndex = contadorPolicial;
-      break;
-    default:
-      currentIndex = Date.now();
-  }
-  
-  // Definir IDs previsíveis
-  const itemId = `${tipo}-${currentIndex}`;
-  const nomeId = `${tipo}-nome-${currentIndex}`;
-  const enderecoId = `${tipo}-endereco-${currentIndex}`;
-  const intimadoId = `${tipo}-intimado-${currentIndex}`;
+  // Definir IDs previsíveis com prefixo exclusivo do grupo
+  const itemId = `vitima-${currentIndex}`;
+  const nomeId = `vitima-nome-${currentIndex}`;
+  const enderecoId = `vitima-endereco-${currentIndex}`;
+  const intimadoId = `vitima-intimado-${currentIndex}`;
   
   linha.id = itemId;
   linha.setAttribute('data-index', currentIndex);
   
   const baseHtml = `
-    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-${tipo}="${currentIndex}">
-    <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-${tipo}-endereco="${currentIndex}">
+    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-vitima="${currentIndex}">
+    <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-vitima-endereco="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
-      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-${tipo}-intimado="${currentIndex}">
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-vitima-intimado="${currentIndex}">
       <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
     </div>
     <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
@@ -199,7 +179,7 @@ function criarLinha(tipo, extras = '') {
     </button>
   `;
 
-  linha.innerHTML = extras + baseHtml;
+  linha.innerHTML = baseHtml;
   return linha;
 }
 
@@ -207,7 +187,7 @@ function criarLinha(tipo, extras = '') {
 function addVitima(container) {
   const vitimasContainer = container.querySelector('#vitimas-container');
   if (vitimasContainer) {
-    const linha = criarLinha('vitima');
+    const linha = criarLinhaVitima();
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
     });
@@ -220,13 +200,82 @@ function addVitima(container) {
   }
 }
 
+// Função para criar linha testemunha MP
+function criarLinhaTestemunhaMP() {
+  const linha = document.createElement('div');
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  
+  // Incrementar contador para ID único
+  contadorTestemunhaMP++;
+  const currentIndex = contadorTestemunhaMP;
+  
+  // Definir IDs previsíveis com prefixo exclusivo do grupo
+  const itemId = `testemunha-mp-${currentIndex}`;
+  const nomeId = `testemunha-mp-nome-${currentIndex}`;
+  const enderecoId = `testemunha-mp-endereco-${currentIndex}`;
+  const intimadoId = `testemunha-mp-intimado-${currentIndex}`;
+  
+  linha.id = itemId;
+  linha.setAttribute('data-index', currentIndex);
+  
+  const baseHtml = `
+    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-mp-testemunha="${currentIndex}">
+    <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-mp-testemunha-endereco="${currentIndex}">
+    <div class="d-flex align-items-center ms-auto">
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-mp-testemunha-intimado="${currentIndex}">
+      <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
+    </div>
+    <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+      <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+    </button>
+  `;
+
+  linha.innerHTML = baseHtml;
+  return linha;
+}
+
+// Função para criar linha testemunha Defesa
+function criarLinhaTestemunhaDefesa() {
+  const linha = document.createElement('div');
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  
+  // Incrementar contador para ID único
+  contadorTestemunhaDefesa++;
+  const currentIndex = contadorTestemunhaDefesa;
+  
+  // Definir IDs previsíveis com prefixo exclusivo do grupo
+  const itemId = `testemunha-defesa-${currentIndex}`;
+  const nomeId = `testemunha-defesa-nome-${currentIndex}`;
+  const enderecoId = `testemunha-defesa-endereco-${currentIndex}`;
+  const intimadoId = `testemunha-defesa-intimado-${currentIndex}`;
+  
+  linha.id = itemId;
+  linha.setAttribute('data-index', currentIndex);
+  
+  const baseHtml = `
+    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-defesa-testemunha="${currentIndex}">
+    <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-defesa-testemunha-endereco="${currentIndex}">
+    <div class="d-flex align-items-center ms-auto">
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-defesa-testemunha-intimado="${currentIndex}">
+      <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
+    </div>
+    <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+      <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+    </button>
+  `;
+
+  linha.innerHTML = baseHtml;
+  return linha;
+}
+
 // Função para adicionar testemunha (MP ou defesa)
 function addTestemunha(container, tipo) {
-  const tipoIdentificador = tipo === 'mp' ? 'testemunha-mp' : 'testemunha-defesa';
   const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
   
   if (testemunhasContainer) {
-    const linha = criarLinha(tipoIdentificador);
+    // Usar a função específica para cada tipo de testemunha
+    const linha = tipo === 'mp' ? criarLinhaTestemunhaMP() : criarLinhaTestemunhaDefesa();
+    
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
     });
@@ -239,32 +288,47 @@ function addTestemunha(container, tipo) {
   }
 }
 
-// Na função addPolicial, modifique assim:
+// Função para adicionar policial
 function addPolicial(container) {
   const policiaisContainer = container.querySelector('#policiais-container');
   if (policiaisContainer) {
     contadorPolicial++;
     const currentIndex = contadorPolicial;
     
-    // Use o mesmo valor de currentIndex para o ID do tipo
+    // Criar IDs fixos previsíveis com prefixo exclusivo
+    const itemId = `policial-${currentIndex}`;
     const tipoId = `policial-tipo-${currentIndex}`;
+    const nomeId = `policial-nome-${currentIndex}`;
+    const matriculaId = `policial-matricula-${currentIndex}`;
+    const intimadoId = `policial-intimado-${currentIndex}`;
     
-    const extras = `
+    const linha = document.createElement('div');
+    linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+    linha.id = itemId;
+    linha.setAttribute('data-index', currentIndex);
+    
+    linha.innerHTML = `
       <select class="form-select tipo-policial" style="width: auto; min-width: 100px;" id="${tipoId}" data-textblaze-policial-tipo="${currentIndex}">
         <option value="pm">PM</option>
         <option value="pc">PC</option>
         <option value="pf">PF</option>
         <option value="prf">PRF</option>
       </select>
+      <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-policial="${currentIndex}">
+      <input type="text" placeholder="Matrícula/RG" class="form-control endereco" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
+      <div class="d-flex align-items-center ms-auto">
+        <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-policial-intimado="${currentIndex}">
+        <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
+      </div>
+      <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+        <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+      </button>
     `;
     
-    // Certifique-se de que o ID da linha e seu conteúdo usem o mesmo índice
-    const linha = criarLinha('policial', extras);
-    linha.id = `policial-${currentIndex}`; // Garantir que o ID da linha use o mesmo índice
-    linha.querySelector('.endereco').placeholder = 'Matrícula/RG';
     linha.querySelector('.remove-btn').addEventListener('click', function() {
       linha.remove();
     });
+    
     policiaisContainer.appendChild(linha);
     
     // Efeito de animação na adição do elemento
@@ -286,7 +350,7 @@ function addReu(container) {
     reuContainer.id = `reu-${currentIndex}`;
     reuContainer.setAttribute('data-index', currentIndex);
     
-    // IDs previsíveis para cada elemento
+    // IDs previsíveis para cada elemento com prefixo exclusivo do grupo
     const reuNomeId = `reu-nome-${currentIndex}`;
     const reuEnderecoId = `reu-endereco-${currentIndex}`;
     const reuIntimadoId = `reu-intimado-${currentIndex}`;
@@ -610,21 +674,21 @@ function mostrarMensagem(container, mensagem, tipo = 'info') {
   const statusMessage = document.createElement('div');
   statusMessage.className = `status-message ${tipo}`;
   
-  // Adicionar ícone adequado
-  let icone = '';
-  switch (tipo) {
-    case 'success':
-      icone = '<i class="fas fa-check-circle"></i>';
-      break;
-    case 'error':
-      icone = '<i class="fas fa-exclamation-circle"></i>';
-      break;
-    case 'warning':
-      icone = '<i class="fas fa-exclamation-triangle"></i>';
-      break;
-    default:
-      icone = '<i class="fas fa-info-circle"></i>';
-  }
+ // Adicionar ícone adequado
+let icone = '';
+switch (tipo) {
+  case 'success':
+    icone = '<i class="fas fa-check-circle"></i>';
+    break;
+  case 'error':
+    icone = '<i class="fas fa-exclamation-circle"></i>';
+    break;
+  case 'warning':
+    icone = '<i class="fas fa-exclamation-triangle"></i>';
+    break;
+  default:
+    icone = '<i class="fas fa-info-circle"></i>';
+}
   
   statusMessage.innerHTML = `${icone} ${mensagem}`;
   

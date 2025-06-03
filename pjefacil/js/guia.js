@@ -420,6 +420,18 @@ function setupClearButtons(container) {
 // Função para configurar preenchimento automático
 function setupAutomaticFill(container) {
     const preencherBtn = container.querySelector('#preencherAutomatico');
+
+
+    // Event listener para botão "Receber Dados"
+    const botaoReceberDados = container.querySelector('#receberDados');
+    if (botaoReceberDados) {
+        botaoReceberDados.addEventListener('click', function() {
+            receberDados();
+        });
+    }
+
+
+
     if (preencherBtn) {
         preencherBtn.addEventListener('click', function() {
             const resumoElement = container.querySelector('#resumo');
@@ -497,69 +509,126 @@ function setupFormButtons(container) {
     }
 }
   
-
-function concatenarCampos(container) {
-    const numeroInquerito = container.querySelector('#numeroInquerito')?.value || '';
-    const recebimentoDenuncia = container.querySelector('#recebimentoDenuncia')?.value || '';
-    const denuncia = container.querySelector('#denuncia')?.textContent || '';
-    const sentenca = container.querySelector('#sentenca')?.textContent || '';
-    const acordao = container.querySelector('#acordao')?.textContent || '';
-    const transitoJulgado = container.querySelector('#transitoJulgado')?.textContent || '';
+// SUBSTITUIÇÃO DA FUNÇÃO concatenarCampos EXISTENTE - LINHA 649
+async function concatenarCampos(container) {
+    // Mostrar overlay de processamento se existir
+    const processingOverlay = document.getElementById('processingOverlay');
+    const processingText = document.getElementById('processingText');
     
-    let resumoConcatenado = '';
-    
-    if (numeroInquerito.trim()) {
-        resumoConcatenado += `<strong>Inquérito:</strong><br>${numeroInquerito.trim()}<br><br>`;
+    if (processingOverlay && processingText) {
+        processingOverlay.style.display = 'flex';
+        processingText.textContent = 'Analisando campos...';
     }
     
-    if (recebimentoDenuncia.trim()) {
-        resumoConcatenado += `<strong>Recebimento da denúncia:</strong><br>${recebimentoDenuncia.trim()}<br><br>`;
-    }
-    
-    if (denuncia.trim()) {
-        resumoConcatenado += `<strong>Denúncia:</strong><br>${denuncia.trim()}<br><br>`;
-    }
-    
-    if (sentenca.trim()) {
-        resumoConcatenado += `<strong>Sentença:</strong><br>${sentenca.trim()}<br><br>`;
-    }
-    
-    if (acordao.trim()) {
-        resumoConcatenado += `<strong>Acórdão:</strong><br>${acordao.trim()}<br><br>`;
-    }
-    
-    if (transitoJulgado.trim()) {
-        resumoConcatenado += `<strong>Trânsito em Julgado:</strong><br>${transitoJulgado.trim()}<br><br>`;
-    }
-    
-    const resumoElement = container.querySelector('#resumo');
-    if (resumoElement) {
-        // Definir o conteúdo HTML do elemento
-        resumoElement.innerHTML = resumoConcatenado.trim();
+    try {
+        // 1. Coletar dados dos campos simples
+        const numeroInquerito = container.querySelector('#numeroInquerito')?.value || '';
+        const recebimentoDenuncia = container.querySelector('#recebimentoDenuncia')?.value || '';
+        const dataSentenca = container.querySelector('#dataSentenca')?.value || '';
         
-        // Atualizar contagem
-        const contadorElement = container.querySelector('#resumoCount');
-        if (contadorElement) {
-            // Contar caracteres, removendo as tags HTML para uma contagem precisa
-            const textoSemTags = resumoConcatenado.replace(/<[^>]*>/g, '');
-            const count = textoSemTags.trim().length;
-            contadorElement.textContent = count + ' caracteres';
+        // 2. Definir ordem de processamento (do mais rápido para o mais lento)
+        const camposParaProcessar = [
+            { id: 'transitoJulgado', nome: 'Trânsito em Julgado', prioridade: 1 },
+            { id: 'denuncia', nome: 'Denúncia', prioridade: 2 },
+            { id: 'acordao', nome: 'Acórdão', prioridade: 3 },
+            { id: 'sentenca', nome: 'Sentença', prioridade: 4 }
+        ];
+        
+        // 3. Processar cada campo sequencialmente
+        const resultados = {};
+        
+        for (const campo of camposParaProcessar) {
+            const elemento = container.querySelector(`#${campo.id}`);
+            if (elemento) {
+                const conteudo = elemento.textContent || elemento.innerHTML || '';
+                
+                if (processingText) {
+                    processingText.textContent = `Processando ${campo.nome}...`;
+                }
+                
+                // Verificar se é link e processar
+                if (isLink(conteudo)) {
+                    console.log(`Processando PDF: ${campo.nome} - ${conteudo}`);
+                    resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
+                } else if (conteudo.trim()) {
+                    console.log(`Usando texto existente: ${campo.nome}`);
+                    resultados[campo.id] = conteudo.trim();
+                } else {
+                    resultados[campo.id] = '';
+                }
+            }
+        }
+        
+        // 4. Montar resumo concatenado
+        if (processingText) {
+            processingText.textContent = 'Montando resumo final...';
+        }
+        
+        let resumoConcatenado = '';
+        
+        // Adicionar campos simples
+        if (numeroInquerito.trim()) {
+            resumoConcatenado += `<strong>Inquérito:</strong><br>${numeroInquerito.trim()}<br><br>`;
+        }
+        
+        if (recebimentoDenuncia.trim()) {
+            resumoConcatenado += `<strong>Recebimento da denúncia:</strong><br>${recebimentoDenuncia.trim()}<br><br>`;
+        }
+        
+        if (dataSentenca.trim()) {
+            resumoConcatenado += `<strong>Data da Sentença:</strong><br>${dataSentenca.trim()}<br><br>`;
+        }
+        
+        // Adicionar campos processados (na ordem original)
+        const ordemOriginal = ['denuncia', 'sentenca', 'acordao', 'transitoJulgado'];
+        const nomes = {
+            'denuncia': 'Denúncia',
+            'sentenca': 'Sentença', 
+            'acordao': 'Acórdão',
+            'transitoJulgado': 'Trânsito em Julgado'
+        };
+        
+        ordemOriginal.forEach(campoId => {
+            const texto = resultados[campoId];
+            if (texto && texto.trim()) {
+                resumoConcatenado += `<strong>${nomes[campoId]}:</strong><br>${texto.trim()}<br><br>`;
+            }
+        });
+        
+        // 5. Atualizar campo resumo
+        const resumoElement = container.querySelector('#resumo');
+        if (resumoElement) {
+            resumoElement.innerHTML = resumoConcatenado.trim();
             
-            if (count > 5000) {
-                contadorElement.classList.add('limit-exceeded');
-            } else {
-                contadorElement.classList.remove('limit-exceeded');
+            // Atualizar contagem de caracteres (usando função existente)
+            const contadorElement = container.querySelector('#resumoCount');
+            if (contadorElement) {
+                const textoSemTags = resumoConcatenado.replace(/<[^>]*>/g, '');
+                const count = textoSemTags.trim().length;
+                contadorElement.textContent = count + ' caracteres';
+                
+                if (count > 5000) {
+                    contadorElement.classList.add('limit-exceeded');
+                } else {
+                    contadorElement.classList.remove('limit-exceeded');
+                }
             }
         }
         
         // Mostrar mensagem de sucesso
         mostrarMensagem(container, 'success', 'Campos concatenados com sucesso!');
+        
+    } catch (error) {
+        console.error('Erro na concatenação:', error);
+        mostrarMensagem(container, 'error', `Erro durante processamento: ${error.message}`);
+    } finally {
+        // Ocultar overlay
+        if (processingOverlay) {
+            processingOverlay.style.display = 'none';
+        }
     }
 }
 
-
-
-  
 // Função para limpar campos do editor
 function limparCamposEditor(container) {
     const confirmacao = confirm('Tem certeza que deseja limpar todos os campos do editor?');
@@ -606,14 +675,6 @@ function limparCamposEditor(container) {
         mostrarMensagem(container, 'success', 'Campos limpos com sucesso!');
     }
 }
-
-// Função para preencher o formulário automaticamente a partir do resumo
-
-// Função para preencher o formulário automaticamente a partir do resumo
-
-
-
-// Função para preencher o formulário automaticamente a partir do resumo
 
 // Função para preencher o formulário automaticamente a partir do resumo
 function preencherFormularioAutomatico(container, textoResumo) {
@@ -1152,8 +1213,10 @@ function extrairValorCampo(texto, nomeCampo) {
             }
         }
     }
-    
-    // Extrair Tipo de Guia
+
+
+
+// Extrair Tipo de Guia
     const tipoGuiaValor = extrairValorCampo(textoSemHTML, 'Tipo de Guia');
     if (tipoGuiaValor) {
         const tipoPeca = container.querySelector('#tipoPeca');
@@ -1165,8 +1228,6 @@ function extrairValorCampo(texto, nomeCampo) {
                 console.log('Tipo de Peça preenchido: Guia de Recolhimento');
             } else if (tipoGuiaTexto.includes('execução') || tipoGuiaTexto.includes('execucao')) {
                 tipoPeca.value = 'execucao';
-                camposPreenchidos.push(tipoPeca);
-tipoPeca.value = 'execucao';
                 camposPreenchidos.push(tipoPeca);
                 console.log('Tipo de Peça preenchido: Guia de Execução Definitiva');
             } else if (tipoGuiaTexto.includes('internação') || tipoGuiaTexto.includes('internacao')) {
@@ -1412,6 +1473,102 @@ function mostrarMensagem(container, tipo, texto) {
             mensagem.remove();
         }
     }, 5000);
+}
+
+// ===== FUNÇÕES PARA RECEBER DADOS - VERSÃO CORRIGIDA =====
+
+async function receberDados() {
+    try {
+        const dadosClipboard = await navigator.clipboard.readText();
+        
+        if (!dadosClipboard || dadosClipboard.trim() === '') {
+            mostrarMensagem(document.querySelector('#content-container'), 'warning', 'Clipboard vazio.');
+            return;
+        }
+
+        const container = document.querySelector('#content-container');
+        distribuirCampos(dadosClipboard, container);
+
+    } catch (error) {
+        console.error('Erro ao acessar clipboard:', error);
+        mostrarMensagem(document.querySelector('#content-container'), 'error', 'Erro ao acessar clipboard.');
+    }
+}
+
+// AQUI ADICIONAMOS AS 3 FUNÇÕES AUXILIARES - ANTES DA FUNÇÃO cleanup()
+
+/**
+ * Verifica se o conteúdo é um link
+ */
+function isLink(conteudo) {
+    if (!conteudo || typeof conteudo !== 'string') return false;
+    
+    const texto = conteudo.trim();
+    
+    // Verificar se começa com http/https
+    if (texto.startsWith('http://') || texto.startsWith('https://')) {
+        return true;
+    }
+    
+    // Verificar padrão de link do PJE
+    const linkPJEPattern = /pje\.tj[a-z]{2}\.jus\.br.*documento/i;
+    return linkPJEPattern.test(texto);
+}
+
+/**
+ * Processa PDF usando Scribe.js
+ */
+async function processarPDFComScribe(url, nomeDocumento) {
+    try {
+        console.log(`Iniciando processamento com Scribe.js: ${nomeDocumento}`);
+        
+        // Verificar se Scribe.js está disponível
+        if (typeof scribe === 'undefined') {
+            throw new Error('Scribe.js não carregado. Verifique a importação do script.');
+        }
+        
+        // Extrair texto do PDF
+        const resultado = await scribe.extractText(url, {
+            timeout: 60000, // 60 segundos de timeout
+            pages: 'all'    // Processar todas as páginas
+        });
+        
+        if (resultado && resultado.text) {
+            console.log(`PDF processado com sucesso: ${nomeDocumento} - ${resultado.text.length} caracteres`);
+            return resultado.text.trim();
+        } else {
+            throw new Error('Nenhum texto extraído do PDF');
+        }
+        
+    } catch (error) {
+        console.error(`Erro ao processar PDF ${nomeDocumento}:`, error);
+        
+        // Retornar link original com indicação de erro
+        return `[ERRO - ${nomeDocumento}]: ${url}\n\nErro: ${error.message}`;
+    }
+}
+
+/**
+ * Atualizar contagem de caracteres para Scribe
+ */
+function atualizarContagemCaracteresScribe(elemento, container) {
+    const id = elemento.id;
+    const countElement = container.querySelector(`#${id}Count`);
+    
+    if (countElement) {
+        // Criar elemento temporário para extrair texto sem HTML
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = elemento.innerHTML;
+        const count = tempElement.textContent.length;
+        
+        countElement.textContent = count + ' caracteres';
+        
+        if (count > 5000) {
+            countElement.classList.add('limit-exceeded');
+        } else {
+            countElement.classList.remove('limit-exceeded');
+        }
+    }
 }
 
 // Função de limpeza (será chamada quando o usuário sair da página)
