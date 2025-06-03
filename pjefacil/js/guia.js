@@ -1476,36 +1476,74 @@ function mostrarMensagem(container, tipo, texto) {
 // ===== FUNÇÕES PARA RECEBER DADOS - VERSÃO CORRIGIDA =====
 
 async function receberDados() {
+    console.log('🔍 Função receberDados iniciada');
+    
     try {
-        const dadosClipboard = await navigator.clipboard.readText();
+        console.log('🔍 Tentando acessar clipboard...');
+        
+        // Verificar se a API Clipboard está disponível
+        if (!navigator.clipboard) {
+            console.error('❌ API Clipboard não disponível neste navegador ou contexto');
+            mostrarMensagem(document.querySelector('#content-container'), 'error', 'API Clipboard não disponível. Verifique se está usando HTTPS ou localhost.');
+            return;
+        }
+        
+        // Tentar ler do clipboard
+        const dadosClipboard = await navigator.clipboard.readText()
+            .catch(err => {
+                console.error('❌ Erro específico ao ler clipboard:', err);
+                throw new Error(`Falha ao ler clipboard: ${err.message}`);
+            });
+        
+        console.log('✅ Dados obtidos do clipboard:', dadosClipboard ? 'Texto obtido com sucesso' : 'Texto vazio');
         
         if (!dadosClipboard || dadosClipboard.trim() === '') {
-            mostrarMensagem(document.querySelector('#content-container'), 'warning', 'Clipboard vazio.');
+            console.warn('⚠️ Clipboard vazio');
+            mostrarMensagem(document.querySelector('#content-container'), 'warning', 'Clipboard vazio. Tente copiar o texto novamente.');
             return;
         }
 
         const container = document.querySelector('#content-container');
+        if (!container) {
+            console.error('❌ Elemento #content-container não encontrado');
+            alert('Erro: Container principal não encontrado na página.');
+            return;
+        }
         
-        // Exibir mensagem de processamento
+        console.log('🔍 Container encontrado, exibindo mensagem de processamento');
         mostrarMensagem(container, 'info', 'Processando dados do clipboard...');
         
-        // Distribuir dados para os campos
-        distribuirCampos(dadosClipboard, container);
+        // Verificar formato dos dados - log para depuração
+        console.log('🔍 Primeiros 100 caracteres dos dados:', dadosClipboard.substring(0, 100));
+        console.log('🔍 Chamando distribuirCampos...');
+        
+        // Distribuir dados para os campos com tratamento de erro
+        try {
+            distribuirCampos(dadosClipboard, container);
+        } catch (distError) {
+            console.error('❌ Erro ao distribuir campos:', distError);
+            mostrarMensagem(container, 'error', `Erro ao processar dados: ${distError.message}`);
+        }
 
     } catch (error) {
-        console.error('Erro ao acessar clipboard:', error);
-        mostrarMensagem(document.querySelector('#content-container'), 'error', 'Erro ao acessar clipboard: ' + error.message);
+        console.error('❌ Erro geral ao acessar clipboard:', error);
+        mostrarMensagem(document.querySelector('#content-container') || document.body, 'error', 'Erro ao acessar clipboard: ' + error.message);
     }
+    
+    console.log('🔍 Função receberDados finalizada');
 }
 
-// Função para distribuir campos a partir do texto do clipboard
+// Função para distribuir campos a partir do texto do clipboard com depuração
 function distribuirCampos(texto, container) {
+    console.log('🔍 Função distribuirCampos iniciada');
+    
     if (!texto || texto.trim() === '') {
+        console.warn('⚠️ Texto vazio. Nada para processar.');
         mostrarMensagem(container, 'warning', 'Texto vazio. Nada para processar.');
         return;
     }
     
-    console.log('Distribuindo campos a partir do clipboard:', texto.substring(0, 100) + '...');
+    console.log('🔍 Texto para processamento (primeiros 100 caracteres):', texto.substring(0, 100) + '...');
     
     // Definir padrões de reconhecimento para cada campo
     const padroes = [
@@ -1523,40 +1561,63 @@ function distribuirCampos(texto, container) {
     
     // Processar cada campo
     padroes.forEach(({ campo, regex }) => {
-        const match = texto.match(regex);
-        if (match && match[1]) {
-            const valorExtraido = match[1].trim();
-            
-            if (valorExtraido) {
-                // Preencher o campo correspondente
-                const elemento = container.querySelector(`#${campo}`);
+        console.log(`🔍 Processando campo: ${campo}`);
+        
+        try {
+            const match = texto.match(regex);
+            if (match && match[1]) {
+                const valorExtraido = match[1].trim();
+                console.log(`✅ Valor extraído para ${campo}:`, valorExtraido.substring(0, 30) + (valorExtraido.length > 30 ? '...' : ''));
                 
-                if (elemento) {
-                    // Verificar tipo de elemento
-                    if (elemento.tagName === 'INPUT') {
-                        // Elemento input
-                        elemento.value = valorExtraido;
-                    } else {
-                        // Elemento div ou contenteditable
-                        elemento.textContent = valorExtraido;
-                        
-                        // Atualizar contagem de caracteres, se aplicável
-                        atualizarContagemCaracteres(elemento, container);
-                    }
+                if (valorExtraido) {
+                    // Preencher o campo correspondente
+                    const elemento = container.querySelector(`#${campo}`);
                     
-                    camposPreenchidos++;
-                    console.log(`Campo ${campo} preenchido: ${valorExtraido.substring(0, 50)}${valorExtraido.length > 50 ? '...' : ''}`);
+                    if (elemento) {
+                        console.log(`🔍 Elemento para ${campo} encontrado, tipo:`, elemento.tagName);
+                        
+                        // Verificar tipo de elemento
+                        if (elemento.tagName === 'INPUT') {
+                            // Elemento input
+                            console.log(`🔍 Preenchendo input ${campo}`);
+                            elemento.value = valorExtraido;
+                        } else {
+                            // Elemento div ou contenteditable
+                            console.log(`🔍 Preenchendo contenteditable/div ${campo}`);
+                            elemento.textContent = valorExtraido;
+                            
+                            // Atualizar contagem de caracteres, se aplicável
+                            try {
+                                console.log(`🔍 Atualizando contagem de caracteres para ${campo}`);
+                                atualizarContagemCaracteres(elemento, container);
+                            } catch (countError) {
+                                console.error(`❌ Erro ao atualizar contagem para ${campo}:`, countError);
+                            }
+                        }
+                        
+                        camposPreenchidos++;
+                    } else {
+                        console.warn(`⚠️ Elemento #${campo} não encontrado no container`);
+                    }
                 }
+            } else {
+                console.log(`ℹ️ Nenhum valor encontrado para ${campo}`);
             }
+        } catch (regexError) {
+            console.error(`❌ Erro ao processar regex para ${campo}:`, regexError);
         }
     });
     
     // Mostrar mensagem de sucesso ou aviso
     if (camposPreenchidos > 0) {
+        console.log(`✅ ${camposPreenchidos} campos preenchidos com sucesso!`);
         mostrarMensagem(container, 'success', `${camposPreenchidos} campos preenchidos com sucesso!`);
     } else {
+        console.warn('⚠️ Nenhum campo identificado no texto');
         mostrarMensagem(container, 'warning', 'Nenhum campo identificado no texto. Verifique o formato.');
     }
+    
+    console.log('🔍 Função distribuirCampos finalizada');
 }
 
 // AQUI ADICIONAMOS AS 3 FUNÇÕES AUXILIARES - ANTES DA FUNÇÃO cleanup()
