@@ -1214,8 +1214,6 @@ function extrairValorCampo(texto, nomeCampo) {
         }
     }
 
-
-
 // Extrair Tipo de Guia
     const tipoGuiaValor = extrairValorCampo(textoSemHTML, 'Tipo de Guia');
     if (tipoGuiaValor) {
@@ -1487,11 +1485,77 @@ async function receberDados() {
         }
 
         const container = document.querySelector('#content-container');
+        
+        // Exibir mensagem de processamento
+        mostrarMensagem(container, 'info', 'Processando dados do clipboard...');
+        
+        // Distribuir dados para os campos
         distribuirCampos(dadosClipboard, container);
 
     } catch (error) {
         console.error('Erro ao acessar clipboard:', error);
-        mostrarMensagem(document.querySelector('#content-container'), 'error', 'Erro ao acessar clipboard.');
+        mostrarMensagem(document.querySelector('#content-container'), 'error', 'Erro ao acessar clipboard: ' + error.message);
+    }
+}
+
+// Função para distribuir campos a partir do texto do clipboard
+function distribuirCampos(texto, container) {
+    if (!texto || texto.trim() === '') {
+        mostrarMensagem(container, 'warning', 'Texto vazio. Nada para processar.');
+        return;
+    }
+    
+    console.log('Distribuindo campos a partir do clipboard:', texto.substring(0, 100) + '...');
+    
+    // Definir padrões de reconhecimento para cada campo
+    const padroes = [
+        { campo: 'numeroInquerito', regex: /Número de Inquérito:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i },
+        { campo: 'recebimentoDenuncia', regex: /Data do Recebimento da Denúncia:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i },
+        { campo: 'denuncia', regex: /Denúncia:[\s\n]*([\s\S]*?)(?=Data|Sentença|$)/i },
+        { campo: 'dataSentenca', regex: /Data Sentença:[\s\n]*([\s\S]*?)(?=Sentença|Acórdão|Trânsito|$)/i },
+        { campo: 'sentenca', regex: /Sentença:[\s\n]*([\s\S]*?)(?=Acórdão|Trânsito|$)/i },
+        { campo: 'acordao', regex: /Acórdão:[\s\n]*([\s\S]*?)(?=Trânsito|$)/i },
+        { campo: 'transitoJulgado', regex: /Trânsito em Julgado:[\s\n]*([\s\S]*?)(?=$)/i }
+    ];
+    
+    // Contador de campos preenchidos
+    let camposPreenchidos = 0;
+    
+    // Processar cada campo
+    padroes.forEach(({ campo, regex }) => {
+        const match = texto.match(regex);
+        if (match && match[1]) {
+            const valorExtraido = match[1].trim();
+            
+            if (valorExtraido) {
+                // Preencher o campo correspondente
+                const elemento = container.querySelector(`#${campo}`);
+                
+                if (elemento) {
+                    // Verificar tipo de elemento
+                    if (elemento.tagName === 'INPUT') {
+                        // Elemento input
+                        elemento.value = valorExtraido;
+                    } else {
+                        // Elemento div ou contenteditable
+                        elemento.textContent = valorExtraido;
+                        
+                        // Atualizar contagem de caracteres, se aplicável
+                        atualizarContagemCaracteres(elemento, container);
+                    }
+                    
+                    camposPreenchidos++;
+                    console.log(`Campo ${campo} preenchido: ${valorExtraido.substring(0, 50)}${valorExtraido.length > 50 ? '...' : ''}`);
+                }
+            }
+        }
+    });
+    
+    // Mostrar mensagem de sucesso ou aviso
+    if (camposPreenchidos > 0) {
+        mostrarMensagem(container, 'success', `${camposPreenchidos} campos preenchidos com sucesso!`);
+    } else {
+        mostrarMensagem(container, 'warning', 'Nenhum campo identificado no texto. Verifique o formato.');
     }
 }
 
