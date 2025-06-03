@@ -511,9 +511,9 @@ function setupFormButtons(container) {
   
 // SUBSTITUIÇÃO DA FUNÇÃO concatenarCampos EXISTENTE - LINHA 649
 
-
-
-
+/**
+ * Função modificada para concatenar campos com tratamento especial para erros de OCR
+ */
 async function concatenarCampos(container) {
     // Mostrar overlay de processamento se existir
     const processingOverlay = document.getElementById('processingOverlay');
@@ -532,6 +532,7 @@ async function concatenarCampos(container) {
         
         // 2. Verificar disponibilidade do Scribe.js
         const isScribeAvailable = typeof scribe !== 'undefined';
+        let isScribeWorking = isScribeAvailable;
         
         if (!isScribeAvailable) {
             console.warn('Scribe.js não está disponível. Será usado o modo alternativo sem processamento de PDF.');
@@ -551,6 +552,7 @@ async function concatenarCampos(container) {
         
         // 4. Processar cada campo sequencialmente
         const resultados = {};
+        let errosOCR = 0;
         
         for (const campo of camposParaProcessar) {
             const elemento = container.querySelector(`#${campo.id}`);
@@ -564,9 +566,33 @@ async function concatenarCampos(container) {
                 // Verificar se é link e processar
                 if (isLink(conteudo)) {
                     console.log(`Processando conteúdo: ${campo.nome} - ${conteudo}`);
-                    if (isScribeAvailable) {
-                        // Usar Scribe se disponível
-                        resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
+                    if (isScribeWorking) {
+                        try {
+                            // Usar Scribe se disponível
+                            resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
+                            
+                            // Verificar se a resposta indica um erro
+                            if (resultados[campo.id].includes('[Não foi possível extrair texto')) {
+                                errosOCR++;
+                                // Se tivermos muitos erros, desabilitar o Scribe para os próximos campos
+                                if (errosOCR >= 2) {
+                                    isScribeWorking = false;
+                                    console.warn('Múltiplos erros de OCR detectados. Desabilitando processamento via Scribe.');
+                                    if (processingText) {
+                                        processingText.textContent = 'Erros de OCR detectados. Usando modo alternativo...';
+                                    }
+                                }
+                            }
+                        } catch (ocrError) {
+                            console.error(`Erro de OCR no campo ${campo.nome}:`, ocrError);
+                            resultados[campo.id] = `[Link ${campo.nome}]: ${conteudo}`;
+                            errosOCR++;
+                            
+                            // Se tivermos muitos erros, desabilitar o Scribe
+                            if (errosOCR >= 2) {
+                                isScribeWorking = false;
+                            }
+                        }
                     } else {
                         // Alternativa: armazenar o link como está
                         resultados[campo.id] = `[Link ${campo.nome}]: ${conteudo}`;
@@ -621,25 +647,22 @@ async function concatenarCampos(container) {
         if (resumoElement) {
             resumoElement.innerHTML = resumoConcatenado.trim();
             
-            // Atualizar contagem de caracteres (usando função existente)
-            const contadorElement = container.querySelector('#resumoCount');
-            if (contadorElement) {
-                const textoSemTags = resumoConcatenado.replace(/<[^>]*>/g, '');
-                const count = textoSemTags.trim().length;
-                contadorElement.textContent = count + ' caracteres';
-                
-                if (count > 5000) {
-                    contadorElement.classList.add('limit-exceeded');
-                } else {
-                    contadorElement.classList.remove('limit-exceeded');
-                }
-            }
+            // Atualizar contagem de caracteres
+            atualizarContagemCaracteresScribe(resumoElement, container);
+        }
+        
+        // Mensagem baseada nos resultados
+        let mensagemStatus = 'Campos concatenados com sucesso!';
+        if (!isScribeAvailable) {
+            mensagemStatus = 'Campos concatenados com sucesso (modo alternativo - Scribe.js não disponível)';
+        } else if (!isScribeWorking) {
+            mensagemStatus = 'Campos concatenados com sucesso (modo alternativo - Problemas detectados com OCR)';
+        } else if (errosOCR > 0) {
+            mensagemStatus = `Campos concatenados com alguns problemas (${errosOCR} erro(s) de OCR)`;
         }
         
         // Mostrar mensagem de sucesso
-        mostrarMensagem(container, 'success', isScribeAvailable 
-            ? 'Campos concatenados com sucesso!' 
-            : 'Campos concatenados com sucesso (modo alternativo - Scribe.js não disponível)');
+        mostrarMensagem(container, errosOCR > 0 ? 'warning' : 'success', mensagemStatus);
         
     } catch (error) {
         console.error('Erro na concatenação:', error);
@@ -651,9 +674,6 @@ async function concatenarCampos(container) {
         }
     }
 }
-
-
-
 
 
 
@@ -1594,6 +1614,7 @@ function isLink(conteudo) {
     const linkPJEPattern = /pje\.tj[a-z]{2}\.jus\.br.*documento/i;
     return linkPJEPattern.test(texto);
 }
+
 async function processarPDFComScribe(url, nomeDocumento) {
     try {
         console.log(`Iniciando processamento com Scribe.js: ${nomeDocumento}`);
@@ -1613,33 +1634,68 @@ async function processarPDFComScribe(url, nomeDocumento) {
             return `[Link não processável ${nomeDocumento}]: ${url}`;
         }
         
-        // Extrair texto do PDF com timeout e tratamento de erro adequado
-        const resultado = await Promise.race([
-            scribe.extractText(url, {
-                timeout: 60000, // 60 segundos de timeout
-                pages: 'all'    // Processar todas as páginas
-            }),
-            // Timeout manual como fallback
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout ao processar o PDF')), 65000)
-            )
-        ]);
+        // Configuração de opções para o Scribe.js
+        const options = {
+            timeout: 60000,     // 60 segundos de timeout
+            pages: 'all',       // Processar todas as páginas
+            ocr: false,         // Inicialmente desativar OCR para tentar extração direta primeiro
+            scale: 1.5,         // Escala melhorada para extração de texto
+            verbose: true       // Ativar logs detalhados para diagnóstico
+        };
         
-        if (resultado && resultado.text) {
+        let resultado;
+        
+        try {
+            // Primeira tentativa: extração sem OCR (mais rápida)
+            console.log(`Tentando extrair texto sem OCR de: ${nomeDocumento}`);
+            resultado = await Promise.race([
+                scribe.extractText(url, options),
+                new Promise((_, reject) => setTimeout(() => 
+                    reject(new Error('Timeout na extração sem OCR')), 20000)
+                )
+            ]);
+            
+            // Verificar se o resultado tem conteúdo utilizável
+            if (!resultado || !resultado.text || resultado.text.trim().length < 20) {
+                console.log(`Texto insuficiente extraído sem OCR de ${nomeDocumento}, tentando com OCR...`);
+                throw new Error('Texto insuficiente sem OCR');
+            }
+            
+        } catch (noOcrError) {
+            console.warn(`Falha na extração sem OCR: ${noOcrError.message}. Tentando com OCR...`);
+            
+            try {
+                // Segunda tentativa: usar OCR (mais lenta, mas mais confiável para alguns documentos)
+                options.ocr = true;
+                
+                resultado = await Promise.race([
+                    scribe.extractText(url, options),
+                    new Promise((_, reject) => setTimeout(() => 
+                        reject(new Error('Timeout na extração com OCR')), 40000)
+                    )
+                ]);
+                
+            } catch (ocrError) {
+                console.error(`Erro na extração com OCR: ${ocrError.message}`);
+                throw new Error(`Falha na extração de texto com OCR: ${ocrError.message}`);
+            }
+        }
+        
+        // Verificação final do resultado
+        if (resultado && resultado.text && resultado.text.trim()) {
             console.log(`PDF processado com sucesso: ${nomeDocumento} - ${resultado.text.length} caracteres`);
             return resultado.text.trim();
         } else {
-            throw new Error('Nenhum texto extraído do PDF');
+            throw new Error('Nenhum texto utilizável extraído do documento');
         }
         
     } catch (error) {
         console.error(`Erro ao processar PDF ${nomeDocumento}:`, error);
         
         // Retornar link original com indicação de erro
-        return `[Não foi possível processar o link do ${nomeDocumento}]: ${url}\n\nErro: ${error.message}`;
+        return `[Não foi possível extrair texto do ${nomeDocumento}]: ${url}\n\nErro: ${error.message}\n\nSugestão: Tente acessar o documento diretamente.`;
     }
 }
-
 
 /**
  * Atualizar contagem de caracteres para Scribe
