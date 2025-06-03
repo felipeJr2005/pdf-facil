@@ -27,7 +27,7 @@
     <!-- Cabeçalho -->
     <header class="dashboard-header shadow-sm bg-white">
         <div class="header-left">
-            <button id="sidebar-toggle" class="btn btn-sm menu-toggle">
+            <button id="sidebar-toggle" class="btn btn-sm menu-toggle" aria-label="Toggle Sidebar">
                 <i class="fas fa-bars"></i>
             </button>
             <h1 class="dashboard-title">PjeFacil</h1>
@@ -36,7 +36,7 @@
             <div class="theme-switch">
                 <i class="fas fa-sun light-icon"></i>
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="theme-toggle">
+                    <input class="form-check-input" type="checkbox" id="theme-toggle" aria-label="Mudar tema">
                 </div>
                 <i class="fas fa-moon dark-icon"></i>
             </div>
@@ -125,5 +125,41 @@
     <footer class="dashboard-footer">
         <p class="mb-0">Desenvolvido por Felipe de Castro F. Junior - Todos os direitos reservados © 2025</p>
     </footer>
+
+    <!-- Script para compatibilidade com a API Clipboard -->
+    <script>
+    // Este script verifica a disponibilidade da API Clipboard e configura alternativas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar se a API Clipboard está disponível
+        const clipboardDisponivel = !!navigator.clipboard && typeof navigator.clipboard.readText === 'function';
+        console.log('API Clipboard disponível:', clipboardDisponivel);
+        
+        // Verificar se o contexto é seguro (necessário para a API Clipboard)
+        const isSecureContext = window.isSecureContext || 
+                               location.protocol === 'https:' || 
+                               location.hostname === 'localhost' || 
+                               location.hostname === '127.0.0.1';
+        console.log('Contexto seguro:', isSecureContext);
+        
+        // Definir variável global para informar o status da API
+        window.clipboardAPIStatus = {
+            disponivel: clipboardDisponivel,
+            contextoSeguro: isSecureContext,
+            permissaoVerificada: false,
+            permissaoConcedida: false
+        };
+        
+        // Se a API estiver disponível em um contexto seguro, verificar permissão
+        if (clipboardDisponivel && isSecureContext && navigator.permissions) {
+            navigator.permissions.query({name: 'clipboard-read'}).then(result => {
+                window.clipboardAPIStatus.permissaoVerificada = true;
+                window.clipboardAPIStatus.permissaoConcedida = result.state === 'granted';
+                console.log('Permissão do clipboard:', result.state);
+            }).catch(err => {
+                console.log('Não foi possível verificar permissão do clipboard:', err);
+            });
+        }
+    });
+    </script>
 </body>
 </html>
