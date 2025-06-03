@@ -510,6 +510,10 @@ function setupFormButtons(container) {
 }
   
 // SUBSTITUIÇÃO DA FUNÇÃO concatenarCampos EXISTENTE - LINHA 649
+
+
+
+
 async function concatenarCampos(container) {
     // Mostrar overlay de processamento se existir
     const processingOverlay = document.getElementById('processingOverlay');
@@ -526,7 +530,18 @@ async function concatenarCampos(container) {
         const recebimentoDenuncia = container.querySelector('#recebimentoDenuncia')?.value || '';
         const dataSentenca = container.querySelector('#dataSentenca')?.value || '';
         
-        // 2. Definir ordem de processamento (do mais rápido para o mais lento)
+        // 2. Verificar disponibilidade do Scribe.js
+        const isScribeAvailable = typeof scribe !== 'undefined';
+        
+        if (!isScribeAvailable) {
+            console.warn('Scribe.js não está disponível. Será usado o modo alternativo sem processamento de PDF.');
+            // Mostrar mensagem de aviso ao usuário
+            if (processingText) {
+                processingText.textContent = 'Scribe.js não disponível. Usando modo alternativo...';
+            }
+        }
+        
+        // 3. Definir ordem de processamento (do mais rápido para o mais lento)
         const camposParaProcessar = [
             { id: 'transitoJulgado', nome: 'Trânsito em Julgado', prioridade: 1 },
             { id: 'denuncia', nome: 'Denúncia', prioridade: 2 },
@@ -534,7 +549,7 @@ async function concatenarCampos(container) {
             { id: 'sentenca', nome: 'Sentença', prioridade: 4 }
         ];
         
-        // 3. Processar cada campo sequencialmente
+        // 4. Processar cada campo sequencialmente
         const resultados = {};
         
         for (const campo of camposParaProcessar) {
@@ -548,8 +563,14 @@ async function concatenarCampos(container) {
                 
                 // Verificar se é link e processar
                 if (isLink(conteudo)) {
-                    console.log(`Processando PDF: ${campo.nome} - ${conteudo}`);
-                    resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
+                    console.log(`Processando conteúdo: ${campo.nome} - ${conteudo}`);
+                    if (isScribeAvailable) {
+                        // Usar Scribe se disponível
+                        resultados[campo.id] = await processarPDFComScribe(conteudo, campo.nome);
+                    } else {
+                        // Alternativa: armazenar o link como está
+                        resultados[campo.id] = `[Link ${campo.nome}]: ${conteudo}`;
+                    }
                 } else if (conteudo.trim()) {
                     console.log(`Usando texto existente: ${campo.nome}`);
                     resultados[campo.id] = conteudo.trim();
@@ -559,7 +580,7 @@ async function concatenarCampos(container) {
             }
         }
         
-        // 4. Montar resumo concatenado
+        // 5. Montar resumo concatenado
         if (processingText) {
             processingText.textContent = 'Montando resumo final...';
         }
@@ -595,7 +616,7 @@ async function concatenarCampos(container) {
             }
         });
         
-        // 5. Atualizar campo resumo
+        // 6. Atualizar campo resumo
         const resumoElement = container.querySelector('#resumo');
         if (resumoElement) {
             resumoElement.innerHTML = resumoConcatenado.trim();
@@ -616,7 +637,9 @@ async function concatenarCampos(container) {
         }
         
         // Mostrar mensagem de sucesso
-        mostrarMensagem(container, 'success', 'Campos concatenados com sucesso!');
+        mostrarMensagem(container, 'success', isScribeAvailable 
+            ? 'Campos concatenados com sucesso!' 
+            : 'Campos concatenados com sucesso (modo alternativo - Scribe.js não disponível)');
         
     } catch (error) {
         console.error('Erro na concatenação:', error);
@@ -628,6 +651,13 @@ async function concatenarCampos(container) {
         }
     }
 }
+
+
+
+
+
+
+
 
 // Função para limpar campos do editor
 function limparCamposEditor(container) {
@@ -1564,10 +1594,6 @@ function isLink(conteudo) {
     const linkPJEPattern = /pje\.tj[a-z]{2}\.jus\.br.*documento/i;
     return linkPJEPattern.test(texto);
 }
-
-/**
- * Processa PDF usando Scribe.js
- */
 async function processarPDFComScribe(url, nomeDocumento) {
     try {
         console.log(`Iniciando processamento com Scribe.js: ${nomeDocumento}`);
@@ -1577,11 +1603,27 @@ async function processarPDFComScribe(url, nomeDocumento) {
             throw new Error('Scribe.js não carregado. Verifique a importação do script.');
         }
         
-        // Extrair texto do PDF
-        const resultado = await scribe.extractText(url, {
-            timeout: 60000, // 60 segundos de timeout
-            pages: 'all'    // Processar todas as páginas
-        });
+        // Verificar se o URL é válido
+        if (!url || typeof url !== 'string' || !url.trim()) {
+            throw new Error('URL inválido ou vazio');
+        }
+        
+        // Tratamento para URLs que não são HTTP/HTTPS
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return `[Link não processável ${nomeDocumento}]: ${url}`;
+        }
+        
+        // Extrair texto do PDF com timeout e tratamento de erro adequado
+        const resultado = await Promise.race([
+            scribe.extractText(url, {
+                timeout: 60000, // 60 segundos de timeout
+                pages: 'all'    // Processar todas as páginas
+            }),
+            // Timeout manual como fallback
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout ao processar o PDF')), 65000)
+            )
+        ]);
         
         if (resultado && resultado.text) {
             console.log(`PDF processado com sucesso: ${nomeDocumento} - ${resultado.text.length} caracteres`);
@@ -1594,9 +1636,10 @@ async function processarPDFComScribe(url, nomeDocumento) {
         console.error(`Erro ao processar PDF ${nomeDocumento}:`, error);
         
         // Retornar link original com indicação de erro
-        return `[ERRO - ${nomeDocumento}]: ${url}\n\nErro: ${error.message}`;
+        return `[Não foi possível processar o link do ${nomeDocumento}]: ${url}\n\nErro: ${error.message}`;
     }
 }
+
 
 /**
  * Atualizar contagem de caracteres para Scribe
