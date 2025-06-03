@@ -1475,150 +1475,75 @@ function mostrarMensagem(container, tipo, texto) {
 
 // ===== FUNÇÕES PARA RECEBER DADOS - VERSÃO CORRIGIDA =====
 
+
+// Função simples para receber dados do clipboard e distribuir nos campos
 async function receberDados() {
-    console.log('🔍 Função receberDados iniciada');
-    
     try {
-        console.log('🔍 Tentando acessar clipboard...');
-        
-        // Verificar se a API Clipboard está disponível
-        if (!navigator.clipboard) {
-            console.error('❌ API Clipboard não disponível neste navegador ou contexto');
-            mostrarMensagem(document.querySelector('#content-container'), 'error', 'API Clipboard não disponível. Verifique se está usando HTTPS ou localhost.');
-            return;
-        }
-        
-        // Tentar ler do clipboard
-        const dadosClipboard = await navigator.clipboard.readText()
-            .catch(err => {
-                console.error('❌ Erro específico ao ler clipboard:', err);
-                throw new Error(`Falha ao ler clipboard: ${err.message}`);
-            });
-        
-        console.log('✅ Dados obtidos do clipboard:', dadosClipboard ? 'Texto obtido com sucesso' : 'Texto vazio');
+        // Obter dados do clipboard
+        const dadosClipboard = await navigator.clipboard.readText();
         
         if (!dadosClipboard || dadosClipboard.trim() === '') {
-            console.warn('⚠️ Clipboard vazio');
-            mostrarMensagem(document.querySelector('#content-container'), 'warning', 'Clipboard vazio. Tente copiar o texto novamente.');
-            return;
-        }
-
-        const container = document.querySelector('#content-container');
-        if (!container) {
-            console.error('❌ Elemento #content-container não encontrado');
-            alert('Erro: Container principal não encontrado na página.');
+            alert('Clipboard vazio. Copie o texto antes de clicar no botão.');
             return;
         }
         
-        console.log('🔍 Container encontrado, exibindo mensagem de processamento');
-        mostrarMensagem(container, 'info', 'Processando dados do clipboard...');
+        // Normalizar quebras de linha
+        const dadosNormalizados = dadosClipboard.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         
-        // Verificar formato dos dados - log para depuração
-        console.log('🔍 Primeiros 100 caracteres dos dados:', dadosClipboard.substring(0, 100));
-        console.log('🔍 Chamando distribuirCampos...');
+        // Extrair valores com regex simples
+        const numeroInquerito = extrairValor(dadosNormalizados, /Número de Inquérito:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i);
+        const dataRecebimento = extrairValor(dadosNormalizados, /Data do Recebimento da Denúncia:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i);
+        const dataSentenca = extrairValor(dadosNormalizados, /Data Sentença:[\s\n]*([\s\S]*?)(?=Sentença|Acórdão|Trânsito|$)/i);
+        const linkDenuncia = extrairValor(dadosNormalizados, /Denúncia:[\s\n]*(https?:\/\/[^\s\n]+)/i);
+        const linkSentenca = extrairValor(dadosNormalizados, /Sentença:[\s\n]*(https?:\/\/[^\s\n]+)/i);
+        const linkAcordao = extrairValor(dadosNormalizados, /Acórdão:[\s\n]*(https?:\/\/[^\s\n]+)/i);
+        const linkTransitoJulgado = extrairValor(dadosNormalizados, /Trânsito em Julgado:[\s\n]*(https?:\/\/[^\s\n]+)/i);
         
-        // Distribuir dados para os campos com tratamento de erro
-        try {
-            distribuirCampos(dadosClipboard, container);
-        } catch (distError) {
-            console.error('❌ Erro ao distribuir campos:', distError);
-            mostrarMensagem(container, 'error', `Erro ao processar dados: ${distError.message}`);
-        }
-
+        // Preencher campos de input
+        preencherCampo('#numeroInquerito', numeroInquerito, true);
+        preencherCampo('#recebimentoDenuncia', dataRecebimento, true);
+        preencherCampo('#dataSentenca', dataSentenca, true);
+        
+        // Preencher campos de contenteditable
+        preencherCampo('#denuncia', linkDenuncia, false);
+        preencherCampo('#sentenca', linkSentenca, false);
+        preencherCampo('#acordao', linkAcordao, false);
+        preencherCampo('#transitoJulgado', linkTransitoJulgado, false);
+        
+        // Notificar usuário
+        alert('Dados preenchidos com sucesso!');
     } catch (error) {
-        console.error('❌ Erro geral ao acessar clipboard:', error);
-        mostrarMensagem(document.querySelector('#content-container') || document.body, 'error', 'Erro ao acessar clipboard: ' + error.message);
+        console.error('Erro ao acessar clipboard:', error);
+        alert('Erro ao acessar clipboard. Verifique se o navegador tem permissão para acessar a área de transferência.');
     }
-    
-    console.log('🔍 Função receberDados finalizada');
 }
 
-// Função para distribuir campos a partir do texto do clipboard com depuração
-function distribuirCampos(texto, container) {
-    console.log('🔍 Função distribuirCampos iniciada');
-    
-    if (!texto || texto.trim() === '') {
-        console.warn('⚠️ Texto vazio. Nada para processar.');
-        mostrarMensagem(container, 'warning', 'Texto vazio. Nada para processar.');
-        return;
-    }
-    
-    console.log('🔍 Texto para processamento (primeiros 100 caracteres):', texto.substring(0, 100) + '...');
-    
-    // Definir padrões de reconhecimento para cada campo
-    const padroes = [
-        { campo: 'numeroInquerito', regex: /Número de Inquérito:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i },
-        { campo: 'recebimentoDenuncia', regex: /Data do Recebimento da Denúncia:[\s\n]*([\s\S]*?)(?=Data|Denúncia|$)/i },
-        { campo: 'denuncia', regex: /Denúncia:[\s\n]*([\s\S]*?)(?=Data|Sentença|$)/i },
-        { campo: 'dataSentenca', regex: /Data Sentença:[\s\n]*([\s\S]*?)(?=Sentença|Acórdão|Trânsito|$)/i },
-        { campo: 'sentenca', regex: /Sentença:[\s\n]*([\s\S]*?)(?=Acórdão|Trânsito|$)/i },
-        { campo: 'acordao', regex: /Acórdão:[\s\n]*([\s\S]*?)(?=Trânsito|$)/i },
-        { campo: 'transitoJulgado', regex: /Trânsito em Julgado:[\s\n]*([\s\S]*?)(?=$)/i }
-    ];
-    
-    // Contador de campos preenchidos
-    let camposPreenchidos = 0;
-    
-    // Processar cada campo
-    padroes.forEach(({ campo, regex }) => {
-        console.log(`🔍 Processando campo: ${campo}`);
-        
-        try {
-            const match = texto.match(regex);
-            if (match && match[1]) {
-                const valorExtraido = match[1].trim();
-                console.log(`✅ Valor extraído para ${campo}:`, valorExtraido.substring(0, 30) + (valorExtraido.length > 30 ? '...' : ''));
-                
-                if (valorExtraido) {
-                    // Preencher o campo correspondente
-                    const elemento = container.querySelector(`#${campo}`);
-                    
-                    if (elemento) {
-                        console.log(`🔍 Elemento para ${campo} encontrado, tipo:`, elemento.tagName);
-                        
-                        // Verificar tipo de elemento
-                        if (elemento.tagName === 'INPUT') {
-                            // Elemento input
-                            console.log(`🔍 Preenchendo input ${campo}`);
-                            elemento.value = valorExtraido;
-                        } else {
-                            // Elemento div ou contenteditable
-                            console.log(`🔍 Preenchendo contenteditable/div ${campo}`);
-                            elemento.textContent = valorExtraido;
-                            
-                            // Atualizar contagem de caracteres, se aplicável
-                            try {
-                                console.log(`🔍 Atualizando contagem de caracteres para ${campo}`);
-                                atualizarContagemCaracteres(elemento, container);
-                            } catch (countError) {
-                                console.error(`❌ Erro ao atualizar contagem para ${campo}:`, countError);
-                            }
-                        }
-                        
-                        camposPreenchidos++;
-                    } else {
-                        console.warn(`⚠️ Elemento #${campo} não encontrado no container`);
-                    }
-                }
-            } else {
-                console.log(`ℹ️ Nenhum valor encontrado para ${campo}`);
-            }
-        } catch (regexError) {
-            console.error(`❌ Erro ao processar regex para ${campo}:`, regexError);
-        }
-    });
-    
-    // Mostrar mensagem de sucesso ou aviso
-    if (camposPreenchidos > 0) {
-        console.log(`✅ ${camposPreenchidos} campos preenchidos com sucesso!`);
-        mostrarMensagem(container, 'success', `${camposPreenchidos} campos preenchidos com sucesso!`);
-    } else {
-        console.warn('⚠️ Nenhum campo identificado no texto');
-        mostrarMensagem(container, 'warning', 'Nenhum campo identificado no texto. Verifique o formato.');
-    }
-    
-    console.log('🔍 Função distribuirCampos finalizada');
+// Função auxiliar para extrair valor usando regex
+function extrairValor(texto, regex) {
+    const match = texto.match(regex);
+    return match && match[1] ? match[1].trim() : '';
 }
+
+// Função auxiliar para preencher campo
+function preencherCampo(seletor, valor, isInput) {
+    if (!valor) return;
+    
+    const campo = document.querySelector(seletor);
+    if (!campo) return;
+    
+    if (isInput) {
+        campo.value = valor;
+    } else {
+        campo.textContent = valor;
+        
+        // Atualizar contador de caracteres se existir
+        const countElement = document.querySelector(`${seletor}Count`);
+        if (countElement) {
+            countElement.textContent = `${valor.length} caracteres`;
+        }
+    }
+}
+
 
 // AQUI ADICIONAMOS AS 3 FUNÇÕES AUXILIARES - ANTES DA FUNÇÃO cleanup()
 
