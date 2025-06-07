@@ -515,8 +515,28 @@
                 textContent.innerHTML = '';
                 let fullText = "";
                 
-                // Verificar se a resposta possui a estrutura esperada
-                if (data && data.text && Array.isArray(data.text)) {
+                // Verificar o formato da resposta
+                if (data && data.pages_text && Array.isArray(data.pages_text)) {
+                    // Formato com páginas individuais como objetos
+                    data.pages_text.forEach(page => {
+                        const pageElement = document.createElement('div');
+                        pageElement.className = 'text-page';
+                        
+                        const pageTitle = document.createElement('div');
+                        pageTitle.className = 'text-page-title';
+                        pageTitle.textContent = `Página ${page.page}`;
+                        
+                        const pageContent = document.createElement('div');
+                        pageContent.textContent = page.text;
+                        
+                        pageElement.appendChild(pageTitle);
+                        pageElement.appendChild(pageContent);
+                        textContent.appendChild(pageElement);
+                        
+                        fullText += `--- Página ${page.page} ---\n${page.text}\n\n`;
+                    });
+                } else if (data && data.text && Array.isArray(data.text)) {
+                    // Formato antigo
                     data.text.forEach(page => {
                         const pageElement = document.createElement('div');
                         pageElement.className = 'text-page';
@@ -534,8 +554,22 @@
                         
                         fullText += `--- Página ${page.page} ---\n${page.content}\n\n`;
                     });
+                } else if (data && data.full_text) {
+                    // Formato com texto completo em uma única string
+                    fullText = data.full_text;
+                    
+                    // Criar um único elemento para o texto completo
+                    const singlePage = document.createElement('div');
+                    singlePage.className = 'text-page';
+                    
+                    const pageContent = document.createElement('div');
+                    pageContent.style.whiteSpace = 'pre-wrap';
+                    pageContent.textContent = data.full_text;
+                    
+                    singlePage.appendChild(pageContent);
+                    textContent.appendChild(singlePage);
                 } else {
-                    // Formato alternativo - texto sem páginas ou formato diferente
+                    // Outros formatos ou fallback
                     let extractedContent = '';
                     
                     if (typeof data.text === 'string') {
@@ -558,8 +592,21 @@
                 }
                 
                 extractedText = fullText;
-                const pageText = data.total_pages === 1 ? "página" : "páginas";
-                const totalPages = data.total_pages || (data.text && Array.isArray(data.text) ? data.text.length : 1);
+                // Determinar o número de páginas
+                let totalPages = 0;
+                if (data.total_pages) {
+                    totalPages = data.total_pages;
+                } else if (data.pages) {
+                    totalPages = data.pages;
+                } else if (data.pages_text && Array.isArray(data.pages_text)) {
+                    totalPages = data.pages_text.length;
+                } else if (data.text && Array.isArray(data.text)) {
+                    totalPages = data.text.length;
+                } else {
+                    totalPages = 1;
+                }
+                
+                const pageText = totalPages === 1 ? "página" : "páginas";
                 
                 // Preparar link de download
                 const blob = new Blob([fullText], { type: 'text/plain' });
