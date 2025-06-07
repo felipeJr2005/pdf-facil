@@ -10,6 +10,17 @@
     <link rel="stylesheet" href="unified-pdf-tools.css">
     
     <style>
+        /* Controle de overflow para evitar problemas com barra de rolagem */
+        html, body {
+            overflow-x: hidden;
+        }
+        
+        body {
+            position: relative;
+            width: 100%;
+            max-width: 100vw;
+        }
+        
         /* Estilos específicos para conversão de texto */
         .text-container {
             background: #ffffff;
@@ -18,6 +29,7 @@
             padding: 1rem;
             max-height: 400px;
             overflow-y: auto;
+            overflow-x: hidden;
             margin-top: 1rem;
             font-family: monospace;
             white-space: pre-wrap;
@@ -29,6 +41,8 @@
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px dashed var(--color-gray-300);
+            max-width: 100%;
+            overflow-wrap: break-word;
         }
 
         .text-page-title {
@@ -56,11 +70,24 @@
             display: none;
             box-shadow: var(--shadow-md);
         }
+        
+        /* Corrigir overflow da área de preview */
+        .pdf-preview-grid {
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 600px;
+        }
+        
+        /* Garantir que seletores não causem rolagem horizontal */
+        select.settings-input {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body class="converter-pdf">
     <div class="function-container" style="padding-top: 0; padding-bottom: 0;">
-        <div class="container" style="padding: 0;">
+        <div class="container" style="padding: 0; max-width: 100%; overflow-x: hidden;">
             <div class="card upload-area" style="margin-bottom: 1.25rem;">
                 <div class="card-body" style="padding: 1rem;">
                     <div class="drop-zone" id="dropZone" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9); border: 1.5px dashed #4361ee; padding: 1.5rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 100px;">
