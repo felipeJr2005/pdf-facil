@@ -3,607 +3,1790 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrair Texto de PDF</title>
-    <!-- CSS Global -->
-    <link rel="stylesheet" href="unified-pdf-tools.css">
+    <title>PDF - Extração de Texto via API</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Scripts PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    
-    <style>
-        /* Estilos específicos para visualização de texto */
-        .text-preview-container {
-            background: white;
-            border: 1px solid var(--color-gray-200);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 1rem;
-            font-family: monospace;
-            white-space: pre-wrap;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-
-        .text-page {
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px dashed var(--color-gray-300);
-            max-width: 100%;
-            overflow-wrap: break-word;
-        }
-
-        .text-page-title {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--color-primary);
-        }
-
-        /* Estilos para seleção de páginas */
-        .page-preview.excluded {
-            opacity: 0.5;
-            filter: grayscale(100%);
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"></script>
+    <!-- Sortable.js para arrastar e soltar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
-<body class="converter-text">
+
+<style>
+/* CSS COMPLETO STANDALONE - NÃO DEPENDE DE ARQUIVOS EXTERNOS */
+
+:root {
+    --color-primary: #4361ee;
+    --color-primary-dark: #3b56d9;
+    --color-primary-light: #e8f0ff;
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+.function-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--color-gray-50);
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed var(--color-primary);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: var(--color-primary-dark);
+    background: rgba(67, 97, 238, 0.05);
+    transform: translateY(-2px);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--color-primary);
+    background: white;
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 0.5rem;
+}
+
+.upload-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.upload-subtext {
+    font-size: 1rem;
+    color: var(--color-gray-600);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Info Block */
+.info-block {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.info-line {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    color: var(--color-gray-700);
+}
+
+.info-line i {
+    color: var(--color-success);
+    width: 1.25rem;
+}
+
+/* Status Messages */
+.status-message {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.status-message.success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-message.warning {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-message.error {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* Botões */
+.btn, .extract-btn, .pdf-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.extract-btn {
+    background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+.extract-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+.extract-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pdf-action-button {
+    background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+    color: white;
+}
+
+.pdf-action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Progress */
+.progress-container {
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 0.5rem;
+    background-color: var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    appearance: none;
+}
+
+.progress-bar::-webkit-progress-bar {
+    background-color: var(--color-gray-200);
+    border-radius: var(--radius-sm);
+}
+
+.progress-bar::-webkit-progress-value {
+    background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+    border-radius: var(--radius-sm);
+}
+
+.progress-text {
+    margin-top: 0.75rem;
+    text-align: center;
+    color: var(--color-gray-600);
+    font-size: 0.9rem;
+}
+
+/* PDF Preview Grid */
+.pdf-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 1rem 0;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.pdf-page-preview {
+    position: relative;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    overflow: hidden;
+}
+
+.pdf-page-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+}
+
+.pdf-page-preview canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.pdf-page-number {
+    background: var(--color-gray-900);
+    color: white;
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Botões de controle das páginas */
+.drag-handle, .delete-btn {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+    font-size: 0.9rem;
+}
+
+.drag-handle {
+    top: 0.5rem;
+    left: 0.5rem;
+    background: rgba(67, 97, 238, 0.9);
+    color: white;
+    cursor: grab;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.delete-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+.pdf-page-preview:hover .drag-handle,
+.pdf-page-preview:hover .delete-btn {
+    opacity: 1;
+}
+
+.drag-handle:hover {
+    background: rgba(67, 97, 238, 1);
+    transform: scale(1.1);
+}
+
+.delete-btn:hover {
+    background: rgba(239, 68, 68, 1);
+    transform: scale(1.1);
+}
+
+/* Navegação de páginas */
+.page-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.page-nav-button {
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-md);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.page-nav-button:hover:not(:disabled) {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.page-nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--color-gray-100);
+}
+
+.page-nav-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin: 0 1rem;
+    min-width: 120px;
+    text-align: center;
+}
+
+/* Editor */
+.editor-toolbar {
+    display: flex;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    gap: 0.25rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    border-right: 1px solid var(--color-gray-200);
+    padding-right: 0.5rem;
+    margin-right: 0.5rem;
+    gap: 0.25rem;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+}
+
+.editor-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--color-gray-600);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.editor-btn:hover {
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-300);
+}
+
+.editor-btn.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.format-select {
+    height: 36px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    padding: 0 0.5rem;
+    background-color: white;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    min-width: 100px;
+}
+
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+}
+
+.color-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--color-gray-200);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+}
+
+.color-btn[data-color="#ffff00"] { background-color: #ffff00; }
+.color-btn[data-color="#90EE90"] { background-color: #90EE90; }
+.color-btn[data-color="#ADD8E6"] { background-color: #ADD8E6; }
+.color-btn[data-color="#FFB6C1"] { background-color: #FFB6C1; }
+
+.editor-content {
+    padding: 1rem;
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.editor-content:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+/* Painel de busca */
+.find-replace-panel {
+    background-color: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+.panel-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-gray-50);
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--color-gray-500);
+    padding: 0.25rem;
+}
+
+.panel-content {
+    padding: 1rem;
+}
+
+.control-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.panel-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+/* Overlay de processamento */
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.processing-message {
+    background-color: white;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+}
+
+.processing-message i {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+}
+
+.processing-message p {
+    color: var(--color-gray-700);
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+/* Animações */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-drag {
+    transform: rotate(5deg);
+}
+
+/* Button Container */
+.button-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.button-container > * {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .function-container {
+        padding: 1rem 0.5rem;
+    }
+    
+    .pdf-preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .toolbar-group {
+        border-right: none;
+        padding-right: 0;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .editor-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .panel-actions {
+        flex-direction: column;
+    }
+    
+    .button-container {
+        flex-direction: column;
+    }
+}
+</style>
+
+<body class="converter-ocr">
     <div class="function-container">
         <!-- Área de Upload -->
         <div class="card upload-area">
             <div class="card-header">
                 <h2 class="card-title">
-                    <i class="fas fa-file-alt"></i> Extrair Texto de PDF
+                    <i class="fas fa-file-pdf"></i> PDF - Extração de Texto via API
                 </h2>
             </div>
             <div class="card-body">
                 <div class="drop-zone" id="dropZone">
                     <div class="drop-zone-content">
                         <i class="fas fa-file-pdf upload-icon"></i>
-                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>                        
-                        <input type="file" id="pdfInput" accept="application/pdf,.pdf" class="hidden">
+                        <div class="upload-text">Selecione ou Arraste o arquivo PDF</div>
+                        <div class="upload-subtext">PDF (máx. 10MB)</div>
+                        <input type="file" id="fileInput" accept=".pdf,application/pdf" class="hidden">
                     </div>
                 </div>
                 <div id="fileInfo" class="mt-3"></div>
             </div>
         </div>
 
-        <!-- Painel de Controle - Inicialmente Escondido -->
-        <div class="card hidden" id="controlPanel">
+        <!-- Área de Controle -->
+        <div class="card control-panel" id="controlPanel" style="display: none;">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-cog"></i> Configuração de Extração
+                    <i class="fas fa-cogs"></i> Configuração de Extração
+                </h3>
+                <div id="pagesExtracted" class="mt-2" style="display: none;">
+                    Páginas Excluídas: <span id="excludedPagesList">0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <button id="recognizeBtn" class="extract-btn" disabled>
+                    <i class="fas fa-magic"></i> Extrair Texto do PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de status e mensagens -->
+        <div id="statusArea" style="display: none; margin-bottom: 20px;"></div>
+
+        <!-- Área de progresso -->
+        <div class="card hidden" id="progressContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-spinner fa-spin"></i> Processando
                 </h3>
             </div>
             <div class="card-body">
-                <div class="settings-panel">
-                    <button id="extractButton" class="pdf-action-button">
-                        <i class="fas fa-file-alt"></i>
-                        Extrair Texto do PDF
-                    </button>
-                </div>
-
-                <div id="status" class="hidden status-message"></div>
-                <div id="compressionInfo" class="hidden compression-info"></div>
-                <progress id="progressBar" value="0" max="100" class="hidden w-full"></progress>
-
-                <div id="buttonContainer" class="hidden">
-                    <a id="downloadButton" href="#" class="download-link" download>
-                        <i class="fas fa-download"></i>
-                        Baixar Texto Extraído (TXT)
-                    </a>
+                <div class="progress-container">
+                    <progress id="progressBar" class="progress-bar" value="0" max="100"></progress>
+                    <div class="progress-text" id="progressText">Extraindo texto...</div>
                 </div>
             </div>
         </div>
 
-        <!-- Container de Páginas - Inicialmente Escondido -->
-        <div class="card hidden" id="previewContainer">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-eye"></i>
-                    Pré-visualização das Páginas
-                </h2>
-            </div>
-            <div class="card-body">
-                <div id="pdfPreviewGrid" class="pdf-preview-grid"></div>
-            </div>
-        </div>
-
-        <!-- Container de Resultado do Texto -->
-        <div class="card hidden" id="textResultContainer">
+        <!-- Visualização das páginas do PDF -->
+        <div class="card preview-container hidden" id="pdfPreviewContainer">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-file-alt"></i> Texto Extraído
+                    <i class="fas fa-file-pdf"></i> Clique para Processar - é possível remover e ordenar!
                 </h3>
             </div>
             <div class="card-body">
-                <div id="textContent" class="text-preview-container"></div>
+                <div id="pdfPreview" class="pdf-preview-grid"></div>
                 
-                <div class="button-container mt-4">
-                    <button id="copyTextButton" class="pdf-action-button" style="background-color: var(--color-primary-light); color: var(--color-primary);">
-                        <i class="fas fa-copy"></i>
-                        Copiar Todo o Texto
+                <!-- Navegação de páginas do grid -->
+                <div class="page-navigation hidden" id="gridPagination">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de ação para texto extraído -->
+        <div class="card hidden" id="textActions">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-file-alt"></i> Ações do Texto
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="button-container">
+                    <button id="copyText" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                        <i class="fas fa-copy"></i> Copiar Texto
+                    </button>
+                    <button id="downloadText" class="pdf-action-button">
+                        <i class="fas fa-download"></i> Baixar como TXT
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Editor de texto extraído -->
+        <div class="card hidden" id="editorContainer">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-edit"></i> Texto Extraído
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Barra de ferramentas do editor -->
+                <div class="editor-toolbar">
+                    <!-- Grupo de formatação de texto -->
+                    <div class="toolbar-group text-format">
+                        <button class="editor-btn" data-command="bold" title="Negrito">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button class="editor-btn" data-command="italic" title="Itálico">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button class="editor-btn" data-command="underline" title="Sublinhado">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <button class="editor-btn" data-command="strikethrough" title="Tachado">
+                            <i class="fas fa-strikethrough"></i>
+                        </button>
+                        <select class="format-select" id="formatSize" title="Tamanho da fonte">
+                            <option value="3">Pequeno</option>
+                            <option value="4" selected>Normal</option>
+                            <option value="5">Grande</option>
+                            <option value="6">Maior</option>
+                            <option value="7">Muito grande</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Grupo de alinhamento -->
+                    <div class="toolbar-group alignment">
+                        <button class="editor-btn" data-command="justifyLeft" title="Alinhar à Esquerda">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyCenter" title="Centralizar">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyRight" title="Alinhar à Direita">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                        <button class="editor-btn" data-command="justifyFull" title="Justificar">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de listas -->
+                    <div class="toolbar-group lists">
+                        <button class="editor-btn" data-command="insertUnorderedList" title="Lista com marcadores">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button class="editor-btn" data-command="insertOrderedList" title="Lista numerada">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <button class="editor-btn" data-command="indent" title="Aumentar recuo">
+                            <i class="fas fa-indent"></i>
+                        </button>
+                        <button class="editor-btn" data-command="outdent" title="Diminuir recuo">
+                            <i class="fas fa-outdent"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de destaque -->
+                    <div class="toolbar-group highlight">
+                        <button class="editor-btn" id="textHighlight" title="Destacar texto">
+                            <i class="fas fa-highlighter"></i>
+                        </button>
+                        <div class="color-picker">
+                            <button class="color-btn" data-color="#ffff00" title="Amarelo"></button>
+                            <button class="color-btn" data-color="#90EE90" title="Verde"></button>
+                            <button class="color-btn" data-color="#ADD8E6" title="Azul"></button>
+                            <button class="color-btn" data-color="#FFB6C1" title="Rosa"></button>
+                        </div>
+                        <button class="editor-btn" data-command="removeFormat" title="Remover formatação">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Grupo de edição avançada -->
+                    <div class="toolbar-group advanced">
+                        <button class="editor-btn" id="findReplaceBtn" title="Localizar e substituir">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="editor-btn" id="spellcheckBtn" title="Verificar ortografia">
+                            <i class="fas fa-spell-check"></i>
+                        </button>
+                        <button class="editor-btn" id="clearSpacesBtn" title="Limpar espaços extras">
+                            <i class="fas fa-broom"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Painel de busca e substituição fixo -->
+                <div id="findReplacePanel" class="find-replace-panel" style="display: none;">
+                    <div class="panel-header">
+                        <span>Localizar e substituir</span>
+                        <button id="closeFindReplace" class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <!-- Campo de entrada para busca -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="findText" class="control-input" placeholder="Texto a ser localizado">
+                        </div>
+                        
+                        <!-- Campo para texto de substituição (opcional) -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="replaceText" class="control-input" placeholder="Substituir por">
+                        </div>
+                        
+                        <!-- Botões de ação -->
+                        <div class="panel-actions">
+                            <button id="findNextBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-search"></i> Localizar próximo
+                            </button>
+                            <button id="replaceBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-exchange-alt"></i> Substituir
+                            </button>
+                            <button id="replaceAllBtn" class="btn" style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white;">
+                                <i class="fas fa-sync-alt"></i> Substituir todos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de edição -->
+                <div id="editorContent" class="editor-content" contenteditable="true"></div>
             </div>
         </div>
     </div>
 
+    <!-- Overlay de processamento -->
     <div class="processing-overlay" id="processingOverlay">
         <div class="processing-message">
             <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p class="mt-3" id="processingText">Processando PDF...</p>
+            <p id="processingText">Processando extração...</p>
         </div>
     </div>
 
     <script>
-        // Configuração inicial do PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+       // Configuração do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando aplicação PDF Text Extractor...');
+    
+    // ===== VARIÁVEIS GLOBAIS =====
+    const PAGES_PER_VIEW = 12;
+    
+    let currentFile = null;
+    let pdfDocument = null;
+    let pdfPageCanvases = [];
+    let totalPdfPages = 0;
+    let excludedPages = new Set();
+    let isProcessing = false;
+    let textExtractionCompleted = false;
+    let currentGridPage = 0;
+    let totalGridPages = 0;
+    let sortableInstance = null;
+
+    // ===== FUNÇÕES UTILITÁRIAS =====
+    function $(selector) {
+        return document.querySelector(selector);
+    }
+    
+    function addClass(element, className) {
+        if (typeof element === 'string') element = $(element);
+        if (element) element.classList.add(className);
+    }
+    
+    function removeClass(element, className) {
+        if (typeof element === 'string') element = $(element);
+        if (element) element.classList.remove(className);
+    }
+    
+    function showElement(element) {
+        if (typeof element === 'string') element = $(element);
+        if (element) element.style.display = 'block';
+    }
+    
+    function hideElement(element) {
+        if (typeof element === 'string') element = $(element);
+        if (element) element.style.display = 'none';
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // ===== VALIDAÇÃO E PROCESSAMENTO DE ARQUIVOS =====
+    async function readFileHeader(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const arrayBuffer = reader.result;
+                const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                const header = new TextDecoder('utf-8').decode(bytes);
+                resolve(header);
+            };
+            reader.onerror = reject;
+            const blob = file.slice(0, 10);
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+
+    async function validateAsPDF(file) {
+        if (file.type === 'application/pdf') return true;
+        if (file.name.toLowerCase().endsWith('.pdf')) return true;
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Elementos do DOM
-            const dropZone = document.getElementById('dropZone');
-            const pdfInput = document.getElementById('pdfInput');
-            const fileInfo = document.getElementById('fileInfo');
-            const controlPanel = document.getElementById('controlPanel');
-            const previewContainer = document.getElementById('previewContainer');
-            const pdfPreviewGrid = document.getElementById('pdfPreviewGrid');
-            const extractButton = document.getElementById('extractButton');
-            const processingOverlay = document.getElementById('processingOverlay');
-            const processingText = document.getElementById('processingText');
-            const textResultContainer = document.getElementById('textResultContainer');
-            const textContent = document.getElementById('textContent');
-            const copyTextButton = document.getElementById('copyTextButton');
-            const downloadButton = document.getElementById('downloadButton');
-            const buttonContainer = document.getElementById('buttonContainer');
-            const compressionInfo = document.getElementById('compressionInfo');
+        try {
+            const header = await readFileHeader(file);
+            if (header.includes('%PDF')) return true;
+        } catch (error) {
+            console.error("Erro ao validar arquivo:", error);
+        }
+        
+        return false;
+    }
+
+    // ===== MENSAGENS E STATUS =====
+    function showStatus(message, type, duration = 0) {
+        const statusArea = $('#statusArea');
+        const iconType = type === 'success' ? 'check-circle' : 
+                         type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle';
+        
+        statusArea.innerHTML = `
+            <div class="status-message ${type}">
+                <i class="fas fa-${iconType}"></i>
+                ${message}
+            </div>`;
+        
+        showElement(statusArea);
+        
+        if (duration > 0) {
+            setTimeout(() => hideElement(statusArea), duration);
+        }
+    }
+
+    function showFileInfo(file) {
+        $('#fileInfo').innerHTML = `
+            <div class="info-block">
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Arquivo Selecionado: ${file.name}
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tipo: ${file.type || 'Arquivo PDF validado'}
+                </div>
+            </div>`;
+    }
+
+    // ===== RESET E LIMPEZA =====
+    function resetAllStates() {
+        console.log("Resetando todos os estados...");
+        
+        currentFile = null;
+        pdfDocument = null;
+        pdfPageCanvases = [];
+        totalPdfPages = 0;
+        excludedPages.clear();
+        isProcessing = false;
+        textExtractionCompleted = false;
+        currentGridPage = 0;
+        totalGridPages = 0;
+        
+        $('#fileInput').value = '';
+        $('#fileInfo').innerHTML = '';
+        $('#statusArea').innerHTML = '';
+        hideElement('#statusArea');
+        hideElement('#controlPanel');
+        addClass('#progressContainer', 'hidden');
+        addClass('#pdfPreviewContainer', 'hidden');
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        
+        $('#pdfPreview').innerHTML = '';
+        $('#editorContent').innerHTML = '';
+        $('#recognizeBtn').disabled = true;
+        
+        if (sortableInstance) {
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        
+        console.log("Estado resetado com sucesso");
+    }
+
+    // ===== CONTADORES E NAVEGAÇÃO =====
+    function updateExcludedCounter() {
+        $('#excludedPagesList').textContent = excludedPages.size;
+        
+        if (excludedPages.size > 0) {
+            showElement('#pagesExtracted');
+        } else {
+            hideElement('#pagesExtracted');
+        }
+    }
+
+    function updateGridPagination() {
+        $('#gridPageInfo').textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+        $('#prevGridPage').disabled = currentGridPage <= 0;
+        $('#nextGridPage').disabled = currentGridPage >= totalGridPages - 1;
+    }
+
+    // ===== PROCESSAMENTO DE PDF =====
+    async function processPDF(arrayBuffer) {
+        try {
+            console.log("Processando PDF...");
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
             
-            // Variáveis globais
-            let currentPdfFile = null;
-            let pdfDoc = null;
-            let totalPages = 0;
-            let excludedPages = new Set();
-            let extractedText = "";
-            let pageContainers = []; // ✅ Array para armazenar containers
-            let currentGridPage = 0;
-            let totalGridPages = 0;
-            const THUMBNAILS_PER_PAGE = 30;
+            totalPdfPages = pdf.numPages;
+            pdfDocument = pdf;
             
-            // Função para resetar estado
-            function resetState() {
-                currentPdfFile = null;
-                pdfDoc = null;
-                totalPages = 0;
-                excludedPages.clear();
-                extractedText = "";
-                pageContainers = []; // ✅ Limpar array
-                currentGridPage = 0;
-                totalGridPages = 0;
+            $('#pdfPreview').innerHTML = '';
+            pdfPageCanvases = [];
+            excludedPages.clear();
+            
+            totalGridPages = Math.ceil(totalPdfPages / PAGES_PER_VIEW);
+            currentGridPage = 0;
+            
+            for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+                $('#processingText').textContent = `Processando página ${pageNum} de ${totalPdfPages}...`;
                 
-                // Esconder elementos
-                controlPanel.classList.add('hidden');
-                previewContainer.classList.add('hidden');
-                textResultContainer.classList.add('hidden');
-                buttonContainer.classList.add('hidden');
-                compressionInfo.classList.add('hidden');
+                const page = await pdf.getPage(pageNum);
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
                 
-                // Limpar conteúdo
-                fileInfo.innerHTML = '';
-                pdfPreviewGrid.innerHTML = '';
-                textContent.innerHTML = '';
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
                 
-                // Reset input
-                pdfInput.value = '';
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                pdfPageCanvases.push(canvas);
             }
             
-            // Função para mostrar processamento
-            function showProcessing(show, message = 'Processando PDF...') {
-                processingText.textContent = message;
-                processingOverlay.style.display = show ? 'flex' : 'none';
+            renderGridPage(0);
+            removeClass('#pdfPreviewContainer', 'hidden');
+            
+            if (totalGridPages > 1) {
+                removeClass('#gridPagination', 'hidden');
+                updateGridPagination();
+            } else {
+                addClass('#gridPagination', 'hidden');
             }
             
-            // Função para mostrar erro
-            function showError(message) {
-                fileInfo.innerHTML = `
-                    <div class="status-message error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        ${message}
-                    </div>`;
-                showProcessing(false);
+            updateExcludedCounter();
+            initializeSortable();
+            
+        } catch (error) {
+            console.error('Erro ao processar PDF:', error);
+            throw new Error('Erro ao processar o PDF: ' + error.message);
+        }
+    }
+
+    // ===== RENDERIZAÇÃO DO GRID =====
+    function renderGridPage(pageIndex) {
+        console.log(`Renderizando grid página ${pageIndex}...`);
+        $('#pdfPreview').innerHTML = '';
+        
+        const startIndex = pageIndex * PAGES_PER_VIEW;
+        const endIndex = Math.min(startIndex + PAGES_PER_VIEW, totalPdfPages);
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            const pageNum = i + 1;
+            
+            if (excludedPages.has(pageNum)) continue;
+            
+            const canvas = pdfPageCanvases[i];
+            if (!canvas) continue;
+            
+            const pagePreview = document.createElement('div');
+            pagePreview.className = 'pdf-page-preview';
+            pagePreview.dataset.page = pageNum;
+            
+            // Botão de arrastar
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'drag-handle';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+            dragHandle.addEventListener('mousedown', function() {
+                console.log('Drag iniciado para página', pageNum);
+            });
+            pagePreview.appendChild(dragHandle);
+            
+            // Botão de excluir
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('Excluindo página', pageNum);
+                togglePageSelection(pageNum, pagePreview);
+            });
+            pagePreview.appendChild(deleteBtn);
+            
+            // Canvas container
+            const canvasContainer = document.createElement('div');
+            canvasContainer.style.width = '100%';
+            canvasContainer.style.display = 'flex';
+            canvasContainer.style.justifyContent = 'center';
+            canvasContainer.style.overflow = 'hidden';
+            
+            // Clonar canvas
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = canvas.width;
+            displayCanvas.height = canvas.height;
+            displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            
+            // Número da página
+            const pageNumber = document.createElement('div');
+            pageNumber.className = 'pdf-page-number';
+            pageNumber.textContent = `Página ${pageNum}`;
+            
+            canvasContainer.appendChild(displayCanvas);
+            pagePreview.appendChild(canvasContainer);
+            pagePreview.appendChild(pageNumber);
+            
+            $('#pdfPreview').appendChild(pagePreview);
+        }
+        
+        updateGridPagination();
+        initializeSortable();
+    }
+
+    // ===== SELEÇÃO E EXCLUSÃO DE PÁGINAS =====
+    function togglePageSelection(pageNum, pageElement) {
+        console.log('Toggling page selection for:', pageNum);
+        
+        pageElement.style.animation = 'fadeOut 0.3s ease-out';
+        excludedPages.add(pageNum);
+        
+        setTimeout(() => {
+            if (pageElement.parentNode) {
+                pageElement.parentNode.removeChild(pageElement);
             }
             
-            // Função para validar PDF
-            async function validatePDF(file) {
-                // Verificar tipo MIME
-                if (file.type === 'application/pdf') return true;
-                
-                // Verificar extensão
-                if (file.name.toLowerCase().endsWith('.pdf')) return true;
-                
-                // Verificar assinatura %PDF
+            updateExcludedCounter();
+            
+            if (textExtractionCompleted) {
+                addClass('#editorContainer', 'hidden');
+                addClass('#textActions', 'hidden');
+                showStatus('A seleção de páginas foi modificada. Clique em "Extrair Texto" para processar novamente.', 'warning', 5000);
+                textExtractionCompleted = false;
+            }
+        }, 300);
+    }
+
+    // ===== SORTABLE (DRAG AND DROP) =====
+    function initializeSortable() {
+        if (sortableInstance) {
+            sortableInstance.destroy();
+        }
+        
+        const pdfPreviewElement = $('#pdfPreview');
+        if (!pdfPreviewElement) return;
+        
+        try {
+            sortableInstance = new Sortable(pdfPreviewElement, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                handle: '.drag-handle',
+                onStart: function(evt) {
+                    console.log('Sortable started');
+                    document.body.style.cursor = 'grabbing';
+                },
+                onEnd: function(evt) {
+                    console.log('Sortable ended');
+                    document.body.style.cursor = 'default';
+                    updatePageOrder();
+                    
+                    if (textExtractionCompleted) {
+                        addClass('#editorContainer', 'hidden');
+                        addClass('#textActions', 'hidden');
+                        showStatus('A ordem das páginas foi modificada. Clique em "Extrair Texto" para processar novamente.', 'warning', 5000);
+                        textExtractionCompleted = false;
+                    }
+                }
+            });
+            console.log('Sortable inicializado com sucesso');
+        } catch (error) {
+            console.error('Erro ao inicializar Sortable:', error);
+        }
+    }
+
+    function updatePageOrder() {
+        const pageElements = $('#pdfPreview').querySelectorAll('.pdf-page-preview');
+        const newPageOrder = Array.from(pageElements).map(element => parseInt(element.dataset.page));
+        console.log('Nova ordem de páginas:', newPageOrder);
+    }
+
+    // ===== EXTRAÇÃO VIA API =====
+    async function extractTextViaAPI() {
+        if (!currentFile) {
+            throw new Error('Nenhum arquivo selecionado.');
+        }
+
+        const pagesToProcess = Array.from(
+            { length: totalPdfPages }, 
+            (_, i) => i + 1
+        ).filter(pageNum => !excludedPages.has(pageNum));
+        
+        if (pagesToProcess.length === 0) {
+            throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
+        }
+
+        const formData = new FormData();
+        formData.append('file', currentFile);
+
+        if (excludedPages.size > 0) {
+            const pagesToKeep = pagesToProcess.map(pageNum => pageNum - 1);
+            formData.append('pages_to_keep', JSON.stringify(pagesToKeep));
+        }
+
+        $('#progressBar').value = 20;
+        $('#progressText').textContent = 'Enviando arquivo para extração...';
+        $('#processingText').textContent = 'Conectando com a API...';
+
+        try {
+            const response = await fetch('pdf_to_text.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            $('#progressBar').value = 60;
+            $('#progressText').textContent = 'Processando resposta...';
+
+            if (!response.ok) {
+                let errorMessage = `Erro no servidor: ${response.status}`;
                 try {
-                    const reader = new FileReader();
-                    const headerPromise = new Promise((resolve, reject) => {
-                        reader.onload = () => {
-                            const arrayBuffer = reader.result;
-                            const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
-                            const header = new TextDecoder('utf-8').decode(bytes);
-                            resolve(header);
-                        };
-                        reader.onerror = reject;
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    // Usar mensagem padrão
+                }
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.message || 'Erro desconhecido na extração');
+            }
+
+            $('#progressBar').value = 90;
+            $('#progressText').textContent = 'Formatando texto extraído...';
+
+            let extractedText = '';
+            
+            if (data && data.pages_text && Array.isArray(data.pages_text)) {
+                data.pages_text.forEach(page => {
+                    extractedText += `--- Página ${page.page} ---\n\n${page.text}\n\n`;
+                });
+            } else if (data && data.text && Array.isArray(data.text)) {
+                data.text.forEach(page => {
+                    extractedText += `--- Página ${page.page} ---\n\n${page.content}\n\n`;
+                });
+            } else if (data && data.full_text) {
+                extractedText = data.full_text;
+            } else if (typeof data.text === 'string') {
+                extractedText = data.text;
+            } else {
+                extractedText = JSON.stringify(data, null, 2);
+            }
+
+            $('#progressBar').value = 100;
+            $('#progressText').textContent = 'Extração concluída!';
+
+            return extractedText;
+
+        } catch (error) {
+            console.error('Erro na extração via API:', error);
+            throw error;
+        }
+    }
+
+    // ===== FUNÇÃO PRINCIPAL DE EXTRAÇÃO =====
+    async function startTextExtraction() {
+        console.log("Iniciando extração de texto...");
+        
+        if (!currentFile) {
+            showStatus('Nenhum arquivo selecionado.', 'error');
+            return;
+        }
+        
+        if (isProcessing) {
+            showStatus('Já existe um processamento em andamento.', 'warning');
+            return;
+        }
+        
+        try {
+            isProcessing = true;
+            const scrollPositionBefore = window.scrollY;
+            
+            $('#processingOverlay').style.display = 'flex';
+            $('#processingText').textContent = 'Preparando extração...';
+            
+            removeClass('#progressContainer', 'hidden');
+            $('#progressBar').value = 0;
+            $('#progressText').textContent = 'Iniciando extração via API...';
+            
+            addClass('#editorContainer', 'hidden');
+            addClass('#textActions', 'hidden');
+            
+            const pagesToProcess = Array.from(
+                { length: totalPdfPages }, 
+                (_, i) => i + 1
+            ).filter(pageNum => !excludedPages.has(pageNum));
+            
+            $('#processingText').textContent = `Preparando extração para ${pagesToProcess.length} páginas...`;
+            console.log(`Iniciando extração para ${pagesToProcess.length} páginas`);
+            
+            const extractedText = await extractTextViaAPI();
+            
+            addClass('#progressContainer', 'hidden');
+            $('#editorContent').textContent = extractedText;
+            
+            removeClass('#textActions', 'hidden');
+            removeClass('#editorContainer', 'hidden');
+            
+            textExtractionCompleted = true;
+            
+            window.scrollTo(0, scrollPositionBefore);
+            showStatus('Texto extraído com sucesso!', 'success', 3000);
+            
+        } catch (error) {
+            console.error('Erro na extração de texto:', error);
+            showStatus('Erro durante a extração: ' + error.message, 'error');
+        } finally {
+            addClass('#progressContainer', 'hidden');
+            $('#processingOverlay').style.display = 'none';
+            isProcessing = false;
+        }
+    }
+
+    // ===== PROCESSAMENTO DE ARQUIVOS =====
+    async function handleFile(file) {
+        resetAllStates();
+        
+        if (!file) {
+            console.log("Nenhum arquivo fornecido");
+            return;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            showStatus('O arquivo excede o limite de 10MB.', 'error');
+            return;
+        }
+        
+        try {
+            console.log("Processando arquivo:", file.name);
+            
+            $('#processingOverlay').style.display = 'flex';
+            $('#processingText').textContent = 'Verificando arquivo...';
+            
+            const isValid = await validateAsPDF(file);
+            
+            if (!isValid) {
+                showStatus('Por favor, selecione um arquivo PDF válido.', 'error');
+                $('#processingOverlay').style.display = 'none';
+                return;
+            }
+            
+            currentFile = file;
+            showFileInfo(file);
+            
+            $('#processingText').textContent = 'Processando PDF...';
+            const arrayBuffer = await file.arrayBuffer();
+            await processPDF(arrayBuffer);
+            
+            showElement('#controlPanel');
+            $('#recognizeBtn').disabled = false;
+            
+            showStatus('Arquivo carregado com sucesso.', 'success');
+            
+        } catch (error) {
+            console.error('Erro ao processar arquivo:', error);
+            showStatus('Erro ao processar o arquivo: ' + error.message, 'error');
+        } finally {
+            $('#processingOverlay').style.display = 'none';
+        }
+    }
+
+    // ===== AÇÕES DE TEXTO =====
+    function setupTextActions() {
+        $('#copyText').addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
+                showStatus('Nenhum texto para copiar!', 'error');
+                return;
+            }
+            
+            const htmlContent = $('#editorContent').innerHTML;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            const textWithLineBreaks = tempDiv.innerHTML
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p><p>/gi, '\n\n')
+                .replace(/<div>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/&nbsp;/gi, ' ');
+            
+            const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(cleanText)
+                    .then(() => {
+                        showStatus('Texto copiado para a área de transferência!', 'success', 3000);
+                    })
+                    .catch(err => {
+                        showStatus('Erro ao copiar texto: ' + err.message, 'error');
                     });
-                    
-                    reader.readAsArrayBuffer(file.slice(0, 10));
-                    const header = await headerPromise;
-                    
-                    if (header.includes('%PDF')) return true;
-                    
-                    // Validar com PDF.js
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)}).promise;
-                    return pdf.numPages > 0;
-                } catch (error) {
-                    return false;
-                }
+            } else {
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = cleanText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+                showStatus('Texto copiado para a área de transferência!', 'success', 3000);
+            }
+        });
+        
+        $('#downloadText').addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
+                showStatus('Nenhum texto para baixar!', 'error');
+                return;
             }
             
-            // Função para processar arquivo
-            async function handleFile(file) {
-                if (!file) return;
-                
-                resetState();
-                showProcessing(true, 'Verificando arquivo...');
-                
-                try {
-                    const isValidPDF = await validatePDF(file);
-                    
-                    if (!isValidPDF) {
-                        showError('Por favor, selecione um arquivo PDF válido');
-                        return;
-                    }
-                    
-                    await processValidFile(file);
-                } catch (error) {
-                    console.error('Erro ao processar arquivo:', error);
-                    showError(`Erro ao validar arquivo: ${error.message}`);
-                }
-            }
+            const htmlContent = $('#editorContent').innerHTML;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
             
-            // Função para processar PDF válido
-            async function processValidFile(file) {
-                try {
-                    showProcessing(true, 'Carregando PDF...');
-                    
-                    currentPdfFile = file;
-                    
-                    // Carregar PDF
-                    const arrayBuffer = await file.arrayBuffer();
-                    pdfDoc = await pdfjsLib.getDocument({
-                        data: new Uint8Array(arrayBuffer),
-                        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-                        cMapPacked: true
-                    }).promise;
-                    
-                    totalPages = pdfDoc.numPages;
-                    
-                    if (totalPages === 0) {
-                        throw new Error('O PDF não contém páginas.');
-                    }
-                    
-                    // Mostrar informações do arquivo
-                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                    fileInfo.innerHTML = `
-                        <div class="info-block">
-                            <div class="info-line">
-                                <i class="fas fa-check-circle"></i>
-                                Arquivo Selecionado: ${file.name}
-                            </div>
-                            <div class="info-line">
-                                <i class="fas fa-check-circle"></i>
-                                Tamanho: ${fileSizeMB} MB
-                            </div>
-                            <div class="info-line">
-                                <i class="fas fa-check-circle"></i>
-                                Quantidade de páginas: ${totalPages}
-                            </div>
-                        </div>`;
-                    
-                    // Renderizar thumbnails
-                    await renderThumbnails();
-                    
-                    // Mostrar controles e preview
-                    controlPanel.classList.remove('hidden');
-                    previewContainer.classList.remove('hidden');
-                    
-                    showProcessing(false);
-                    
-                } catch (error) {
-                    console.error('Erro ao processar PDF:', error);
-                    showError(`Erro ao processar PDF: ${error.message}`);
-                }
-            }
+            const textWithLineBreaks = tempDiv.innerHTML
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p><p>/gi, '\n\n')
+                .replace(/<div>/gi, '\n')
+                .replace(/<\/div>/gi, '')
+                .replace(/&nbsp;/gi, ' ');
             
-            // Função para renderizar thumbnails (CORRIGIDO - igual extrair_imagens.html)
-            async function renderThumbnails() {
-                pdfPreviewGrid.innerHTML = '';
-                pageContainers = new Array(totalPages); // ✅ Inicializar array
-                
-                try {
-                    // ✅ PRIMEIRO: Renderizar TODAS as páginas e armazenar
-                    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                        processingText.textContent = `Carregando páginas... ${pageNum}/${totalPages}`;
-                        
-                        const page = await pdfDoc.getPage(pageNum);
-                        const viewport = page.getViewport({ scale: 0.8 }); // ✅ Escala igual ao extrair_imagens
-                        
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        
-                        // Fundo branco
-                        context.fillStyle = 'white';
-                        context.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        await page.render({
-                            canvasContext: context,
-                            viewport: viewport
-                        }).promise;
-                        
-                        // ✅ Criar container da página (igual extrair_imagens.html)
-                        const pageContainer = document.createElement('div');
-                        pageContainer.className = 'page-preview'; // ✅ Classe correta
-                        pageContainer.dataset.page = pageNum;
-                        
-                        // ✅ Evento de clique para toggle
-                        pageContainer.addEventListener('click', () => {
-                            if (excludedPages.has(pageNum)) {
-                                excludedPages.delete(pageNum);
-                                pageContainer.classList.remove('excluded');
-                            } else {
-                                excludedPages.add(pageNum);
-                                pageContainer.classList.add('excluded');
-                            }
-                        });
-                        
-                        // ✅ Adicionar canvas direto (não IMG)
-                        canvas.className = 'image-preview'; // ✅ Classe correta
-                        pageContainer.appendChild(canvas);
-                        
-                        // ✅ Número da página
-                        const pageNumber = document.createElement('div');
-                        pageNumber.className = 'page-number'; // ✅ Classe correta
-                        pageNumber.textContent = `Página ${pageNum}`;
-                        pageContainer.appendChild(pageNumber);
-                        
-                        // ✅ ARMAZENAR no array (não adicionar ao DOM ainda)
-                        pageContainers[pageNum - 1] = pageContainer;
-                    }
-                    
-                    // ✅ SEGUNDO: Calcular paginação
-                    totalGridPages = Math.ceil(totalPages / THUMBNAILS_PER_PAGE);
-                    
-                    // ✅ TERCEIRO: Renderizar primeira página do grid
-                    currentGridPage = 0;
-                    renderGridPage(currentGridPage);
-                    
-                } catch (error) {
-                    console.error('Erro ao renderizar thumbnails:', error);
-                    showError(`Erro ao gerar visualização: ${error.message}`);
-                }
-            }
+            const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
             
-            // ✅ Função para renderizar uma página específica do grid
-            function renderGridPage(pageIndex) {
-                pdfPreviewGrid.innerHTML = '';
-                
-                // Calcular índices
-                const startIndex = pageIndex * THUMBNAILS_PER_PAGE;
-                const endIndex = Math.min(startIndex + THUMBNAILS_PER_PAGE, pageContainers.length);
-                
-                // ✅ Adicionar containers ao grid
-                for (let i = startIndex; i < endIndex; i++) {
-                    if (pageContainers[i]) {
-                        pdfPreviewGrid.appendChild(pageContainers[i]);
-                    }
-                }
-            }
+            const blob = new Blob([cleanText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
             
-            // Função para extrair texto
-            async function extractText() {
-                if (!currentPdfFile) return;
-                
-                showProcessing(true, 'Extraindo texto...');
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('file', currentPdfFile);
-                    
-                    // Adicionar páginas a manter se houver exclusões
-                    if (excludedPages.size > 0) {
-                        const pagesToKeep = Array.from(
-                            { length: totalPages },
-                            (_, i) => i
-                        ).filter(pageNum => !excludedPages.has(pageNum + 1));
-                        
-                        formData.append('pages_to_keep', JSON.stringify(pagesToKeep));
-                    }
-                    
-                    const response = await fetch('pdf_to_text.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'Erro ao extrair texto');
-                    }
-                    
-                    const data = await response.json();
-                    displayExtractedText(data);
-                    
-                } catch (error) {
-                    console.error('Erro na extração:', error);
-                    showError(`Erro ao extrair texto: ${error.message}`);
-                } finally {
-                    showProcessing(false);
-                }
-            }
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `texto_extraido_${new Date().getTime()}.txt`;
+            a.click();
             
-            // Função para exibir texto extraído
-            function displayExtractedText(data) {
-                textContent.innerHTML = '';
-                let fullText = "";
+            URL.revokeObjectURL(url);
+            
+            showStatus('Arquivo de texto baixado com sucesso!', 'success', 3000);
+        });
+    }
+
+    // ===== EDITOR DE TEXTO =====
+    function setupEditor() {
+        const editorButtons = document.querySelectorAll('.editor-btn[data-command]');
+        editorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const command = button.getAttribute('data-command');
+                document.execCommand(command, false, null);
                 
-                // Processar diferentes formatos de resposta
-                if (data && data.pages_text && Array.isArray(data.pages_text)) {
-                    data.pages_text.forEach(page => {
-                        const pageElement = document.createElement('div');
-                        pageElement.className = 'text-page';
-                        
-                        const pageTitle = document.createElement('div');
-                        pageTitle.className = 'text-page-title';
-                        pageTitle.textContent = `Página ${page.page}`;
-                        
-                        const pageContent = document.createElement('div');
-                        pageContent.textContent = page.text;
-                        
-                        pageElement.appendChild(pageTitle);
-                        pageElement.appendChild(pageContent);
-                        textContent.appendChild(pageElement);
-                        
-                        fullText += `--- Página ${page.page} ---\n${page.text}\n\n`;
-                    });
-                } else if (data && data.text && Array.isArray(data.text)) {
-                    data.text.forEach(page => {
-                        const pageElement = document.createElement('div');
-                        pageElement.className = 'text-page';
-                        
-                        const pageTitle = document.createElement('div');
-                        pageTitle.className = 'text-page-title';
-                        pageTitle.textContent = `Página ${page.page}`;
-                        
-                        const pageContent = document.createElement('div');
-                        pageContent.textContent = page.content;
-                        
-                        pageElement.appendChild(pageTitle);
-                        pageElement.appendChild(pageContent);
-                        textContent.appendChild(pageElement);
-                        
-                        fullText += `--- Página ${page.page} ---\n${page.content}\n\n`;
-                    });
-                } else if (data && data.full_text) {
-                    fullText = data.full_text;
-                    const singlePage = document.createElement('div');
-                    singlePage.className = 'text-page';
-                    singlePage.style.whiteSpace = 'pre-wrap';
-                    singlePage.textContent = data.full_text;
-                    textContent.appendChild(singlePage);
-                } else {
-                    let extractedContent = '';
-                    if (typeof data.text === 'string') {
-                        extractedContent = data.text;
-                    } else if (data.content) {
-                        extractedContent = data.content;
+                const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+                if (stateCommands.includes(command)) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
                     } else {
-                        extractedContent = JSON.stringify(data, null, 2);
+                        button.classList.remove('active');
                     }
-                    
-                    const singlePage = document.createElement('div');
-                    singlePage.className = 'text-page';
-                    singlePage.textContent = extractedContent;
-                    textContent.appendChild(singlePage);
-                    fullText = extractedContent;
                 }
                 
-                extractedText = fullText;
-                
-                // Preparar download
-                const blob = new Blob([fullText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                downloadButton.href = url;
-                downloadButton.download = currentPdfFile.name.replace('.pdf', '.txt');
-                
-                // Mostrar resultado
-                textResultContainer.classList.remove('hidden');
-                buttonContainer.classList.remove('hidden');
-                
-                // Mostrar info de sucesso
-                let totalPagesProcessed = totalPages - excludedPages.size;
-                const pageText = totalPagesProcessed === 1 ? "página" : "páginas";
-                
-                compressionInfo.innerHTML = `
-                    <div class="status-message success">
-                        <i class="fas fa-check-circle"></i>
-                        <div>
-                            <strong>Extração concluída com sucesso!</strong>
-                            <div class="mt-2">
-                                Texto extraído de ${totalPagesProcessed} ${pageText}
-                            </div>
-                        </div>
-                    </div>`;
-                compressionInfo.classList.remove('hidden');
-            }
-            
-            // Event Listeners
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => {
-                    dropZone.classList.add('drag-over');
-                });
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => {
-                    dropZone.classList.remove('drag-over');
-                });
-            });
-            
-            dropZone.addEventListener('drop', function(e) {
-                const file = e.dataTransfer.files[0];
-                handleFile(file);
-            });
-            
-            dropZone.addEventListener('click', function() {
-                resetState();
-                pdfInput.click();
-            });
-            
-            pdfInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                handleFile(file);
-            });
-            
-            extractButton.addEventListener('click', extractText);
-            
-            copyTextButton.addEventListener('click', () => {
-                if (extractedText) {
-                    navigator.clipboard.writeText(extractedText).then(() => {
-                        const originalText = copyTextButton.innerHTML;
-                        copyTextButton.innerHTML = '<i class="fas fa-check"></i> Texto Copiado!';
-                        setTimeout(() => {
-                            copyTextButton.innerHTML = originalText;
-                        }, 2000);
-                    }).catch(err => {
-                        console.error('Erro ao copiar texto: ', err);
-                    });
-                }
-            });
-            
-            // Limpeza
-            window.addEventListener('beforeunload', () => {
-                if (downloadButton.href && downloadButton.href !== '#') {
-                    URL.revokeObjectURL(downloadButton.href);
-                }
+                $('#editorContent').focus();
             });
         });
+        
+        $('#editorContent').addEventListener('mouseup', updateButtonStates);
+        $('#editorContent').addEventListener('keyup', updateButtonStates);
+        
+        function updateButtonStates() {
+            const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+            stateCommands.forEach(command => {
+                const button = $(`.editor-btn[data-command="${command}"]`);
+                if (button) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+            });
+        }
+        
+        const formatSize = $('#formatSize');
+        if (formatSize) {
+            formatSize.addEventListener('change', () => {
+                document.execCommand('fontSize', false, formatSize.value);
+                $('#editorContent').focus();
+            });
+        }
+        
+        const colorButtons = document.querySelectorAll('.color-btn');
+        colorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const color = button.getAttribute('data-color');
+                document.execCommand('hiliteColor', false, color);
+                $('#editorContent').focus();
+            });
+        });
+        
+        // Painel de busca e substituição
+        const findReplaceBtn = $('#findReplaceBtn');
+        const findReplacePanel = $('#findReplacePanel');
+        const closeFindReplace = $('#closeFindReplace');
+        
+        if (findReplaceBtn && findReplacePanel && closeFindReplace) {
+            findReplaceBtn.addEventListener('click', () => {
+                findReplacePanel.style.display = findReplacePanel.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            closeFindReplace.addEventListener('click', () => {
+                findReplacePanel.style.display = 'none';
+            });
+            
+            $('#findNextBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                if (!searchText) {
+                    alert('Por favor, digite um texto para buscar.');
+                    $('#findText').focus();
+                    return;
+                }
+                
+                const found = window.find(searchText);
+                
+                if (!found) {
+                    alert('Não foram encontradas mais ocorrências. A busca reiniciará do início.');
+                    window.getSelection().removeAllRanges();
+                    window.find(searchText);
+                }
+            });
+            
+            $('#replaceBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                if (window.getSelection().toString() === searchText) {
+                    document.execCommand('insertText', false, replacement);
+                    window.find(searchText);
+                } else {
+                    window.find(searchText);
+                }
+            });
+            
+            $('#replaceAllBtn').addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                let newContent = $('#editorContent').innerHTML;
+                const regex = new RegExp(searchText, 'g');
+                newContent = newContent.replace(regex, replacement);
+                $('#editorContent').innerHTML = newContent;
+                
+                alert('Substituição concluída!');
+            });
+        }
+        
+        const spellcheckBtn = $('#spellcheckBtn');
+        if (spellcheckBtn) {
+            spellcheckBtn.addEventListener('click', () => {
+                $('#editorContent').spellcheck = !$('#editorContent').spellcheck;
+                
+                if ($('#editorContent').spellcheck) {
+                    spellcheckBtn.classList.add('active');
+                    alert('Verificação ortográfica ativada.');
+                } else {
+                    spellcheckBtn.classList.remove('active');
+                    alert('Verificação ortográfica desativada.');
+                }
+            });
+        }
+        
+        const clearSpacesBtn = $('#clearSpacesBtn');
+        if (clearSpacesBtn) {
+            clearSpacesBtn.addEventListener('click', () => {
+                let content = $('#editorContent').innerHTML;
+                
+                content = content.replace(/[ ]{2,}/g, ' ');
+                content = content.replace(/^[ \t]+|[ \t]+$/gm, '');
+                content = content.replace(/\n{3,}/g, '\n\n');
+                
+                $('#editorContent').innerHTML = content;
+                alert('Espaços extras removidos com sucesso!');
+            });
+        }
+        
+        $('#editorContent').addEventListener('paste', function(e) {
+            e.preventDefault();
+            
+            let text = '';
+            if (e.clipboardData || e.originalEvent.clipboardData) {
+                text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            } else if (window.clipboardData) {
+                text = window.clipboardData.getData('Text');
+            }
+            
+            text = text.replace(/\n/g, '<br>');
+            document.execCommand('insertHTML', false, text);
+        });
+    }
+
+    // ===== EVENTOS PRINCIPAIS =====
+    function setupEventListeners() {
+        console.log('Configurando event listeners...');
+        
+        // Drag and Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, () => {
+                addClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone').addEventListener(eventName, () => {
+                removeClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        $('#dropZone').addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        $('#dropZone').addEventListener('click', () => {
+            resetAllStates();
+            $('#fileInput').click();
+        });
+        
+        $('#fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        $('#recognizeBtn').addEventListener('click', () => {
+            startTextExtraction();
+        });
+        
+        $('#prevGridPage').addEventListener('click', () => {
+            if (currentGridPage > 0) {
+                currentGridPage--;
+                renderGridPage(currentGridPage);
+            }
+        });
+        
+        $('#nextGridPage').addEventListener('click', () => {
+            if (currentGridPage < totalGridPages - 1) {
+                currentGridPage++;
+                renderGridPage(currentGridPage);
+            }
+        });
+        
+        console.log('Event listeners configurados com sucesso');
+    }
+
+    // ===== INICIALIZAÇÃO =====
+    function initializeApp() {
+        console.log('Inicializando aplicação de extração de texto PDF...');
+        
+        try {
+            setupEditor();
+            setupTextActions();
+            setupEventListeners();
+            console.log('Aplicação inicializada com sucesso!');
+        } catch (error) {
+            console.error('Erro na inicialização:', error);
+        }
+    }
+    
+    // Verificar se as dependências estão carregadas
+    if (typeof pdfjsLib === 'undefined') {
+        console.error('PDF.js não foi carregado!');
+        showStatus('Erro: PDF.js não foi carregado. Verifique a conexão com a internet.', 'error');
+        return;
+    }
+    
+    if (typeof Sortable === 'undefined') {
+        console.error('Sortable.js não foi carregado!');
+        showStatus('Erro: Sortable.js não foi carregado. Funcionalidades de arrastar podem não funcionar.', 'warning');
+    }
+    
+    // Iniciar aplicação
+    initializeApp();
+});
     </script>
 </body>
 </html>
