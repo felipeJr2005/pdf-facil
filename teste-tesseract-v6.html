@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Tesseract.js v6.x</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4361ee, #3a56d4);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #4361ee;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(145deg, #f8f9ff, #eef2ff);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #3a56d4;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #4361ee;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .setting-group {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .setting-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        select, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e7ff;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        select:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: #4361ee;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4361ee, #3a56d4);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e0e7ff;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4361ee, #3a56d4);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #4361ee;
+        }
+
+        .result {
+            background: #f0fdf4;
+            border: 2px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-text {
+            width: 100%;
+            min-height: 200px;
+            border: none;
+            background: transparent;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .result-text:focus {
+            outline: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            text-align: center;
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4361ee;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .comparison {
+            background: #fff7ed;
+            border: 2px solid #fed7aa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison h3 {
+            color: #ea580c;
+            margin-bottom: 10px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .version-info {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .version-info h4 {
+            margin-bottom: 8px;
+        }
+
+        .version-old {
+            border-left: 4px solid #ef4444;
+        }
+
+        .version-new {
+            border-left: 4px solid #10b981;
+        }
+
+        @media (max-width: 768px) {
+            .settings {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="card">
+            <div class="header">
+                <h1><i class="fas fa-eye"></i> Teste Tesseract.js v6.x</h1>
+                <div class="version-badge">🚀 Versão Mais Recente</div>
+            </div>
+        </div>
+
+        <!-- Comparação de Versões -->
+        <div class="comparison">
+            <h3><i class="fas fa-balance-scale"></i> Comparação de Versões</h3>
+            <div class="comparison-grid">
+                <div class="version-info version-old">
+                    <h4>❌ Versão Atual (v2.1.0)</h4>
+                    <ul>
+                        <li>CDN: unpkg.com</li>
+                        <li>Método: worker.load() → loadLanguage() → initialize()</li>
+                        <li>Performance: Básica</li>
+                        <li>Recursos: Limitados</li>
+                    </ul>
+                </div>
+                <div class="version-info version-new">
+                    <h4>✅ Nova Versão (v6.0.1)</h4>
+                    <ul>
+                        <li>CDN: cdn.jsdelivr.net</li>
+                        <li>Método: createWorker('lang') - Simplificado</li>
+                        <li>Performance: Otimizada (30-50% mais rápido)</li>
+                        <li>Recursos: Auto-rotação, melhor precisão</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload e Configurações -->
+        <div class="card">
+            <div class="content">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Clique ou arraste arquivos aqui</div>
+                    <div class="upload-subtext">Suporte para JPG, PNG (máx. 10MB)</div>
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" class="hidden">
+                </div>
+
+                <div class="settings">
+                    <div class="setting-group">
+                        <div class="setting-label"><i class="fas fa-language"></i> Idioma</div>
+                        <select id="languageSelect">
+                            <option value="por">🇧🇷 Português</option>
+                            <option value="eng">🇺🇸 Inglês</option>
+                            <option value="spa">🇪🇸 Espanhol</option>
+                            <option value="fra">🇫🇷 Francês</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <div class="setting-label"><i class="fas fa-cogs"></i> Modo OCR</div>
+                        <select id="ocrMode">
+                            <option value="1">🤖 LSTM (Recomendado)</option>
+                            <option value="0">📜 Legado</option>
+                            <option value="2">🔄 Combinado</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <div class="setting-label"><i class="fas fa-search"></i> Segmentação</div>
+                        <select id="pageSegMode">
+                            <option value="1">🔍 Automática com OSD</option>
+                            <option value="3">📄 Página completa</option>
+                            <option value="6">📏 Bloco uniforme</option>
+                            <option value="7">📝 Linha única</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn" id="processBtn" disabled>
+                    <i class="fas fa-magic"></i> Iniciar OCR com Tesseract v6.x
+                </button>
+
+                <!-- Progress -->
+                <div class="progress hidden" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <div class="progress-text" id="progressText">Iniciando...</div>
+                </div>
+
+                <!-- Result -->
+                <div class="result" id="resultContainer">
+                    <h3><i class="fas fa-file-text"></i> Texto Reconhecido</h3>
+                    <textarea class="result-text" id="resultText" placeholder="O texto reconhecido aparecerá aqui..."></textarea>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value" id="wordCount">0</div>
+                            <div class="stat-label">Palavras</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="charCount">0</div>
+                            <div class="stat-label">Caracteres</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="timeCount">0s</div>
+                            <div class="stat-label">Tempo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tesseract.js v6.x - VERSÃO MAIS RECENTE -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js'></script>
+
+    <script>
+        class TesseractV6Test {
+            constructor() {
+                this.worker = null;
+                this.selectedFile = null;
+                this.startTime = null;
+                this.initializeElements();
+                this.setupEventListeners();
+                console.log('🚀 Tesseract.js v6.x Test Iniciado');
+                console.log('📦 Tesseract versão:', Tesseract.version || 'v6.x');
+            }
+
+            initializeElements() {
+                this.elements = {
+                    uploadArea: document.getElementById('uploadArea'),
+                    fileInput: document.getElementById('fileInput'),
+                    languageSelect: document.getElementById('languageSelect'),
+                    ocrMode: document.getElementById('ocrMode'),
+                    pageSegMode: document.getElementById('pageSegMode'),
+                    processBtn: document.getElementById('processBtn'),
+                    progressContainer: document.getElementById('progressContainer'),
+                    progressBar: document.getElementById('progressBar'),
+                    progressText: document.getElementById('progressText'),
+                    resultContainer: document.getElementById('resultContainer'),
+                    resultText: document.getElementById('resultText'),
+                    wordCount: document.getElementById('wordCount'),
+                    charCount: document.getElementById('charCount'),
+                    timeCount: document.getElementById('timeCount')
+                };
+            }
+
+            setupEventListeners() {
+                // Upload area
+                this.elements.uploadArea.addEventListener('click', () => {
+                    this.elements.fileInput.click();
+                });
+
+                this.elements.uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.elements.uploadArea.style.borderColor = '#3a56d4';
+                    this.elements.uploadArea.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+                });
+
+                this.elements.uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    this.elements.uploadArea.style.borderColor = '#4361ee';
+                    this.elements.uploadArea.style.backgroundColor = '';
+                });
+
+                this.elements.uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.elements.uploadArea.style.borderColor = '#4361ee';
+                    this.elements.uploadArea.style.backgroundColor = '';
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFileSelect(files[0]);
+                    }
+                });
+
+                // File input
+                this.elements.fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFileSelect(e.target.files[0]);
+                    }
+                });
+
+                // Process button
+                this.elements.processBtn.addEventListener('click', () => {
+                    this.processImage();
+                });
+            }
+
+            handleFileSelect(file) {
+                // Validar arquivo
+                if (!file.type.startsWith('image/')) {
+                    alert('❌ Por favor, selecione apenas arquivos de imagem.');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('❌ Arquivo muito grande. Máximo 10MB.');
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.elements.processBtn.disabled = false;
+                
+                // Atualizar UI
+                this.elements.uploadArea.innerHTML = `
+                    <div class="upload-icon"><i class="fas fa-check-circle" style="color: #10b981;"></i></div>
+                    <div class="upload-text">✅ ${file.name}</div>
+                    <div class="upload-subtext">📁 ${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                `;
+
+                console.log('📁 Arquivo selecionado:', file.name, file.type, file.size);
+            }
+
+            async processImage() {
+                if (!this.selectedFile) return;
+
+                this.startTime = performance.now();
+                this.showProgress();
+                this.elements.processBtn.disabled = true;
+
+                try {
+                    // NOVO MÉTODO TESSERACT V6.x - MUITO MAIS SIMPLES!
+                    console.log('🚀 Iniciando Tesseract v6.x...');
+                    
+                    const language = this.elements.languageSelect.value;
+                    console.log('🌐 Idioma selecionado:', language);
+
+                    // Criar worker com idioma (NOVO em v6.x!)
+                    this.updateProgress(10, 'Criando worker...');
+                    this.worker = await Tesseract.createWorker(language);
+                    console.log('✅ Worker criado com sucesso');
+
+                    // Configurar parâmetros avançados
+                    this.updateProgress(20, 'Configurando parâmetros...');
+                    await this.worker.setParameters({
+                        tessedit_ocr_engine_mode: this.elements.ocrMode.value,
+                        tessedit_pageseg_mode: this.elements.pageSegMode.value,
+                        preserve_interword_spaces: '1'
+                    });
+                    console.log('⚙️ Parâmetros configurados');
+
+                    // Processar imagem
+                    this.updateProgress(30, 'Reconhecendo texto...');
+                    const { data } = await this.worker.recognize(this.selectedFile, {
+                        logger: (progress) => {
+                            if (progress.status === 'recognizing text') {
+                                const percent = Math.round(30 + (progress.progress * 60));
+                                this.updateProgress(percent, `Reconhecendo: ${Math.round(progress.progress * 100)}%`);
+                            }
+                        }
+                    });
+
+                    // Finalizar
+                    this.updateProgress(100, 'Finalizando...');
+                    await this.worker.terminate();
+                    
+                    this.showResults(data);
+                    console.log('🎉 OCR concluído com sucesso!');
+
+                } catch (error) {
+                    console.error('❌ Erro no OCR:', error);
+                    alert('❌ Erro ao processar imagem: ' + error.message);
+                    this.hideProgress();
+                    this.elements.processBtn.disabled = false;
+                }
+            }
+
+            updateProgress(percent, message) {
+                this.elements.progressBar.style.width = percent + '%';
+                this.elements.progressText.textContent = message;
+            }
+
+            showProgress() {
+                this.elements.progressContainer.classList.remove('hidden');
+                this.elements.resultContainer.style.display = 'none';
+            }
+
+            hideProgress() {
+                this.elements.progressContainer.classList.add('hidden');
+            }
+
+            showResults(data) {
+                this.hideProgress();
+                
+                const endTime = performance.now();
+                const processingTime = ((endTime - this.startTime) / 1000).toFixed(2);
+
+                // Mostrar texto
+                this.elements.resultText.value = data.text;
+
+                // Calcular estatísticas
+                const wordCount = data.text.trim().split(/\s+/).filter(word => word.length > 0).length;
+                const charCount = data.text.length;
+
+                // Atualizar stats
+                this.elements.wordCount.textContent = wordCount;
+                this.elements.charCount.textContent = charCount;
+                this.elements.timeCount.textContent = processingTime + 's';
+
+                // Mostrar resultado
+                this.elements.resultContainer.style.display = 'block';
+                this.elements.processBtn.disabled = false;
+
+                // Log detalhado
+                console.log('📊 Estatísticas do OCR:');
+                console.log('📝 Palavras:', wordCount);
+                console.log('🔤 Caracteres:', charCount);
+                console.log('⏱️ Tempo:', processingTime + 's');
+                console.log('📄 Confiança média:', data.confidence?.toFixed(2) || 'N/A');
+            }
+        }
+
+        // Inicializar quando página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            new TesseractV6Test();
+        });
+    </script>
+</body>
+</html>
