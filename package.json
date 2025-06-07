@@ -1,0 +1,8 @@
+﻿{
+  "name": "pdf-facil",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "scribe.js-ocr": "^0.8.0"
+  }
+}

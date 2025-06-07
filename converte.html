@@ -55,6 +55,18 @@
             background-color: #e74c3c;
             color: white;
         }
+
+        /* Estilo para cards desabilitados */
+        .method-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .method-card.disabled .method-description::after {
+            content: " (Em breve)";
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="converter-pdf">
@@ -67,6 +79,7 @@
             </div>
             <div class="card-body">
                 <div class="method-options">
+                    <!-- WORD - Funcionando -->
                     <div class="method-card" id="wordCard" data-format="word" tabindex="0">
                         <input type="radio" id="word" name="conversionFormat" value="word" class="radio-input">
                         <div class="method-icon">
@@ -78,8 +91,33 @@
                         </div>
                     </div>
                     
-                    <div class="method-card" id="excelCard" data-format="excel" tabindex="0">
-                        <input type="radio" id="excel" name="conversionFormat" value="excel" class="radio-input">
+                    <!-- TEXTO - Corrigido para usar pdf_to_text.html -->
+                    <div class="method-card" id="txtCard" data-format="txt" tabindex="0">
+                        <input type="radio" id="txt" name="conversionFormat" value="txt" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Texto (TXT)</div>
+                            <div class="method-description">Extração direta via PyMuPDF</div>
+                        </div>
+                    </div>
+                    
+                    <!-- OCR - Desabilitado até implementar -->
+                    <div class="method-card disabled" id="ocrCard" data-format="ocr" tabindex="0">
+                        <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input" disabled>
+                        <div class="method-icon">
+                            <i class="fas fa-font"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">OCR</div>
+                            <div class="method-description">Reconhecimento de imagens</div>
+                        </div>
+                    </div>
+                    
+                    <!-- EXCEL - Desabilitado até implementar -->
+                    <div class="method-card disabled" id="excelCard" data-format="excel" tabindex="0">
+                        <input type="radio" id="excel" name="conversionFormat" value="excel" class="radio-input" disabled>
                         <div class="method-icon">
                             <i class="fas fa-file-excel"></i>
                         </div>
@@ -89,36 +127,15 @@
                         </div>
                     </div>
                     
-                    <div class="method-card" id="imageCard" data-format="image" tabindex="0">
-                        <input type="radio" id="image" name="conversionFormat" value="image" class="radio-input">
+                    <!-- IMAGE - Desabilitado até implementar -->
+                    <div class="method-card disabled" id="imageCard" data-format="image" tabindex="0">
+                        <input type="radio" id="image" name="conversionFormat" value="image" class="radio-input" disabled>
                         <div class="method-icon">
                             <i class="fas fa-file-image"></i>
                         </div>
                         <div class="method-details">
                             <div class="method-title">Imagem</div>
                             <div class="method-description">JPG ou PNG</div>
-                        </div>
-                    </div>
-                    
-                    <div class="method-card" id="txtCard" data-format="txt" tabindex="0">
-                        <input type="radio" id="txt" name="conversionFormat" value="txt" class="radio-input">
-                        <div class="method-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <div class="method-details">
-                            <div class="method-title">Texto (TXT)</div>
-                            <div class="method-description">Conversão Direta</div>
-                        </div>
-                    </div>
-                    
-                    <div class="method-card" id="ocrCard" data-format="ocr" tabindex="0">
-                        <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input">
-                        <div class="method-icon">
-                            <i class="fas fa-font"></i>
-                        </div>
-                        <div class="method-details">
-                            <div class="method-title">OCR</div>
-                            <div class="method-description">Conversão por Reconhecimento</div>
                         </div>
                     </div>
                 </div>
@@ -141,32 +158,40 @@
             const converterContainer = document.getElementById('converter-container');
             const converterIframe = document.getElementById('converter-iframe');
             
-            // Mapeamento de ícones, títulos e páginas para cada formato
+            // Mapeamento CORRIGIDO de ícones, títulos e páginas para cada formato
             const formatData = {
                 'word': {
                     icon: 'file-word',
                     title: 'Converter PDF para Word',
-                    page: 'pdf_to_docx.html'
-                },
-                'excel': {
-                    icon: 'file-excel',
-                    title: 'Converter PDF para Excel',
-                    page: 'pdf_to_excel.html'
-                },
-                'image': {
-                    icon: 'file-image',
-                    title: 'Converter PDF para Imagem',
-                    page: 'converter_jpg_png.html'
+                    page: 'pdf_to_docx.html',
+                    enabled: true
                 },
                 'txt': {
                     icon: 'file-alt',
-                    title: 'Converter PDF para Texto',
-                    page: 'converter_txt.html'
+                    title: 'Extrair Texto do PDF',
+                    page: 'pdf_to_text.html', // ✅ CORRIGIDO: usar página existente
+                    enabled: true
                 },
                 'ocr': {
                     icon: 'search',
                     title: 'Converter PDF com OCR',
-                    page: 'ocr-.html'
+                    page: null, // ❌ DESABILITADO até implementar
+                    enabled: false,
+                    message: 'Funcionalidade OCR será implementada em breve!'
+                },
+                'excel': {
+                    icon: 'file-excel',
+                    title: 'Converter PDF para Excel',
+                    page: null, // ❌ DESABILITADO até implementar
+                    enabled: false,
+                    message: 'Funcionalidade Excel será implementada em breve!'
+                },
+                'image': {
+                    icon: 'file-image',
+                    title: 'Converter PDF para Imagem',
+                    page: null, // ❌ DESABILITADO até implementar
+                    enabled: false,
+                    message: 'Funcionalidade Imagem será implementada em breve!'
                 }
             };
 
@@ -174,6 +199,16 @@
             methodCards.forEach(card => {
                 const formatId = card.getAttribute('data-format');
                 const radio = document.getElementById(formatId);
+                const formatInfo = formatData[formatId];
+                
+                // Se não está habilitado, não adicionar eventos
+                if (!formatInfo.enabled) {
+                    card.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert(formatInfo.message);
+                    });
+                    return;
+                }
                 
                 card.addEventListener('click', () => {
                     radio.checked = true;
@@ -183,27 +218,30 @@
                     card.classList.add('selected');
                     
                     // Atualizar título do card
-                    const formatInfo = formatData[formatId];
                     formatTitle.innerHTML = `
                         <i class="fas fa-${formatInfo.icon}"></i> ${formatInfo.title}
                     `;
                     
                     // Carrega a página correspondente ao formato selecionado
-                    converterIframe.src = formatInfo.page;
-                    converterContainer.style.display = 'block';
-                    
-                    // Ajustar altura do iframe quando carregado
-                    converterIframe.onload = function() {
-                        adjustIframeHeight();
-                    };
+                    if (formatInfo.page) {
+                        converterIframe.src = formatInfo.page;
+                        converterContainer.style.display = 'block';
+                        
+                        // Ajustar altura do iframe quando carregado
+                        converterIframe.onload = function() {
+                            adjustIframeHeight();
+                        };
+                    }
                 });
                 
                 // Navegação por teclado
                 card.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        radio.checked = true;
-                        card.click();
+                        if (formatInfo.enabled) {
+                            radio.checked = true;
+                            card.click();
+                        }
                     }
                 });
                 
@@ -215,6 +253,9 @@
             // Também manter os event listeners para os radios (backup)
             radioInputs.forEach(radio => {
                 radio.addEventListener('change', (e) => {
+                    const formatInfo = formatData[e.target.value];
+                    if (!formatInfo.enabled) return;
+                    
                     // Atualizar UI dos cards
                     methodCards.forEach(card => {
                         card.classList.remove('selected');
@@ -228,18 +269,19 @@
                     }
                     
                     // Atualizar título do card e carregar iframe
-                    const formatInfo = formatData[e.target.value];
                     formatTitle.innerHTML = `
                         <i class="fas fa-${formatInfo.icon}"></i> ${formatInfo.title}
                     `;
                     
-                    converterIframe.src = formatInfo.page;
-                    converterContainer.style.display = 'block';
-                    
-                    // Ajustar altura do iframe quando carregado
-                    converterIframe.onload = function() {
-                        adjustIframeHeight();
-                    };
+                    if (formatInfo.page) {
+                        converterIframe.src = formatInfo.page;
+                        converterContainer.style.display = 'block';
+                        
+                        // Ajustar altura do iframe quando carregado
+                        converterIframe.onload = function() {
+                            adjustIframeHeight();
+                        };
+                    }
                 });
             });
 
@@ -285,4 +327,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
