@@ -103,6 +103,18 @@
                         </div>
                     </div>
                     
+                    <!-- IMAGE - Habilitado -->
+                    <div class="method-card" id="imageCard" data-format="image" tabindex="0">
+                        <input type="radio" id="image" name="conversionFormat" value="image" class="radio-input">
+                        <div class="method-icon">
+                            <i class="fas fa-file-image"></i>
+                        </div>
+                        <div class="method-details">
+                            <div class="method-title">Imagem</div>
+                            <div class="method-description">JPG ou PNG</div>
+                        </div>
+                    </div>
+                    
                     <!-- OCR - Desabilitado até implementar -->
                     <div class="method-card disabled" id="ocrCard" data-format="ocr" tabindex="0">
                         <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input" disabled>
@@ -126,18 +138,6 @@
                             <div class="method-description">Melhor para tabelas</div>
                         </div>
                     </div>
-                    
-                    <!-- IMAGE - Desabilitado até implementar -->
-                    <div class="method-card disabled" id="imageCard" data-format="image" tabindex="0">
-                        <input type="radio" id="image" name="conversionFormat" value="image" class="radio-input" disabled>
-                        <div class="method-icon">
-                            <i class="fas fa-file-image"></i>
-                        </div>
-                        <div class="method-details">
-                            <div class="method-title">Imagem</div>
-                            <div class="method-description">JPG ou PNG</div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -158,7 +158,7 @@
             const converterContainer = document.getElementById('converter-container');
             const converterIframe = document.getElementById('converter-iframe');
             
-            // Mapeamento CORRIGIDO de ícones, títulos e páginas para cada formato
+            // Mapeamento ATUALIZADO de ícones, títulos e páginas para cada formato
             const formatData = {
                 'word': {
                     icon: 'file-word',
@@ -169,29 +169,28 @@
                 'txt': {
                     icon: 'file-alt',
                     title: 'Extrair Texto do PDF',
-                    page: 'pdf_to_text.html', // ✅ CORRIGIDO: usar página existente
+                    page: 'pdf_to_text.html',
+                    enabled: true
+                },
+                'image': {
+                    icon: 'file-image',
+                    title: 'Converter PDF para Imagem',
+                    page: 'pdf_to_image.html',
                     enabled: true
                 },
                 'ocr': {
                     icon: 'search',
                     title: 'Converter PDF com OCR',
-                    page: null, // ❌ DESABILITADO até implementar
+                    page: null,
                     enabled: false,
                     message: 'Funcionalidade OCR será implementada em breve!'
                 },
                 'excel': {
                     icon: 'file-excel',
                     title: 'Converter PDF para Excel',
-                    page: null, // ❌ DESABILITADO até implementar
+                    page: null,
                     enabled: false,
                     message: 'Funcionalidade Excel será implementada em breve!'
-                },
-                'image': {
-                    icon: 'file-image',
-                    title: 'Converter PDF para Imagem',
-                    page: null, // ❌ DESABILITADO até implementar
-                    enabled: false,
-                    message: 'Funcionalidade Imagem será implementada em breve!'
                 }
             };
 
@@ -327,4 +326,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

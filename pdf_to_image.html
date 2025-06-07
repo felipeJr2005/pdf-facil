@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter PDF para Imagem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <link rel="stylesheet" href="unified-pdf-tools.css">
+    
+    <style>
+        /* Estilos específicos para opções de formato */
+        .format-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .format-card {
+            background-color: white;
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            flex: 1;
+            min-width: 160px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .format-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .format-card.selected {
+            background-color: var(--color-primary-light);
+            border-color: var(--color-primary);
+        }
+        
+        .format-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-primary);
+            font-size: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .option-details {
+            flex: 1;
+        }
+        
+        .option-title {
+            font-weight: 600;
+            color: var(--color-gray-800);
+            margin-bottom: 0.25rem;
+        }
+        
+        .option-description {
+            font-size: 0.75rem;
+            color: var(--color-gray-600);
+        }
+        
+        /* Estilos para o controle deslizante */
+        .quality-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            outline: none;
+            margin: 10px 0;
+        }
+        
+        .quality-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .quality-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        /* Estilo para o contador de qualidade */
+        .quality-value {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+        
+        /* Estilos para o preview das páginas */
+        .page-preview.excluded {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+        
+        .page-preview {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .page-toggle-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ef4444;
+            font-size: 0.8rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .page-preview:hover .page-toggle-btn {
+            opacity: 1;
+        }
+        
+        .page-toggle-btn:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .page-toggle-btn.active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        /* Estilo para o contador de páginas excluídas */
+        .exclude-counter {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            background: rgba(17, 24, 39, 0.9);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            z-index: 50;
+            display: none;
+            box-shadow: var(--shadow-md);
+        }
+    </style>
+</head>
+<body class="converter-pdf">
+    <div class="function-container" style="padding-top: 0; padding-bottom: 0;">
+        <div class="container" style="padding: 0;">
+            <div class="card upload-area" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <div class="drop-zone" id="dropZone" style="background: linear-gradient(145deg, #f8fafc, #f0f7ff); border: 1.5px dashed #7048e8; padding: 1.5rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 100px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;">
+                            <i class="fas fa-file-pdf upload-icon" style="font-size: 1.75rem; color: #7048e8; background: white; width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></i>
+                            <div>
+                                <div class="upload-text" style="font-weight: 600; margin-bottom: 0.25rem;">Selecione o arquivo PDF</div>
+                                <div class="upload-subtext" style="font-size: 0.875rem; color: #64748b;">Arraste aqui ou clique para selecionar</div>
+                            </div>
+                        </div>
+                        <input type="file" id="fileInput" accept=".pdf" style="display: none">
+                    </div>
+                    <div id="fileInfo" style="margin-top: 0.75rem;"></div>
+                    <div id="topDownloadArea" style="margin-top: 0.75rem; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Área de visualização e seleção de páginas do PDF -->
+            <div id="pdf-preview-header" class="hidden" style="margin-top: 1rem;">
+                <h3 style="margin-bottom: 0.5rem; color: #7048e8; font-size: 1.125rem; font-weight: 600;">Selecione as páginas para converter:</h3>
+                <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Clique nas páginas para incluir/excluir da conversão
+                </p>
+            </div>
+            <div id="pdf-preview" class="pdf-preview-grid hidden"></div>
+
+            <div id="exclude-counter" class="exclude-counter">
+                Páginas excluídas: <span id="excluded-count">0</span>
+            </div>
+
+            <div class="card control-panel" style="margin-bottom: 1.25rem;">
+                <div class="card-body" style="padding: 1rem;">
+                    <h3 style="margin-bottom: 0.5rem; color: #7048e8; font-size: 1.125rem; font-weight: 600;">Converter PDF para Imagem</h3>
+                    <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">Escolha o formato e qualidade para a conversão:</p>
+                    
+                    <div class="format-options">
+                        <div class="format-card selected" data-format="jpg" tabindex="0">
+                            <div class="format-icon">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <div class="option-details">
+                                <div class="option-title">JPG</div>
+                                <div class="option-description">Melhor para fotos e imagens</div>
+                            </div>
+                        </div>
+                        <div class="format-card" data-format="png" tabindex="0">
+                            <div class="format-icon">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <div class="option-details">
+                                <div class="option-title">PNG</div>
+                                <div class="option-description">Melhor para textos e transparência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-panel" style="background: #f8fafc; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                        <div class="settings-group" style="margin-bottom: 1rem;">
+                            <label class="settings-label" style="font-weight: 500; color: #334155; display: flex; justify-content: space-between; align-items: center;">
+                                Qualidade da Imagem
+                                <span class="quality-value" id="qualityValue">85%</span>
+                            </label>
+                            <input type="range" id="qualitySlider" class="quality-slider" min="1" max="100" value="85">
+                        </div>
+                        
+                        <div class="settings-group" style="display: flex; align-items: center; gap: 1rem;">
+                            <label class="settings-label" style="font-weight: 500; color: #334155; white-space: nowrap; margin: 0; min-width: 120px;">DPI (Resolução)</label>
+                            <select class="settings-input" id="dpiSelect" style="flex-grow: 1; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.375rem; font-size: 0.875rem;">
+                                <option value="72">72 DPI (Web)</option>
+                                <option value="150">150 DPI (Tela)</option>
+                                <option value="300" selected>300 DPI (Impressão)</option>
+                                <option value="600">600 DPI (Alta Qualidade)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="convertButton" class="btn" disabled style="width: 100%; padding: 0.75rem; background: linear-gradient(to right, #7048e8, #5f3dc4); color: white; border: none; border-radius: 0.375rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s ease;">
+                        <i class="fas fa-sync-alt"></i>
+                        Converter PDF para Imagens
+                    </button>
+
+                    <div id="progressArea" class="progress-container" style="display: none; margin-top: 1rem;">
+                        <div class="progress-bar" style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                            <div class="progress-bar-fill" id="progressBarFill" style="height: 100%; background: #7048e8; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div class="progress-text" id="conversionProgress" style="font-size: 0.875rem; color: #64748b; text-align: center; margin-top: 0.5rem;">Convertendo...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="previewContainer" class="card preview-container" style="display: none; margin-bottom: 1.25rem;">
+                <div class="card-header" style="padding: 0.875rem 1rem; border-bottom: 1px solid #e2e8f0; background-color: #f1ebff;">
+                    <h2 class="card-title" style="font-size: 1rem; font-weight: 600; color: #7048e8; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-eye"></i>
+                        Pré-visualização das Imagens
+                    </h2>
+                </div>
+                <div class="card-body" style="padding: 1rem; text-align: center;">
+                    <div id="multiPagePreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                        <!-- As imagens das páginas serão inseridas aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="statusArea" style="margin-bottom: 1.25rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+
+        // Elementos do DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertButton = document.getElementById('convertButton');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        const previewContainer = document.getElementById('previewContainer');
+        const multiPagePreview = document.getElementById('multiPagePreview');
+        const progressArea = document.getElementById('progressArea');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const conversionProgress = document.getElementById('conversionProgress');
+        const formatCards = document.querySelectorAll('.format-card');
+        const pdfPreview = document.getElementById('pdf-preview');
+        const pdfPreviewHeader = document.getElementById('pdf-preview-header');
+        const topDownloadArea = document.getElementById('topDownloadArea');
+        
+        // Variáveis globais
+        let selectedFile = null;
+        let pdfPageCanvases = [];
+        let totalPdfPages = 0;
+        let excludedPages = new Set();
+
+        // Event Listeners para Drag and Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+                dropZone.style.borderColor = '#5f3dc4';
+                dropZone.style.background = 'rgba(240, 247, 255, 0.5)';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+                dropZone.style.borderColor = '#7048e8';
+                dropZone.style.background = 'linear-gradient(145deg, #f8fafc, #f0f7ff)';
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Evento para seleção do formato
+        formatCards.forEach(card => {
+            // Navegação por teclado
+            card.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+            
+            card.addEventListener('click', () => {
+                // Remove seleção anterior
+                formatCards.forEach(c => c.classList.remove('selected'));
+                // Adiciona seleção ao card clicado
+                card.classList.add('selected');
+            });
+        });
+
+        qualitySlider.addEventListener('input', (e) => {
+            qualityValue.textContent = `${e.target.value}%`;
+        });
+
+        // Função para resetar o estado da aplicação
+        function resetState() {
+            selectedFile = null;
+            previewContainer.style.display = 'none';
+            multiPagePreview.innerHTML = '';
+            progressArea.style.display = 'none';
+            progressBarFill.style.width = '0%';
+            conversionProgress.textContent = '';
+            statusArea.innerHTML = '';
+            pdfPreview.innerHTML = '';
+            pdfPreview.classList.add('hidden');
+            pdfPreviewHeader.classList.add('hidden');
+            pdfPageCanvases = [];
+            totalPdfPages = 0;
+            excludedPages.clear();
+            
+            // Reset do contador de páginas excluídas
+            document.getElementById('excluded-count').textContent = '0';
+            document.getElementById('exclude-counter').style.display = 'none';
+            
+            const topDownloadArea = document.getElementById('topDownloadArea');
+            if (topDownloadArea) {
+                topDownloadArea.style.display = 'none';
+                topDownloadArea.innerHTML = '';
+            }
+            convertButton.disabled = true;
+        }
+
+        // Atualizar o contador de páginas excluídas
+        function updateExcludedCounter() {
+            const counter = document.getElementById('excluded-count');
+            counter.textContent = excludedPages.size;
+            
+            const counterContainer = document.getElementById('exclude-counter');
+            if (excludedPages.size > 0) {
+                counterContainer.style.display = 'block';
+            } else {
+                counterContainer.style.display = 'none';
+            }
+        }
+
+        // Alternar exclusão de página
+        function togglePageExclusion(pageNum, pageContainer, toggleBtn) {
+            if (excludedPages.has(pageNum)) {
+                excludedPages.delete(pageNum);
+                pageContainer.classList.remove('excluded');
+                toggleBtn.classList.remove('active');
+            } else {
+                excludedPages.add(pageNum);
+                pageContainer.classList.add('excluded');
+                toggleBtn.classList.add('active');
+            }
+            
+            updateExcludedCounter();
+        }
+
+        // Renderizar página do PDF para um canvas
+        async function renderPdfPageToCanvas(pdf, pageNum, scale = 1.5) {
+            try {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                return { canvas, page };
+            } catch (error) {
+                console.error(`Erro ao renderizar página ${pageNum}:`, error);
+                throw error;
+            }
+        }
+
+        // Mostrar visualização das páginas do PDF
+        async function displayPdfPages(pdfData) {
+            try {
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                totalPdfPages = pdf.numPages;
+                pdfPageCanvases = [];
+                excludedPages.clear();
+                
+                // Mostrar cabeçalho da visualização
+                pdfPreviewHeader.classList.remove('hidden');
+                
+                // Limpar a grade de visualização
+                pdfPreview.innerHTML = '';
+                
+                // Renderizar cada página do PDF
+                for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+                    const { canvas, page } = await renderPdfPageToCanvas(pdf, pageNum, 0.5); // Escala menor para preview
+                    pdfPageCanvases.push({ canvas, page });
+                    
+                    // Criar container para a página
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'page-preview';
+                    pageContainer.dataset.page = pageNum;
+                    
+                    // Clone o canvas para a visualização
+                    const displayCanvas = document.createElement('canvas');
+                    displayCanvas.width = canvas.width;
+                    displayCanvas.height = canvas.height;
+                    displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                    displayCanvas.className = 'image-preview';
+                    
+                    // Adicionar número da página
+                    const pageLabel = document.createElement('div');
+                    pageLabel.className = 'page-number';
+                    pageLabel.textContent = `Página ${pageNum}`;
+                    
+                    // Botão para incluir/excluir a página
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'page-toggle-btn';
+                    toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    toggleBtn.title = 'Excluir/Incluir página';
+                    toggleBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePageExclusion(pageNum, pageContainer, toggleBtn);
+                    });
+                    
+                    // Adicionar elementos ao container da página
+                    pageContainer.appendChild(displayCanvas);
+                    pageContainer.appendChild(pageLabel);
+                    pageContainer.appendChild(toggleBtn);
+                    
+                    // Clicar na página também alterna a exclusão
+                    pageContainer.addEventListener('click', () => {
+                        togglePageExclusion(pageNum, pageContainer, toggleBtn);
+                    });
+                    
+                    // Adicionar à grade de visualização
+                    pdfPreview.appendChild(pageContainer);
+                }
+                
+                // Mostrar a grade de visualização
+                pdfPreview.classList.remove('hidden');
+                updateExcludedCounter();
+                
+                return pdf;
+            } catch (error) {
+                console.error('Erro ao processar PDF:', error);
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao processar o PDF: ${error.message || 'Arquivo inválido ou corrompido'}
+                    </div>`;
+                throw error;
+            }
+        }
+
+        async function handleFile(file) {
+            resetState();
+
+            if (!file) {
+                fileInfo.innerHTML = '';
+                convertButton.disabled = true;
+                return;
+            }
+
+            if (file.type !== 'application/pdf') {
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Por favor, selecione um arquivo PDF válido. Formato atual: ${file.type}
+                    </div>`;
+                convertButton.disabled = true;
+                return;
+            }
+
+            // Mostra mensagem de carregamento
+            fileInfo.innerHTML = `
+                <div class="status-message">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Carregando arquivo PDF...
+                </div>`;
+
+            try {
+                // Usar FileReader para ler o arquivo
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const pdfData = new Uint8Array(e.target.result);
+                        selectedFile = file; // Armazenar o arquivo para processamento
+                        
+                        // Processar visualização de páginas do PDF
+                        await displayPdfPages(pdfData);
+                        
+                        // Mostrar informações sobre o arquivo
+                        fileInfo.innerHTML = `
+                            <div class="status-message success">
+                                <i class="fas fa-check-circle"></i>
+                                Arquivo selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) - ${totalPdfPages} páginas
+                            </div>`;
+                        
+                        convertButton.disabled = false;
+                    } catch (error) {
+                        fileInfo.innerHTML = `
+                            <div class="status-message error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Erro ao processar o PDF: ${error.message || 'Arquivo inválido ou corrompido'}
+                            </div>`;
+                        convertButton.disabled = true;
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    fileInfo.innerHTML = `
+                        <div class="status-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Erro ao ler o arquivo: Verifique se o arquivo é válido e tente novamente.
+                        </div>`;
+                    convertButton.disabled = true;
+                };
+                
+                // Iniciar a leitura do arquivo
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('Erro ao processar arquivo:', error);
+                fileInfo.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao processar o arquivo: ${error.message || 'Erro desconhecido'}
+                    </div>`;
+                convertButton.disabled = true;
+            }
+        }
+
+        // Função para atualizar a barra de progresso
+        function updateProgress(current, total) {
+            const percentage = (current / total) * 100;
+            progressBarFill.style.width = `${percentage}%`;
+            conversionProgress.textContent = `Convertendo página ${current} de ${total}`;
+        }
+
+        // Função para converter PDF
+        convertButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Verificar se todas as páginas foram excluídas
+            const pagesToProcess = Array.from(
+                { length: totalPdfPages }, 
+                (_, i) => i + 1
+            ).filter(pageNum => !excludedPages.has(pageNum));
+            
+            if (pagesToProcess.length === 0) {
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.
+                    </div>`;
+                return;
+            }
+
+            topDownloadArea.style.display = 'none';
+            statusArea.innerHTML = `
+                <div class="status-message">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Preparando para converter...
+                </div>`;
+
+            progressArea.style.display = 'block';
+            convertButton.disabled = true;
+
+            try {
+                const format = document.querySelector('.format-card.selected').dataset.format;
+                const quality = parseInt(qualitySlider.value) / 100;
+                const dpi = parseInt(document.getElementById('dpiSelect').value);
+                
+                // Carregar o PDF a partir dos dados armazenados
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)}).promise;
+                
+                const zip = new JSZip();
+                const images = zip.folder("imagens_convertidas");
+                
+                let convertedPages = 0;
+                let totalPagesToConvert = pagesToProcess.length;
+                
+                // Limpar área de prévia
+                multiPagePreview.innerHTML = '';
+                
+                for (let i = 0; i < pagesToProcess.length; i++) {
+                    const pageNum = pagesToProcess[i];
+                    convertedPages++;
+                    updateProgress(convertedPages, totalPagesToConvert);
+
+                    const page = await pdf.getPage(pageNum);
+                    const scale = dpi / 72; // Converter DPI para escala
+                    const viewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+
+                    // Converter para o formato selecionado e remover cabeçalho data URL
+                    const mimeType = `image/${format}`;
+                    const imageData = canvas.toDataURL(mimeType, quality);
+                    const base64Data = imageData.split(';base64,').pop();
+                    
+                    images.file(`pagina_${pageNum}.${format}`, base64Data, {base64: true});
+                    
+                    // Adicionar uma miniatura à prévia
+                    const previewImage = document.createElement('div');
+                    previewImage.style.position = 'relative';
+                    previewImage.style.overflow = 'hidden';
+                    previewImage.style.borderRadius = '8px';
+                    previewImage.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    
+                    const img = document.createElement('img');
+                    img.src = imageData;
+                    img.style.width = '100%';
+                    img.style.display = 'block';
+                    
+                    const label = document.createElement('div');
+                    label.textContent = `Página ${pageNum}`;
+                    label.style.position = 'absolute';
+                    label.style.bottom = '10px';
+                    label.style.left = '50%';
+                    label.style.transform = 'translateX(-50%)';
+                    label.style.background = 'rgba(0, 0, 0, 0.7)';
+                    label.style.color = 'white';
+                    label.style.padding = '5px 10px';
+                    label.style.borderRadius = '20px';
+                    label.style.fontSize = '12px';
+                    
+                    previewImage.appendChild(img);
+                    previewImage.appendChild(label);
+                    multiPagePreview.appendChild(previewImage);
+                }
+
+                // Gerar arquivo ZIP
+                const content = await zip.generateAsync({type:"blob"});
+                
+                // Criar link de download
+                const downloadUrl = URL.createObjectURL(content);
+                const pageText = totalPagesToConvert === 1 ? "página" : "páginas";
+                
+                // Mostrar download no topo da página
+                topDownloadArea.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída! ${totalPagesToConvert} ${pageText} convertidas para ${format.toUpperCase()}.
+                    </div>
+                    <a href="${downloadUrl}" download="imagens_convertidas.zip" class="download-link" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #f1ebff; color: #7048e8; text-decoration: none; border-radius: 0.5rem; border: 1px solid #7048e8; font-weight: 600; transition: all 0.2s ease; justify-content: center; width: 100%; margin-bottom: 1rem;">
+                        <i class="fas fa-download"></i>
+                        Baixar imagens convertidas (ZIP)
+                    </a>`;
+                topDownloadArea.style.display = 'block';
+                
+                // Mostrar prévia das imagens
+                previewContainer.style.display = 'block';
+                
+                // Manter o botão de download no final também
+                statusArea.innerHTML = `
+                    <div class="status-message success">
+                        <i class="fas fa-check-circle"></i>
+                        Conversão concluída! ${totalPagesToConvert} ${pageText} convertidas para ${format.toUpperCase()}.
+                    </div>
+                    <a href="${downloadUrl}" download="imagens_convertidas.zip" class="download-link" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #f1ebff; color: #7048e8; text-decoration: none; border-radius: 0.5rem; border: 1px solid #7048e8; font-weight: 600; transition: all 0.2s ease; justify-content: center; width: 100%;">
+                        <i class="fas fa-download"></i>
+                        Baixar imagens convertidas (ZIP)
+                    </a>`;
+                
+                // Liberar URL após download
+                const cleanupUrl = () => URL.revokeObjectURL(downloadUrl);
+                
+                // Adicionar evento de clique para liberar o URL após o download
+                const downloadLinks = document.querySelectorAll('a[download="imagens_convertidas.zip"]');
+                downloadLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        setTimeout(cleanupUrl, 1000);
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Erro durante a conversão:', error);
+                topDownloadArea.style.display = 'none';
+                statusArea.innerHTML = `
+                    <div class="status-message error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro ao converter PDF: ${error.message || 'Ocorreu um erro durante a conversão'}
+                    </div>`;
+            } finally {
+                progressArea.style.display = 'none';
+                convertButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
