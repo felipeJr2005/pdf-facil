@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste Tesseract.js v6.x</title>
+    <title>OCR com Tesseract.js v6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -66,6 +66,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 20px;
+            position: relative;
         }
 
         .upload-area:hover {
@@ -229,6 +230,20 @@
             display: none !important;
         }
 
+        .preview-container {
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 300px;
+            display: none;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
         .comparison {
             background: #fff7ed;
             border: 2px solid #fed7aa;
@@ -266,6 +281,54 @@
             border-left: 4px solid #10b981;
         }
 
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 10;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4361ee;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-weight: 600;
+            color: #4361ee;
+        }
+
+        .log-container {
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
         @media (max-width: 768px) {
             .settings {
                 grid-template-columns: 1fr;
@@ -286,7 +349,7 @@
         <!-- Header -->
         <div class="card">
             <div class="header">
-                <h1><i class="fas fa-eye"></i> Teste Tesseract.js v6.x</h1>
+                <h1><i class="fas fa-eye"></i> OCR com Tesseract.js v6</h1>
                 <div class="version-badge">🚀 Versão Mais Recente</div>
             </div>
         </div>
@@ -296,10 +359,10 @@
             <h3><i class="fas fa-balance-scale"></i> Comparação de Versões</h3>
             <div class="comparison-grid">
                 <div class="version-info version-old">
-                    <h4>❌ Versão Atual (v2.1.0)</h4>
+                    <h4>❌ Versão Antiga (v2.1.0)</h4>
                     <ul>
                         <li>CDN: unpkg.com</li>
-                        <li>Método: worker.load() → loadLanguage() → initialize()</li>
+                        <li>Método: Complexo (4 etapas)</li>
                         <li>Performance: Básica</li>
                         <li>Recursos: Limitados</li>
                     </ul>
@@ -308,9 +371,9 @@
                     <h4>✅ Nova Versão (v6.0.1)</h4>
                     <ul>
                         <li>CDN: cdn.jsdelivr.net</li>
-                        <li>Método: createWorker('lang') - Simplificado</li>
-                        <li>Performance: Otimizada (30-50% mais rápido)</li>
-                        <li>Recursos: Auto-rotação, melhor precisão</li>
+                        <li>Método: Simplificado (1 etapa)</li>
+                        <li>Performance: Otimizada</li>
+                        <li>Recursos: Avançados</li>
                     </ul>
                 </div>
             </div>
@@ -319,6 +382,10 @@
         <!-- Upload e Configurações -->
         <div class="card">
             <div class="content">
+                <div id="initStatus" class="log-container">
+                    Carregando Tesseract.js v6...
+                </div>
+
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
@@ -326,6 +393,10 @@
                     <div class="upload-text">Clique ou arraste arquivos aqui</div>
                     <div class="upload-subtext">Suporte para JPG, PNG (máx. 10MB)</div>
                     <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" class="hidden">
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <img id="previewImage" class="preview-image" alt="Preview da imagem">
                 </div>
 
                 <div class="settings">
@@ -360,7 +431,7 @@
                 </div>
 
                 <button class="btn" id="processBtn" disabled>
-                    <i class="fas fa-magic"></i> Iniciar OCR com Tesseract v6.x
+                    <i class="fas fa-magic"></i> Processar Imagem
                 </button>
 
                 <!-- Progress -->
@@ -393,209 +464,254 @@
         </div>
     </div>
 
-    <!-- Tesseract.js v6.x - VERSÃO MAIS RECENTE -->
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js'></script>
-
     <script>
-        class TesseractV6Test {
-            constructor() {
-                this.worker = null;
-                this.selectedFile = null;
-                this.startTime = null;
-                this.initializeElements();
-                this.setupEventListeners();
-                console.log('🚀 Tesseract.js v6.x Test Iniciado');
-                console.log('📦 Tesseract versão:', Tesseract.version || 'v6.x');
+        document.addEventListener('DOMContentLoaded', async function() {
+            const initStatus = document.getElementById('initStatus');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const languageSelect = document.getElementById('languageSelect');
+            const ocrMode = document.getElementById('ocrMode');
+            const pageSegMode = document.getElementById('pageSegMode');
+            const processBtn = document.getElementById('processBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultText = document.getElementById('resultText');
+            const wordCount = document.getElementById('wordCount');
+            const charCount = document.getElementById('charCount');
+            const timeCount = document.getElementById('timeCount');
+            
+            let selectedFile = null;
+            let tesseractLoaded = false;
+            let worker = null;
+
+            function log(message) {
+                console.log(message);
+                initStatus.innerHTML += `<div>${message}</div>`;
+                initStatus.scrollTop = initStatus.scrollHeight;
             }
 
-            initializeElements() {
-                this.elements = {
-                    uploadArea: document.getElementById('uploadArea'),
-                    fileInput: document.getElementById('fileInput'),
-                    languageSelect: document.getElementById('languageSelect'),
-                    ocrMode: document.getElementById('ocrMode'),
-                    pageSegMode: document.getElementById('pageSegMode'),
-                    processBtn: document.getElementById('processBtn'),
-                    progressContainer: document.getElementById('progressContainer'),
-                    progressBar: document.getElementById('progressBar'),
-                    progressText: document.getElementById('progressText'),
-                    resultContainer: document.getElementById('resultContainer'),
-                    resultText: document.getElementById('resultText'),
-                    wordCount: document.getElementById('wordCount'),
-                    charCount: document.getElementById('charCount'),
-                    timeCount: document.getElementById('timeCount')
-                };
-            }
-
-            setupEventListeners() {
-                // Upload area
-                this.elements.uploadArea.addEventListener('click', () => {
-                    this.elements.fileInput.click();
-                });
-
-                this.elements.uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    this.elements.uploadArea.style.borderColor = '#3a56d4';
-                    this.elements.uploadArea.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
-                });
-
-                this.elements.uploadArea.addEventListener('dragleave', (e) => {
-                    e.preventDefault();
-                    this.elements.uploadArea.style.borderColor = '#4361ee';
-                    this.elements.uploadArea.style.backgroundColor = '';
-                });
-
-                this.elements.uploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    this.elements.uploadArea.style.borderColor = '#4361ee';
-                    this.elements.uploadArea.style.backgroundColor = '';
+            // Carregar Tesseract.js dinamicamente para evitar problemas de carregamento
+            async function loadTesseract() {
+                log('🔄 Carregando Tesseract.js v6...');
+                
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js';
+                    script.async = true;
                     
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        this.handleFileSelect(files[0]);
-                    }
-                });
-
-                // File input
-                this.elements.fileInput.addEventListener('change', (e) => {
-                    if (e.target.files.length > 0) {
-                        this.handleFileSelect(e.target.files[0]);
-                    }
-                });
-
-                // Process button
-                this.elements.processBtn.addEventListener('click', () => {
-                    this.processImage();
+                    script.onload = () => {
+                        log('✅ Tesseract.js carregado com sucesso!');
+                        tesseractLoaded = true;
+                        resolve(true);
+                    };
+                    
+                    script.onerror = () => {
+                        log('❌ Erro ao carregar Tesseract.js');
+                        reject(new Error('Falha ao carregar Tesseract.js'));
+                    };
+                    
+                    document.head.appendChild(script);
                 });
             }
 
-            handleFileSelect(file) {
-                // Validar arquivo
+            // Inicializar página
+            try {
+                await loadTesseract();
+                log(`🚀 Tesseract.js ${Tesseract.version || 'v6'} pronto para uso!`);
+            } catch (error) {
+                log(`❌ Erro na inicialização: ${error.message}`);
+                alert('Erro ao carregar Tesseract.js. Tente atualizar a página.');
+            }
+
+            // Eventos de upload
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#3a56d4';
+                uploadArea.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4361ee';
+                uploadArea.style.backgroundColor = '';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4361ee';
+                uploadArea.style.backgroundColor = '';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
                 if (!file.type.startsWith('image/')) {
-                    alert('❌ Por favor, selecione apenas arquivos de imagem.');
+                    alert('Por favor, selecione apenas arquivos de imagem.');
                     return;
                 }
 
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('❌ Arquivo muito grande. Máximo 10MB.');
+                    alert('Arquivo muito grande. Máximo 10MB.');
                     return;
                 }
 
-                this.selectedFile = file;
-                this.elements.processBtn.disabled = false;
+                selectedFile = file;
+                processBtn.disabled = false;
                 
                 // Atualizar UI
-                this.elements.uploadArea.innerHTML = `
+                uploadArea.innerHTML = `
                     <div class="upload-icon"><i class="fas fa-check-circle" style="color: #10b981;"></i></div>
                     <div class="upload-text">✅ ${file.name}</div>
                     <div class="upload-subtext">📁 ${(file.size / 1024 / 1024).toFixed(2)} MB</div>
                 `;
 
-                console.log('📁 Arquivo selecionado:', file.name, file.type, file.size);
+                // Mostrar preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                
+                log(`📁 Arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
             }
 
-            async processImage() {
-                if (!this.selectedFile) return;
-
-                this.startTime = performance.now();
-                this.showProgress();
-                this.elements.processBtn.disabled = true;
+            // Processar imagem
+            processBtn.addEventListener('click', async () => {
+                if (!selectedFile || !tesseractLoaded) return;
+                
+                const startTime = performance.now();
+                showProgress();
+                processBtn.disabled = true;
 
                 try {
-                    // NOVO MÉTODO TESSERACT V6.x - MUITO MAIS SIMPLES!
-                    console.log('🚀 Iniciando Tesseract v6.x...');
+                    log('🚀 Iniciando OCR...');
                     
-                    const language = this.elements.languageSelect.value;
-                    console.log('🌐 Idioma selecionado:', language);
+                    const language = languageSelect.value;
+                    log(`🌐 Idioma: ${language}`);
 
-                    // Criar worker com idioma (NOVO em v6.x!)
-                    this.updateProgress(10, 'Criando worker...');
-                    this.worker = await Tesseract.createWorker(language);
-                    console.log('✅ Worker criado com sucesso');
-
-                    // Configurar parâmetros avançados
-                    this.updateProgress(20, 'Configurando parâmetros...');
-                    await this.worker.setParameters({
-                        tessedit_ocr_engine_mode: this.elements.ocrMode.value,
-                        tessedit_pageseg_mode: this.elements.pageSegMode.value,
+                    updateProgress(10, 'Inicializando...');
+                    
+                    // Criar worker (método v6)
+                    log('⚙️ Criando worker...');
+                    worker = await Tesseract.createWorker(language);
+                    
+                    // Configurar parâmetros
+                    updateProgress(20, 'Configurando...');
+                    log('⚙️ Definindo parâmetros...');
+                    await worker.setParameters({
+                        tessedit_ocr_engine_mode: ocrMode.value,
+                        tessedit_pageseg_mode: pageSegMode.value,
                         preserve_interword_spaces: '1'
                     });
-                    console.log('⚙️ Parâmetros configurados');
-
-                    // Processar imagem
-                    this.updateProgress(30, 'Reconhecendo texto...');
-                    const { data } = await this.worker.recognize(this.selectedFile, {
-                        logger: (progress) => {
-                            if (progress.status === 'recognizing text') {
-                                const percent = Math.round(30 + (progress.progress * 60));
-                                this.updateProgress(percent, `Reconhecendo: ${Math.round(progress.progress * 100)}%`);
-                            }
-                        }
-                    });
-
-                    // Finalizar
-                    this.updateProgress(100, 'Finalizando...');
-                    await this.worker.terminate();
                     
-                    this.showResults(data);
-                    console.log('🎉 OCR concluído com sucesso!');
-
+                    // Processar imagem
+                    updateProgress(30, 'Processando imagem...');
+                    log('🔍 Reconhecendo texto...');
+                    
+                    // Converter para base64 para melhor compatibilidade
+                    const reader = new FileReader();
+                    reader.readAsDataURL(selectedFile);
+                    
+                    reader.onload = async () => {
+                        try {
+                            const imageData = reader.result;
+                            
+                            const result = await worker.recognize(imageData, {
+                                logger: progress => {
+                                    if (progress.status === 'recognizing text') {
+                                        const percent = 30 + (progress.progress * 60);
+                                        updateProgress(Math.round(percent), `Reconhecendo: ${Math.round(progress.progress * 100)}%`);
+                                    }
+                                }
+                            });
+                            
+                            // Finalizar worker
+                            updateProgress(95, 'Finalizando...');
+                            log('🧹 Limpando recursos...');
+                            await worker.terminate();
+                            worker = null;
+                            
+                            // Calcular tempo
+                            const endTime = performance.now();
+                            const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+                            
+                            // Mostrar resultados
+                            log('✅ OCR concluído com sucesso!');
+                            updateProgress(100, 'Concluído!');
+                            
+                            // Exibir texto reconhecido
+                            resultText.value = result.data.text;
+                            
+                            // Atualizar estatísticas
+                            const words = result.data.text.trim().split(/\s+/).filter(w => w.length > 0).length;
+                            const chars = result.data.text.length;
+                            
+                            wordCount.textContent = words;
+                            charCount.textContent = chars;
+                            timeCount.textContent = processingTime + 's';
+                            
+                            // Mostrar resultado
+                            resultContainer.style.display = 'block';
+                            hideProgress();
+                            processBtn.disabled = false;
+                            
+                            log(`📊 Palavras: ${words}, Caracteres: ${chars}, Tempo: ${processingTime}s`);
+                            
+                        } catch (error) {
+                            handleError(error);
+                        }
+                    };
+                    
+                    reader.onerror = (error) => {
+                        handleError(new Error('Erro ao ler o arquivo'));
+                    };
+                    
                 } catch (error) {
-                    console.error('❌ Erro no OCR:', error);
-                    alert('❌ Erro ao processar imagem: ' + error.message);
-                    this.hideProgress();
-                    this.elements.processBtn.disabled = false;
+                    handleError(error);
                 }
-            }
+            });
 
-            updateProgress(percent, message) {
-                this.elements.progressBar.style.width = percent + '%';
-                this.elements.progressText.textContent = message;
-            }
-
-            showProgress() {
-                this.elements.progressContainer.classList.remove('hidden');
-                this.elements.resultContainer.style.display = 'none';
-            }
-
-            hideProgress() {
-                this.elements.progressContainer.classList.add('hidden');
-            }
-
-            showResults(data) {
-                this.hideProgress();
+            function handleError(error) {
+                log(`❌ Erro: ${error.message}`);
+                console.error('Erro detalhado:', error);
                 
-                const endTime = performance.now();
-                const processingTime = ((endTime - this.startTime) / 1000).toFixed(2);
-
-                // Mostrar texto
-                this.elements.resultText.value = data.text;
-
-                // Calcular estatísticas
-                const wordCount = data.text.trim().split(/\s+/).filter(word => word.length > 0).length;
-                const charCount = data.text.length;
-
-                // Atualizar stats
-                this.elements.wordCount.textContent = wordCount;
-                this.elements.charCount.textContent = charCount;
-                this.elements.timeCount.textContent = processingTime + 's';
-
-                // Mostrar resultado
-                this.elements.resultContainer.style.display = 'block';
-                this.elements.processBtn.disabled = false;
-
-                // Log detalhado
-                console.log('📊 Estatísticas do OCR:');
-                console.log('📝 Palavras:', wordCount);
-                console.log('🔤 Caracteres:', charCount);
-                console.log('⏱️ Tempo:', processingTime + 's');
-                console.log('📄 Confiança média:', data.confidence?.toFixed(2) || 'N/A');
+                hideProgress();
+                processBtn.disabled = false;
+                
+                alert(`Erro ao processar a imagem: ${error.message}`);
             }
-        }
 
-        // Inicializar quando página carregar
-        document.addEventListener('DOMContentLoaded', () => {
-            new TesseractV6Test();
+            function showProgress() {
+                progressContainer.classList.remove('hidden');
+                resultContainer.style.display = 'none';
+            }
+
+            function hideProgress() {
+                progressContainer.classList.add('hidden');
+            }
+
+            function updateProgress(percent, message) {
+                progressBar.style.width = percent + '%';
+                progressText.textContent = message;
+            }
         });
     </script>
 </body>
