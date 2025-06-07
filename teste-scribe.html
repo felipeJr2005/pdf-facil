@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>Teste Scribe.js - Upload com Blob</title>
+=======
+    <title>Teste Scribe.js - PDF OCR</title>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
+<<<<<<< HEAD
         .log-container {
             background-color: #000;
             color: #00ff00;
@@ -27,6 +32,8 @@
             background-color: #f8f9fa;
         }
         
+=======
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         .drop-zone {
             border: 2px dashed #ccc;
             border-radius: 8px;
@@ -41,6 +48,22 @@
             background-color: #f8f9fa;
         }
         
+<<<<<<< HEAD
+=======
+        .drop-zone.dragover {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .resultado {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+        
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         .loading {
             display: none;
         }
@@ -48,6 +71,33 @@
         .loading.show {
             display: block;
         }
+<<<<<<< HEAD
+=======
+        
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .progress-container.show {
+            display: block;
+        }
+        
+        .log-container {
+            background-color: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .btn-group {
+            margin: 10px 0;
+        }
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
     </style>
 </head>
 <body>
@@ -55,6 +105,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
+<<<<<<< HEAD
                     <div class="card-header bg-info text-white">
                         <h4><i class="fas fa-upload"></i> Teste Upload - Versão Blob</h4>
                         <small>Testando upload com método de leitura blob</small>
@@ -62,22 +113,41 @@
                     
                     <div class="card-body">
                         <!-- Status -->
+=======
+                    <div class="card-header bg-primary text-white">
+                        <h4><i class="fas fa-file-pdf"></i> Teste Scribe.js - Extração de Texto PDF</h4>
+                        <small>Teste do sistema OCR antes de integrar no dashboard principal</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Status do Scribe.js -->
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                         <div id="scribe-status" class="alert alert-info">
                             <i class="fas fa-spinner fa-spin"></i> Carregando Scribe.js...
                         </div>
                         
+<<<<<<< HEAD
                         <!-- Upload Area -->
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <h5><i class="fas fa-file-upload"></i> Upload de PDF</h5>
                                 <div class="drop-zone" id="dropZone">
                                     <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
+=======
+                        <!-- Método 1: Upload de arquivo -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-upload"></i> Método 1: Upload de Arquivo</h5>
+                                <div class="drop-zone" id="dropZone">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                                     <p class="mb-2">Arraste um PDF aqui ou clique para selecionar</p>
                                     <input type="file" id="fileInput" accept=".pdf" style="display: none;">
                                     <button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
                                         <i class="fas fa-folder-open"></i> Selecionar PDF
                                     </button>
                                 </div>
+<<<<<<< HEAD
                                 
                                 <!-- Processamento -->
                                 <div class="mt-3">
@@ -95,17 +165,70 @@
                                 <div class="card-body">
                                     <div id="fileDetails"></div>
                                 </div>
+=======
+                            </div>
+                            
+                            <!-- Método 2: URL de PDF -->
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-link"></i> Método 2: URL de PDF</h5>
+                                <div class="input-group">
+                                    <input type="url" 
+                                           id="pdfUrl" 
+                                           class="form-control" 
+                                           placeholder="https://exemplo.com/documento.pdf"
+                                           value="">
+                                    <button class="btn btn-primary" onclick="processarURLPDF()">
+                                        <i class="fas fa-download"></i> Processar URL
+                                    </button>
+                                </div>
+                                <small class="text-muted">Cole a URL de um PDF acessível publicamente</small>
+                                
+                                <!-- URLs de teste -->
+                                <div class="mt-3">
+                                    <h6>URLs de Teste:</h6>
+                                    <div class="btn-group-vertical d-grid gap-2">
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="testarURL('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')">
+                                            📄 PDF Simples (W3C)
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="testarURL('https://www.africau.edu/images/default/sample.pdf')">
+                                            📊 PDF com Texto
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progresso -->
+                        <div class="progress-container" id="progressContainer">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span id="progressText">Processando...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progressBar" 
+                                     role="progressbar" 
+                                     style="width: 0%"></div>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                             </div>
                         </div>
                         
                         <!-- Loading -->
                         <div class="loading text-center" id="loading">
+<<<<<<< HEAD
                             <div class="spinner-border text-primary" role="status"></div>
                             <p class="mt-2">Processando PDF...</p>
+=======
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2">Extraindo texto do PDF...</p>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                         </div>
                         
                         <!-- Resultado -->
                         <div id="resultadoContainer" style="display: none;">
+<<<<<<< HEAD
                             <h5><i class="fas fa-file-text"></i> Resultado:</h5>
                             <div class="resultado" id="resultado"></div>
                             <div class="mt-3">
@@ -114,10 +237,22 @@
                                 </button>
                                 <button class="btn btn-secondary" onclick="limparResultado()">
                                     <i class="fas fa-eraser"></i> Limpar
+=======
+                            <h5><i class="fas fa-file-text"></i> Texto Extraído:</h5>
+                            <div class="resultado" id="resultado"></div>
+                            
+                            <div class="mt-3">
+                                <button class="btn btn-success" onclick="copiarTexto()">
+                                    <i class="fas fa-copy"></i> Copiar Texto
+                                </button>
+                                <button class="btn btn-info" onclick="baixarTexto()">
+                                    <i class="fas fa-download"></i> Baixar TXT
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                                 </button>
                             </div>
                         </div>
                         
+<<<<<<< HEAD
                         <!-- Log -->
                         <div class="mt-4">
                             <div class="d-flex justify-content-between align-items-center">
@@ -129,6 +264,17 @@
                             <div class="log-container">
                                 <div id="log">🚀 Sistema iniciado...\n</div>
                             </div>
+=======
+                        <!-- Log Console -->
+                        <div class="mt-4">
+                            <h5><i class="fas fa-terminal"></i> Log do Sistema:</h5>
+                            <div class="log-container" id="logContainer">
+                                <div id="log">Sistema iniciado...\n</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="limparLog()">
+                                <i class="fas fa-trash"></i> Limpar Log
+                            </button>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                         </div>
                     </div>
                 </div>
@@ -137,10 +283,18 @@
     </div>
 
     <script type="module">
+<<<<<<< HEAD
         let scribe = null;
         let textoExtraido = '';
         let arquivoAtual = null;
         
+=======
+        // Variáveis globais
+        let scribe = null;
+        let textoExtraido = '';
+        
+        // Log personalizado
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         function log(mensagem, tipo = 'info') {
             const timestamp = new Date().toLocaleTimeString();
             const logDiv = document.getElementById('log');
@@ -148,12 +302,17 @@
                 'info': '#00ff00',
                 'warning': '#ffff00', 
                 'error': '#ff0000',
+<<<<<<< HEAD
                 'success': '#00ff88',
                 'debug': '#88ff88'
+=======
+                'success': '#00ff88'
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
             };
             
             logDiv.innerHTML += `<span style="color: ${cores[tipo] || '#00ff00'}">[${timestamp}] ${mensagem}</span>\n`;
             logDiv.scrollTop = logDiv.scrollHeight;
+<<<<<<< HEAD
             console.log(`[${timestamp}] ${mensagem}`);
         }
 
@@ -161,25 +320,53 @@
         async function inicializarScribe() {
             try {
                 log('🔄 Carregando Scribe.js...', 'info');
+=======
+            
+            console.log(`[${timestamp}] ${mensagem}`);
+        }
+        
+        // Inicialização
+        async function inicializarScribe() {
+            try {
+                log('Tentando carregar Scribe.js...', 'info');
+                
+                // Importa o Scribe.js
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                 const scribeModule = await import('./node_modules/scribe.js-ocr/scribe.js');
                 scribe = scribeModule.default;
                 
                 log('✅ Scribe.js carregado com sucesso!', 'success');
                 
+<<<<<<< HEAD
                 document.getElementById('scribe-status').innerHTML = `
                     <i class="fas fa-check-circle text-success"></i> 
                     <strong>Scribe.js carregado!</strong> Selecione um PDF para testar.
+=======
+                // Atualiza status
+                document.getElementById('scribe-status').innerHTML = `
+                    <i class="fas fa-check-circle text-success"></i> 
+                    <strong>Scribe.js carregado com sucesso!</strong> 
+                    Sistema pronto para processar PDFs.
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                 `;
                 document.getElementById('scribe-status').className = 'alert alert-success';
                 
                 return true;
                 
             } catch (error) {
+<<<<<<< HEAD
                 log(`❌ Erro ao carregar: ${error.message}`, 'error');
                 
                 document.getElementById('scribe-status').innerHTML = `
                     <i class="fas fa-exclamation-triangle text-danger"></i> 
                     <strong>Erro:</strong> ${error.message}
+=======
+                log(`❌ Erro ao carregar Scribe.js: ${error.message}`, 'error');
+                
+                document.getElementById('scribe-status').innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-danger"></i> 
+                    <strong>Erro ao carregar Scribe.js:</strong> ${error.message}
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
                 `;
                 document.getElementById('scribe-status').className = 'alert alert-danger';
                 
@@ -187,6 +374,7 @@
             }
         }
         
+<<<<<<< HEAD
         // Handler do upload
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -273,11 +461,63 @@
             }
         }
         
+=======
+        // Processamento de PDF
+        async function processarPDF(fonte, nome = 'documento.pdf') {
+            if (!scribe) {
+                log('❌ Scribe.js não está carregado!', 'error');
+                alert('Scribe.js não foi carregado. Recarregue a página.');
+                return;
+            }
+            
+            try {
+                // Mostra loading
+                mostrarLoading(true);
+                mostrarProgresso(true, 'Iniciando processamento...');
+                
+                log(`🔄 Iniciando processamento: ${nome}`, 'info');
+                
+                // Processa com Scribe.js
+                atualizarProgresso(25, 'Analisando PDF...');
+                
+                const resultado = await scribe.extractText([fonte]);
+                
+                atualizarProgresso(75, 'Extraindo texto...');
+                
+                if (resultado && resultado.length > 0 && resultado[0].text) {
+                    textoExtraido = resultado[0].text.trim();
+                    
+                    atualizarProgresso(100, 'Concluído!');
+                    
+                    log(`✅ Texto extraído com sucesso! ${textoExtraido.length} caracteres`, 'success');
+                    
+                    // Mostra resultado
+                    mostrarResultado(textoExtraido, nome);
+                    
+                } else {
+                    throw new Error('Nenhum texto foi extraído do PDF');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no processamento: ${error.message}`, 'error');
+                alert(`Erro ao processar PDF: ${error.message}`);
+                
+            } finally {
+                setTimeout(() => {
+                    mostrarLoading(false);
+                    mostrarProgresso(false);
+                }, 1000);
+            }
+        }
+        
+        // Funções de interface
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         function mostrarLoading(mostrar) {
             const loading = document.getElementById('loading');
             loading.className = mostrar ? 'loading text-center show' : 'loading text-center';
         }
         
+<<<<<<< HEAD
         function mostrarResultado(texto, metodo) {
             const container = document.getElementById('resultadoContainer');
             const resultado = document.getElementById('resultado');
@@ -295,12 +535,46 @@
                 </div>
                 <hr>
                 <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; max-height: 300px; overflow-y: auto;">${textoFormatado}</div>
+=======
+        function mostrarProgresso(mostrar, texto = '') {
+            const container = document.getElementById('progressContainer');
+            container.className = mostrar ? 'progress-container show' : 'progress-container';
+            
+            if (texto) {
+                document.getElementById('progressText').textContent = texto;
+            }
+        }
+        
+        function atualizarProgresso(percentual, texto) {
+            document.getElementById('progressBar').style.width = percentual + '%';
+            document.getElementById('progressPercent').textContent = percentual + '%';
+            if (texto) {
+                document.getElementById('progressText').textContent = texto;
+            }
+        }
+        
+        function mostrarResultado(texto, nome) {
+            const container = document.getElementById('resultadoContainer');
+            const resultado = document.getElementById('resultado');
+            
+            // Formata o resultado
+            resultado.innerHTML = `
+                <div class="mb-3">
+                    <strong>📄 Arquivo:</strong> ${nome}<br>
+                    <strong>📊 Caracteres:</strong> ${texto.length}<br>
+                    <strong>📝 Palavras:</strong> ${texto.split(/\s+/).length}<br>
+                    <strong>📄 Qualidade:</strong> ${avaliarQualidade(texto)}
+                </div>
+                <hr>
+                <div style="white-space: pre-wrap; font-family: monospace;">${texto}</div>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
             `;
             
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth' });
         }
         
+<<<<<<< HEAD
         window.copiarTexto = function() {
             if (window.textoExtraido) {
                 navigator.clipboard.writeText(window.textoExtraido).then(() => {
@@ -327,15 +601,95 @@
         dropZone.addEventListener('dragover', function(e) {
             e.preventDefault();
             dropZone.style.borderColor = '#28a745';
+=======
+        function avaliarQualidade(texto) {
+            const palavras = texto.split(/\s+/).filter(p => p.length > 2);
+            const caracteresRuido = (texto.match(/[^\w\s\.\,\!\?\-\(\)]/g) || []).length;
+            const percentualRuido = (caracteresRuido / texto.length) * 100;
+            
+            if (percentualRuido < 5) return '🟢 Excelente';
+            if (percentualRuido < 10) return '🟡 Boa';
+            if (percentualRuido < 20) return '🟠 Média';
+            return '🔴 Ruim';
+        }
+        
+        // Handlers de eventos
+        window.processarURLPDF = function() {
+            const url = document.getElementById('pdfUrl').value.trim();
+            if (!url) {
+                alert('Por favor, insira uma URL válida');
+                return;
+            }
+            
+            log(`🔗 Processando URL: ${url}`, 'info');
+            processarPDF(url, url.split('/').pop());
+        };
+        
+        window.testarURL = function(url) {
+            document.getElementById('pdfUrl').value = url;
+            processarURLPDF();
+        };
+        
+        window.copiarTexto = function() {
+            navigator.clipboard.writeText(textoExtraido).then(() => {
+                log('📋 Texto copiado para área de transferência', 'success');
+                alert('Texto copiado!');
+            });
+        };
+        
+        window.baixarTexto = function() {
+            const blob = new Blob([textoExtraido], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'texto-extraido.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            log('💾 Texto baixado como arquivo', 'success');
+        };
+        
+        window.limparLog = function() {
+            document.getElementById('log').innerHTML = 'Log limpo...\n';
+        };
+        
+        // Upload de arquivo
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                log(`📁 Arquivo selecionado: ${file.name} (${(file.size/1024/1024).toFixed(1)}MB)`, 'info');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    processarPDF(e.target.result, file.name);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Por favor, selecione um arquivo PDF válido');
+            }
+        });
+        
+        // Drag and drop
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         });
         
         dropZone.addEventListener('dragleave', function(e) {
             e.preventDefault();
+<<<<<<< HEAD
             dropZone.style.borderColor = '#ccc';
+=======
+            dropZone.classList.remove('dragover');
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         });
         
         dropZone.addEventListener('drop', function(e) {
             e.preventDefault();
+<<<<<<< HEAD
             dropZone.style.borderColor = '#ccc';
             
             const files = e.dataTransfer.files;
@@ -352,8 +706,27 @@
             
             // Desabilita botão até arquivo ser selecionado
             document.getElementById('btnBlob').disabled = true;
+=======
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        // Inicializa quando a página carrega
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Página carregada, inicializando sistema...', 'info');
+            inicializarScribe();
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
         });
         
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> ea9a5c89e75ba8937ecbdd0e869c764dbebeff07
