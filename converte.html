@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversor de PDF</title>
+    <title>Converte PDF</title>
     <!-- CSS Global -->
     <link rel="stylesheet" href="unified-pdf-tools.css">
     <!-- Font Awesome -->
@@ -115,15 +115,15 @@
                         </div>
                     </div>
                     
-                    <!-- OCR - Desabilitado até implementar -->
-                    <div class="method-card disabled" id="ocrCard" data-format="ocr" tabindex="0">
-                        <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input" disabled>
+                    <!-- OCR - AGORA HABILITADO com Tesseract -->
+                    <div class="method-card" id="ocrCard" data-format="ocr" tabindex="0">
+                        <input type="radio" id="ocr" name="conversionFormat" value="ocr" class="radio-input">
                         <div class="method-icon">
-                            <i class="fas fa-font"></i>
+                            <i class="fas fa-eye"></i>
                         </div>
                         <div class="method-details">
-                            <div class="method-title">OCR</div>
-                            <div class="method-description">Reconhecimento de imagens</div>
+                            <div class="method-title">OCR Tesseract</div>
+                            <div class="method-description">Reconhecimento óptico de caracteres</div>
                         </div>
                     </div>
                     
@@ -179,11 +179,10 @@
                     enabled: true
                 },
                 'ocr': {
-                    icon: 'search',
-                    title: 'Converter PDF com OCR',
-                    page: null,
-                    enabled: false,
-                    message: 'Funcionalidade OCR será implementada em breve!'
+                    icon: 'eye',
+                    title: 'OCR Tesseract - Reconhecimento Óptico',
+                    page: 'ocr_tesseract.html',  // NOME DO ARQUIVO OCR
+                    enabled: true  // AGORA HABILITADO
                 },
                 'excel': {
                     icon: 'file-excel',
