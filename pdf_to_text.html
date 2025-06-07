@@ -515,25 +515,51 @@
                 textContent.innerHTML = '';
                 let fullText = "";
                 
-                data.text.forEach(page => {
-                    const pageElement = document.createElement('div');
-                    pageElement.className = 'text-page';
+                // Verificar se a resposta possui a estrutura esperada
+                if (data && data.text && Array.isArray(data.text)) {
+                    data.text.forEach(page => {
+                        const pageElement = document.createElement('div');
+                        pageElement.className = 'text-page';
+                        
+                        const pageTitle = document.createElement('div');
+                        pageTitle.className = 'text-page-title';
+                        pageTitle.textContent = `Página ${page.page}`;
+                        
+                        const pageContent = document.createElement('div');
+                        pageContent.textContent = page.content;
+                        
+                        pageElement.appendChild(pageTitle);
+                        pageElement.appendChild(pageContent);
+                        textContent.appendChild(pageElement);
+                        
+                        fullText += `--- Página ${page.page} ---\n${page.content}\n\n`;
+                    });
+                } else {
+                    // Formato alternativo - texto sem páginas ou formato diferente
+                    let extractedContent = '';
                     
-                    const pageTitle = document.createElement('div');
-                    pageTitle.className = 'text-page-title';
-                    pageTitle.textContent = `Página ${page.page}`;
+                    if (typeof data.text === 'string') {
+                        // Caso o texto seja retornado como uma string única
+                        extractedContent = data.text;
+                    } else if (data.content) {
+                        // Formato alternativo possível
+                        extractedContent = data.content;
+                    } else {
+                        // Último recurso - exibir os dados como estão
+                        extractedContent = JSON.stringify(data, null, 2);
+                    }
                     
-                    const pageContent = document.createElement('div');
-                    pageContent.textContent = page.content;
+                    const singlePage = document.createElement('div');
+                    singlePage.className = 'text-page';
+                    singlePage.textContent = extractedContent;
+                    textContent.appendChild(singlePage);
                     
-                    pageElement.appendChild(pageTitle);
-                    pageElement.appendChild(pageContent);
-                    textContent.appendChild(pageElement);
-                    
-                    fullText += `--- Página ${page.page} ---\n${page.content}\n\n`;
-                });
+                    fullText = extractedContent;
+                }
                 
                 extractedText = fullText;
+                const pageText = data.total_pages === 1 ? "página" : "páginas";
+                const totalPages = data.total_pages || (data.text && Array.isArray(data.text) ? data.text.length : 1);
                 
                 // Preparar link de download
                 const blob = new Blob([fullText], { type: 'text/plain' });
@@ -560,7 +586,7 @@
                 statusArea.innerHTML = `
                     <div class="status-message success">
                         <i class="fas fa-check-circle"></i>
-                        Extração concluída com sucesso! Texto extraído de ${data.total_pages} página(s).
+                        Extração concluída com sucesso! Texto extraído de ${totalPages} ${pageText}.
                     </div>`;
                 
             } catch (error) {
