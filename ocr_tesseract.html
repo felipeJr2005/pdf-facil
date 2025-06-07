@@ -4,15 +4,194 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR - Reconhecimento Óptico de Caracteres</title>
+    <!-- CSS Global -->
     <link rel="stylesheet" href="unified-pdf-tools.css">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Scripts OCR e PDF -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"></script>
+    <!-- Sortable.js para arrastar e soltar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
 
-<body class="converter-pdf">
+<style>
+
+/* Estilos para a navegação de páginas no OCR */
+.page-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 0;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.page-nav-button {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 0 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.page-nav-button:hover {
+    background-color: #f0f7ff;
+    border-color: #90c2ff;
+}
+
+.page-nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f0f0f0;
+    border-color: #e0e0e0;
+    box-shadow: none;
+}
+
+.page-nav-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #505050;
+    margin: 0 15px;
+    min-width: 100px;
+    text-align: center;
+}
+
+
+
+/* Estilos atualizados para o editor-toolbar baseado nas imagens fornecidas */
+.editor-toolbar {
+    display: flex;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Grupos de botões separados com pequenas margens */
+.toolbar-group {
+    display: flex;
+    border-right: 1px solid #dee2e6;
+    padding-right: 0.5rem;
+    margin-right: 0.5rem;
+    gap: 0.25rem;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+/* Botões de formatação */
+.editor-btn {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.editor-btn:hover {
+    background: #f1f3f5;
+    border-color: #ced4da;
+}
+
+.editor-btn.active {
+    background: #4361ee;
+    color: white;
+    border-color: #3b56d9;
+}
+
+/* Botões de cores para destacar */
+.color-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: transform 0.2s;
+    margin: 0 2px;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+}
+
+/* Select para tamanho de fonte */
+.format-select {
+    height: 34px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0 0.5rem;
+    background: white;
+    cursor: pointer;
+    margin-left: 0.25rem;
+    min-width: 100px;
+    color: #495057;
+}
+
+/* Área de edição */
+.editor-content {
+    padding: 1rem;
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin: 0;
+    font-family: inherit;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.editor-content:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+/* Cor específica para os botões de cores de destacar como na imagem */
+.color-btn[data-color="#ffff00"] {
+    background-color: #ffff00;
+}
+
+.color-btn[data-color="#90EE90"] {
+    background-color: #90EE90;
+}
+
+.color-btn[data-color="#ADD8E6"] {
+    background-color: #ADD8E6;
+}
+
+.color-btn[data-color="#FFB6C1"] {
+    background-color: #FFB6C1;
+}
+
+
+</style>
+
+<body class="converter-ocr">
     <div class="function-container">
-        <!-- Área de upload -->
+        <!-- Área de Upload -->
         <div class="card upload-area">
             <div class="card-header">
                 <h2 class="card-title">
@@ -22,27 +201,27 @@
             <div class="card-body">
                 <div class="drop-zone" id="dropZone">
                     <div class="drop-zone-content">
-                        <div class="upload-icon">
-                            <i class="fas fa-file-image"></i>
-                        </div>
-                        <div class="upload-text">Arraste sua imagem ou PDF escaneado aqui</div>
-                        <p class="upload-subtext">JPG, JPEG, PNG ou PDF (máx. 10MB)</p>
-                        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
+                        <center>
+                            <i class="fas fa-file-image upload-icon"></i>
+                        </center>
+                        <div class="upload-text">Selecione ou Arraste o arquivo</div>
+                        <div class="upload-subtext">JPG, JPEG, PNG ou PDF (máx. 10MB)</div>
+                        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf,application/pdf,image/jpeg,image/jpg,image/png" class="hidden">
                     </div>
                 </div>
                 <div id="fileInfo" class="mt-3"></div>
             </div>
         </div>
 
-        <!-- Área de status -->
-        <div id="statusArea"></div>
-
-        <!-- Área de controles -->
-        <div id="controlPanel" class="card" style="display: none;">
+        <!-- Área de Controle -->
+        <div class="card control-panel" id="controlPanel" style="display: none;">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-cogs"></i> Configuração de OCR
                 </h3>
+                <div id="pagesExtracted" class="mt-2" style="display: none;">
+                    Páginas Excluídas: <span id="excludedPagesList">0</span>
+                </div>
             </div>
             <div class="card-body">
                 <div class="settings-panel">
@@ -59,33 +238,17 @@
                     </div>
                 </div>
                 
-                <button id="recognizeBtn" class="pdf-action-button">
+                <button id="recognizeBtn" class="extract-btn" disabled style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white; width: 100%;">
                     <i class="fas fa-magic"></i> Reconhecer Texto
                 </button>
             </div>
         </div>
 
-        <!-- Área de ações do texto (Reposicionado para aparecer após o status) -->
-        <div id="textActions" class="card" style="display: none;">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-file-alt"></i> Ações do Texto
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="button-container" style="display: flex; justify-content: space-between; gap: 10px;">
-                    <button id="copyText" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary); flex: 1;">
-                        <i class="fas fa-copy"></i> Copiar Texto
-                    </button>
-                    <button id="downloadText" class="pdf-action-button" style="flex: 1;">
-                        <i class="fas fa-download"></i> Baixar como TXT
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Área de status e mensagens -->
+        <div id="statusArea" style="display: none; margin-bottom: 20px;"></div>
 
         <!-- Área de progresso -->
-        <div id="progressContainer" class="card" style="display: none;">
+        <div class="card hidden" id="progressContainer">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-spinner fa-spin"></i> Processando
@@ -99,11 +262,11 @@
             </div>
         </div>
 
-        <!-- Visualização da imagem -->
-        <div id="imagePreviewContainer" class="card" style="display: none;">
+        <!-- Visualização de imagem única -->
+        <div class="card hidden" id="imagePreviewContainer">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-image"></i> Imagem
+                    <i class="fas fa-image"></i> Imagem para OCR
                 </h3>
             </div>
             <div class="card-body">
@@ -113,25 +276,46 @@
             </div>
         </div>
 
-        <!-- Visualização do PDF -->
-        <div id="pdfPreviewContainer" class="card" style="display: none;">
+        <!-- Visualização das páginas do PDF -->
+        <div class="card preview-container hidden" id="pdfPreviewContainer">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-file-pdf"></i> Selecione as páginas para processar
+                    <i class="fas fa-file-pdf"></i> Click para Processar é possivel remover e ordenar!
                 </h3>
             </div>
             <div class="card-body">
                 <div id="pdfPreview" class="pdf-preview-grid"></div>
+                
+                <!-- Navegação de páginas do grid -->
+                <div class="page-navigation hidden" id="gridPagination">
+                    <button id="prevGridPage" class="page-nav-button"><i class="fas fa-chevron-left"></i></button>
+                    <span id="gridPageInfo" class="page-nav-text">Página 1 de 1</span>
+                    <button id="nextGridPage" class="page-nav-button"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </div>
         </div>
 
-        <!-- Contador de páginas excluídas -->
-        <div id="excludeCounter" class="exclude-counter">
-            Páginas excluídas: <span id="excludedCount">0</span>
+        <!-- Botões de ação para texto reconhecido -->
+        <div class="card hidden" id="textActions">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-file-alt"></i> Ações do Texto
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="button-container" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <button id="copyText" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary); flex: 1;">
+                        <i class="fas fa-copy"></i> Copiar Texto
+                    </button>
+                    <button id="downloadText" class="pdf-action-button" style="flex: 1;">
+                        <i class="fas fa-download"></i> Baixar como TXT
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Editor de texto reconhecido -->
-        <div id="editorContainer" class="card" style="display: none;">
+        <div class="card hidden" id="editorContainer">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-edit"></i> Texto Reconhecido
@@ -201,10 +385,10 @@
                             <i class="fas fa-highlighter"></i>
                         </button>
                         <div class="color-picker">
-                            <button class="editor-btn color-btn" data-color="#ffff00" style="background-color: #ffff00;" title="Amarelo"></button>
-                            <button class="editor-btn color-btn" data-color="#90EE90" style="background-color: #90EE90;" title="Verde"></button>
-                            <button class="editor-btn color-btn" data-color="#ADD8E6" style="background-color: #ADD8E6;" title="Azul"></button>
-                            <button class="editor-btn color-btn" data-color="#FFB6C1" style="background-color: #FFB6C1;" title="Rosa"></button>
+                            <button class="color-btn" data-color="#ffff00" style="background-color: #ffff00;" title="Amarelo"></button>
+                            <button class="color-btn" data-color="#90EE90" style="background-color: #90EE90;" title="Verde"></button>
+                            <button class="color-btn" data-color="#ADD8E6" style="background-color: #ADD8E6;" title="Azul"></button>
+                            <button class="color-btn" data-color="#FFB6C1" style="background-color: #FFB6C1;" title="Rosa"></button>
                         </div>
                         <button class="editor-btn" data-command="removeFormat" title="Remover formatação">
                             <i class="fas fa-eraser"></i>
@@ -224,37 +408,38 @@
                         </button>
                     </div>
                 </div>
-<!-- Painel de busca e substituição fixo -->
-<div id="findReplacePanel" class="find-replace-panel" style="display: none; position: sticky; top: 10px; z-index: 100; margin: 10px 0;">
-    <div class="panel-header">
-        <span>Localizar e substituir</span>
-        <button id="closeFindReplace" class="close-btn"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="panel-content">
-        <!-- Campo de entrada para busca -->
-        <div class="search-input-container" style="margin-bottom: 10px;">
-            <input type="text" id="findText" class="control-input" placeholder="Texto a ser localizado" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
-        </div>
-        
-        <!-- Campo para texto de substituição (opcional) -->
-        <div class="search-input-container" style="margin-bottom: 10px;">
-            <input type="text" id="replaceText" class="control-input" placeholder="Substituir Texto Localizado" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
-        </div>
-        
-        <!-- Botões de ação -->
-        <div class="panel-actions">
-            <button id="findNextBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
-                <i class="fas fa-search"></i> Localizar próximo
-            </button>
-            <button id="replaceBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
-                <i class="fas fa-exchange-alt"></i> Substituir
-            </button>
-            <button id="replaceAllBtn" class="btn" style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white;">
-                <i class="fas fa-sync-alt"></i> Substituir todos
-            </button>
-        </div>
-    </div>
-</div>
+
+                <!-- Painel de busca e substituição fixo -->
+                <div id="findReplacePanel" class="find-replace-panel" style="display: none; position: sticky; top: 10px; z-index: 100; margin: 10px 0;">
+                    <div class="panel-header">
+                        <span>Localizar e substituir</span>
+                        <button id="closeFindReplace" class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <!-- Campo de entrada para busca -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="findText" class="control-input" placeholder="Texto a ser localizado" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
+                        </div>
+                        
+                        <!-- Campo para texto de substituição (opcional) -->
+                        <div class="search-input-container" style="margin-bottom: 10px;">
+                            <input type="text" id="replaceText" class="control-input" placeholder="Substituir por" style="width: 100%; padding: 8px; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm);">
+                        </div>
+                        
+                        <!-- Botões de ação -->
+                        <div class="panel-actions">
+                            <button id="findNextBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-search"></i> Localizar próximo
+                            </button>
+                            <button id="replaceBtn" class="btn" style="background-color: var(--color-primary-light); color: var(--color-primary);">
+                                <i class="fas fa-exchange-alt"></i> Substituir
+                            </button>
+                            <button id="replaceAllBtn" class="btn" style="background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark)); color: white;">
+                                <i class="fas fa-sync-alt"></i> Substituir todos
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Área de edição -->
                 <div id="editorContent" class="editor-content" contenteditable="true"></div>
@@ -262,705 +447,1563 @@
         </div>
     </div>
 
-    <div class="processing-overlay" id="processingOverlay">
-        <div class="processing-message">
-            <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p class="mt-3">Processando OCR...</p>
-        </div>
+    <!-- Overlay de processamento - Versão Corrigida -->
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-message">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p class="mt-3" id="processingText">Processando OCR...</p>
+        <p class="processing-substep" id="processingSubstep"></p>
     </div>
+</div>
 
     <script>
-        // Configuração do PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
 
-        // Elementos do DOM
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileInfo = document.getElementById('fileInfo');
-        const statusArea = document.getElementById('statusArea');
-        const controlPanel = document.getElementById('controlPanel');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-        const previewImage = document.getElementById('previewImage');
-        const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
-        const pdfPreview = document.getElementById('pdfPreview');
-        const excludeCounter = document.getElementById('excludeCounter');
-        const excludedCount = document.getElementById('excludedCount');
-        const editorContainer = document.getElementById('editorContainer');
-        const editorContent = document.getElementById('editorContent');
-        const recognizeBtn = document.getElementById('recognizeBtn');
-        const processingOverlay = document.getElementById('processingOverlay');
-        const languageSelect = document.getElementById('languageSelect');
-        const textActions = document.getElementById('textActions');
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
 
-        // Variáveis globais
-        let currentFile = null;
-        let pdfDocument = null;
-        let pdfPageCanvases = [];
-        let totalPdfPages = 0;
-        let excludedPages = new Set();
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== VARIÁVEIS GLOBAIS SIMPLIFICADAS =====
+    // Configurações
+    const PAGES_PER_VIEW = 12; // Número de páginas por visualização
 
-        // Event Listeners para a área de upload
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.classList.add('drag-over');
-            });
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.classList.remove('drag-over');
-            });
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        });
-        
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        });
-
-        // Função para lidar com o arquivo selecionado
-        async function handleFile(file) {
-            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-            
-            if (!validTypes.includes(file.type)) {
-                showStatus('Por favor, selecione uma imagem (JPG, JPEG, PNG) ou PDF.', 'error');
-                return;
-            }
-            
-            if (file.size > 10 * 1024 * 1024) {
-                showStatus('O arquivo excede o limite de 10MB.', 'error');
-                return;
-            }
-            
-            try {
-                // Mostrar overlay de processamento
-                processingOverlay.style.display = 'flex';
-                
-                // Reset das visualizações
-                resetUI();
-                
-                currentFile = file;
-                
-                // Exibir informações do arquivo
-                showFileInfo(file);
-                
-                if (file.type === 'application/pdf') {
-                    // Processamento de PDF
-                    const arrayBuffer = await file.arrayBuffer();
-                    await processPDF(arrayBuffer);
-                } else {
-                    // Processamento de imagem
-                    processImage(file);
-                }
-                
-                // Mostrar controles de OCR
-                controlPanel.style.display = 'block';
-                
-                showStatus('Arquivo carregado com sucesso.', 'success');
-                
-                // Esconder overlay de processamento
-                processingOverlay.style.display = 'none';
-                
-            } catch (error) {
-                console.error('Erro ao processar arquivo:', error);
-                showStatus('Erro ao processar o arquivo: ' + error.message, 'error');
-                processingOverlay.style.display = 'none';
-            }
-        }
-
-        // Mostrar informações do arquivo
-        function showFileInfo(file) {
-            fileInfo.innerHTML = `
-                <div class="info-block">
-                    <div class="info-line">
-                        <i class="fas fa-check-circle"></i>
-                        Arquivo Selecionado: ${file.name}
-                    </div>
-                    <div class="info-line">
-                        <i class="fas fa-check-circle"></i>
-                        Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
-                    </div>
-                    <div class="info-line">
-                        <i class="fas fa-check-circle"></i>
-                        Tipo: ${file.type}
-                    </div>
-                </div>`;
-        }
-
-        // Função para mostrar mensagens de status
-        function showStatus(message, type) {
-            statusArea.innerHTML = `
-                <div class="status-message ${type}">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                    ${message}
-                </div>`;
-                
-            statusArea.style.display = 'block';
-        }
-
-        // Resetar a interface do usuário
-function resetUI() {
-    // Esconder contêineres
-    imagePreviewContainer.style.display = 'none';
-    pdfPreviewContainer.style.display = 'none';
-    progressContainer.style.display = 'none';
-    editorContainer.style.display = 'none';
-    excludeCounter.style.display = 'none';
-    textActions.style.display = 'none';
+    // Estado da aplicação
+    let currentFile = null;
+    let pdfDocument = null;
+    let pdfPageCanvases = [];
+    let totalPdfPages = 0;
+    let excludedPages = new Set();
+    let isProcessing = false;
+    let ocrCompleted = false;
+    let currentGridPage = 0;
+    let totalGridPages = 0;
+    let selectedPages = new Set();
+    let sortableInstance = null;
     
-    // Limpar conteúdo
-    pdfPreview.innerHTML = '';
-    editorContent.innerHTML = '';
+    // Novas variáveis para melhorias jurídicas
+    let detectedLegalTerms = [];
+    let detectedProcessNumbers = [];
+    let detectedLegalReferences = [];
     
-    // Resetar variáveis
-    pdfPageCanvases = [];
-    excludedPages.clear();
+    // Lista de termos jurídicos comuns para detecção
+    const LEGAL_TERMS = [
+        "habeas corpus", "mandado de segurança", "recurso especial", "recurso extraordinário",
+        "agravo de instrumento", "apelação", "embargos", "liminar", "tutela antecipada",
+        "jurisprudência", "súmula", "precedente", "acórdão", "sentença", "decisão interlocutória",
+        "prescrição", "decadência", "litispendência", "coisa julgada", "mérito", "agravante", 
+        "agravado", "recorrente", "recorrido", "apelante", "apelado", "impetrante", "impetrado",
+        "relator", "revisor", "ministro", "desembargador", "juiz", "juízo", "audiência", 
+        "instrução", "julgamento", "ementa", "polo ativo", "polo passivo", "autor", "réu",
+        "procurador", "advogado", "ministério público", "defensoria pública"
+    ];
+
+    // ===== FUNÇÕES UTILITÁRIAS =====
     
-    // Remover mensagens de status inseridas após o controlPanel
-    const existingMessages = document.querySelectorAll('.status-message.success');
-    existingMessages.forEach(msg => {
-        if (msg.parentNode) {
-            msg.parentNode.removeChild(msg);
-        }
-    });
+    // Seletor de elemento DOM simplificado
+    function $(selector) {
+        return document.querySelector(selector);
+    }
+    
+    // Seletor múltiplo de DOM
+    function $$(selector) {
+        return document.querySelectorAll(selector);
+    }
+    
+    // Adicionar classe
+    function addClass(selector, className) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.classList.add(className);
+    }
+    
+    // Remover classe
+    function removeClass(selector, className) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.classList.remove(className);
+    }
+    
+    // Mostrar elemento
+    function showElement(selector) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.style.display = 'block';
+    }
+    
+    // Esconder elemento
+    function hideElement(selector) {
+        const element = typeof selector === 'string' ? $(selector) : selector;
+        if (element) element.style.display = 'none';
+    }
+
+// Função utilitária para atualizar texto com segurança
+function updateElementText(selector, text) {
+    const element = typeof selector === 'string' ? $(selector) : selector;
+    if (element) {
+        element.textContent = text;
+    }
 }
 
-        // Processar imagem
-        function processImage(file) {
+    
+    // Prevenir padrões de eventos
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Ler cabeçalho de arquivo
+    async function readFileHeader(file) {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImage.src = e.target.result;
-                imagePreviewContainer.style.display = 'block';
+            reader.onload = () => {
+                const arrayBuffer = reader.result;
+                const bytes = new Uint8Array(arrayBuffer).slice(0, 10);
+                const header = new TextDecoder('utf-8').decode(bytes);
+                resolve(header);
             };
-            reader.readAsDataURL(file);
-        }
+            reader.onerror = reject;
+            const blob = file.slice(0, 10);
+            reader.readAsArrayBuffer(blob);
+        });
+    }
 
-        // Processar PDF
-        async function processPDF(arrayBuffer) {
-            try {
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                totalPdfPages = pdf.numPages;
-                pdfDocument = pdf;
-                
-                // Limpar visualizações anteriores
-                pdfPreview.innerHTML = '';
-                pdfPageCanvases = [];
-                excludedPages.clear();
-                
-                // Renderizar cada página do PDF
-                for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
-                    // Obter a página
-                    const page = await pdf.getPage(pageNum);
-                    const scale = 1.5;
-                    const viewport = page.getViewport({ scale });
-                    
-                    // Criar o canvas
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    // Renderizar página no canvas
-                    await page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    }).promise;
-                    
-                    // Armazenar o canvas para uso posterior
-                    pdfPageCanvases.push(canvas);
-                    
-                    // Criar o contêiner da prévia
-                    const pagePreview = document.createElement('div');
-                    pagePreview.className = 'pdf-page-preview';
-                    pagePreview.dataset.page = pageNum;
-                    
-                    // Clonando o canvas para a visualização
-                    const displayCanvas = document.createElement('canvas');
-                    displayCanvas.width = canvas.width;
-                    displayCanvas.height = canvas.height;
-                    displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
-                    
-                    // Adicionar número da página
-                    const pageNumber = document.createElement('div');
-                    pageNumber.className = 'pdf-page-number';
-                    pageNumber.textContent = `Página ${pageNum}`;
-                    
-                    // Adicionar botão para excluir/incluir a página
-                    const toggleBtn = document.createElement('button');
-                    toggleBtn.className = 'page-toggle-btn';
-                    toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    toggleBtn.title = 'Excluir/Incluir página';
-                    
-                    // Adicionar evento para alternar exclusão
-                    toggleBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        togglePage(pageNum, pagePreview, toggleBtn);
-                    });
-                    
-                    // Clicar na página também alterna a exclusão
-                    pagePreview.addEventListener('click', () => {
-                        togglePage(pageNum, pagePreview, toggleBtn);
-                    });
-                    
-                    // Montar a visualização da página
-                    pagePreview.appendChild(displayCanvas);
-                    pagePreview.appendChild(pageNumber);
-                    pagePreview.appendChild(toggleBtn);
-                    pdfPreview.appendChild(pagePreview);
-                }
-                
-                // Mostrar o contêiner de prévia
-                pdfPreviewContainer.style.display = 'block';
-                updateExcludedCounter();
-                
-            } catch (error) {
-                console.error('Erro ao processar PDF:', error);
-                throw new Error('Erro ao processar o PDF: ' + error.message);
+    // Validar arquivo como imagem ou PDF
+    async function validateAsImageOrPDF(file) {
+        // Verificar tipo MIME
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (validTypes.includes(file.type)) return true;
+        
+        // Verificar extensão
+        const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+        if (validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) return true;
+        
+        // Verificar assinatura para PDFs
+        try {
+            const header = await readFileHeader(file);
+            if (header.includes('%PDF')) return true;
+            
+            // Verificar assinaturas de imagens
+            const fileBytes = new Uint8Array(await file.arrayBuffer().slice(0, 8));
+            
+            // JPEG signature
+            if (fileBytes[0] === 0xFF && fileBytes[1] === 0xD8 && fileBytes[2] === 0xFF) {
+                return true;
             }
+            
+            // PNG signature
+            if (fileBytes[0] === 0x89 && fileBytes[1] === 0x50 && 
+                fileBytes[2] === 0x4E && fileBytes[3] === 0x47) {
+                return true;
+            }
+        } catch (error) {
+            console.error("Erro ao validar arquivo:", error);
         }
+        
+        return false;
+    }
 
-        // Alternar exclusão de página
-        function togglePage(pageNum, pageContainer, toggleBtn) {
-            if (excludedPages.has(pageNum)) {
-                excludedPages.delete(pageNum);
-                pageContainer.classList.remove('excluded');
-                toggleBtn.classList.remove('active');
+    // Mostrar mensagens de status
+    function showStatus(message, type, duration = 0) {
+        const statusArea = $('#statusArea');
+        
+        const iconType = type === 'success' ? 'check-circle' : 
+                         type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle';
+        
+        statusArea.innerHTML = `
+            <div class="status-message ${type}">
+                <i class="fas fa-${iconType}"></i>
+                ${message}
+            </div>`;
+        
+        showElement(statusArea);
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                hideElement(statusArea);
+            }, duration);
+        }
+    }
+
+    // Mostrar informações do arquivo
+    function showFileInfo(file) {
+        $('#fileInfo').innerHTML = `
+            <div class="info-block">
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Arquivo Selecionado: ${file.name}
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tamanho: ${(file.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+                <div class="info-line">
+                    <i class="fas fa-check-circle"></i>
+                    Tipo: ${file.type || 'Arquivo validado'}
+                </div>
+            </div>`;
+    }
+
+    // Resetar a interface
+    function resetUI() {
+        // Esconder contêineres
+        addClass('#imagePreviewContainer', 'hidden');
+        addClass('#pdfPreviewContainer', 'hidden');
+        addClass('#progressContainer', 'hidden');
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        addClass('#legalTipsContainer', 'hidden');
+        hideElement('#pagesExtracted');
+        hideElement('#textStats');
+        
+        // Limpar conteúdo
+        $('#pdfPreview').innerHTML = '';
+        $('#editorContent').innerHTML = '';
+        
+        // Resetar variáveis
+        pdfPageCanvases = [];
+        excludedPages.clear();
+        ocrCompleted = false;
+        selectedPages.clear();
+        detectedLegalTerms = [];
+        detectedProcessNumbers = [];
+        detectedLegalReferences = [];
+        
+        // Destruir instância sortable
+        if (sortableInstance) {
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        
+        // Atualizar botão de reconhecimento
+        $('#recognizeBtn').disabled = true;
+        
+        // Limpar mensagens de status
+        hideElement('#statusArea');
+        $('#statusArea').innerHTML = '';
+    }
+
+    // Resetar completamente o estado
+    function resetAllStates() {
+        console.log("Resetando todos os estados...");
+        
+        // Resetar todas as variáveis de estado
+        currentFile = null;
+        pdfDocument = null;
+        pdfPageCanvases = [];
+        totalPdfPages = 0;
+        excludedPages.clear();
+        isProcessing = false;
+        ocrCompleted = false;
+        currentGridPage = 0;
+        totalGridPages = 0;
+        selectedPages.clear();
+        detectedLegalTerms = [];
+        detectedProcessNumbers = [];
+        detectedLegalReferences = [];
+        
+        // Resetar input de arquivo
+        $('#fileInput').value = '';
+        
+        // Limpar informações
+        $('#fileInfo').innerHTML = '';
+        
+        // Limpar mensagens de status
+        $('#statusArea').innerHTML = '';
+        hideElement('#statusArea');
+        
+        // Esconder painéis
+        hideElement('#controlPanel');
+        addClass('#progressContainer', 'hidden');
+        addClass('#imagePreviewContainer', 'hidden');
+        addClass('#pdfPreviewContainer', 'hidden');
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        addClass('#legalTipsContainer', 'hidden');
+        hideElement('#textStats');
+        
+        // Limpar pré-visualizações
+        $('#previewImage').src = '';
+        $('#pdfPreview').innerHTML = '';
+        
+        // Limpar editor
+        $('#editorContent').innerHTML = '';
+        
+        // Resetar botões
+        $('#recognizeBtn').disabled = true;
+        
+        // Destruir instância Sortable
+        if (sortableInstance) {
+            console.log("Destruindo instância Sortable...");
+            sortableInstance.destroy();
+            sortableInstance = null;
+        }
+        
+        // Terminar workers do Tesseract
+        if (Tesseract.workers && Tesseract.workers.length > 0) {
+            console.log("Terminando workers do Tesseract...");
+            Tesseract.terminate();
+        }
+        
+        console.log("Estado resetado com sucesso");
+    }
+
+    // Atualizar contador de páginas excluídas
+    function updateExcludedCounter() {
+        $('#excludedPagesList').textContent = excludedPages.size;
+        
+        if (excludedPages.size > 0) {
+            showElement('#pagesExtracted');
+        } else {
+            hideElement('#pagesExtracted');
+        }
+    }
+
+    // Atualizar controles de paginação
+    function updateGridPagination() {
+        $('#gridPageInfo').textContent = `Página ${currentGridPage + 1} de ${totalGridPages}`;
+        $('#prevGridPage').disabled = currentGridPage <= 0;
+        $('#nextGridPage').disabled = currentGridPage >= totalGridPages - 1;
+    }
+
+    // ===== FUNÇÕES DE PROCESSAMENTO DE ARQUIVOS =====
+
+    // Processar arquivo
+    async function handleFile(file) {
+        // Resetar completamente antes de processar novo arquivo
+        resetAllStates();
+        
+        if (!file) {
+            console.log("Nenhum arquivo fornecido");
+            return;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            showStatus('O arquivo excede o limite de 10MB.', 'error');
+            return;
+        }
+        
+        try {
+            console.log("Processando novo arquivo:", file.name);
+            
+            // Mostrar overlay de processamento
+            $('#processingOverlay').style.display = 'flex';
+            $('#processingText').textContent = 'Verificando arquivo...';
+            $('#processingSubstep').textContent = '';
+            
+            // Verificar arquivo
+            const isValid = await validateAsImageOrPDF(file);
+            
+            if (!isValid) {
+                showStatus('Por favor, selecione uma imagem (JPG, JPEG, PNG) ou PDF válido.', 'error');
+                $('#processingOverlay').style.display = 'none';
+                return;
+            }
+            
+            currentFile = file;
+            
+            // Exibir informações
+            showFileInfo(file);
+            
+            // Determinar tipo
+            const isPDF = file.type === 'application/pdf' || 
+                         file.name.toLowerCase().endsWith('.pdf') || 
+                         (await readFileHeader(file)).includes('%PDF');
+            
+            if (isPDF) {
+                // Processamento de PDF
+                $('#processingText').textContent = 'Processando PDF...';
+                const arrayBuffer = await file.arrayBuffer();
+                await processPDF(arrayBuffer);
             } else {
-                excludedPages.add(pageNum);
-                pageContainer.classList.add('excluded');
-                toggleBtn.classList.add('active');
+                // Processamento de imagem
+                processImage(file);
+            }
+            
+            // Mostrar dicas para documentos jurídicos se português jurídico estiver selecionado
+            if ($('#languageSelect').value === 'por+jur') {
+                removeClass('#legalTipsContainer', 'hidden');
+            }
+            
+            // Mostrar controles
+            showElement('#controlPanel');
+            $('#recognizeBtn').disabled = false;
+            
+            showStatus('Arquivo carregado com sucesso.', 'success');
+            
+        } catch (error) {
+            console.error('Erro ao processar arquivo:', error);
+            showStatus('Erro ao processar o arquivo: ' + error.message, 'error');
+        } finally {
+            // Esconder overlay
+            $('#processingOverlay').style.display = 'none';
+        }
+    }
+
+    // Processar imagem
+    function processImage(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#previewImage').src = e.target.result;
+            removeClass('#imagePreviewContainer', 'hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Processar PDF
+    async function processPDF(arrayBuffer) {
+        try {
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            
+            totalPdfPages = pdf.numPages;
+            pdfDocument = pdf;
+            
+            // Limpar visualizações
+            $('#pdfPreview').innerHTML = '';
+            pdfPageCanvases = [];
+            excludedPages.clear();
+            
+            // Calcular páginas
+            totalGridPages = Math.ceil(totalPdfPages / PAGES_PER_VIEW);
+            currentGridPage = 0;
+            
+            // Renderizar páginas
+            for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+                $('#processingText').textContent = `Processando página ${pageNum} de ${totalPdfPages}...`;
+                $('#processingSubstep').textContent = `Renderizando visualização...`;
+                
+                // Obter página
+                const page = await pdf.getPage(pageNum);
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
+                
+                // Criar canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Renderizar página
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                // Armazenar canvas
+                pdfPageCanvases.push(canvas);
+            }
+            
+            // Renderizar grid
+            renderGridPage(0);
+            
+            // Mostrar container
+            removeClass('#pdfPreviewContainer', 'hidden');
+            
+            // Exibir/ocultar paginação
+            if (totalGridPages > 1) {
+                removeClass('#gridPagination', 'hidden');
+                updateGridPagination();
+            } else {
+                addClass('#gridPagination', 'hidden');
             }
             
             updateExcludedCounter();
+            
+            // Inicializar drag-and-drop
+            initializeSortable();
+            
+        } catch (error) {
+            console.error('Erro ao processar PDF:', error);
+            throw new Error('Erro ao processar o PDF: ' + error.message);
         }
+    }
 
-        // Atualizar contador de páginas excluídas
-        function updateExcludedCounter() {
-            excludedCount.textContent = excludedPages.size;
-            
-            if (excludedPages.size > 0) {
-                excludeCounter.style.display = 'block';
-            } else {
-                excludeCounter.style.display = 'none';
-            }
-        }
-
-        // Iniciar reconhecimento de texto
-        recognizeBtn.addEventListener('click', async () => {
-            if (!currentFile) {
-                showStatus('Nenhum arquivo selecionado.', 'error');
-                return;
-            }
-            
-            try {
-                // Mostrar progresso
-                progressContainer.style.display = 'block';
-                progressBar.value = 0;
-                progressText.textContent = 'Iniciando reconhecimento...';
-                
-                // Esconder editor, se já estiver visível
-                editorContainer.style.display = 'none';
-                textActions.style.display = 'none';
-                
-                // Mostrar overlay de processamento
-                processingOverlay.style.display = 'flex';
-                
-                const language = languageSelect.value;
-                let allRecognizedText = '';
-                
-                // Verificar se é PDF ou imagem
-                if (currentFile.type === 'application/pdf' && pdfPageCanvases.length > 0) {
-                    // Processar PDF
-                    allRecognizedText = await processPDFWithOCR(language);
-                } else {
-                    // Processar imagem única
-                    const imageSource = previewImage.src;
-                    allRecognizedText = await processImageWithOCR(imageSource, language);
-                }
-                
-                // Exibir resultado no editor
-                editorContent.textContent = allRecognizedText;
-                
-                // Esconder progresso
-                progressContainer.style.display = 'none';
-                
-                // Esconder overlay de processamento
-                processingOverlay.style.display = 'none';
-                
-                const successMessage = `
-            <div class="status-message success" style="margin-top: 15px;">
-                <i class="fas fa-check-circle"></i>
-                Texto reconhecido com sucesso! Você pode editar o texto abaixo.
-            </div>`;
+    // Renderizar página específica do grid
+    function renderGridPage(pageIndex) {
+        // Limpar grid atual
+        $('#pdfPreview').innerHTML = '';
         
-        // Inserir a mensagem após o controlPanel
-        controlPanel.insertAdjacentHTML('afterend', successMessage);
+        // Calcular índices
+        const startIndex = pageIndex * PAGES_PER_VIEW;
+        const endIndex = Math.min(startIndex + PAGES_PER_VIEW, totalPdfPages);
         
-        // Mostrar botões de ação
-        textActions.style.display = 'block';
+        console.log(`Renderizando grid página ${pageIndex}: páginas ${startIndex+1} até ${endIndex}`);
         
-        // Mostrar editor
-        editorContainer.style.display = 'block';
-        
-    } catch (error) {
-
-
-                console.error('Erro no reconhecimento de texto:', error);
-                showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
-                progressContainer.style.display = 'none';
-                processingOverlay.style.display = 'none';
-            }
-        });
-
-        // Processar PDF com OCR
-        async function processPDFWithOCR(language) {
-            const pagesToProcess = Array.from(
-                { length: totalPdfPages }, 
-                (_, i) => i + 1
-            ).filter(pageNum => !excludedPages.has(pageNum));
+        // Adicionar contêineres
+        for (let i = startIndex; i < endIndex; i++) {
+            const pageNum = i + 1;
             
-            if (pagesToProcess.length === 0) {
-                throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
-            }
+            // Pular páginas excluídas
+            if (excludedPages.has(pageNum)) continue;
             
-            let allText = '';
-            const totalPagesToProcess = pagesToProcess.length;
+            // Obter canvas
+            const canvas = pdfPageCanvases[i];
+            if (!canvas) continue;
             
-            for (let i = 0; i < pagesToProcess.length; i++) {
-                const pageNum = pagesToProcess[i];
-                const progressPercent = (i / totalPagesToProcess) * 100;
-                
-                // Atualizar progresso
-                progressBar.value = progressPercent;
-                progressText.textContent = `Reconhecendo texto da página ${pageNum} de ${totalPdfPages}`;
-                
-                // Obter o canvas da página
-                const pageCanvas = pdfPageCanvases[pageNum - 1]; // Ajuste para índice baseado em zero
-                const imageData = pageCanvas.toDataURL('image/png');
-                
-                // Reconhecer texto da página
-                const result = await Tesseract.recognize(
-                    imageData,
-                    language,
-                    {
-                        logger: progress => {
-                            if (progress.status === 'recognizing text') {
-                                const pageProgress = progress.progress * (100 / totalPagesToProcess);
-                                const totalProgress = progressPercent + pageProgress;
-                                progressBar.value = totalProgress;
-                            }
-                        }
-                    }
-                );
-                
-                // Adicionar texto reconhecido com separador de página
-                if (result.data.text.trim()) {
-                    if (allText) {
-                        allText += '\n\n';
-                    }
-                    allText += `----- Página ${pageNum} -----\n\n`;
-                    allText += result.data.text;
-                }
-            }
+            // Criar contêiner
+            const pagePreview = document.createElement('div');
+            pagePreview.className = 'pdf-page-preview';
+            pagePreview.dataset.page = pageNum;
             
-            // Marcar como concluído
-            progressBar.value = 100;
-            progressText.textContent = 'Processamento concluído!';
+            // Adicionar alça de arraste
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'drag-handle';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+            dragHandle.style.position = 'absolute';
+            dragHandle.style.top = '0.5rem';
+            dragHandle.style.left = '0.5rem';
+            dragHandle.style.width = '24px';
+            dragHandle.style.height = '24px';
+            dragHandle.style.display = 'flex';
+            dragHandle.style.alignItems = 'center';
+            dragHandle.style.justifyContent = 'center';
+            dragHandle.style.background = 'rgba(67, 97, 238, 0.1)';
+            dragHandle.style.borderRadius = '4px';
+            dragHandle.style.cursor = 'grab';
+            dragHandle.style.opacity = '0';
+            dragHandle.style.transition = 'all 0.2s ease';
+            dragHandle.style.color = 'var(--color-primary)';
+            dragHandle.style.zIndex = '10';
+            pagePreview.appendChild(dragHandle);
             
-            return allText;
-        }
-
-        // Processar imagem única com OCR
-        async function processImageWithOCR(imageSource, language) {
-            const result = await Tesseract.recognize(
-                imageSource,
-                language,
-                {
-                    logger: progress => {
-                        if (progress.status === 'recognizing text') {
-                            progressBar.value = progress.progress * 100;
-                            progressText.textContent = `Reconhecendo texto (${Math.round(progress.progress * 100)}%)`;
-                        }
-                    }
-                }
-            );
+            // Adicionar botão de exclusão
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.top = '0.5rem';
+            deleteBtn.style.right = '0.5rem';
+            deleteBtn.style.width = '24px';
+            deleteBtn.style.height = '24px';
+            deleteBtn.style.display = 'flex';
+            deleteBtn.style.alignItems = 'center';
+            deleteBtn.style.justifyContent = 'center';
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+            deleteBtn.style.borderRadius = '4px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.opacity = '0';
+            deleteBtn.style.transition = 'all 0.2s ease';
+            deleteBtn.style.color = '#ef4444';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.zIndex = '10';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                togglePageSelection(pageNum, pagePreview);
+            };
+            pagePreview.appendChild(deleteBtn);
             
-            return result.data.text;
-        }
-
-        // Configuração dos botões de formatação do editor
-        function setupEditor() {
-            // Botões de comando básicos
-            const editorButtons = document.querySelectorAll('.editor-btn[data-command]');
-            editorButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const command = button.getAttribute('data-command');
-                    document.execCommand(command, false, null);
-                    
-                    // Atualizar estado do botão para comandos de estado
-                    const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
-                    if (stateCommands.includes(command)) {
-                        if (document.queryCommandState(command)) {
-                            button.classList.add('active');
-                        } else {
-                            button.classList.remove('active');
-                        }
-                    }
-                    
-                    editorContent.focus();
-                });
+            // Criar container para canvas
+            const canvasContainer = document.createElement('div');
+            canvasContainer.style.width = '100%';
+            canvasContainer.style.display = 'flex';
+            canvasContainer.style.justifyContent = 'center';
+            canvasContainer.style.overflow = 'hidden';
+            
+            // Clonar canvas para visualização
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = canvas.width;
+            displayCanvas.height = canvas.height;
+            displayCanvas.style.maxWidth = '100%';
+            displayCanvas.style.height = 'auto';
+            displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            
+            // Adicionar número da página
+            const pageNumber = document.createElement('div');
+            pageNumber.className = 'pdf-page-number';
+            pageNumber.textContent = `Página ${pageNum}`;
+            
+            // Eventos de hover
+            pagePreview.addEventListener('mouseenter', () => {
+                dragHandle.style.opacity = '1';
+                deleteBtn.style.opacity = '1';
             });
             
-            // Atualizar estado dos botões quando o cursor se move
-            editorContent.addEventListener('mouseup', updateButtonStates);
-            editorContent.addEventListener('keyup', updateButtonStates);
+            pagePreview.addEventListener('mouseleave', () => {
+                dragHandle.style.opacity = '0';
+                deleteBtn.style.opacity = '0';
+            });
             
-            function updateButtonStates() {
-                const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
-                stateCommands.forEach(command => {
-                    const button = document.querySelector(`.editor-btn[data-command="${command}"]`);
-                    if (button) {
-                        if (document.queryCommandState(command)) {
-                            button.classList.add('active');
-                        } else {
-                            button.classList.remove('active');
-                        }
-                    }
-                });
-            }
+            // Montar visualização
+            canvasContainer.appendChild(displayCanvas);
+            pagePreview.appendChild(canvasContainer);
+            pagePreview.appendChild(pageNumber);
             
-            // Tamanho da fonte
-            const formatSize = document.getElementById('formatSize');
-            if (formatSize) {
-                formatSize.addEventListener('change', () => {
-                    document.execCommand('fontSize', false, formatSize.value);
-                    editorContent.focus();
-                });
-            }
-            
-            // Destacar texto com cores
-            const textHighlight = document.getElementById('textHighlight');
-            const colorButtons = document.querySelectorAll('.color-btn');
-            
-            if (textHighlight && colorButtons.length) {
-                colorButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        const color = button.getAttribute('data-color');
-                        document.execCommand('hiliteColor', false, color);
-                        editorContent.focus();
-                    });
-                });
-            }
-            
-            // Funcionalidade de localizar e substituir
-            const findReplaceBtn = document.getElementById('findReplaceBtn');
-            const findReplacePanel = document.getElementById('findReplacePanel');
-            const closeFindReplace = document.getElementById('closeFindReplace');
-            
-            if (findReplaceBtn && findReplacePanel && closeFindReplace) {
-                findReplaceBtn.addEventListener('click', () => {
-                    findReplacePanel.style.display = findReplacePanel.style.display === 'none' ? 'block' : 'none';
-                });
-                
-                closeFindReplace.addEventListener('click', () => {
-                    findReplacePanel.style.display = 'none';
-                });
-                
-                // Buscar próxima ocorrência
-const findText = document.getElementById('findText');
-const replaceText = document.getElementById('replaceText');
-const findNextBtn = document.getElementById('findNextBtn');
-const replaceBtn = document.getElementById('replaceBtn');
-const replaceAllBtn = document.getElementById('replaceAllBtn');
+            $('#pdfPreview').appendChild(pagePreview);
+        }
+        
+        // Atualizar paginação
+        updateGridPagination();
+        
+        // Reinicializar Sortable
+        initializeSortable();
+    }
 
-findNextBtn.addEventListener('click', () => {
-    const searchText = findText.value;
-    if (!searchText) {
-        alert('Por favor, digite um texto para buscar.');
-        findText.focus();
+    // Alternar seleção de página
+    function togglePageSelection(pageNum, pageElement) {
+        // Adicionar efeito de fade out
+        pageElement.style.animation = 'fadeOut 0.3s ease-out';
+        
+        // Adicionar à lista de páginas excluídas
+        excludedPages.add(pageNum);
+        
+        // Remover elemento após animação
+        setTimeout(() => {
+            if (pageElement.parentNode) {
+                pageElement.parentNode.removeChild(pageElement);
+            }
+            
+            updateExcludedCounter();
+            
+            // Se uma extração foi concluída e usuário modificou seleção
+            if (ocrCompleted) {
+                addClass('#editorContainer', 'hidden');
+                addClass('#textActions', 'hidden');
+                hideElement('#textStats');
+                showStatus('A seleção de páginas foi modificada. Clique em "Reconhecer Texto" para processar novamente.', 'warning', 5000);
+                ocrCompleted = false;
+            }
+        }, 300); // Duração da animação
+    }
+
+    // Inicializar o Sortable.js
+    function initializeSortable() {
+        // Destruir instância existente
+        if (sortableInstance) {
+            sortableInstance.destroy();
+        }
+        
+        // Criar nova instância
+        sortableInstance = new Sortable($('#pdfPreview'), {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            handle: '.drag-handle',
+            onStart: function(evt) {
+                document.body.style.cursor = 'grabbing';
+            },
+            onEnd: function(evt) {
+                document.body.style.cursor = 'default';
+                // Atualizar ordem
+                updatePageOrder();
+                
+                // Se extração já concluída
+                if (ocrCompleted) {
+                    addClass('#editorContainer', 'hidden');
+                    addClass('#textActions', 'hidden');
+                    hideElement('#textStats');
+                    showStatus('A ordem das páginas foi modificada. Clique em "Reconhecer Texto" para processar novamente.', 'warning', 5000);
+                    ocrCompleted = false;
+                }
+            }
+        });
+    }
+
+    // Atualizar ordem das páginas
+    function updatePageOrder() {
+        const pageElements = $('#pdfPreview').querySelectorAll('.pdf-page-preview');
+        const newPageOrder = Array.from(pageElements).map(element => parseInt(element.dataset.page));
+        console.log('Nova ordem de páginas:', newPageOrder);
+    }
+
+    // ===== FUNÇÕES DE PRÉ-PROCESSAMENTO DE IMAGEM =====
+    
+    // Função para pré-processamento de imagem para melhorar OCR
+    // Função para pré-processamento de imagem para melhorar OCR
+async function enhanceImageForOCR(imageData) {
+    console.log("Iniciando pré-processamento de imagem...");
+    updateElementText('#processingSubstep', "Aplicando filtros de aprimoramento...");
+    
+    return new Promise(async (resolve) => {
+        // Criar canvas temporário para manipulação da imagem
+        const tempCanvas = document.createElement('canvas');
+        const tempContext = tempCanvas.getContext('2d');
+        
+        // Carregar imagem no canvas
+        const img = new Image();
+        img.src = imageData;
+        
+        img.onload = function() {
+            // Definir dimensões do canvas
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            
+            // Desenhar imagem original
+            tempContext.drawImage(img, 0, 0);
+            
+            // Obter dados da imagem
+            const imageDataObj = tempContext.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageDataObj.data;
+            
+            updateElementText('#processingSubstep', "Convertendo para escala de cinza...");
+            
+            // 1. Converter para escala de cinza
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                data[i] = avg;     // R
+                data[i + 1] = avg; // G
+                data[i + 2] = avg; // B
+            }
+            
+            updateElementText('#processingSubstep', "Aumentando contraste...");
+            
+            // 2. Aumentar contraste
+            const factor = 1.5; // Fator de contraste
+            const intercept = 128 * (1 - factor);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.min(255, Math.max(0, data[i] * factor + intercept));
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] * factor + intercept));
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] * factor + intercept));
+            }
+            
+            updateElementText('#processingSubstep', "Aplicando binarização...");
+            
+            // 3. Binarização (transformar em preto e branco)
+            // Este método pode ser ajustado para documentos específicos
+            const threshold = 160; // Valor para binarização
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const v = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const result = v > threshold ? 255 : 0;
+                
+                data[i] = result;     // R
+                data[i + 1] = result; // G
+                data[i + 2] = result; // B
+            }
+            
+            // 4. Aplicar filtro de suavização para reduzir ruído
+            // Isso é simplificado - um filtro real seria mais complexo
+            updateElementText('#processingSubstep', "Reduzindo ruído da imagem...");
+            
+            // Aplicar alterações no canvas
+            tempContext.putImageData(imageDataObj, 0, 0);
+            
+            // Retornar imagem processada como data URL
+            resolve(tempCanvas.toDataURL('image/png'));
+        };
+    });
+}
+
+    // ===== FUNÇÕES DE PROCESSAMENTO DE TEXTO JURÍDICO =====
+    
+    // Identificação avançada de termos jurídicos para destaque
+    function identifyLegalTerms(text) {
+        detectedLegalTerms = [];
+        
+        // Usar a lista global de termos jurídicos
+        LEGAL_TERMS.forEach(term => {
+            const regex = new RegExp(`\\b${term}\\b`, 'gi');
+            let match;
+            
+            while ((match = regex.exec(text)) !== null) {
+                if (!detectedLegalTerms.includes(match[0].toLowerCase())) {
+                    detectedLegalTerms.push(match[0].toLowerCase());
+                }
+            }
+        });
+        
+        return detectedLegalTerms;
+    }
+
+    // Identificar e extrair números de processo
+    function identifyProcessNumbers(text) {
+        detectedProcessNumbers = [];
+        
+        // Padrão para números de processo no formato CNJ (7 dígitos-DD.AAAA.J.TR.OOOO)
+        const processNumberPattern = /\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/g;
+        
+        let match;
+        while ((match = processNumberPattern.exec(text)) !== null) {
+            if (!detectedProcessNumbers.includes(match[0])) {
+                detectedProcessNumbers.push(match[0]);
+            }
+        }
+        
+        return detectedProcessNumbers;
+    }
+
+    // Identificar referências legais
+    function identifyLegalReferences(text) {
+        detectedLegalReferences = [];
+        
+        // Padrões para leis, códigos e artigos
+        const patterns = [
+            /\b(lei|decreto|resolução|portaria)\s+n[º°]?\s*([0-9.]+)\/([0-9]{4})/gi,
+            /\b(código\s+(civil|penal|processual|tributário))/gi,
+            /\b(art\.?|artigo)\s*(\d+)[,.]\s*([a-zà-ú0-9°º\s]+)/gi
+        ];
+        
+        patterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(text)) !== null) {
+                if (!detectedLegalReferences.includes(match[0])) {
+                    detectedLegalReferences.push(match[0]);
+                }
+            }
+        });
+        
+        return detectedLegalReferences;
+    }
+
+    // Limpar e corrigir texto OCR jurídico
+    // Limpar e corrigir texto OCR jurídico
+// Limpar e corrigir texto OCR jurídico
+function cleanOCRText(text) {
+    updateElementText('#processingSubstep', "Limpando e corrigindo texto...");
+    
+    // Limpeza inicial de problemas comuns
+    text = text.replace(/\r\n/g, '\n');
+    text = text.replace(/\t/g, ' ');
+    text = text.replace(/ {2,}/g, ' ');
+    
+    // Correção de caracteres comumente confundidos
+    updateElementText('#processingSubstep', "Corrigindo caracteres confundidos...");
+    
+    // Correção global de "O" e "0" com base em regras linguísticas
+    
+    // 1. Corrigir "0" isolado que provavelmente é a letra "O" (artigo)
+    text = text.replace(/(\s|^)0(\s)/g, '$1O$2');  // "0" isolado entre espaços ou no início
+    
+    // 2. Corrigir "0" no início de frases (provavelmente letra "O")
+    text = text.replace(/([\.\?\!]\s+|^)0/g, '$1O');
+    
+    // 3. Corrigir casos onde "0" aparece antes de letras minúsculas (provavelmente artigo)
+    text = text.replace(/\b0\s+([a-záàâãéèêíïóôõöúçñ])/g, 'O $1');
+    
+    // 4. Corrigir palavras portuguesas comuns com "0" no lugar de "O"
+    text = text.replace(/açã0/g, 'ação');
+    text = text.replace(/ment0/g, 'mento');
+    text = text.replace(/çã0/g, 'ção');
+    text = text.replace(/nã0/g, 'não');
+    
+    // 5. Corrigir padrões de terminação de palavras em português
+    const commonPortugueseEndings = [
+        { pattern: /([a-z])0\b/g, replacement: '$1o' },     // Final de palavra
+        { pattern: /([a-z])0s\b/g, replacement: '$1os' },   // Plural
+        { pattern: /([a-z])0r\b/g, replacement: '$1or' },   // Verbos no infinitivo
+        { pattern: /([a-z])0u\b/g, replacement: '$1ou' }    // Verbos no passado
+    ];
+    
+    commonPortugueseEndings.forEach(({ pattern, replacement }) => {
+        text = text.replace(pattern, replacement);
+    });
+    
+    // Correções específicas de OCR para português jurídico
+    const ocr_corrections = {
+        'lJustiça': 'Justiça',
+        'l\'ribunal': 'Tribunal',
+        'Trjbunal': 'Tribunal',
+        'Tribunaj': 'Tribunal',
+        'Julgarnento': 'Julgamento',
+        'juigado': 'julgado',
+        'processo n\\[°º\\]': 'processo nº',
+        'artjgo': 'artigo',
+        'paragrato': 'parágrafo',
+        'paragrafo': 'parágrafo',
+        'lnciso': 'Inciso',
+        'incjso': 'inciso',
+        'sentenca': 'sentença',
+        'Codigo': 'Código',
+        'Constituicao': 'Constituição',
+        'Lei no': 'Lei nº',
+        'PROCESSUALPENAL': 'PROCESSUAL PENAL',
+        'APEEAÇÃD': 'APELAÇÃO',
+        'materialidaide': 'materialidade',
+        'peticao': 'petição',
+        'execucao': 'execução',
+        'Relator\\(a\\)': 'Relator(a)',
+        '\\bl\\b': '1',  // Corrigir "l" reconhecido como "1"
+        '\\bIl\\b': '11' // Corrigir "Il" reconhecido como "11"
+    };
+    
+    // Aplicar correções específicas
+    for (const [incorrect, correct] of Object.entries(ocr_corrections)) {
+        const regex = new RegExp(incorrect, 'gi');
+        text = text.replace(regex, correct);
+    }
+    
+    updateElementText('#processingSubstep', "Formatando referências legais...");
+    
+    // Corrigir formatação de números de processos
+    text = text.replace(/(\d{7})[-\s]?(\d{2})\.?(\d{4})\.?(\d)\.?(\d{2})\.?(\d{4})/g, '$1-$2.$3.$4.$5.$6');
+    
+    // Corrigir formatação de artigos
+    text = text.replace(/art\.?\s*(\d+)[,.]\s*([a-zà-ú])/gi, 'art. $1, $2');
+    
+    // Corrigir formatação de referências legais
+    text = text.replace(/lei\s+n[°º]?\s*([0-9.]+)\/([0-9]{4})/gi, 'Lei nº $1/$2');
+    text = text.replace(/decreto\s+n[°º]?\s*([0-9.]+)\/([0-9]{4})/gi, 'Decreto nº $1/$2');
+    text = text.replace(/decreto-lei\s+n[°º]?\s*([0-9.]+)\/([0-9]{4})/gi, 'Decreto-Lei nº $1/$2');
+    
+    // Corrigir formatação de referências a parágrafos
+    text = text.replace(/§\s+([0-9]+)[°º]?/g, '§ $1º');
+    
+    // Corrigir formatação de fls.
+    text = text.replace(/fls\.?\s*(\d+)[-\/](\d+)/g, 'fls. $1/$2');
+    
+    updateElementText('#processingSubstep', "Formatando cabeçalhos...");
+    
+    // Melhorar formatação de cabeçalhos comuns em documentos jurídicos
+    text = text.replace(/ACÓRDÃO/gi, '\n\nACÓRDÃO\n');
+    text = text.replace(/RELATÓRIO/gi, '\n\nRELATÓRIO\n');
+    text = text.replace(/VOTO/gi, '\n\nVOTO\n');
+    text = text.replace(/EMENTA/gi, '\n\nEMENTA\n');
+    text = text.replace(/DECISÃO/gi, '\n\nDECISÃO\n');
+    text = text.replace(/SENTENÇA/gi, '\n\nSENTENÇA\n');
+    
+    // Tratar citações
+    text = text.replace(/"([^"]+)"/g, '"$1"');
+    
+    // Melhorar quebras de linha
+    text = text.replace(/([a-zà-ú,])(\n)([a-zà-ú])/gi, '$1 $3'); // Juntar palavras quebradas por linhas
+    text = text.replace(/([.:;])(\n+)([A-Z])/g, '$1\n\n$3');     // Adicionar quebra extra após pontos
+    
+    // Corrigir formatação de datas
+    text = text.replace(/(\d{1,2})\s*de\s+([a-zç]+)\s+de\s+(\d{4})/gi, '$1 de $2 de $3');
+    
+    // Remover múltiplas quebras de linha
+    text = text.replace(/\n{3,}/g, '\n\n');
+    
+    // Corrigir erro comum em valores numéricos
+    text = text.replace(/R\$\s*(\d+)\.(\d{3})\,(\d{2})/g, 'R$ $1.$2,$3');
+    text = text.replace(/R\$\s*(\d+)\,(\d{2})/g, 'R$ $1,$2');
+    
+    // Remover espaços ou quebras de linha no início e fim
+    text = text.trim();
+    
+    return text;
+}
+
+    // Função para formatar o texto reconhecido com marcações HTML para termos jurídicos
+    // Função para formatar o texto reconhecido com marcações HTML para termos jurídicos
+function formatRecognizedTextWithHighlights(text) {
+    updateElementText('#processingSubstep', "Identificando termos jurídicos...");
+    
+    // Identificar termos jurídicos, números de processo e referências legais
+    const legalTerms = identifyLegalTerms(text);
+    const processNumbers = identifyProcessNumbers(text);
+    const legalRefs = identifyLegalReferences(text);
+    
+    // Atualizar estatísticas
+    updateTextStatistics(text, legalTerms.length, processNumbers.length, legalRefs.length);
+    
+    // Verificar se os destaques estão ativados
+    const legalTermsCheck = $('#legalTermsCheck');
+    if (!legalTermsCheck || !legalTermsCheck.checked) {
+        return text;
+    }
+    
+    // Criar versão HTML do texto para adicionar destacamentos
+    let htmlText = text;
+    
+    // Substituir quebras de linha por <br>
+    htmlText = htmlText.replace(/\n/g, '<br>');
+    
+    // Destacar números de processo
+    const processNumbersCheck = $('#processNumbersCheck');
+    if (processNumbersCheck && processNumbersCheck.checked) {
+        processNumbers.forEach(number => {
+            const regex = new RegExp(number.replace(/[-./]/g, '[-./]?'), 'g');
+            htmlText = htmlText.replace(regex, `<mark class="process-number">${number}</mark>`);
+        });
+    }
+    
+    // Destacar referências legais
+    legalRefs.forEach(ref => {
+        // Escapar caracteres especiais para regex
+        const escapedRef = ref.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(escapedRef, 'gi');
+        htmlText = htmlText.replace(regex, `<mark class="legal-reference">$&</mark>`);
+    });
+    
+    // Destacar termos jurídicos (depois para não sobrescrever)
+    legalTerms.forEach(term => {
+        const regex = new RegExp(`\\b${term}\\b`, 'gi');
+        htmlText = htmlText.replace(regex, `<mark class="legal-term">$&</mark>`);
+    });
+    
+    return htmlText;
+}
+
+    // Atualizar estatísticas do texto
+    function updateTextStatistics(text, legalTermsCount, processNumbersCount, legalRefsCount) {
+        // Contar palavras e caracteres
+        const wordCount = text.trim().split(/\s+/).length;
+        const charCount = text.length;
+        
+        // Atualizar contadores
+        $('#wordCount').textContent = wordCount;
+        $('#charCount').textContent = charCount;
+        $('#legalTermCount').textContent = legalTermsCount;
+        $('#processNumberCount').textContent = processNumbersCount;
+        $('#legalRefCount').textContent = legalRefsCount;
+        
+        // Mostrar painel de estatísticas
+        $('#textStats').style.display = 'block';
+    }
+
+    // Função para formatar o texto reconhecido após limpeza
+    function formatRecognizedText(allText) {
+        if (!allText || allText.trim() === '') {
+            return 'Nenhum texto reconhecido.';
+        }
+
+        // Primeira limpeza e formatação para texto jurídico
+        let formattedText = allText;
+        
+        // Processar páginas individualmente para manter marcação
+        const pagePattern = /-{5} Página (\d+) -{5}|-{3} Página (\d+) -{3}/;
+        const pages = formattedText.split(pagePattern);
+        
+        if (pages[0].trim() === '') {
+            pages.shift();
+        }
+        
+        let finalText = '';
+        
+        for (let i = 0; i < pages.length; i += 2) {
+            if (i + 1 >= pages.length) break;
+            
+            const pageNum = pages[i].trim() || pages[i+1]?.trim();
+            let pageContent = pages[i + 1]?.trim() || '';
+            
+            if (!pageContent) continue;
+            
+            // Aplicar formatação e destacar elementos jurídicos específicos
+            // Nota: Estas funções seriam aplicadas ao exibir no editor HTML
+            // Para o texto puro, mantemos apenas a limpeza básica
+            
+            finalText += `--- Página ${pageNum} ---\n\n${pageContent}\n\n`;
+        }
+        
+        return finalText;
+    }
+
+    // ===== FUNÇÕES DE OCR MELHORADO =====
+    
+    // Nova função para processar PDF com OCR melhorado
+    // Nova função para processar PDF com OCR melhorado
+async function processPDFWithOCREnhanced(language) {
+    // Criar lista de páginas para processar (excluindo as removidas)
+    const pagesToProcess = Array.from(
+        { length: totalPdfPages }, 
+        (_, i) => i + 1
+    ).filter(pageNum => !excludedPages.has(pageNum));
+    
+    if (pagesToProcess.length === 0) {
+        throw new Error('Todas as páginas foram excluídas. Selecione pelo menos uma página para processar.');
+    }
+    
+    let allText = '';
+    const totalPagesToProcess = pagesToProcess.length;
+    
+    for (let i = 0; i < pagesToProcess.length; i++) {
+        const pageNum = pagesToProcess[i];
+        const progressPercent = (i / totalPagesToProcess) * 100;
+        
+        // Atualizar progresso
+        const progressBar = $('#progressBar');
+        if (progressBar) progressBar.value = progressPercent;
+        
+        updateElementText('#progressText', `Reconhecendo texto da página ${pageNum} (${i+1} de ${totalPagesToProcess})`);
+        updateElementText('#processingText', `Processando página ${pageNum} (${i+1} de ${totalPagesToProcess})`);
+        
+        // Obter o canvas da página
+        const pageCanvas = pdfPageCanvases[pageNum - 1];
+        if (!pageCanvas) {
+            console.warn(`Canvas para página ${pageNum} não encontrado, pulando...`);
+            continue;
+        }
+        
+        // Converter canvas para imagem
+        const imageData = pageCanvas.toDataURL('image/png');
+        
+        // Aplicar melhorias de imagem se ativado
+        let processedImage = imageData;
+        const enhanceImageCheck = $('#enhanceImageCheck');
+        if (enhanceImageCheck && enhanceImageCheck.checked) {
+            updateElementText('#processingSubstep', `Melhorando imagem da página ${pageNum}...`);
+            processedImage = await enhanceImageForOCR(imageData);
+        }
+        
+        try {
+            // Ajustar configurações do Tesseract com base no idioma selecionado
+            let tessOptions = {
+                logger: progress => {
+                    if (progress.status === 'recognizing text') {
+                        const pageProgress = progress.progress * (100 / totalPagesToProcess);
+                        const totalProgress = progressPercent + pageProgress;
+                        const progressBar = $('#progressBar');
+                        if (progressBar) progressBar.value = totalProgress;
+                    }
+                }
+            };
+            
+            // Configurações avançadas para português jurídico
+            if (language === 'por+jur') {
+                tessOptions = {
+                    ...tessOptions,
+                    tessedit_pageseg_mode: '6', // Assume um único bloco de texto uniforme
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ0123456789.,;:!?()[]{}#$%&*+-=@"\'\\/§º°ª<>|_',
+                    tessjs_create_hocr: true, // Criar saída HOCR para melhor estruturação
+                    tessjs_create_tsv: true   // Criar saída TSV para análise posterior se necessário
+                };
+                
+                // Usar português padrão como base
+                language = 'por';
+            }
+            
+            // Reconhecer texto com Tesseract
+            updateElementText('#processingSubstep', `Aplicando OCR à página ${pageNum}...`);
+            const result = await Tesseract.recognize(processedImage, language, tessOptions);
+            
+            // Adicionar texto reconhecido com separador de página
+            if (result.data.text.trim()) {
+                if (allText) {
+                    allText += '\n\n';
+                }
+                allText += `----- Página ${pageNum} -----\n\n`;
+                allText += result.data.text;
+                console.log(`OCR da página ${pageNum} concluído com sucesso`);
+            } else {
+                console.log(`OCR da página ${pageNum} não retornou texto.`);
+            }
+        } catch (error) {
+            console.error(`Erro ao processar OCR da página ${pageNum}:`, error);
+            // Continuar com as próximas páginas mesmo se houver erro em uma
+            allText += `\n\n----- Página ${pageNum} (erro no processamento) -----\n\n`;
+        }
+    }
+    
+    // Marcar como concluído
+    const progressBar = $('#progressBar');
+    if (progressBar) progressBar.value = 100;
+    updateElementText('#progressText', 'Processamento concluído!');
+    
+    return allText;
+}
+
+    // Nova função para processar imagem única com OCR melhorado
+   // Nova função para processar imagem única com OCR melhorado
+async function processImageWithOCREnhanced(imageSource, language) {
+    // Atualizar progresso
+    const progressBar = $('#progressBar');
+    if (progressBar) progressBar.value = 10;
+    updateElementText('#progressText', 'Preparando imagem para OCR...');
+    
+    // Aplicar melhorias à imagem se ativado
+    let processedImage = imageSource;
+    const enhanceImageCheck = $('#enhanceImageCheck');
+    if (enhanceImageCheck && enhanceImageCheck.checked) {
+        updateElementText('#processingSubstep', 'Aplicando filtros de pré-processamento...');
+        processedImage = await enhanceImageForOCR(imageSource);
+    }
+    
+    // Atualizar progresso
+    if (progressBar) progressBar.value = 30;
+    updateElementText('#progressText', 'Iniciando reconhecimento de texto...');
+    updateElementText('#processingSubstep', 'Processando OCR...');
+    
+    // Ajustar configurações com base no idioma
+    let tessOptions = {
+        logger: progress => {
+            if (progress.status === 'recognizing text') {
+                const progressBar = $('#progressBar');
+                if (progressBar) progressBar.value = 30 + (progress.progress * 70);
+                updateElementText('#progressText', `Reconhecendo texto: ${Math.round(progress.progress * 100)}%`);
+            }
+        }
+    };
+    
+    // Configurações avançadas para português jurídico
+    if (language === 'por+jur') {
+        tessOptions = {
+            ...tessOptions,
+            tessedit_pageseg_mode: '6', // Assume um único bloco de texto uniforme
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ0123456789.,;:!?()[]{}#$%&*+-=@"\'\\/§º°ª<>|_',
+            tessjs_create_hocr: true,
+            tessjs_create_tsv: true
+        };
+        
+        // Usar português padrão como base
+        language = 'por';
+    }
+    
+    // Reconhecer texto com configurações avançadas
+    const result = await Tesseract.recognize(processedImage, language, tessOptions);
+    
+    // Concluído
+    if (progressBar) progressBar.value = 100;
+    updateElementText('#progressText', 'Reconhecimento concluído!');
+    
+    return result.data.text;
+}
+
+    // Versão melhorada da função startOCR
+   // Versão melhorada da função startOCR
+async function startOCR() {
+    if (!currentFile) {
+        showStatus('Nenhum arquivo selecionado.', 'error');
         return;
     }
     
-    // Usar a API de busca do navegador
-    const found = window.find(searchText);
-    
-    if (!found) {
-        alert('Não foram encontradas mais ocorrências. A busca reiniciará do início.');
-        // Reiniciar a busca do início
-        window.getSelection().removeAllRanges();
-        window.find(searchText);
+    if (isProcessing) {
+        showStatus('Já existe um processamento em andamento.', 'warning');
+        return;
     }
-});
-                
-                // Substituir a ocorrência atual
-                replaceBtn.addEventListener('click', () => {
-                    const searchText = findText.value;
-                    const replacement = replaceText.value;
-                    
-                    if (!searchText) return;
-                    
-                    if (window.getSelection().toString() === searchText) {
-                        document.execCommand('insertText', false, replacement);
-                        window.find(searchText); // Encontrar a próxima ocorrência
-                    } else {
-                        window.find(searchText); // Se a seleção não corresponder, busque primeiro
-                    }
-                });
-                
-                // Substituir todas as ocorrências
-                replaceAllBtn.addEventListener('click', () => {
-                    const searchText = findText.value;
-                    const replacement = replaceText.value;
-                    
-                    if (!searchText) return;
-                    
-                    // Método simples: substitui todo o conteúdo
-                    let newContent = editorContent.innerHTML;
-                    const regex = new RegExp(searchText, 'g');
-                    newContent = newContent.replace(regex, replacement);
-                    editorContent.innerHTML = newContent;
-                    
-                    alert('Substituição concluída!');
-                });
+    
+    try {
+        isProcessing = true;
+        
+        // Resetar detecções
+        detectedLegalTerms = [];
+        detectedProcessNumbers = [];
+        detectedLegalReferences = [];
+        
+        // Mostrar progresso
+        removeClass('#progressContainer', 'hidden');
+        const progressBar = $('#progressBar');
+        if (progressBar) progressBar.value = 0;
+        updateElementText('#progressText', 'Iniciando reconhecimento...');
+        
+        // Esconder editor
+        addClass('#editorContainer', 'hidden');
+        addClass('#textActions', 'hidden');
+        hideElement('#textStats');
+        
+        // Mostrar overlay
+        const processingOverlay = $('#processingOverlay');
+        if (processingOverlay) processingOverlay.style.display = 'flex';
+        updateElementText('#processingText', 'Preparando OCR...');
+        updateElementText('#processingSubstep', '');
+        
+        const languageSelect = $('#languageSelect');
+        const language = languageSelect ? languageSelect.value : 'por';
+        let allRecognizedText = '';
+        
+        // Verificar tipo
+        const isPDF = currentFile.type === 'application/pdf' || 
+                     currentFile.name.toLowerCase().endsWith('.pdf') || 
+                     (await readFileHeader(currentFile)).includes('%PDF');
+        
+        if (isPDF && pdfPageCanvases.length > 0) {
+            // Processar PDF com as melhorias
+            allRecognizedText = await processPDFWithOCREnhanced(language);
+        } else {
+            // Processar imagem única com melhorias
+            const previewImage = $('#previewImage');
+            const imageSource = previewImage ? previewImage.src : '';
+            if (imageSource) {
+                allRecognizedText = await processImageWithOCREnhanced(imageSource, language);
+            } else {
+                throw new Error('Imagem de origem não encontrada');
             }
-            
-            // Verificação ortográfica
-            const spellcheckBtn = document.getElementById('spellcheckBtn');
-            if (spellcheckBtn) {
-                spellcheckBtn.addEventListener('click', () => {
-                    // Ativar/desativar verificação ortográfica nativa
-                    editorContent.spellcheck = !editorContent.spellcheck;
-                    
-                    if (editorContent.spellcheck) {
-                        spellcheckBtn.classList.add('active');
-                        alert('Verificação ortográfica ativada. Palavras incorretas serão sublinhadas em vermelho.');
-                    } else {
-                        spellcheckBtn.classList.remove('active');
-                        alert('Verificação ortográfica desativada.');
-                    }
-                });
-            }
-            
-            // Limpar espaços extras
-            const clearSpacesBtn = document.getElementById('clearSpacesBtn');
-            if (clearSpacesBtn) {
-                clearSpacesBtn.addEventListener('click', () => {
-                    // Obter o texto e remover espaços extras
-                    let content = editorContent.innerHTML;
-                    
-                    // Remover múltiplos espaços
-                    content = content.replace(/[ ]{2,}/g, ' ');
-                    
-                    // Remover espaços no início das linhas
-                    content = content.replace(/^[ \t]+|[ \t]+$/gm, '');
-                    
-                    // Remover linhas vazias consecutivas
-                    content = content.replace(/\n{3,}/g, '\n\n');
-                    
-                    editorContent.innerHTML = content;
-                    alert('Espaços extras removidos com sucesso!');
-                });
-            }
-            
-            // Melhorar tratamento de colagem para preservar quebras de linha
-            editorContent.addEventListener('paste', function(e) {
-                e.preventDefault();
-                
-                // Obter o texto do clipboard
-                let text = '';
-                if (e.clipboardData || e.originalEvent.clipboardData) {
-                    text = (e.originalEvent || e).clipboardData.getData('text/plain');
-                } else if (window.clipboardData) {
-                    text = window.clipboardData.getData('Text');
-                }
-                
-                // Preservar quebras de linha
-                text = text.replace(/\n/g, '<br>');
-                
-                // Inserir o texto formatado
-                document.execCommand('insertHTML', false, text);
-            });
         }
+        
+        // Limpar e formatar o texto reconhecido
+        updateElementText('#processingSubstep', 'Aplicando correções e formatação...');
+        const cleanedText = cleanOCRText(allRecognizedText);
+        
+        // Mostrar dicas para documentos jurídicos
+        if (language === 'por+jur') {
+            removeClass('#legalTipsContainer', 'hidden');
+        } else {
+            addClass('#legalTipsContainer', 'hidden');
+        }
+        
+        // Exibir resultado no editor
+        const editorContent = $('#editorContent');
+        if (editorContent) {
+            // Se destacamentos estiverem ativados, usar a versão HTML
+            const legalTermsCheck = $('#legalTermsCheck');
+            if (legalTermsCheck && legalTermsCheck.checked) {
+                editorContent.innerHTML = formatRecognizedTextWithHighlights(cleanedText);
+            } else {
+                editorContent.textContent = cleanedText;
+            }
+        }
+        
+        // Mostrar botões
+        removeClass('#textActions', 'hidden');
+        
+        // Mostrar editor
+        removeClass('#editorContainer', 'hidden');
+        
+        // Mostrar mensagem de sucesso
+        showStatus('Texto reconhecido com sucesso!', 'success', 5000);
+        
+        // Concluído
+        ocrCompleted = true;
+        
+    } catch (error) {
+        console.error('Erro no reconhecimento de texto:', error);
+        showStatus('Erro durante o reconhecimento: ' + error.message, 'error');
+    } finally {
+        // Esconder elementos
+        addClass('#progressContainer', 'hidden');
+        const processingOverlay = $('#processingOverlay');
+        if (processingOverlay) processingOverlay.style.display = 'none';
+        updateElementText('#processingSubstep', '');
+        isProcessing = false;
+    }
+}
 
+    // ===== FUNCIONALIDADES ESPECIAIS PARA TEXTO JURÍDICO =====
+    
+    // Função para popular o modal de termos jurídicos
+    function populateLegalTermsModal(terms) {
+        const termsList = $('#legalTermsList');
+        termsList.innerHTML = '';
+        
+        if (terms.length === 0) {
+            termsList.innerHTML = '<p>Nenhum termo jurídico detectado.</p>';
+            return;
+        }
+        
+        // Ordenar termos alfabeticamente
+        const sortedTerms = [...terms].sort();
+        
+        // Criar lista de checkboxes
+        sortedTerms.forEach(term => {
+            const termItem = document.createElement('div');
+            termItem.className = 'term-item';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = term;
+            checkbox.id = `term-${term.replace(/\s+/g, '-')}`;
+            checkbox.checked = true; // Por padrão todos selecionados
+            
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = term;
+            
+            termItem.appendChild(checkbox);
+            termItem.appendChild(label);
+            termsList.appendChild(termItem);
+        });
+        
+        // Mostrar modal
+        $('#legalTermsModal').style.display = 'block';
+    }
+
+    // Configurar botões de formatação jurídica
+    function setupLegalFormatButtons() {
+        // Botão para destacar termos jurídicos
+        $('#highlightLegalTerms')?.addEventListener('click', () => {
+            if (detectedLegalTerms.length === 0) {
+                // Analisar texto atual para detectar termos
+                identifyLegalTerms($('#editorContent').textContent);
+            }
+            
+            if (detectedLegalTerms.length === 0) {
+                showStatus('Nenhum termo jurídico detectado no texto.', 'warning', 3000);
+                return;
+            }
+            
+            // Popula e mostra o modal com os termos detectados
+            populateLegalTermsModal(detectedLegalTerms);
+        });
+        
+        // Botão para formatar números de processo
+        $('#formatProcessNumbers')?.addEventListener('click', () => {
+            if (detectedProcessNumbers.length === 0) {
+                // Analisar texto atual para detectar números de processo
+                identifyProcessNumbers($('#editorContent').textContent);
+            }
+            
+            if (detectedProcessNumbers.length === 0) {
+                showStatus('Nenhum número de processo detectado no texto.', 'warning', 3000);
+                return;
+            }
+            
+            // Formatar diretamente
+            let htmlContent = $('#editorContent').innerHTML;
+            
+            detectedProcessNumbers.forEach(number => {
+                const regex = new RegExp(number.replace(/[-./]/g, '[-./]?'), 'g');
+                htmlContent = htmlContent.replace(regex, `<mark class="process-number">${number}</mark>`);
+            });
+            
+            $('#editorContent').innerHTML = htmlContent;
+            showStatus(`${detectedProcessNumbers.length} números de processo formatados.`, 'success', 3000);
+        });
+        
+        // Botão para formatar referências legais
+        $('#formatLegalRefs')?.addEventListener('click', () => {
+            if (detectedLegalReferences.length === 0) {
+                // Analisar texto atual para detectar referências
+                identifyLegalReferences($('#editorContent').textContent);
+            }
+            
+            if (detectedLegalReferences.length === 0) {
+                showStatus('Nenhuma referência legal detectada no texto.', 'warning', 3000);
+                return;
+            }
+            
+            // Formatar diretamente
+            let htmlContent = $('#editorContent').innerHTML;
+            
+            detectedLegalReferences.forEach(ref => {
+                // Escapar caracteres especiais para regex
+                const escapedRef = ref.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\');
+                const regex = new RegExp(escapedRef, 'gi');
+                htmlContent = htmlContent.replace(regex, `<mark class="legal-reference"></mark>`);
+            });
+            
+            $('#editorContent').innerHTML = htmlContent;
+            showStatus(`${detectedLegalReferences.length} referências legais formatadas.`, 'success', 3000);
+        });
+        
+        // Configurar botões da barra de ferramentas do editor
+        $('#markLegalTerms')?.addEventListener('click', () => {
+            if ($('#highlightLegalTerms')) {
+                $('#highlightLegalTerms').click();
+            }
+        });
+        
+        $('#formatProcessBtn')?.addEventListener('click', () => {
+            if ($('#formatProcessNumbers')) {
+                $('#formatProcessNumbers').click();
+            }
+        });
+        
+        $('#citationBtn')?.addEventListener('click', () => {
+            // Inserir uma citação jurídica padronizada na posição do cursor
+            document.execCommand('insertHTML', false, '<blockquote class="legal-citation">Insira a citação jurídica aqui.</blockquote>');
+        });
+        
+        // Configurar modal de termos jurídicos
+        $('#closeTermsModal')?.addEventListener('click', () => {
+            $('#legalTermsModal').style.display = 'none';
+        });
+        
+        // Fechar modal ao clicar fora
+        window.addEventListener('click', (e) => {
+            if (e.target === $('#legalTermsModal')) {
+                $('#legalTermsModal').style.display = 'none';
+            }
+        });
+        
+        $('#highlightSelectedTerms')?.addEventListener('click', () => {
+            // Pegar termos selecionados
+            const selectedTerms = Array.from($('#legalTermsList input[type="checkbox"]:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (selectedTerms.length === 0) {
+                showStatus('Nenhum termo selecionado.', 'warning', 2000);
+                return;
+            }
+            
+            // Destacar os termos selecionados
+            let htmlContent = $('#editorContent').innerHTML;
+            
+            selectedTerms.forEach(term => {
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                htmlContent = htmlContent.replace(regex, `<mark class="legal-term"></mark>`);
+            });
+            
+            $('#editorContent').innerHTML = htmlContent;
+            $('#legalTermsModal').style.display = 'none';
+            
+            showStatus(`${selectedTerms.length} termos destacados.`, 'success', 3000);
+        });
+    }
+
+    // Adicionar função para exportar como DOCX (simulado)
+    function setupDocxExport() {
+        $('#downloadDocx')?.addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
+                showStatus('Nenhum texto para exportar!', 'error');
+                return;
+            }
+            
+            // Aqui seria implementada a conversão real para DOCX
+            // usando uma biblioteca como docx.js
+            
+            // Por enquanto, apenas mostramos uma mensagem
+            showStatus('Exportação para DOCX será implementada em breve!', 'warning', 5000);
+        });
+    }
+
+    // Função para adicionar opção de português jurídico ao select de idiomas
+    function addJuridicalPortugueseOption() {
+        const languageSelect = $('#languageSelect');
+        
+        // Verificar se já existe a opção
+        if (languageSelect && !Array.from(languageSelect.options).some(option => option.value === 'por+jur')) {
+            // Criar nova opção
+            const juridicalOption = document.createElement('option');
+            juridicalOption.value = 'por+jur';
+            juridicalOption.textContent = 'Português Jurídico';
+            
+            // Inserir após a opção de português
+            const portugueseOption = Array.from(languageSelect.options).find(option => option.value === 'por');
+            if (portugueseOption) {
+                languageSelect.insertBefore(juridicalOption, portugueseOption.nextSibling);
+            } else {
+                languageSelect.appendChild(juridicalOption);
+            }
+            
+            // Selecionar por padrão
+            juridicalOption.selected = true;
+        }
+    }
+
+     // ===== AÇÕES DE TEXTO =====
+    
+    // Configurar ações de texto (copiar/baixar)
+    function setupTextActions() {
         // Copiar texto
-        document.getElementById('copyText').addEventListener('click', () => {
-            if (!editorContent.textContent.trim()) {
+        $('#copyText')?.addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
                 showStatus('Nenhum texto para copiar!', 'error');
                 return;
             }
             
-            // Obter o conteúdo HTML do editor (preserva formatação)
-            const htmlContent = editorContent.innerHTML;
+            // Obter conteúdo HTML do editor (preserva formatação)
+            const htmlContent = $('#editorContent').innerHTML;
             
-            // Criar um elemento temporário para manipular o texto
+            // Criar elemento temporário
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             
-            // Garantir que <br> e <p> sejam convertidos para quebras de linha
+            // Garantir que tags sejam convertidas para quebras de linha
             const textWithLineBreaks = tempDiv.innerHTML
-                .replace(/<br\s*\/?>/gi, '\n')  // Substituir <br> por \n
-                .replace(/<\/p><p>/gi, '\n\n')  // Substituir </p><p> por duas quebras de linha
-                .replace(/<div>/gi, '\n')       // Substituir <div> por quebra de linha
-                .replace(/<\/div>/gi, '')       // Remover </div>
-                .replace(/&nbsp;/gi, ' ');      // Substituir &nbsp; por espaço
+                .replace(/<br\s*\/?>/gi, '\n')  // <br> para \n
+                .replace(/<\/p><p>/gi, '\n\n')  // </p><p> para duas quebras
+                .replace(/<div>/gi, '\n')       // <div> para quebra
+                .replace(/<\/div>/gi, '')       // remover </div>
+                .replace(/&nbsp;/gi, ' ');      // &nbsp; para espaço
             
-            // Usar DOMParser para obter texto limpo, preservando quebras
+            // Obter texto limpo
             const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
             
-            // Copiar para a área de transferência
+            // Copiar para área de transferência
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(cleanText)
                     .then(() => {
-                        showStatus('Texto copiado para a área de transferência!', 'success');
+                        showStatus('Texto copiado para a área de transferência!', 'success', 3000);
                     })
                     .catch(err => {
                         showStatus('Erro ao copiar texto: ' + err.message, 'error');
                     });
             } else {
-                // Fallback para navegadores sem suporte à Clipboard API
+                // Fallback para navegadores sem Clipboard API
                 const tempTextArea = document.createElement('textarea');
                 tempTextArea.value = cleanText;
                 document.body.appendChild(tempTextArea);
                 tempTextArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(tempTextArea);
-                showStatus('Texto copiado para a área de transferência!', 'success');
+                showStatus('Texto copiado para a área de transferência!', 'success', 3000);
             }
         });
-
-        // Baixar texto como arquivo TXT
-        document.getElementById('downloadText').addEventListener('click', () => {
-            if (!editorContent.textContent.trim()) {
+        
+       // Baixar texto como TXT
+       $('#downloadText')?.addEventListener('click', () => {
+            if (!$('#editorContent').textContent.trim()) {
                 showStatus('Nenhum texto para baixar!', 'error');
                 return;
             }
             
-            // Aplicar a mesma lógica de preservação de quebras
-            const htmlContent = editorContent.innerHTML;
+            // Mesmo processamento para preservar quebras
+            const htmlContent = $('#editorContent').innerHTML;
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
             
@@ -973,7 +2016,7 @@ findNextBtn.addEventListener('click', () => {
             
             const cleanText = new DOMParser().parseFromString(textWithLineBreaks, 'text/html').body.textContent;
             
-            // Criar e baixar o arquivo
+            // Criar e baixar arquivo
             const blob = new Blob([cleanText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             
@@ -984,213 +2027,456 @@ findNextBtn.addEventListener('click', () => {
             
             URL.revokeObjectURL(url);
             
-            showStatus('Arquivo de texto baixado com sucesso!', 'success');
+            showStatus('Arquivo de texto baixado com sucesso!', 'success', 3000);
         });
+    }
 
-        // Inicializar o editor quando o DOM estiver carregado
-        document.addEventListener('DOMContentLoaded', () => {
-            setupEditor();
+    // ===== EDITOR DE TEXTO =====
+    
+    // Configuração dos botões de formatação
+    function setupEditor() {
+        // Botões de comando
+        const editorButtons = document.querySelectorAll('.editor-btn[data-command]');
+        editorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const command = button.getAttribute('data-command');
+                document.execCommand(command, false, null);
+                
+                // Atualizar estado
+                const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+                if (stateCommands.includes(command)) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+                
+                $('#editorContent').focus();
+            });
         });
+        
+        // Atualizar estado dos botões
+        $('#editorContent').addEventListener('mouseup', updateButtonStates);
+        $('#editorContent').addEventListener('keyup', updateButtonStates);
+        
+        function updateButtonStates() {
+            const stateCommands = ['bold', 'italic', 'underline', 'strikethrough'];
+            stateCommands.forEach(command => {
+                const button = $(`.editor-btn[data-command="${command}"]`);
+                if (button) {
+                    if (document.queryCommandState(command)) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+            });
+        }
+        
+        // Tamanho da fonte
+        const formatSize = $('#formatSize');
+        if (formatSize) {
+            formatSize.addEventListener('change', () => {
+                document.execCommand('fontSize', false, formatSize.value);
+                $('#editorContent').focus();
+            });
+        }
+        
+        // Destacar texto
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const textHighlight = $('#textHighlight');
+        
+        if (textHighlight && colorButtons.length) {
+            colorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const color = button.getAttribute('data-color');
+                    document.execCommand('hiliteColor', false, color);
+                    $('#editorContent').focus();
+                });
+            });
+        }
+        
+        // Painel de busca e substituição
+        const findReplaceBtn = $('#findReplaceBtn');
+        const findReplacePanel = $('#findReplacePanel');
+        const closeFindReplace = $('#closeFindReplace');
+        
+        if (findReplaceBtn && findReplacePanel && closeFindReplace) {
+            findReplaceBtn.addEventListener('click', () => {
+                findReplacePanel.style.display = findReplacePanel.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            closeFindReplace.addEventListener('click', () => {
+                findReplacePanel.style.display = 'none';
+            });
+            
+            // Buscar próxima ocorrência
+            $('#findNextBtn')?.addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                if (!searchText) {
+                    alert('Por favor, digite um texto para buscar.');
+                    $('#findText').focus();
+                    return;
+                }
+                
+                // Usar API de busca do navegador
+                const found = window.find(searchText);
+                
+                if (!found) {
+                    alert('Não foram encontradas mais ocorrências. A busca reiniciará do início.');
+                    // Reiniciar busca
+                    window.getSelection().removeAllRanges();
+                    window.find(searchText);
+                }
+            });
+            
+            // Substituir ocorrência atual
+            $('#replaceBtn')?.addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                if (window.getSelection().toString() === searchText) {
+                    document.execCommand('insertText', false, replacement);
+                    window.find(searchText); // Encontrar próxima
+                } else {
+                    window.find(searchText); // Buscar primeiro
+                }
+            });
+            
+            // Substituir todas as ocorrências
+            $('#replaceAllBtn')?.addEventListener('click', () => {
+                const searchText = $('#findText').value;
+                const replacement = $('#replaceText').value;
+                
+                if (!searchText) return;
+                
+                // Método simples: substituir todo o conteúdo
+                let newContent = $('#editorContent').innerHTML;
+                const regex = new RegExp(searchText, 'g');
+                newContent = newContent.replace(regex, replacement);
+                $('#editorContent').innerHTML = newContent;
+                
+                alert('Substituição concluída!');
+            });
+        }
+        
+        // Verificação ortográfica
+        const spellcheckBtn = $('#spellcheckBtn');
+        if (spellcheckBtn) {
+            spellcheckBtn.addEventListener('click', () => {
+                // Ativar/desativar verificação nativa
+                $('#editorContent').spellcheck = !$('#editorContent').spellcheck;
+                
+                if ($('#editorContent').spellcheck) {
+                    spellcheckBtn.classList.add('active');
+                    alert('Verificação ortográfica ativada. Palavras incorretas serão sublinhadas em vermelho.');
+                } else {
+                    spellcheckBtn.classList.remove('active');
+                    alert('Verificação ortográfica desativada.');
+                }
+            });
+        }
+        
+        // Limpar espaços extras
+        const clearSpacesBtn = $('#clearSpacesBtn');
+        if (clearSpacesBtn) {
+            clearSpacesBtn.addEventListener('click', () => {
+                // Remover espaços extras
+                let content = $('#editorContent').innerHTML;
+                
+                // Remover múltiplos espaços
+                content = content.replace(/[ ]{2,}/g, ' ');
+                
+                // Remover espaços no início/fim das linhas
+                content = content.replace(/^[ \t]+|[ \t]+$/gm, '');
+                
+                // Remover linhas vazias consecutivas
+                content = content.replace(/\n{3,}/g, '\n\n');
+                
+                $('#editorContent').innerHTML = content;
+                alert('Espaços extras removidos com sucesso!');
+            });
+        }
+        
+        // Melhorar tratamento de colagem
+        $('#editorContent').addEventListener('paste', function(e) {
+            e.preventDefault();
+            
+            // Obter texto do clipboard
+            let text = '';
+            if (e.clipboardData || e.originalEvent.clipboardData) {
+                text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            } else if (window.clipboardData) {
+                text = window.clipboardData.getData('Text');
+            }
+            
+            // Preservar quebras de linha
+            text = text.replace(/\n/g, '<br>');
+            
+            // Inserir texto formatado
+            document.execCommand('insertHTML', false, text);
+        });
+    }
 
-        // Adicionar estilos para a animação de feedback
+    // Adicionar estilos para o OCR
+    function addStylesForOCR() {
         const styleElement = document.createElement('style');
         styleElement.textContent = `
-            @keyframes fadeInOut {
-                0% { opacity: 0; transform: translateY(20px); }
-                10% { opacity: 1; transform: translateY(0); }
-                90% { opacity: 1; transform: translateY(0); }
-                100% { opacity: 0; transform: translateY(-20px); }
+            /* Estilos para elementos jurídicos */
+            .legal-term {
+                background-color: rgba(144, 238, 144, 0.3);
+                border-bottom: 1px dashed #4CAF50;
             }
             
-            /* Estilos específicos para o editor OCR */
-            .editor-content {
-                padding: 1rem;
-                min-height: 300px;
-                max-height: 500px;
-                overflow-y: auto;
-                background: white;
-                white-space: pre-wrap;
-                font-family: monospace;
-                line-height: 1.5;
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-md);
-                margin: 1rem 0;
+            .process-number {
+                background-color: rgba(173, 216, 230, 0.3);
+                border-bottom: 1px dashed #2196F3;
+                font-weight: 500;
             }
-
-            .editor-content:focus {
-                outline: none;
-                border-color: var(--color-primary);
-                box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+            
+            .legal-reference {
+                background-color: rgba(255, 182, 193, 0.3);
+                border-bottom: 1px dashed #F44336;
+                font-weight: 500;
             }
-
-            /* Barra de ferramentas do editor */
-            .editor-toolbar {
+            
+            /* Estilos para estatísticas */
+            .text-stats-panel {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 0.375rem;
+                padding: 12px;
+            }
+            
+            .stats-header {
+                font-weight: 500;
+                color: #495057;
+                margin-bottom: 5px;
+            }
+            
+            .stat-item {
                 display: flex;
-                flex-wrap: wrap;
-                padding: 0.5rem;
-                background: var(--color-gray-50);
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-md);
-                gap: 0.5rem;
-                margin-bottom: 1rem;
+                flex-direction: column;
+                min-width: 80px;
             }
             
-            .toolbar-group {
-                display: flex;
-                gap: 0.25rem;
-                padding: 0.25rem;
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-sm);
-                background: rgba(255, 255, 255, 0.7);
+            .stat-label {
+                font-size: 0.85rem;
+                color: #6c757d;
             }
             
-            .editor-btn {
-                width: 36px;
-                height: 36px;
+            .stat-value {
+                font-size: 1.25rem;
+                font-weight: 500;
+                color: #495057;
+            }
+            
+            /* Estilos para modal */
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: white;
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-sm);
-                cursor: pointer;
-                color: var(--text-color);
-                transition: var(--transition-normal);
             }
             
-            .editor-btn:hover {
-                background: var(--color-primary-light);
-                color: var(--color-primary);
-            }
-            
-            .editor-btn.active {
-                background: var(--color-primary);
-                color: white;
-                border-color: var(--color-primary);
-            }
-            
-            .format-select {
-                height: 36px;
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-sm);
-                padding: 0 0.5rem;
-                background: white;
-                cursor: pointer;
-            }
-            
-            /* Cores para destacar texto */
-            .color-picker {
+            .modal-content {
+                background-color: white;
+                border-radius: 0.5rem;
+                width: 90%;
+                max-width: 600px;
+                max-height: 90vh;
                 display: flex;
-                gap: 0.25rem;
+                flex-direction: column;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             }
             
-            .color-btn {
-                border: 1px solid var(--color-gray-200);
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                overflow: hidden;
-                padding: 0;
-                margin-top: 6px;
-            }
-            
-            /* Painel de busca e substituição */
-            .find-replace-panel {
-                background: white;
-                border: 1px solid var(--color-gray-200);
-                border-radius: var(--radius-md);
-                margin-bottom: 1rem;
-                box-shadow: var(--shadow-md);
-            }
-            
-            .panel-header {
-                padding: 0.75rem;
-                border-bottom: 1px solid var(--color-gray-200);
+            .modal-header {
+                padding: 1rem;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                background: var(--color-gray-50);
+                border-bottom: 1px solid #dee2e6;
             }
             
-            .close-btn {
-                background: none;
-                border: none;
-                cursor: pointer;
-                font-size: 1rem;
-                color: var(--color-gray-500);
-            }
-            
-            .panel-content {
+            .modal-body {
                 padding: 1rem;
+                overflow-y: auto;
+                max-height: 60vh;
             }
             
-            .input-group {
-                margin-bottom: 0.75rem;
-            }
-            
-            .input-group label {
-                display: block;
-                margin-bottom: 0.25rem;
-                font-weight: 500;
-            }
-            
-            .panel-actions {
+            .modal-footer {
+                padding: 1rem;
                 display: flex;
-                gap: 0.5rem;
-                margin-top: 1rem;
+                justify-content: flex-end;
+                gap: 10px;
+                border-top: 1px solid #dee2e6;
             }
             
-            /* Visual para mostrar texto encontrado */
-            .found-text {
-                background-color: #ffcc00;
-                color: black;
+            .close-modal {
+                font-size: 1.5rem;
+                cursor: pointer;
             }
             
-            /* Cores de destaque predefinidas */
-            .highlight-yellow {
-                background-color: #ffff00;
+            .terms-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
             }
             
-            .highlight-green {
-                background-color: #90EE90;
+            .term-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            .highlight-blue {
-                background-color: #ADD8E6;
+            /* Estilos para etapa de processamento */
+            .processing-substep {
+                font-size: 0.875rem;
+                opacity: 0.8;
+                margin-top: 5px;
             }
             
-            .highlight-pink {
-                background-color: #FFB6C1;
-            }
-            
-            /* Contador de páginas excluídas */
-            .exclude-counter {
-                position: fixed;
-                bottom: 2rem;
-                left: 2rem;
-                background: rgba(17, 24, 39, 0.9);
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border-radius: var(--radius-md);
-                font-weight: 500;
-                z-index: 50;
-                display: none;
-                box-shadow: var(--shadow-md);
-            }
-            
-            /* Responsividade para o editor */
-            @media (max-width: 768px) {
-                .editor-toolbar {
-                    flex-direction: column;
+            /* Animação para remoção de página */
+            @keyframes fadeOut {
+                from {
+                    opacity: 1;
+                    transform: scale(1);
                 }
-                
-                .toolbar-group {
-                    width: 100%;
-                    justify-content: space-between;
+                to {
+                    opacity: 0;
+                    transform: scale(0.9);
                 }
+            }
+            
+            /* Estilos para dicas jurídicas */
+            .tips-content {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .tips-content p {
+                margin: 0;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .tips-content i {
+                margin-top: 2px;
             }
         `;
         document.head.appendChild(styleElement);
-    </script>
+    }
+
+    // ===== INICIALIZAÇÃO E EVENTOS =====
+    
+    // Configurar eventos da aplicação
+    function setupEventListeners() {
+        // Configurar drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone')?.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            $('#dropZone')?.addEventListener(eventName, () => {
+                addClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            $('#dropZone')?.addEventListener(eventName, () => {
+                removeClass('#dropZone', 'drag-over');
+            });
+        });
+        
+        // Evento de drop de arquivo
+        $('#dropZone')?.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                // Pequeno delay para garantir reset completo
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        // Evento de clique na área de drop
+        $('#dropZone')?.addEventListener('click', () => {
+            // Resetar antes de abrir seletor
+            resetAllStates();
+            $('#fileInput').click();
+        });
+        
+        // Evento de seleção via input
+        $('#fileInput')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Pequeno delay para garantir reset
+                setTimeout(() => {
+                    handleFile(file);
+                }, 50);
+            }
+        });
+        
+        // Botão de reconhecimento
+        $('#recognizeBtn')?.addEventListener('click', () => {
+            startOCR();
+        });
+        
+        // Paginação do grid
+        $('#prevGridPage')?.addEventListener('click', () => {
+            if (currentGridPage > 0) {
+                currentGridPage--;
+                renderGridPage(currentGridPage);
+            }
+        });
+        
+        $('#nextGridPage')?.addEventListener('click', () => {
+            if (currentGridPage < totalGridPages - 1) {
+                currentGridPage++;
+                renderGridPage(currentGridPage);
+            }
+        });
+    }
+    
+    // Inicializar a aplicação
+    function initializeApp() {
+        console.log('Inicializando aplicação OCR com melhorias para documentos jurídicos...');
+        
+        // Adicionar opção de português jurídico
+        addJuridicalPortugueseOption();
+        
+        // Configurar editor
+        setupEditor();
+        
+        // Configurar ações de texto
+        setupTextActions();
+        
+        // Configurar botões jurídicos
+        setupLegalFormatButtons();
+        
+        // Configurar eventos
+        setupEventListeners();
+        
+        // Adicionar estilos
+        addStylesForOCR();
+        
+        console.log('Aplicação OCR inicializada com sucesso!');
+    }
+    
+    // Iniciar aplicação
+    initializeApp();
+});
+</script>
 </body>
 </html>
