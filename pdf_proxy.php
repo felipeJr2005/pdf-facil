@@ -1,33 +1,25 @@
 <?php
 <?php
-// PDF Proxy - Bypass CORS para PDFs de tribunais
-// Versão: 2.0 - Com melhorias para PJe e debug avançado
-// Uso: pdf_proxy.php?url=LINK_DO_PDF&debug=1&strategy=iframe
-
 // Função de debug simples ANTES de qualquer processamento
 if (isset($_GET['test']) && $_GET['test'] === 'ping') {
-    try {
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        echo json_encode([
-            'status' => 'ok',
-            'message' => 'PDF Proxy v2.0 funcionando',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'php_version' => PHP_VERSION,
-            'memory_limit' => ini_get('memory_limit'),
-            'max_execution_time' => ini_get('max_execution_time')
-        ]);
-        exit();
-    } catch (Exception $e) {
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        http_response_code(500);
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Erro no teste: ' . $e->getMessage()
-        ]);
-        exit();
-    }
+    // Não carregar mais nada, responder imediatamente
+    header('Content-Type: application/json; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    
+    $response = [
+        'status' => 'ok',
+        'message' => 'PDF Proxy v2.0 funcionando',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'php_version' => PHP_VERSION,
+        'memory_limit' => ini_get('memory_limit'),
+        'max_execution_time' => ini_get('max_execution_time'),
+        'server' => $_SERVER['SERVER_NAME'] ?? 'desconhecido'
+    ];
+    
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit();
 }
 
 // Função para lidar com requisições OPTIONS (preflight CORS)
@@ -39,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
+
+// PDF Proxy - Bypass CORS para PDFs de tribunais
+// Versão: 2.0 - Com melhorias para PJe e debug avançado
+// Uso: pdf_proxy.php?url=LINK_DO_PDF&debug=1&strategy=iframe
 
 // Configuração de log
 $log_dir = __DIR__;

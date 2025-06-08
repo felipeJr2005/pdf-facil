@@ -156,7 +156,8 @@
                 https://eppg.fgv.br/sites/default/files/teste.pdf
             </div>
             <div class="example-url" onclick="usarUrl(this)" style="background: #fff3cd; border-color: #ffeaa7;">
-                <strong>PJe (precisa login):</strong> https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979
+                <strong>PJe (precisa login):</strong><br>
+                <code>https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979</code>
             </div>
         </div>
         
@@ -198,8 +199,24 @@
         }
         
         function usarUrl(element) {
-            document.getElementById('pdfUrl').value = element.textContent.trim();
-            log('URL selecionada: ' + element.textContent.trim());
+            // Extrair apenas a URL do texto
+            let text = element.textContent || element.innerText || '';
+            
+            // Procurar por URLs no texto
+            const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
+            const urls = text.match(urlRegex);
+            
+            if (urls && urls.length > 0) {
+                // Usar a primeira URL encontrada
+                const url = urls[0];
+                document.getElementById('pdfUrl').value = url;
+                log('URL extraída: ' + url);
+            } else {
+                // Fallback: limpar texto e usar como está
+                text = text.replace(/^[^:]*:\s*/, '').trim();
+                document.getElementById('pdfUrl').value = text;
+                log('URL selecionada: ' + text);
+            }
         }
         
         function limparLog() {
@@ -389,11 +406,37 @@
                             const currentUrl = iframe.contentWindow.location.href;
                             if (currentUrl.includes('.pdf') || currentUrl.includes('download')) {
                                 log('📄 PDF detectado no iframe!', 'success');
-                                showStatus('PDF detectado! Agora você pode copiar a URL ou usar "Salvar como".', 'success');
+                                showStatus('PDF detectado! Agora você pode tentar capturar via proxy.', 'success');
                                 clearInterval(checkInterval);
+                                
+                                // Adicionar botão para tentar capturar via proxy
+                                const captureBtn = document.createElement('button');
+                                captureBtn.textContent = '📥 Tentar Capturar via Proxy';
+                                captureBtn.style.margin = '10px';
+                                captureBtn.onclick = () => {
+                                    // Usar a URL atual do iframe
+                                    document.getElementById('pdfUrl').value = currentUrl;
+                                    log('🔄 Tentando capturar PDF detectado: ' + currentUrl);
+                                    testarProxy();
+                                };
+                                container.appendChild(captureBtn);
                             }
                         } catch (e) {
-                            // CORS - normal
+                            // CORS - normal, mas vamos tentar outra estratégia
+                            // Verificar se o iframe mudou visualmente
+                            try {
+                                const iframeDoc = iframe.contentDocument;
+                                if (iframeDoc && iframeDoc.body) {
+                                    const bodyText = iframeDoc.body.innerText || '';
+                                    if (bodyText.includes('%PDF') || bodyText.length < 100) {
+                                        log('📄 Possível PDF detectado por análise de conteúdo!', 'success');
+                                        showStatus('Possível PDF detectado! Tente capturar.', 'success');
+                                        clearInterval(checkInterval);
+                                    }
+                                }
+                            } catch (e2) {
+                                // Duplo CORS - completamente normal
+                            }
                         }
                     }, 2000);
                     
