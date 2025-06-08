@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tesseract.js v6 - Básico</title>
+    <title>Tesseract.js v6 - Com Parâmetros</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
         
         .container {
-            background-color: white;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         h1 {
@@ -26,47 +25,52 @@
             text-align: center;
         }
         
-        .settings {
+        .options {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
             margin: 15px 0;
         }
         
-        .setting-group {
+        .option {
+            padding: 10px;
             background: #f8f9ff;
-            padding: 15px;
-            border-radius: 6px;
+            border-radius: 4px;
             border: 1px solid #e0e7ff;
         }
         
-        .setting-label {
+        label {
+            display: block;
             font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
+            margin-bottom: 5px;
         }
         
         select {
             width: 100%;
-            padding: 8px 10px;
-            border: 1px solid #ddd;
+            padding: 5px;
             border-radius: 4px;
-            font-size: 1rem;
-            background: white;
+            border: 1px solid #ddd;
+        }
+        
+        .file-input {
+            padding: 15px;
+            border: 2px dashed #4361ee;
+            border-radius: 6px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
         }
         
         button {
             background: #4361ee;
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px;
             border-radius: 4px;
-            font-size: 1rem;
+            width: 100%;
             font-weight: bold;
             cursor: pointer;
-            width: 100%;
             margin: 10px 0;
-            transition: background-color 0.2s;
         }
         
         button:hover {
@@ -78,84 +82,51 @@
             cursor: not-allowed;
         }
         
-        .file-input {
-            margin: 15px 0;
-            padding: 15px;
-            border: 2px dashed #4361ee;
-            border-radius: 6px;
-            text-align: center;
-            cursor: pointer;
-            background: #f8f9ff;
-        }
-        
-        .file-input:hover {
-            background: #f0f4ff;
-        }
-        
-        .preview {
-            max-width: 100%;
-            max-height: 300px;
-            margin: 15px auto;
-            display: block;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 0.9rem;
         }
         
         .result {
-            margin-top: 20px;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            padding: 15px;
+            margin-top: 15px;
+            padding: 10px;
             background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 4px;
+            display: none;
         }
         
         .result textarea {
             width: 100%;
             min-height: 150px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
+            padding: 5px;
             font-family: monospace;
-            margin-top: 10px;
-        }
-        
-        .progress {
-            width: 100%;
-            height: 10px;
-            background: #e0e7ff;
-            border-radius: 5px;
-            margin: 15px 0;
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: #4361ee;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        
-        .status {
-            text-align: center;
-            font-weight: bold;
-            margin: 10px 0;
-            color: #4361ee;
         }
         
         .hidden {
             display: none;
         }
         
-        .log {
-            background: #f8f8f8;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            margin-top: 15px;
-            font-family: monospace;
-            max-height: 150px;
-            overflow-y: auto;
-            font-size: 0.9rem;
+        img.preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin: 10px auto;
+            display: block;
+        }
+        
+        .param-checkbox {
+            margin-top: 10px;
+        }
+        
+        .param-checkbox input {
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -165,15 +136,14 @@
         
         <div class="file-input" id="fileInput">
             <p><strong>Clique ou arraste uma imagem aqui</strong></p>
-            <p>Formatos suportados: JPG, PNG</p>
             <input type="file" id="fileUpload" accept=".jpg,.jpeg,.png" style="display:none">
         </div>
         
         <img id="preview" class="preview hidden">
         
-        <div class="settings">
-            <div class="setting-group">
-                <div class="setting-label">Idioma</div>
+        <div class="options">
+            <div class="option">
+                <label for="language">Idioma:</label>
                 <select id="language">
                     <option value="por">Português</option>
                     <option value="eng">Inglês</option>
@@ -182,42 +152,43 @@
                 </select>
             </div>
             
-            <div class="setting-group">
-                <div class="setting-label">Modo OCR</div>
+            <div class="option">
+                <label for="ocrMode">Modo OCR:</label>
                 <select id="ocrMode">
                     <option value="1">LSTM (Recomendado)</option>
                     <option value="0">Legado</option>
                     <option value="2">Combinado</option>
                 </select>
+                <div class="param-checkbox">
+                    <input type="checkbox" id="useOcrMode" checked>
+                    <label for="useOcrMode">Usar este modo</label>
+                </div>
             </div>
             
-            <div class="setting-group">
-                <div class="setting-label">Segmentação</div>
+            <div class="option">
+                <label for="segMode">Segmentação:</label>
                 <select id="segMode">
                     <option value="1">Automática com OSD</option>
                     <option value="3">Página completa</option>
                     <option value="6">Bloco uniforme</option>
                     <option value="7">Linha única</option>
                 </select>
+                <div class="param-checkbox">
+                    <input type="checkbox" id="useSegMode" checked>
+                    <label for="useSegMode">Usar esta segmentação</label>
+                </div>
             </div>
         </div>
         
         <button id="processBtn" disabled>Processar Imagem</button>
         
-        <div id="progressContainer" class="hidden">
-            <div class="progress">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="status" id="status">Processando...</div>
-        </div>
-        
-        <div id="resultContainer" class="result hidden">
+        <div id="resultContainer" class="result">
             <h3>Texto Reconhecido</h3>
             <textarea id="resultText" readonly></textarea>
         </div>
         
         <div class="log" id="log">
-            Tesseract.js v6 - Iniciando...
+            Tesseract.js v6 - Logs:
         </div>
     </div>
     
@@ -228,11 +199,10 @@
         const preview = document.getElementById('preview');
         const languageSelect = document.getElementById('language');
         const ocrModeSelect = document.getElementById('ocrMode');
+        const useOcrMode = document.getElementById('useOcrMode');
         const segModeSelect = document.getElementById('segMode');
+        const useSegMode = document.getElementById('useSegMode');
         const processBtn = document.getElementById('processBtn');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const status = document.getElementById('status');
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.getElementById('resultText');
         const log = document.getElementById('log');
@@ -249,7 +219,7 @@
         }
         
         // Carregar Tesseract.js v6
-        async function loadTesseract() {
+        function loadTesseract() {
             return new Promise((resolve, reject) => {
                 addLog('Carregando Tesseract.js v6...');
                 
@@ -284,19 +254,16 @@
             // Drag and drop
             fileInput.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                fileInput.style.backgroundColor = '#e6eeff';
                 fileInput.style.borderColor = '#3a56d4';
             });
             
             fileInput.addEventListener('dragleave', (e) => {
                 e.preventDefault();
-                fileInput.style.backgroundColor = '#f8f9ff';
                 fileInput.style.borderColor = '#4361ee';
             });
             
             fileInput.addEventListener('drop', (e) => {
                 e.preventDefault();
-                fileInput.style.backgroundColor = '#f8f9ff';
                 fileInput.style.borderColor = '#4361ee';
                 
                 if (e.dataTransfer.files.length > 0) {
@@ -335,89 +302,74 @@
             if (!selectedFile) return;
             
             const language = languageSelect.value;
-            const ocrMode = ocrModeSelect.value;
-            const segMode = segModeSelect.value;
+            addLog(`🚀 Iniciando OCR com idioma: ${language}`);
             
-            addLog(`🚀 Iniciando OCR com: Idioma=${language}, Modo=${ocrMode}, Seg=${segMode}`);
-            
-            // Mostrar progresso
-            progressContainer.classList.remove('hidden');
-            resultContainer.classList.add('hidden');
             processBtn.disabled = true;
-            
-            updateProgress(0, 'Iniciando...');
+            resultContainer.style.display = 'none';
+            resultText.value = '';
             
             try {
                 // Converter imagem para base64
-                const imageData = await readFileAsDataURL(selectedFile);
+                addLog('📄 Convertendo imagem...');
+                const reader = new FileReader();
+                const imageData = await new Promise((resolve, reject) => {
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(selectedFile);
+                });
                 
-                updateProgress(10, 'Criando worker...');
-                
-                // Criar worker (MÉTODO SIMPLIFICADO DO TESSERACT V6)
+                addLog('⚙️ Criando worker...');
+                // Criar worker com idioma diretamente (método v6)
                 const worker = await Tesseract.createWorker(language);
-                addLog('✅ Worker criado com sucesso');
+                addLog('✅ Worker criado com sucesso!');
                 
-                updateProgress(20, 'Configurando parâmetros...');
+                // Configurar parâmetros APENAS se estiverem marcados
+                const params = {};
                 
-                // Configurar parâmetros
-                await worker.setParameters({
-                    tessedit_ocr_engine_mode: ocrMode,
-                    tessedit_pageseg_mode: segMode
-                });
-                addLog('✅ Parâmetros configurados');
+                if (useOcrMode.checked) {
+                    params.tessedit_ocr_engine_mode = ocrModeSelect.value;
+                    addLog(`⚙️ Usando modo OCR: ${ocrModeSelect.value}`);
+                }
                 
-                updateProgress(30, 'Processando...');
+                if (useSegMode.checked) {
+                    params.tessedit_pageseg_mode = segModeSelect.value;
+                    addLog(`⚙️ Usando segmentação: ${segModeSelect.value}`);
+                }
                 
-                // Reconhecer texto
-                const result = await worker.recognize(imageData, {
-                    logger: progress => {
-                        if (progress.status === 'recognizing text') {
-                            const percent = 30 + (progress.progress * 60);
-                            updateProgress(percent, `Reconhecendo: ${Math.round(progress.progress * 100)}%`);
-                        }
+                // Aplicar parâmetros apenas se houver algum
+                if (Object.keys(params).length > 0) {
+                    addLog(`⚙️ Configurando ${Object.keys(params).length} parâmetros...`);
+                    try {
+                        await worker.setParameters(params);
+                        addLog('✅ Parâmetros configurados com sucesso!');
+                    } catch (paramError) {
+                        addLog(`⚠️ Aviso: Erro ao configurar parâmetros: ${paramError.message}`);
+                        addLog('⚙️ Continuando sem parâmetros personalizados...');
                     }
-                });
+                } else {
+                    addLog('ℹ️ Usando configurações padrão');
+                }
                 
-                updateProgress(95, 'Finalizando...');
+                addLog('🔍 Reconhecendo texto...');
+                const { data } = await worker.recognize(imageData);
+                addLog('✅ Texto reconhecido!');
                 
-                // Limpar worker
+                addLog('🧹 Finalizando worker...');
                 await worker.terminate();
                 
-                updateProgress(100, 'Concluído!');
-                
                 // Mostrar resultado
-                resultText.value = result.data.text;
-                resultContainer.classList.remove('hidden');
+                resultText.value = data.text;
+                resultContainer.style.display = 'block';
                 
-                addLog(`✅ OCR concluído! ${result.data.text.length} caracteres reconhecidos`);
+                addLog(`✅ OCR concluído! ${data.text.length} caracteres reconhecidos`);
                 
             } catch (error) {
-                addLog(`❌ Erro: ${error.message}`);
-                updateProgress(100, 'Erro!');
+                addLog(`❌ ERRO: ${error.message}`);
+                console.error('Erro detalhado:', error);
                 alert(`Erro ao processar imagem: ${error.message}`);
             } finally {
-                // Ocultar progresso
-                setTimeout(() => {
-                    progressContainer.classList.add('hidden');
-                    processBtn.disabled = false;
-                }, 1000);
+                processBtn.disabled = false;
             }
-        }
-        
-        // Auxiliar para ler arquivo como DataURL
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(e);
-                reader.readAsDataURL(file);
-            });
-        }
-        
-        // Atualizar barra de progresso
-        function updateProgress(percent, message) {
-            progressBar.style.width = `${percent}%`;
-            status.textContent = message;
         }
         
         // Inicializar aplicativo
@@ -425,7 +377,7 @@
             try {
                 await loadTesseract();
                 setupEventListeners();
-                addLog('✅ Aplicativo inicializado e pronto para uso');
+                addLog('✅ Aplicativo inicializado');
             } catch (error) {
                 addLog(`❌ Erro na inicialização: ${error.message}`);
                 alert('Erro ao inicializar o aplicativo. Tente recarregar a página.');
