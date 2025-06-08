@@ -3,111 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tesseract.js v6 - Com Parâmetros</title>
+    <title>Tesseract.js v6 - Versão Final</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 700px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f8f9fa;
         }
         
         .container {
-            border: 1px solid #ddd;
+            background-color: white;
             border-radius: 8px;
-            padding: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         h1 {
             color: #4361ee;
             text-align: center;
+            margin-bottom: 20px;
         }
         
         .options {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin: 15px 0;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
         }
         
         .option {
-            padding: 10px;
+            padding: 15px;
             background: #f8f9ff;
-            border-radius: 4px;
+            border-radius: 6px;
             border: 1px solid #e0e7ff;
         }
         
         label {
             display: block;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            color: #333;
         }
         
         select {
             width: 100%;
-            padding: 5px;
+            padding: 8px 10px;
             border-radius: 4px;
             border: 1px solid #ddd;
+            background-color: white;
+            font-size: 14px;
         }
         
         .file-input {
-            padding: 15px;
+            padding: 25px;
             border: 2px dashed #4361ee;
-            border-radius: 6px;
+            border-radius: 8px;
             text-align: center;
-            margin: 15px 0;
+            margin: 20px 0;
             cursor: pointer;
+            background-color: #fafbff;
+            transition: all 0.2s ease;
+        }
+        
+        .file-input:hover {
+            background-color: #f0f4ff;
+            border-color: #3a56d4;
         }
         
         button {
-            background: #4361ee;
+            background: linear-gradient(135deg, #4361ee, #3a56d4);
             color: white;
             border: none;
-            padding: 10px;
-            border-radius: 4px;
-            width: 100%;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin: 10px 0;
+            width: 100%;
+            margin: 15px 0;
+            transition: all 0.2s ease;
         }
         
-        button:hover {
-            background: #3a56d4;
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
         }
         
         button:disabled {
-            background: #a0aec0;
+            background: linear-gradient(135deg, #a0aec0, #cbd5e0);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         
         .log {
             background: #f8f8f8;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 12px;
             font-family: monospace;
             max-height: 200px;
             overflow-y: auto;
-            margin-top: 15px;
-            font-size: 0.9rem;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            border-radius: 6px;
+        }
+        
+        .log-entry {
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .log-error {
+            color: #e53e3e;
+        }
+        
+        .log-warning {
+            color: #dd6b20;
+        }
+        
+        .log-success {
+            color: #38a169;
         }
         
         .result {
-            margin-top: 15px;
-            padding: 10px;
+            margin-top: 20px;
+            padding: 20px;
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
-            border-radius: 4px;
+            border-radius: 6px;
             display: none;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
         
         .result textarea {
             width: 100%;
-            min-height: 150px;
+            min-height: 200px;
             border: 1px solid #ddd;
-            padding: 5px;
+            padding: 10px;
             font-family: monospace;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #4361ee;
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
         }
         
         .hidden {
@@ -116,17 +191,77 @@
         
         img.preview {
             max-width: 100%;
-            max-height: 200px;
-            margin: 10px auto;
+            max-height: 250px;
+            margin: 15px auto;
             display: block;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .param-checkbox {
-            margin-top: 10px;
+        .warning-badge {
+            display: inline-block;
+            background-color: #FEFCE8;
+            color: #D97706;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 8px;
+            border: 1px solid #FEF08A;
         }
         
-        .param-checkbox input {
-            margin-right: 5px;
+        .info-tip {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .version-info {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(67, 97, 238, 0.3);
+            border-radius: 50%;
+            border-top-color: #4361ee;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .processing {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            color: #4361ee;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .copy-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #cbd5e0;
         }
     </style>
 </head>
@@ -136,6 +271,7 @@
         
         <div class="file-input" id="fileInput">
             <p><strong>Clique ou arraste uma imagem aqui</strong></p>
+            <p style="font-size: 14px; color: #666;">Formatos suportados: JPG, PNG</p>
             <input type="file" id="fileUpload" accept=".jpg,.jpeg,.png" style="display:none">
         </div>
         
@@ -159,10 +295,6 @@
                     <option value="0">Legado</option>
                     <option value="2">Combinado</option>
                 </select>
-                <div class="param-checkbox">
-                    <input type="checkbox" id="useOcrMode" checked>
-                    <label for="useOcrMode">Usar este modo</label>
-                </div>
             </div>
             
             <div class="option">
@@ -173,23 +305,47 @@
                     <option value="6">Bloco uniforme</option>
                     <option value="7">Linha única</option>
                 </select>
-                <div class="param-checkbox">
-                    <input type="checkbox" id="useSegMode" checked>
-                    <label for="useSegMode">Usar esta segmentação</label>
-                </div>
+                <div class="info-tip">Nota: A opção "Linha única" pode causar erros na versão 6.x.</div>
             </div>
         </div>
         
         <button id="processBtn" disabled>Processar Imagem</button>
         
+        <div id="processing" class="processing">
+            <div class="spinner"></div>
+            <span>Processando imagem...</span>
+        </div>
+        
         <div id="resultContainer" class="result">
-            <h3>Texto Reconhecido</h3>
+            <div class="result-header">
+                <h3>Texto Reconhecido</h3>
+                <button id="copyBtn" class="copy-btn">Copiar texto</button>
+            </div>
             <textarea id="resultText" readonly></textarea>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="wordCount">0</div>
+                    <div class="stat-label">Palavras</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="charCount">0</div>
+                    <div class="stat-label">Caracteres</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="timeCount">0s</div>
+                    <div class="stat-label">Tempo</div>
+                </div>
+            </div>
         </div>
         
         <div class="log" id="log">
-            Tesseract.js v6 - Logs:
+            <div class="log-entry">Inicializando Tesseract.js v6...</div>
         </div>
+    </div>
+    
+    <div class="version-info">
+        Tesseract.js v6.0.1 • Compatível com GitHub Pages e Railway
     </div>
     
     <script>
@@ -199,23 +355,31 @@
         const preview = document.getElementById('preview');
         const languageSelect = document.getElementById('language');
         const ocrModeSelect = document.getElementById('ocrMode');
-        const useOcrMode = document.getElementById('useOcrMode');
         const segModeSelect = document.getElementById('segMode');
-        const useSegMode = document.getElementById('useSegMode');
         const processBtn = document.getElementById('processBtn');
+        const processing = document.getElementById('processing');
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.getElementById('resultText');
+        const copyBtn = document.getElementById('copyBtn');
+        const wordCount = document.getElementById('wordCount');
+        const charCount = document.getElementById('charCount');
+        const timeCount = document.getElementById('timeCount');
         const log = document.getElementById('log');
         
         // Variáveis globais
         let selectedFile = null;
         
         // Função para adicionar log
-        function addLog(message) {
+        function addLog(message, type = 'info') {
             const now = new Date().toLocaleTimeString();
-            log.innerHTML += `<div>[${now}] ${message}</div>`;
+            const className = type === 'error' ? 'log-error' : 
+                              type === 'warning' ? 'log-warning' : 
+                              type === 'success' ? 'log-success' : '';
+            
+            log.innerHTML += `<div class="log-entry ${className}">[${now}] ${message}</div>`;
             log.scrollTop = log.scrollHeight;
-            console.log(`[${now}]`, message);
+            
+            console.log(`[${now}] [${type.toUpperCase()}] ${message}`);
         }
         
         // Carregar Tesseract.js v6
@@ -226,11 +390,11 @@
                 const script = document.createElement('script');
                 script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js';
                 script.onload = () => {
-                    addLog('✅ Tesseract.js v6 carregado com sucesso!');
+                    addLog('Tesseract.js v6 carregado com sucesso!', 'success');
                     resolve();
                 };
                 script.onerror = () => {
-                    addLog('❌ Erro ao carregar Tesseract.js');
+                    addLog('Erro ao carregar Tesseract.js', 'error');
                     reject(new Error('Falha ao carregar Tesseract.js'));
                 };
                 
@@ -255,24 +419,41 @@
             fileInput.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 fileInput.style.borderColor = '#3a56d4';
+                fileInput.style.backgroundColor = '#eef2ff';
             });
             
             fileInput.addEventListener('dragleave', (e) => {
                 e.preventDefault();
                 fileInput.style.borderColor = '#4361ee';
+                fileInput.style.backgroundColor = '#fafbff';
             });
             
             fileInput.addEventListener('drop', (e) => {
                 e.preventDefault();
                 fileInput.style.borderColor = '#4361ee';
+                fileInput.style.backgroundColor = '#fafbff';
                 
                 if (e.dataTransfer.files.length > 0) {
                     handleFileSelect(e.dataTransfer.files[0]);
                 }
             });
             
+            // Validação de segmentação
+            segModeSelect.addEventListener('change', (e) => {
+                if (e.target.value === '7') {
+                    addLog('A opção "Linha única" pode causar erros com Tesseract.js v6', 'warning');
+                }
+            });
+            
             // Botão de processamento
             processBtn.addEventListener('click', processImage);
+            
+            // Botão de cópia
+            copyBtn.addEventListener('click', () => {
+                resultText.select();
+                document.execCommand('copy');
+                addLog('Texto copiado para a área de transferência', 'success');
+            });
         }
         
         // Manipular seleção de arquivo
@@ -283,7 +464,7 @@
             }
             
             selectedFile = file;
-            addLog(`📄 Arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+            addLog(`Arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
             
             // Mostrar preview
             const reader = new FileReader();
@@ -302,15 +483,27 @@
             if (!selectedFile) return;
             
             const language = languageSelect.value;
-            addLog(`🚀 Iniciando OCR com idioma: ${language}`);
+            const ocrMode = ocrModeSelect.value;
+            const segMode = segModeSelect.value;
             
+            addLog(`Iniciando OCR com: Idioma=${language}, Modo=${ocrMode}, Segmentação=${segMode}`);
+            
+            // Aviso para linha única
+            if (segMode === '7') {
+                addLog('ATENÇÃO: Você selecionou "Linha única", que pode causar erros', 'warning');
+            }
+            
+            // Preparar UI
             processBtn.disabled = true;
+            processing.style.display = 'flex';
             resultContainer.style.display = 'none';
             resultText.value = '';
             
+            const startTime = performance.now();
+            
             try {
                 // Converter imagem para base64
-                addLog('📄 Convertendo imagem...');
+                addLog('Convertendo imagem...');
                 const reader = new FileReader();
                 const imageData = await new Promise((resolve, reject) => {
                     reader.onload = e => resolve(e.target.result);
@@ -318,56 +511,72 @@
                     reader.readAsDataURL(selectedFile);
                 });
                 
-                addLog('⚙️ Criando worker...');
-                // Criar worker com idioma diretamente (método v6)
+                addLog('Criando worker...');
+                // Criar worker com idioma (método v6)
                 const worker = await Tesseract.createWorker(language);
-                addLog('✅ Worker criado com sucesso!');
+                addLog('Worker criado com sucesso!', 'success');
                 
-                // Configurar parâmetros APENAS se estiverem marcados
-                const params = {};
-                
-                if (useOcrMode.checked) {
-                    params.tessedit_ocr_engine_mode = ocrModeSelect.value;
-                    addLog(`⚙️ Usando modo OCR: ${ocrModeSelect.value}`);
-                }
-                
-                if (useSegMode.checked) {
-                    params.tessedit_pageseg_mode = segModeSelect.value;
-                    addLog(`⚙️ Usando segmentação: ${segModeSelect.value}`);
-                }
-                
-                // Aplicar parâmetros apenas se houver algum
-                if (Object.keys(params).length > 0) {
-                    addLog(`⚙️ Configurando ${Object.keys(params).length} parâmetros...`);
-                    try {
-                        await worker.setParameters(params);
-                        addLog('✅ Parâmetros configurados com sucesso!');
-                    } catch (paramError) {
-                        addLog(`⚠️ Aviso: Erro ao configurar parâmetros: ${paramError.message}`);
-                        addLog('⚙️ Continuando sem parâmetros personalizados...');
+                try {
+                    // Configurar parâmetros
+                    addLog('Configurando parâmetros...');
+                    
+                    await worker.setParameters({
+                        tessedit_ocr_engine_mode: ocrMode,
+                        tessedit_pageseg_mode: segMode
+                    });
+                    
+                    addLog('Parâmetros configurados com sucesso!', 'success');
+                } catch (paramError) {
+                    addLog(`Erro ao configurar parâmetros: ${paramError.message}`, 'error');
+                    
+                    // Se o erro for na linha única, tente novamente com página completa
+                    if (segMode === '7') {
+                        addLog('Tentando novamente com segmentação "Página completa"...', 'warning');
+                        try {
+                            await worker.setParameters({
+                                tessedit_ocr_engine_mode: ocrMode,
+                                tessedit_pageseg_mode: '3' // Página completa
+                            });
+                            addLog('Usando configuração alternativa', 'success');
+                        } catch (fallbackError) {
+                            addLog('Usando apenas configurações padrão', 'warning');
+                        }
+                    } else {
+                        addLog('Continuando com configurações padrão', 'warning');
                     }
-                } else {
-                    addLog('ℹ️ Usando configurações padrão');
                 }
                 
-                addLog('🔍 Reconhecendo texto...');
+                addLog('Reconhecendo texto...');
                 const { data } = await worker.recognize(imageData);
-                addLog('✅ Texto reconhecido!');
+                addLog('Texto reconhecido com sucesso!', 'success');
                 
-                addLog('🧹 Finalizando worker...');
+                addLog('Finalizando worker...');
                 await worker.terminate();
+                
+                // Calcular estatísticas
+                const endTime = performance.now();
+                const processingTime = ((endTime - startTime) / 1000).toFixed(2);
+                const words = data.text.trim().split(/\s+/).filter(w => w.length > 0).length;
+                const chars = data.text.length;
+                
+                // Atualizar estatísticas
+                wordCount.textContent = words;
+                charCount.textContent = chars;
+                timeCount.textContent = processingTime + 's';
                 
                 // Mostrar resultado
                 resultText.value = data.text;
                 resultContainer.style.display = 'block';
                 
-                addLog(`✅ OCR concluído! ${data.text.length} caracteres reconhecidos`);
+                addLog(`OCR concluído em ${processingTime}s! (${words} palavras, ${chars} caracteres)`, 'success');
                 
             } catch (error) {
-                addLog(`❌ ERRO: ${error.message}`);
+                addLog(`ERRO: ${error.message}`, 'error');
                 console.error('Erro detalhado:', error);
                 alert(`Erro ao processar imagem: ${error.message}`);
             } finally {
+                // Ocultar progresso
+                processing.style.display = 'none';
                 processBtn.disabled = false;
             }
         }
@@ -377,9 +586,9 @@
             try {
                 await loadTesseract();
                 setupEventListeners();
-                addLog('✅ Aplicativo inicializado');
+                addLog('Aplicativo inicializado. Pronto para processar imagens!', 'success');
             } catch (error) {
-                addLog(`❌ Erro na inicialização: ${error.message}`);
+                addLog(`Erro na inicialização: ${error.message}`, 'error');
                 alert('Erro ao inicializar o aplicativo. Tente recarregar a página.');
             }
         }
