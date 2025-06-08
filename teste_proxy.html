@@ -155,6 +155,13 @@
             <div class="example-url" onclick="usarUrl(this)">
                 https://eppg.fgv.br/sites/default/files/teste.pdf
             </div>
+            <div class="example-url" onclick="usarUrl(this)" style="background: #fff3cd; border-color: #ffeaa7;">
+                <strong>PJe (precisa login):</strong> https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979
+            </div>
+        </div>
+        
+        <div class="info status">
+            <strong>💡 Dica para PJe:</strong> Se o proxy detectar "página de login", use o método de iframe abaixo para fazer login primeiro.
         </div>
         
         <div id="status"></div>
@@ -340,41 +347,72 @@
                 iframe.style.height = '600px';
                 iframe.style.border = '1px solid #ddd';
                 
+                // Adicionar overlay de instruções para PJe
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                
+                const overlay = document.createElement('div');
+                overlay.style.position = 'absolute';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.background = 'rgba(0,0,0,0.8)';
+                overlay.style.color = 'white';
+                overlay.style.display = 'flex';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.fontSize = '18px';
+                overlay.style.cursor = 'pointer';
+                overlay.innerHTML = '<div><div>🔓 Clique aqui após fazer login</div><div style="font-size: 14px; margin-top: 10px;">O iframe carregará o PJe para você fazer login</div></div>';
+                
+                container.appendChild(iframe);
+                container.appendChild(overlay);
+                
+                // Substituir o viewer atual
+                const resultContainer = document.getElementById('resultContainer');
+                resultContainer.innerHTML = '<h3>🖼️ Iframe do PJe - Faça Login</h3>';
+                resultContainer.appendChild(container);
+                resultContainer.style.display = 'block';
+                
                 // Tentar carregar no iframe
                 iframe.src = url;
                 
+                // Esconder overlay quando clicado
+                overlay.addEventListener('click', () => {
+                    overlay.style.display = 'none';
+                    log('✅ Overlay removido. Verificando se é PDF...', 'success');
+                    
+                    // Verificar periodicamente se virou PDF
+                    const checkInterval = setInterval(() => {
+                        try {
+                            const currentUrl = iframe.contentWindow.location.href;
+                            if (currentUrl.includes('.pdf') || currentUrl.includes('download')) {
+                                log('📄 PDF detectado no iframe!', 'success');
+                                showStatus('PDF detectado! Agora você pode copiar a URL ou usar "Salvar como".', 'success');
+                                clearInterval(checkInterval);
+                            }
+                        } catch (e) {
+                            // CORS - normal
+                        }
+                    }, 2000);
+                    
+                    // Parar verificação após 30 segundos
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                    }, 30000);
+                });
+                
                 // Aguardar carregamento
                 iframe.onload = function() {
-                    log('✅ Iframe carregou com sucesso!', 'success');
-                    showStatus('PDF carregou no iframe! Pode usar estratégia de captura.', 'success');
-                    
-                    // Substituir o viewer atual
-                    const viewer = document.getElementById('pdfViewer');
-                    viewer.parentNode.replaceChild(iframe, viewer);
-                    iframe.id = 'pdfViewer';
-                    
-                    document.getElementById('resultContainer').style.display = 'block';
+                    log('✅ Iframe carregou. Faça login se necessário.', 'success');
+                    showStatus('Iframe carregou! Se for PJe, faça login e clique no overlay.', 'success');
                 };
                 
                 iframe.onerror = function() {
                     log('❌ Iframe falhou ao carregar', 'error');
                     showStatus('Iframe não conseguiu carregar o PDF.', 'error');
                 };
-                
-                // Timeout para verificar se carregou
-                setTimeout(() => {
-                    try {
-                        // Tentar acessar o conteúdo do iframe
-                        const doc = iframe.contentDocument || iframe.contentWindow.document;
-                        if (!doc) {
-                            log('⚠️ Timeout no iframe - bloqueado por CORS', 'warning');
-                            showStatus('Iframe demorou para carregar - possível bloqueio CORS.', 'warning');
-                        }
-                    } catch (e) {
-                        log('⚠️ Iframe carregou mas está bloqueado por CORS', 'warning');
-                        showStatus('Iframe carregou mas conteúdo não acessível (CORS).', 'warning');
-                    }
-                }, 5000);
                 
             } catch (error) {
                 log(`❌ Erro no teste de iframe: ${error.message}`, 'error');
