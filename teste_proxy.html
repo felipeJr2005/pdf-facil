@@ -47,6 +47,7 @@
             <button onclick="baixarPDF()">Baixar PDF</button>
             <button onclick="procurarBotao()">🔍 Procurar Botão</button>
             <button onclick="interceptarDownload()">🕵️ Interceptar Download</button>
+            <button onclick="monitorarPJe()">👁️ Monitorar PJe</button>
         </div>
     </div>
     
@@ -321,38 +322,94 @@
         }
         
         function interceptarDownload() {
-            log('🕵️ Configurando interceptação de downloads...');
+            log('🕵️ Configurando interceptação avançada para PJe...');
             
-            // Configurar interceptação de requisições de download
+            // Interceptar todos os downloads, não apenas PDFs
             const originalFetch = window.fetch;
             
             window.fetch = function(...args) {
                 const url = args[0];
                 
-                if (typeof url === 'string' && (url.includes('.pdf') || url.includes('download'))) {
-                    log('🎯 Download interceptado: ' + url.substring(0, 80) + '...');
+                // Interceptar qualquer requisição que pode ser PDF
+                if (typeof url === 'string' && (
+                    url.includes('.pdf') || 
+                    url.includes('download') || 
+                    url.includes('documento') ||
+                    url.includes('pje')
+                )) {
+                    log('🎯 Requisição interceptada: ' + url.substring(0, 80) + '...');
                     
-                    // Fazer a requisição original
                     return originalFetch.apply(this, args)
                         .then(response => {
-                            if (response.ok && response.headers.get('content-type')?.includes('application/pdf')) {
-                                log('✅ PDF interceptado!', 'success');
+                            if (response.ok) {
+                                const contentType = response.headers.get('content-type') || '';
+                                const contentDisposition = response.headers.get('content-disposition') || '';
                                 
-                                // Clonar a resposta para não quebrar o original
-                                const clonedResponse = response.clone();
+                                log(`📄 Content-Type: ${contentType}`);
+                                log(`📎 Content-Disposition: ${contentDisposition}`);
                                 
-                                // Baixar automaticamente
-                                clonedResponse.blob().then(blob => {
-                                    const downloadUrl = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = downloadUrl;
-                                    a.download = 'interceptado_' + Date.now() + '.pdf';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(downloadUrl);
-                                    log('💾 Download automático realizado!', 'success');
-                                });
+                                // Verificar se é PDF (por tipo OU por conteúdo OU por contexto)
+                                const isPdfByType = contentType.includes('application/pdf');
+                                const isPdfByDisposition = contentDisposition.includes('.pdf');
+                                const isPdfByUrl = url.includes('pdf') || url.includes('documento');
+                                
+                                if (isPdfByType || isPdfByDisposition || isPdfByUrl) {
+                                    log('✅ PDF detectado! Iniciando download...', 'success');
+                                    
+                                    // Clonar resposta
+                                    const clonedResponse = response.clone();
+                                    
+                                    clonedResponse.blob().then(blob => {
+                                        // Verificar se realmente é PDF pelos primeiros bytes
+                                        const reader = new FileReader();
+                                        reader.onload = function(e) {
+                                            const arrayBuffer = e.target.result;
+                                            const bytes = new Uint8Array(arrayBuffer.slice(0, 4));
+                                            const header = String.fromCharCode(...bytes);
+                                            
+                                            if (header === '%PDF') {
+                                                log('✅ Confirmado: é um PDF válido!', 'success');
+                                            } else {
+                                                log('⚠️ Não é PDF, mas baixando mesmo assim...', 'warning');
+                                                log(`Primeiros bytes: ${header} (${bytes.join(', ')})`);
+                                            }
+                                            
+                                            // Download com nome inteligente
+                                            const downloadUrl = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = downloadUrl;
+                                            
+                                            // Nome do arquivo inteligente
+                                            let filename = 'documento_' + Date.now();
+                                            
+                                            // Tentar extrair nome do Content-Disposition
+                                            if (contentDisposition.includes('filename=')) {
+                                                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                                                if (match && match[1]) {
+                                                    filename = match[1].replace(/['"]/g, '');
+                                                }
+                                            }
+                                            
+                                            // Garantir extensão .pdf
+                                            if (!filename.toLowerCase().endsWith('.pdf')) {
+                                                filename += '.pdf';
+                                            }
+                                            
+                                            a.download = filename;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(downloadUrl);
+                                            
+                                            log(`💾 Download realizado: ${filename}`, 'success');
+                                        };
+                                        reader.readAsArrayBuffer(blob.slice(0, 10));
+                                    });
+                                } else {
+                                    log('❌ Não é PDF - ignorando');
+                                }
+                            } else {
+                                log(`❌ Resposta com erro: ${response.status}`);
                             }
                             
                             return response;
@@ -362,24 +419,166 @@
                 return originalFetch.apply(this, args);
             };
             
-            log('✅ Interceptação ativa! Qualquer download de PDF será capturado.', 'success');
-            
-            // Também monitorar clicks na página
+            // Interceptar downloads via elementos <a>
             document.addEventListener('click', function(event) {
-                const target = event.target;
-                const href = target.href || target.getAttribute('href');
-                
-                if (href && (href.includes('.pdf') || href.includes('download'))) {
-                    log('🖱️ Click em link de PDF detectado: ' + href);
+                const target = event.target.closest('a');
+                if (target && target.href) {
+                    const href = target.href;
+                    
+                    if (href.includes('download') || href.includes('documento') || href.includes('.pdf')) {
+                        log('🖱️ Click em link de download: ' + href.substring(0, 80) + '...');
+                        
+                        // Se tem atributo download, o navegador vai baixar
+                        if (target.hasAttribute('download')) {
+                            log('📥 Link tem atributo download - será interceptado pelo navegador');
+                        }
+                    }
                 }
+            }, true); // true = capture phase
+            
+            // Interceptar mudanças na URL (para SPAs)
+            let lastUrl = location.href;
+            new MutationObserver(() => {
+                const url = location.href;
+                if (url !== lastUrl) {
+                    lastUrl = url;
+                    if (url.includes('download') || url.includes('documento')) {
+                        log('🔄 URL mudou para possível download: ' + url);
+                    }
+                }
+            }).observe(document, { subtree: true, childList: true });
+            
+            log('✅ Interceptação avançada ativa!', 'success');
+            log('🎯 Vai capturar: PDFs, documentos, downloads sem extensão');
+            log('📋 Análise: Content-Type + Content-Disposition + primeiros bytes');
+        }
+        
+        function monitorarPJe() {
+            log('👁️ Iniciando monitoramento específico para PJe...');
+            
+            // Interceptar todas as requisições XMLHttpRequest também
+            const originalXHR = window.XMLHttpRequest;
+            window.XMLHttpRequest = function() {
+                const xhr = new originalXHR();
+                const originalSend = xhr.send;
+                
+                xhr.send = function(...args) {
+                    const url = xhr._url || 'URL_DESCONHECIDA';
+                    
+                    if (url.includes('documento') || url.includes('download') || url.includes('pje')) {
+                        log('📡 XHR interceptado: ' + url.substring(0, 80) + '...');
+                        
+                        xhr.addEventListener('load', function() {
+                            if (xhr.status === 200) {
+                                const contentType = xhr.getResponseHeader('content-type') || '';
+                                
+                                if (contentType.includes('application/pdf') || 
+                                    contentType.includes('application/octet-stream') ||
+                                    contentType === '') {
+                                    
+                                    log('✅ XHR retornou possível PDF!', 'success');
+                                    
+                                    // Tentar baixar
+                                    const blob = new Blob([xhr.response], { type: 'application/pdf' });
+                                    const downloadUrl = URL.createObjectURL(blob);
+                                    
+                                    const a = document.createElement('a');
+                                    a.href = downloadUrl;
+                                    a.download = 'pje_xhr_' + Date.now() + '.pdf';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    
+                                    URL.revokeObjectURL(downloadUrl);
+                                    log('💾 Download XHR realizado!', 'success');
+                                }
+                            }
+                        });
+                    }
+                    
+                    return originalSend.apply(this, args);
+                };
+                
+                const originalOpen = xhr.open;
+                xhr.open = function(method, url, ...args) {
+                    xhr._url = url;
+                    return originalOpen.apply(this, [method, url, ...args]);
+                };
+                
+                return xhr;
+            };
+            
+            // Monitorar mudanças no DOM para detectar quando PDFs aparecem
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) { // Element node
+                            // Procurar por iframes, objetos ou embeds com PDF
+                            const pdfElements = node.querySelectorAll('iframe[src*="pdf"], object[data*="pdf"], embed[src*="pdf"]');
+                            
+                            if (pdfElements.length > 0) {
+                                log(`🎯 ${pdfElements.length} elemento(s) PDF detectado(s) no DOM!`);
+                                
+                                pdfElements.forEach((el, index) => {
+                                    const src = el.src || el.data;
+                                    log(`PDF ${index + 1}: ${src.substring(0, 100)}...`);
+                                    
+                                    // Tentar baixar automaticamente
+                                    if (src) {
+                                        fetch(src)
+                                            .then(response => response.blob())
+                                            .then(blob => {
+                                                const downloadUrl = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = downloadUrl;
+                                                a.download = 'pje_dom_' + Date.now() + '.pdf';
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                document.body.removeChild(a);
+                                                URL.revokeObjectURL(downloadUrl);
+                                                log('💾 Download DOM realizado!', 'success');
+                                            })
+                                            .catch(err => log('❌ Falha no download DOM: ' + err.message, 'error'));
+                                    }
+                                });
+                            }
+                            
+                            // Procurar botões de download que aparecem
+                            const downloadButtons = node.querySelectorAll('button, a, [role="button"]');
+                            downloadButtons.forEach(btn => {
+                                const text = (btn.textContent || '').toLowerCase();
+                                if (text.includes('baixar') || text.includes('download')) {
+                                    log('🔘 Botão de download detectado: ' + text);
+                                    
+                                    // Adicionar listener para quando for clicado
+                                    btn.addEventListener('click', function() {
+                                        log('🖱️ Clique detectado no botão: ' + text);
+                                        
+                                        // Aguardar um pouco e tentar capturar qualquer download
+                                        setTimeout(() => {
+                                            log('⏳ Aguardando possível download...');
+                                        }, 1000);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
             });
             
-            log('👂 Monitoramento de clicks ativo também...');
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            log('✅ Monitoramento PJe ativo!', 'success');
+            log('📋 Interceptando: XHR, DOM changes, botões dinâmicos');
+            log('💡 Agora faça login no PJe e clique no botão de download');
         }
         
         // Inicialização
         log('🚀 Sistema carregado');
-        log('📝 Para PJe: Iframe → Login → Simular Clique → Aguardar');
+        log('📝 Para PJe: Iframe → Interceptar → Monitorar → Login → Click manual');
         
         // Configurar listener para postMessage (caso o iframe responda)
         window.addEventListener('message', function(event) {
