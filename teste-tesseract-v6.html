@@ -3,111 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR Tesseract.js v6</title>
+    <title>Extrator de Texto PDF</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 15px; }
-        select, button { padding: 5px; margin: 5px 0; width: 100%; }
-        .upload { border: 1px dashed #999; padding: 10px; text-align: center; cursor: pointer; margin: 10px 0; }
-        img { max-width: 100%; max-height: 200px; margin: 10px 0; }
-        #result { border: 1px solid #ddd; padding: 10px; min-height: 100px; margin-top: 10px; white-space: pre-wrap; }
-        .hidden { display: none; }
-        #log { font-family: monospace; font-size: 12px; margin-top: 10px; color: #666; }
-        .warning { color: #d97706; font-size: 12px; margin-top: 5px; }
-        .options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0; }
-        .options label { display: block; margin-bottom: 5px; }
-        @media (max-width: 600px) { .options { grid-template-columns: 1fr; } }
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 15px; }
+        .panel { border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+        .panel-title { margin-top: 0; font-size: 18px; font-weight: bold; }
+        button, input { padding: 8px; margin: 5px 0; width: 100%; }
+        .upload-area { border: 1px dashed #999; padding: 20px; text-align: center; cursor: pointer; margin: 10px 0; }
+        #result { border: 1px solid #ddd; padding: 10px; min-height: 150px; white-space: pre-wrap; overflow: auto; }
+        #log { font-family: monospace; font-size: 12px; color: #666; max-height: 150px; overflow-y: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
     </style>
 </head>
 <body>
-    <h2>OCR com Tesseract.js v6</h2>
-    
-    <div class="upload" id="uploadArea">
-        Selecione ou arraste uma imagem
-        <input type="file" id="fileInput" accept="image/*" style="display:none">
-    </div>
-    
-    <img id="preview" class="hidden">
-    
-    <div class="options">
-        <div>
-            <label>Idioma:</label>
-            <select id="language">
-                <option value="por">Português</option>
-                <option value="eng">Inglês</option>
-                <option value="spa">Espanhol</option>
-                <option value="fra">Francês</option>
-            </select>
-        </div>
-        
-        <div>
-            <label>Modo OCR:</label>
-            <select id="ocrMode">
-                <option value="1">LSTM (Recomendado)</option>
-                <option value="0">Legado</option>
-                <option value="2">Combinado</option>
-            </select>
-        </div>
-        
-        <div>
-            <label>Segmentação:</label>
-            <select id="segMode">
-                <option value="1">Automática com OSD</option>
-                <option value="3">Página completa</option>
-                <option value="6">Bloco uniforme</option>
-                <option value="7">Linha única</option>
-            </select>
-            <div class="warning" id="lineWarning" style="display:none">
-                Nota: "Linha única" pode causar erros
-            </div>
+    <!-- Painel de upload local (primeiro) -->
+    <div class="panel" id="localPanel">
+        <h3 class="panel-title">Processar PDF Local</h3>
+        <div class="upload-area" id="uploadArea">
+            Clique ou arraste um PDF aqui
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
         </div>
     </div>
     
-    <button id="processBtn" disabled>Processar</button>
+    <!-- Painel de URL (segundo) -->
+    <div class="panel" id="urlPanel">
+        <h3 class="panel-title">Processar PDF por URL</h3>
+        <input type="url" id="pdfUrl" placeholder="Cole o link do PDF aqui" />
+        <button id="fetchBtn">Buscar PDF</button>
+    </div>
     
-    <div id="result"></div>
-    <div id="log"></div>
+    <!-- Painel de resultado -->
+    <div class="panel" id="resultPanel" style="display:none;">
+        <h3 class="panel-title">Texto Extraído</h3>
+        <pre id="result"></pre>
+        <div>
+            <button id="copyBtn">Copiar Texto</button>
+            <button id="ocrBtn" style="display:none;">Processar com OCR</button>
+        </div>
+    </div>
+    
+    <!-- Painel de log (terceiro) -->
+    <div class="panel" id="logPanel">
+        <h3 class="panel-title">Log</h3>
+        <div id="log"></div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
     
     <script>
-        // Elementos
+        // Configuração do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+        
+        // Elementos DOM
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const preview = document.getElementById('preview');
-        const language = document.getElementById('language');
-        const ocrMode = document.getElementById('ocrMode');
-        const segMode = document.getElementById('segMode');
-        const lineWarning = document.getElementById('lineWarning');
-        const processBtn = document.getElementById('processBtn');
+        const pdfUrl = document.getElementById('pdfUrl');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const resultPanel = document.getElementById('resultPanel');
         const result = document.getElementById('result');
+        const copyBtn = document.getElementById('copyBtn');
+        const ocrBtn = document.getElementById('ocrBtn');
         const log = document.getElementById('log');
         
-        // Variáveis
-        let selectedFile = null;
+        // Variáveis globais
+        let pdfDocument = null;
+        let pdfData = null;
         
-        // Eventos
-        uploadArea.onclick = () => fileInput.click();
-        fileInput.onchange = handleFile;
-        processBtn.onclick = processImage;
+        // Evento: Clique na área de upload
+        uploadArea.addEventListener('click', () => fileInput.click());
         
-        // Aviso para linha única
-        segMode.onchange = () => {
-            lineWarning.style.display = segMode.value === '7' ? 'block' : 'none';
-        };
-        
-        // Upload (drag & drop)
-        uploadArea.addEventListener('dragover', e => { e.preventDefault(); });
-        uploadArea.addEventListener('drop', e => {
-            e.preventDefault();
-            if (e.dataTransfer.files.length) handleFile({ target: { files: e.dataTransfer.files } });
+        // Evento: Seleção de arquivo
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
         });
         
-        // Inicializar
-        function init() {
-            loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js')
-                .then(() => logMsg('✓ Tesseract.js carregado'))
-                .catch(err => logMsg('✗ Erro: ' + err.message));
+        // Evento: Drag & Drop
+        uploadArea.addEventListener('dragover', (e) => e.preventDefault());
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // Evento: Buscar por URL
+        fetchBtn.addEventListener('click', async () => {
+            const url = pdfUrl.value.trim();
+            if (!url) {
+                logMsg('URL vazia. Digite uma URL válida.', 'error');
+                return;
+            }
+            
+            logMsg(`Buscando PDF: ${url}`, 'info');
+            fetchBtn.disabled = true;
+            
+            try {
+                // Buscar o PDF
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                
+                const arrayBuffer = await response.arrayBuffer();
+                pdfData = new Uint8Array(arrayBuffer);
+                
+                logMsg(`PDF baixado: ${formatBytes(pdfData.length)}`, 'success');
+                
+                // Processar o PDF
+                await processLoadedPdf();
+                
+            } catch (error) {
+                logMsg(`Erro: ${error.message}`, 'error');
+            } finally {
+                fetchBtn.disabled = false;
+            }
+        });
+        
+        // Evento: Copiar texto
+        copyBtn.addEventListener('click', () => {
+            result.select();
+            document.execCommand('copy');
+            logMsg('Texto copiado para a área de transferência', 'success');
+        });
+        
+        // Evento: Processar com OCR
+        ocrBtn.addEventListener('click', async () => {
+            await processWithOcr();
+        });
+        
+        // Função: Inicialização
+        async function init() {
+            logMsg('Carregando bibliotecas necessárias...');
+            
+            // Carregar Tesseract.js
+            await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js');
+            logMsg('Tesseract.js v6 carregado com sucesso', 'success');
         }
         
-        // Carregar script
+        // Função: Carregar script
         function loadScript(src) {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -118,98 +153,279 @@
             });
         }
         
-        // Manipular arquivo
-        function handleFile(e) {
-            const file = e.target.files[0];
+        // Função: Manipular arquivo selecionado
+        async function handleFileSelect(file) {
             if (!file) return;
             
-            selectedFile = file;
-            processBtn.disabled = false;
-            
-            // Preview
-            const reader = new FileReader();
-            reader.onload = e => {
-                preview.src = e.target.result;
-                preview.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-            
-            logMsg(`Arquivo: ${file.name}`);
-        }
-        
-        // Processar imagem
-        async function processImage() {
-            if (!selectedFile) return;
-            
-            const langValue = language.value;
-            const ocrValue = ocrMode.value;
-            const segValue = segMode.value;
-            
-            processBtn.disabled = true;
-            result.textContent = 'Processando...';
-            logMsg(`Iniciando OCR (Idioma: ${langValue}, Modo: ${ocrValue}, Segmentação: ${segValue})`);
+            logMsg(`Arquivo selecionado: ${file.name} (${formatBytes(file.size)})`, 'info');
             
             try {
-                // Carregar imagem
-                const reader = new FileReader();
-                const imageData = await new Promise((resolve, reject) => {
-                    reader.onload = e => resolve(e.target.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(selectedFile);
-                });
-                
-                // Processar com Tesseract
-                logMsg('Criando worker...');
-                const worker = await Tesseract.createWorker(langValue);
-                
-                try {
-                    logMsg('Configurando parâmetros...');
-                    await worker.setParameters({
-                        tessedit_ocr_engine_mode: ocrValue,
-                        tessedit_pageseg_mode: segValue
-                    });
-                } catch (paramError) {
-                    logMsg(`Aviso: erro nos parâmetros, usando modo padrão - ${paramError.message}`);
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    // Processar PDF
+                    const arrayBuffer = await file.arrayBuffer();
+                    pdfData = new Uint8Array(arrayBuffer);
                     
-                    // Se erro for com linha única, tente com página completa
-                    if (segValue === '7') {
-                        logMsg('Tentando com "Página completa" (3)');
-                        try {
-                            await worker.setParameters({
-                                tessedit_ocr_engine_mode: ocrValue,
-                                tessedit_pageseg_mode: '3'
-                            });
-                        } catch (e) {
-                            logMsg('Usando configurações padrão');
-                        }
-                    }
+                    // Processar o PDF carregado
+                    await processLoadedPdf();
+                    
+                } else if (file.type.startsWith('image/')) {
+                    // Processar imagem com OCR
+                    logMsg('Arquivo de imagem detectado. Será processado com OCR.', 'info');
+                    pdfData = file;
+                    await processWithOcr();
+                } else {
+                    logMsg('Formato não suportado. Use PDF ou imagem.', 'error');
                 }
                 
-                logMsg('Reconhecendo texto...');
-                const { data } = await worker.recognize(imageData);
-                await worker.terminate();
-                
-                // Mostrar resultado
-                result.textContent = data.text;
-                logMsg('✓ OCR concluído!');
-                
             } catch (error) {
-                result.textContent = 'Erro: ' + error.message;
-                logMsg('✗ Erro: ' + error.message);
-            } finally {
-                processBtn.disabled = false;
+                logMsg(`Erro ao processar arquivo: ${error.message}`, 'error');
             }
         }
         
-        // Adicionar log
-        function logMsg(msg) {
+        // Função: Processar PDF carregado
+        async function processLoadedPdf() {
+            try {
+                // Carregar o documento
+                logMsg('Carregando documento PDF...');
+                const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+                pdfDocument = await loadingTask.promise;
+                
+                // Tentar extrair texto imediatamente
+                logMsg(`PDF carregado: ${pdfDocument.numPages} página(s)`, 'success');
+                
+                // Verificar se o PDF tem texto extraível
+                logMsg('Verificando se o PDF tem texto extraível...');
+                const extractedText = await extractTextFromPdf();
+                
+                if (extractedText.trim()) {
+                    // Mostrar o texto extraído
+                    logMsg('Texto extraído com sucesso!', 'success');
+                    result.textContent = extractedText;
+                    resultPanel.style.display = 'block';
+                    
+                    // Mostrar opção de OCR como alternativa
+                    ocrBtn.style.display = 'block';
+                } else {
+                    // Sem texto extraível, oferecer OCR
+                    logMsg('Nenhum texto extraível encontrado. Tentando OCR...', 'info');
+                    await processWithOcr();
+                }
+                
+            } catch (error) {
+                logMsg(`Erro ao processar PDF: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função: Extrair texto diretamente do PDF
+        async function extractTextFromPdf() {
+            if (!pdfDocument) return '';
+            
+            let allText = '';
+            
+            // Técnica 1: Extrair texto diretamente com getTextContent
+            for (let i = 1; i <= pdfDocument.numPages; i++) {
+                try {
+                    logMsg(`Extraindo texto da página ${i}...`);
+                    const page = await pdfDocument.getPage(i);
+                    const textContent = await page.getTextContent();
+                    
+                    let pageText = '';
+                    
+                    // Técnica 2: Extração com preservação de layout usando coordenadas
+                    const textItems = textContent.items.map(item => ({
+                        text: item.str,
+                        x: item.transform[4], // posição X
+                        y: item.transform[5], // posição Y
+                        fontName: item.fontName
+                    }));
+                    
+                    // Técnica 3: Reconstrução de texto por linhas
+                    const lines = groupByYCoordinate(textItems, 3); // 3px de tolerância
+                    lines.forEach(line => line.sort((a, b) => a.x - b.x));
+                    
+                    pageText = lines.map(line => 
+                        line.map(item => item.text).join(' ')
+                    ).join('\n');
+                    
+                    // Técnica 4: Normalização de texto
+                    pageText = normalizeText(pageText);
+                    
+                    if (pageText.trim()) {
+                        allText += `--- Página ${i} ---\n${pageText}\n\n`;
+                    }
+                    
+                } catch (error) {
+                    logMsg(`Erro na página ${i}: ${error.message}`, 'error');
+                }
+            }
+            
+            return allText;
+        }
+        
+        // Técnica: Agrupar por coordenada Y similar (linhas)
+        function groupByYCoordinate(items, tolerance = 5) {
+            const lines = [];
+            
+            for (const item of items) {
+                // Encontrar uma linha existente com Y similar
+                let foundLine = false;
+                for (const line of lines) {
+                    const firstItem = line[0];
+                    if (Math.abs(firstItem.y - item.y) <= tolerance) {
+                        line.push(item);
+                        foundLine = true;
+                        break;
+                    }
+                }
+                
+                // Se não encontrou, cria nova linha
+                if (!foundLine) {
+                    lines.push([item]);
+                }
+            }
+            
+            return lines;
+        }
+        
+        // Técnica: Normalização de texto
+        function normalizeText(text) {
+            // Remover hifenização de quebras de linha
+            text = text.replace(/(\w)-\s*\n\s*(\w)/g, '$1$2');
+            
+            // Remover quebras de linha dentro de frases (mantendo parágrafos)
+            text = text.replace(/([^\.\!\?])\n([a-z])/g, '$1 $2');
+            
+            // Corrigir espaçamento excessivo
+            text = text.replace(/\s{2,}/g, ' ');
+            
+            return text;
+        }
+        
+        // Função: Processar com OCR
+        async function processWithOcr() {
+            if (!pdfData) {
+                logMsg('Nenhum documento carregado para OCR', 'error');
+                return;
+            }
+            
+            try {
+                // Verificar se Tesseract está disponível
+                if (typeof Tesseract === 'undefined') {
+                    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js');
+                }
+                
+                logMsg('Iniciando processamento OCR...', 'info');
+                
+                // Se é um PDF, precisamos extrair as imagens das páginas
+                if (pdfDocument) {
+                    let allText = '';
+                    
+                    for (let i = 1; i <= pdfDocument.numPages; i++) {
+                        logMsg(`Processando página ${i} com OCR...`);
+                        
+                        // Renderizar página para canvas
+                        const page = await pdfDocument.getPage(i);
+                        const viewport = page.getViewport({ scale: 1.5 }); // Escala maior para OCR
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise;
+                        
+                        // Converter canvas para imagem
+                        const imageData = canvas.toDataURL('image/png');
+                        
+                        // Processar com OCR
+                        const worker = await Tesseract.createWorker('por');
+                        
+                        try {
+                            await worker.setParameters({
+                                tessedit_ocr_engine_mode: '1', // LSTM
+                                tessedit_pageseg_mode: '1'     // Automático com OSD
+                            });
+                            
+                            const { data } = await worker.recognize(imageData);
+                            await worker.terminate();
+                            
+                            if (data.text.trim()) {
+                                allText += `--- Página ${i} (OCR) ---\n${data.text}\n\n`;
+                            }
+                            
+                        } catch (ocrError) {
+                            logMsg(`Erro OCR na página ${i}: ${ocrError.message}`, 'error');
+                        }
+                    }
+                    
+                    // Mostrar resultado
+                    result.textContent = allText;
+                    resultPanel.style.display = 'block';
+                    ocrBtn.style.display = 'none'; // Já usamos OCR
+                    
+                } else if (pdfData instanceof File && pdfData.type.startsWith('image/')) {
+                    // Processar imagem diretamente
+                    const reader = new FileReader();
+                    const imageData = await new Promise((resolve, reject) => {
+                        reader.onload = e => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(pdfData);
+                    });
+                    
+                    const worker = await Tesseract.createWorker('por');
+                    
+                    try {
+                        const { data } = await worker.recognize(imageData);
+                        await worker.terminate();
+                        
+                        // Mostrar resultado
+                        result.textContent = data.text;
+                        resultPanel.style.display = 'block';
+                        ocrBtn.style.display = 'none'; // Já usamos OCR
+                        
+                    } catch (ocrError) {
+                        logMsg(`Erro OCR: ${ocrError.message}`, 'error');
+                    }
+                } else {
+                    logMsg('Formato não suportado para OCR', 'error');
+                }
+                
+                logMsg('Processamento OCR concluído!', 'success');
+                
+            } catch (error) {
+                logMsg(`Erro no processamento OCR: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função: Adicionar mensagem ao log
+        function logMsg(message, type = 'info') {
             const now = new Date().toLocaleTimeString();
-            log.innerHTML += `[${now}] ${msg}<br>`;
-            console.log(`[${now}] ${msg}`);
+            const msgClass = type;
+            
+            log.innerHTML += `<div class="${msgClass}">[${now}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+            
+            console.log(`[${now}] [${type.toUpperCase()}] ${message}`);
+        }
+        
+        // Função: Formatar tamanho em bytes
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
         
         // Inicializar
-        init();
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
