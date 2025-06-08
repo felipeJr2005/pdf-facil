@@ -2,29 +2,30 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Extrator de Texto de PDF Renderizado</title>
+    <title>Extrator de PDF com Proxy CORS</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
         input { width: 100%; padding: 5px; margin-bottom: 10px; }
-        button { padding: 5px 10px; margin-right: 5px; margin-bottom: 10px; }
+        button { padding: 5px 10px; margin-right: 5px; }
         pre { border: 1px solid #ccc; padding: 10px; max-height: 300px; overflow: auto; }
         .log { font-family: monospace; font-size: 12px; }
-        #pdf-iframe { border: 1px solid #ccc; }
+        #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-    <h3>Extrator de Texto de PDF Renderizado</h3>
+    <h3>Extrator de PDF com Proxy CORS</h3>
     
     <div>
         <input type="url" id="pdf-url" placeholder="Cole o link do PDF do PJe aqui">
         <div>
             <button id="btn-view">Abrir PDF</button>
-            <button id="btn-capture-rendered">Capturar Texto Renderizado</button>
+            <button id="btn-extract-proxy">Extrair com Proxy</button>
+            <button id="btn-extract-allorigins">Extrair com AllOrigins</button>
         </div>
     </div>
     
-    <div id="pdf-container" style="margin-top: 15px;">
-        <iframe id="pdf-iframe" width="100%" height="500"></iframe>
+    <div style="margin-top: 15px;">
+        <iframe id="pdf-viewer"></iframe>
     </div>
     
     <h4>Texto Extraído:</h4>
@@ -34,26 +35,28 @@
     <div id="log" class="log"></div>
     
     <script>
-        // Elementos
+        // Elementos DOM
         const urlInput = document.getElementById('pdf-url');
         const btnView = document.getElementById('btn-view');
-        const btnCaptureRendered = document.getElementById('btn-capture-rendered');
-        const pdfIframe = document.getElementById('pdf-iframe');
+        const btnExtractProxy = document.getElementById('btn-extract-proxy');
+        const btnExtractAllOrigins = document.getElementById('btn-extract-allorigins');
+        const pdfViewer = document.getElementById('pdf-viewer');
         const result = document.getElementById('result');
         const logElement = document.getElementById('log');
         
+        // Carregar PDF.js
+        let pdfJsLoaded = false;
+        
         // Eventos
         btnView.addEventListener('click', viewPdf);
-        btnCaptureRendered.addEventListener('click', captureRenderedText);
-        pdfIframe.addEventListener('load', onIframeLoad);
-        
-        // Inicialização
-        let pdfLoaded = false;
+        btnExtractProxy.addEventListener('click', extractWithCorsProxy);
+        btnExtractAllOrigins.addEventListener('click', extractWithAllOrigins);
         
         // Funções
         function log(message) {
             console.log(message);
-            logElement.innerHTML += message + '<br>';
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
             logElement.scrollTop = logElement.scrollHeight;
         }
         
@@ -64,116 +67,144 @@
                 return;
             }
             
-            pdfLoaded = false;
             log(`Abrindo PDF: ${url}`);
-            
-            // Tentar abrir o PDF com visualizador personalizado para facilitar extração
-            const viewerUrl = `${getBaseUrl()}/web/viewer.html?file=${encodeURIComponent(url)}`;
-            pdfIframe.src = viewerUrl;
-            
-            // Se falhar após 3 segundos, tentar método direto
-            setTimeout(() => {
-                if (!pdfLoaded) {
-                    log('Tentando método de visualização direta...');
-                    pdfIframe.src = url;
-                }
-            }, 3000);
+            pdfViewer.src = url;
         }
         
-        function onIframeLoad() {
-            pdfLoaded = true;
-            log('PDF carregado no iframe');
-            
-            // Detectar se o visualizador PDF.js foi carregado
-            try {
-                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
-                if (iframeDoc && iframeDoc.querySelector('.textLayer')) {
-                    log('Visualizador PDF.js detectado');
-                }
-            } catch (e) {
-                log('Não foi possível acessar o conteúdo do iframe (restrições de segurança)');
+        // Extração usando o proxy CORS do Google
+        async function extractWithCorsProxy() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                log('Digite uma URL válida');
+                return;
             }
-        }
-        
-        function captureRenderedText() {
-            log('Tentando capturar texto renderizado...');
+            
+            log(`Tentando extrair com proxy CORS: ${url}`);
+            result.textContent = 'Processando...';
             
             try {
-                // Tentar acessar o documento do iframe
-                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
+                // Usar o proxy CORS do Google para buscar o PDF
+                const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
                 
-                if (!iframeDoc) {
-                    throw new Error('Não foi possível acessar o documento do iframe');
+                log(`Acessando via proxy: ${proxyUrl}`);
+                
+                const response = await fetch(proxyUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
                 
-                // Tentar método 1: Capturar texto da camada de texto do PDF.js
-                const textLayerElements = iframeDoc.querySelectorAll('.textLayer div');
-                if (textLayerElements && textLayerElements.length > 0) {
-                    log(`Encontrados ${textLayerElements.length} elementos de texto`);
-                    
-                    let text = '';
-                    textLayerElements.forEach(element => {
-                        text += element.textContent + ' ';
-                    });
-                    
-                    result.textContent = text;
-                    log('Texto capturado com sucesso da camada de texto');
-                    return;
+                const pdfData = await response.arrayBuffer();
+                log(`PDF obtido: ${pdfData.byteLength} bytes`);
+                
+                // Carregar PDF.js se necessário
+                if (!pdfJsLoaded) {
+                    await loadPdfJs();
                 }
                 
-                // Tentar método 2: Capturar todo o texto visível
-                const bodyText = iframeDoc.body.innerText;
-                if (bodyText) {
-                    result.textContent = bodyText;
-                    log('Texto capturado do corpo do documento');
-                    return;
-                }
-                
-                // Tentar método 3: Capturar todos os nós de texto
-                const textNodes = [];
-                const walker = iframeDoc.createTreeWalker(
-                    iframeDoc.body, 
-                    NodeFilter.SHOW_TEXT,
-                    null, 
-                    false
-                );
-                
-                let node;
-                while (node = walker.nextNode()) {
-                    if (node.textContent.trim()) {
-                        textNodes.push(node.textContent.trim());
-                    }
-                }
-                
-                if (textNodes.length > 0) {
-                    result.textContent = textNodes.join('\n');
-                    log(`Capturados ${textNodes.length} nós de texto`);
-                    return;
-                }
-                
-                // Se chegamos aqui, não conseguimos extrair texto
-                throw new Error('Nenhum texto encontrado no documento');
+                // Extrair texto
+                const text = await extractTextFromPdf(pdfData);
+                result.textContent = text;
+                log('Texto extraído com sucesso');
                 
             } catch (error) {
                 log(`Erro: ${error.message}`);
+                result.textContent = `Erro: ${error.message}`;
                 
-                // Sugerir alternativa
-                const manualApproach = `
-Não foi possível extrair o texto automaticamente devido a restrições de segurança.
-
-Como alternativa, você pode:
-1. Usar a ferramenta Copiar do visualizador de PDF (geralmente um ícone ou comando no menu de contexto)
-2. Selecionar o texto manualmente e copiar (Ctrl+C)
-3. Usar um leitor de PDF externo que permita cópia`;
-                
-                result.textContent = manualApproach;
+                if (error.message.includes('cors-anywhere')) {
+                    log('Nota: O CORS Anywhere pode exigir ativação prévia em https://cors-anywhere.herokuapp.com/');
+                }
             }
         }
         
-        // Obter URL base para o PDF.js
-        function getBaseUrl() {
-            // Usar CDN público do PDF.js
-            return 'https://mozilla.github.io/pdf.js';
+        // Extração usando AllOrigins
+        async function extractWithAllOrigins() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                log('Digite uma URL válida');
+                return;
+            }
+            
+            log(`Tentando extrair com AllOrigins: ${url}`);
+            result.textContent = 'Processando...';
+            
+            try {
+                // Usar o serviço AllOrigins para buscar o PDF
+                const allOriginsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                
+                log(`Acessando via AllOrigins: ${allOriginsUrl}`);
+                
+                const response = await fetch(allOriginsUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const pdfData = await response.arrayBuffer();
+                log(`PDF obtido: ${pdfData.byteLength} bytes`);
+                
+                // Carregar PDF.js se necessário
+                if (!pdfJsLoaded) {
+                    await loadPdfJs();
+                }
+                
+                // Extrair texto
+                const text = await extractTextFromPdf(pdfData);
+                result.textContent = text;
+                log('Texto extraído com sucesso');
+                
+            } catch (error) {
+                log(`Erro: ${error.message}`);
+                result.textContent = `Erro: ${error.message}`;
+            }
+        }
+        
+        // Carregar PDF.js
+        async function loadPdfJs() {
+            log('Carregando PDF.js...');
+            
+            return new Promise((resolve, reject) => {
+                // Carregar script principal
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js';
+                script.onload = function() {
+                    // Configurar worker
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+                    pdfJsLoaded = true;
+                    log('PDF.js carregado com sucesso');
+                    resolve();
+                };
+                script.onerror = function() {
+                    reject(new Error('Erro ao carregar PDF.js'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Extrair texto do PDF
+        async function extractTextFromPdf(arrayBuffer) {
+            const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)});
+            const pdf = await loadingTask.promise;
+            
+            log(`PDF carregado: ${pdf.numPages} página(s)`);
+            
+            let fullText = '';
+            
+            // Processar cada página
+            for (let i = 1; i <= pdf.numPages; i++) {
+                log(`Processando página ${i}...`);
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                
+                // Extrair texto dos itens
+                const pageText = textContent.items
+                    .map(item => item.str)
+                    .join(' ');
+                
+                fullText += `--- Página ${i} ---\n${pageText}\n\n`;
+            }
+            
+            return fullText;
         }
         
         // Carregar URL da última sessão
@@ -188,7 +219,7 @@ Como alternativa, você pode:
             localStorage.setItem('pje-pdf-url', urlInput.value);
         });
         
-        log('Extrator de texto de PDF renderizado inicializado');
+        log('Extrator de PDF com proxy inicializado');
     </script>
 </body>
 </html>
