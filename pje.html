@@ -2,193 +2,238 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Extrator de Texto de PDF Renderizado</title>
+    <title>Visualizador de PDF do PJe com Área de Cópia</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
-        input { width: 100%; padding: 5px; margin-bottom: 10px; }
-        button { padding: 5px 10px; margin-right: 5px; margin-bottom: 10px; }
-        pre { border: 1px solid #ccc; padding: 10px; max-height: 300px; overflow: auto; }
-        .log { font-family: monospace; font-size: 12px; }
-        #pdf-iframe { border: 1px solid #ccc; }
+        input { width: 100%; padding: 8px; margin-bottom: 10px; font-size: 16px; }
+        button { padding: 8px 12px; margin-right: 5px; font-size: 14px; cursor: pointer; }
+        .primary { background: #007bff; color: white; border: none; border-radius: 4px; }
+        .panel { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .panel-title { margin-top: 0; margin-bottom: 15px; font-size: 18px; }
+        #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ddd; }
+        #text-area { width: 100%; height: 300px; padding: 10px; font-size: 14px; margin-top: 10px; resize: vertical; }
+        .instructions { background: #f8f9fa; padding: 10px; border-left: 4px solid #007bff; margin-bottom: 15px; }
+        .instructions ol { margin-top: 10px; margin-bottom: 0; padding-left: 25px; }
+        .instructions li { margin-bottom: 5px; }
     </style>
 </head>
 <body>
-    <h3>Extrator de Texto de PDF Renderizado</h3>
+    <h2>Visualizador de PDF do PJe com Área de Cópia</h2>
     
-    <div>
+    <!-- Painel de Entrada -->
+    <div class="panel">
+        <h3 class="panel-title">1. Abrir PDF do PJe</h3>
         <input type="url" id="pdf-url" placeholder="Cole o link do PDF do PJe aqui">
-        <div>
-            <button id="btn-view">Abrir PDF</button>
-            <button id="btn-capture-rendered">Capturar Texto Renderizado</button>
+        <button id="btn-open-pdf" class="primary">Abrir PDF</button>
+    </div>
+    
+    <!-- Visualizador do PDF -->
+    <div class="panel">
+        <h3 class="panel-title">2. Visualização do PDF</h3>
+        <div class="instructions">
+            <strong>Para copiar o texto do PDF:</strong>
+            <ol>
+                <li>Após o PDF carregar, use Ctrl+A para selecionar todo o texto</li>
+                <li>Use Ctrl+C para copiar o texto selecionado</li>
+                <li>Cole o texto na área abaixo usando Ctrl+V</li>
+                <li>Se necessário, clique com o botão direito no PDF e use "Selecionar Tudo" e "Copiar"</li>
+            </ol>
+        </div>
+        <iframe id="pdf-viewer"></iframe>
+    </div>
+    
+    <!-- Área de Texto -->
+    <div class="panel">
+        <h3 class="panel-title">3. Área de Cópia</h3>
+        <textarea id="text-area" placeholder="Cole aqui o texto copiado do PDF (Ctrl+V)"></textarea>
+        <div style="margin-top: 10px;">
+            <button id="btn-clear" style="background:#f8f9fa; border:1px solid #ddd;">Limpar</button>
+            <button id="btn-copy" class="primary">Copiar Todo Texto</button>
         </div>
     </div>
     
-    <div id="pdf-container" style="margin-top: 15px;">
-        <iframe id="pdf-iframe" width="100%" height="500"></iframe>
-    </div>
-    
-    <h4>Texto Extraído:</h4>
-    <pre id="result"></pre>
-    
-    <h4>Log:</h4>
-    <div id="log" class="log"></div>
-    
     <script>
-        // Elementos
+        // Elementos DOM
         const urlInput = document.getElementById('pdf-url');
-        const btnView = document.getElementById('btn-view');
-        const btnCaptureRendered = document.getElementById('btn-capture-rendered');
-        const pdfIframe = document.getElementById('pdf-iframe');
-        const result = document.getElementById('result');
-        const logElement = document.getElementById('log');
+        const btnOpenPdf = document.getElementById('btn-open-pdf');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const textArea = document.getElementById('text-area');
+        const btnClear = document.getElementById('btn-clear');
+        const btnCopy = document.getElementById('btn-copy');
+        
+        // Variáveis
+        let pdfJsLoaded = false;
         
         // Eventos
-        btnView.addEventListener('click', viewPdf);
-        btnCaptureRendered.addEventListener('click', captureRenderedText);
-        pdfIframe.addEventListener('load', onIframeLoad);
+        btnOpenPdf.addEventListener('click', openPdf);
+        btnClear.addEventListener('click', clearText);
+        btnCopy.addEventListener('click', copyText);
+        pdfViewer.addEventListener('load', onPdfLoaded);
         
-        // Inicialização
-        let pdfLoaded = false;
-        
-        // Funções
-        function log(message) {
-            console.log(message);
-            logElement.innerHTML += message + '<br>';
-            logElement.scrollTop = logElement.scrollHeight;
-        }
-        
-        function viewPdf() {
+        // Abrir PDF
+        function openPdf() {
             const url = urlInput.value.trim();
             if (!url) {
-                log('Digite uma URL válida');
+                alert('Por favor, insira o link do PDF');
                 return;
             }
             
-            pdfLoaded = false;
-            log(`Abrindo PDF: ${url}`);
+            // Alterar texto do botão para indicar carregamento
+            btnOpenPdf.textContent = 'Carregando...';
+            btnOpenPdf.disabled = true;
             
-            // Tentar abrir o PDF com visualizador personalizado para facilitar extração
-            const viewerUrl = `${getBaseUrl()}/web/viewer.html?file=${encodeURIComponent(url)}`;
-            pdfIframe.src = viewerUrl;
+            // Salvar URL para uso futuro
+            localStorage.setItem('pje-pdf-url', url);
             
-            // Se falhar após 3 segundos, tentar método direto
-            setTimeout(() => {
-                if (!pdfLoaded) {
-                    log('Tentando método de visualização direta...');
-                    pdfIframe.src = url;
-                }
-            }, 3000);
+            // Limpar área de texto
+            textArea.value = '';
+            
+            // Carregar PDF no iframe
+            pdfViewer.src = url;
+            
+            // Tentar extrair automaticamente (pode falhar devido a CORS)
+            tryAutoExtract(url);
         }
         
-        function onIframeLoad() {
-            pdfLoaded = true;
-            log('PDF carregado no iframe');
+        // Quando o PDF carregar no iframe
+        function onPdfLoaded() {
+            // Restaurar botão
+            btnOpenPdf.textContent = 'Abrir PDF';
+            btnOpenPdf.disabled = false;
             
-            // Detectar se o visualizador PDF.js foi carregado
-            try {
-                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
-                if (iframeDoc && iframeDoc.querySelector('.textLayer')) {
-                    log('Visualizador PDF.js detectado');
-                }
-            } catch (e) {
-                log('Não foi possível acessar o conteúdo do iframe (restrições de segurança)');
-            }
+            // Tentar capturar texto do iframe (provavelmente falhará devido a CORS)
+            setTimeout(captureIframeText, 2000);
         }
         
-        function captureRenderedText() {
-            log('Tentando capturar texto renderizado...');
-            
+        // Tentativa de extração automática com fetch
+        async function tryAutoExtract(url) {
             try {
-                // Tentar acessar o documento do iframe
-                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
-                
-                if (!iframeDoc) {
-                    throw new Error('Não foi possível acessar o documento do iframe');
+                // Carregar PDF.js se necessário
+                if (!pdfJsLoaded) {
+                    await loadPdfJs();
                 }
                 
-                // Tentar método 1: Capturar texto da camada de texto do PDF.js
-                const textLayerElements = iframeDoc.querySelectorAll('.textLayer div');
-                if (textLayerElements && textLayerElements.length > 0) {
-                    log(`Encontrados ${textLayerElements.length} elementos de texto`);
-                    
-                    let text = '';
-                    textLayerElements.forEach(element => {
-                        text += element.textContent + ' ';
-                    });
-                    
-                    result.textContent = text;
-                    log('Texto capturado com sucesso da camada de texto');
-                    return;
+                // Tentar buscar PDF com credenciais
+                const response = await fetch(url, {
+                    credentials: 'include',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
                 
-                // Tentar método 2: Capturar todo o texto visível
-                const bodyText = iframeDoc.body.innerText;
-                if (bodyText) {
-                    result.textContent = bodyText;
-                    log('Texto capturado do corpo do documento');
-                    return;
+                const pdfData = await response.arrayBuffer();
+                
+                // Extrair texto
+                const text = await extractTextFromPdf(pdfData);
+                
+                if (text && text.trim().length > 0) {
+                    textArea.value = text;
+                    return true;
                 }
-                
-                // Tentar método 3: Capturar todos os nós de texto
-                const textNodes = [];
-                const walker = iframeDoc.createTreeWalker(
-                    iframeDoc.body, 
-                    NodeFilter.SHOW_TEXT,
-                    null, 
-                    false
-                );
-                
-                let node;
-                while (node = walker.nextNode()) {
-                    if (node.textContent.trim()) {
-                        textNodes.push(node.textContent.trim());
-                    }
-                }
-                
-                if (textNodes.length > 0) {
-                    result.textContent = textNodes.join('\n');
-                    log(`Capturados ${textNodes.length} nós de texto`);
-                    return;
-                }
-                
-                // Se chegamos aqui, não conseguimos extrair texto
-                throw new Error('Nenhum texto encontrado no documento');
                 
             } catch (error) {
-                log(`Erro: ${error.message}`);
+                console.log('Auto-extração falhou:', error);
+                // Silenciosamente falha - apenas log
+            }
+            
+            return false;
+        }
+        
+        // Tentar capturar texto do iframe (provavelmente falhará devido a CORS)
+        function captureIframeText() {
+            try {
+                const frameDoc = pdfViewer.contentDocument || pdfViewer.contentWindow.document;
                 
-                // Sugerir alternativa
-                const manualApproach = `
-Não foi possível extrair o texto automaticamente devido a restrições de segurança.
-
-Como alternativa, você pode:
-1. Usar a ferramenta Copiar do visualizador de PDF (geralmente um ícone ou comando no menu de contexto)
-2. Selecionar o texto manualmente e copiar (Ctrl+C)
-3. Usar um leitor de PDF externo que permita cópia`;
-                
-                result.textContent = manualApproach;
+                if (frameDoc) {
+                    // Tenta diferentes métodos para capturar texto
+                    const textDivs = frameDoc.querySelectorAll('.textLayer div');
+                    if (textDivs && textDivs.length > 0) {
+                        const text = Array.from(textDivs).map(div => div.textContent).join(' ');
+                        textArea.value = text;
+                        return;
+                    }
+                    
+                    // Método alternativo
+                    if (frameDoc.body && frameDoc.body.innerText) {
+                        textArea.value = frameDoc.body.innerText;
+                    }
+                }
+            } catch (error) {
+                console.log('Captura do iframe falhou:', error);
+                // Falha silenciosamente - esperado devido a CORS
             }
         }
         
-        // Obter URL base para o PDF.js
-        function getBaseUrl() {
-            // Usar CDN público do PDF.js
-            return 'https://mozilla.github.io/pdf.js';
+        // Carregar PDF.js
+        async function loadPdfJs() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js';
+                script.onload = function() {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+                    pdfJsLoaded = true;
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
         }
         
-        // Carregar URL da última sessão
-        const savedUrl = localStorage.getItem('pje-pdf-url');
-        if (savedUrl) {
-            urlInput.value = savedUrl;
-            log('URL carregada da sessão anterior');
+        // Extrair texto do PDF
+        async function extractTextFromPdf(arrayBuffer) {
+            const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)});
+            const pdf = await loadingTask.promise;
+            
+            let fullText = '';
+            
+            // Processar cada página
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                
+                // Extrair texto dos itens
+                const pageText = textContent.items
+                    .map(item => item.str)
+                    .join(' ');
+                
+                fullText += `=== Página ${i} ===\n${pageText}\n\n`;
+            }
+            
+            return fullText;
         }
         
-        // Salvar URL ao digitar
-        urlInput.addEventListener('input', () => {
-            localStorage.setItem('pje-pdf-url', urlInput.value);
+        // Limpar área de texto
+        function clearText() {
+            textArea.value = '';
+        }
+        
+        // Copiar texto
+        function copyText() {
+            if (!textArea.value) {
+                alert('Não há texto para copiar');
+                return;
+            }
+            
+            textArea.select();
+            document.execCommand('copy');
+            
+            // Feedback visual
+            const originalBgColor = textArea.style.backgroundColor;
+            textArea.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                textArea.style.backgroundColor = originalBgColor;
+            }, 500);
+        }
+        
+        // Carregar URL salva
+        window.addEventListener('load', function() {
+            const savedUrl = localStorage.getItem('pje-pdf-url');
+            if (savedUrl) {
+                urlInput.value = savedUrl;
+            }
         });
-        
-        log('Extrator de texto de PDF renderizado inicializado');
     </script>
 </body>
 </html>
