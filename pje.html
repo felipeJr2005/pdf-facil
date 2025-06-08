@@ -2,53 +2,154 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Visualizador de PDF do PJe com Área de Cópia</title>
+    <title>Extrator de PDF do PJe</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        input { width: 100%; padding: 8px; margin-bottom: 10px; font-size: 16px; }
-        button { padding: 8px 12px; margin-right: 5px; font-size: 14px; cursor: pointer; }
-        .primary { background: #007bff; color: white; border: none; border-radius: 4px; }
-        .panel { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
-        .panel-title { margin-top: 0; margin-bottom: 15px; font-size: 18px; }
-        #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ddd; }
-        #text-area { width: 100%; height: 300px; padding: 10px; font-size: 14px; margin-top: 10px; resize: vertical; }
-        .instructions { background: #f8f9fa; padding: 10px; border-left: 4px solid #007bff; margin-bottom: 15px; }
-        .instructions ol { margin-top: 10px; margin-bottom: 0; padding-left: 25px; }
-        .instructions li { margin-bottom: 5px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h2 { 
+            margin-top: 0;
+            color: #333;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .panel-header {
+            background-color: #f5f5f5;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .panel-body {
+            padding: 15px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 8px 15px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0069d9;
+        }
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        #pdf-viewer {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+        }
+        .steps {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+        }
+        .steps ol {
+            margin-top: 10px;
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin-bottom: 8px;
+        }
+        #text-area {
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+            vertical-align: text-bottom;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .highlight {
+            animation: highlight 1.5s ease;
+        }
+        @keyframes highlight {
+            0% { background-color: #d4edda; }
+            100% { background-color: transparent; }
+        }
     </style>
 </head>
 <body>
-    <h2>Visualizador de PDF do PJe com Área de Cópia</h2>
+    <h2>Extrator de PDF do PJe</h2>
     
-    <!-- Painel de Entrada -->
+    <!-- Painel de entrada -->
     <div class="panel">
-        <h3 class="panel-title">1. Abrir PDF do PJe</h3>
-        <input type="url" id="pdf-url" placeholder="Cole o link do PDF do PJe aqui">
-        <button id="btn-open-pdf" class="primary">Abrir PDF</button>
-    </div>
-    
-    <!-- Visualizador do PDF -->
-    <div class="panel">
-        <h3 class="panel-title">2. Visualização do PDF</h3>
-        <div class="instructions">
-            <strong>Para copiar o texto do PDF:</strong>
-            <ol>
-                <li>Após o PDF carregar, use Ctrl+A para selecionar todo o texto</li>
-                <li>Use Ctrl+C para copiar o texto selecionado</li>
-                <li>Cole o texto na área abaixo usando Ctrl+V</li>
-                <li>Se necessário, clique com o botão direito no PDF e use "Selecionar Tudo" e "Copiar"</li>
-            </ol>
+        <div class="panel-header">1. Abrir PDF do PJe</div>
+        <div class="panel-body">
+            <input type="url" id="pdf-url" class="form-control" placeholder="Cole o link do PDF do PJe aqui">
+            <button id="btn-open-pdf" class="btn btn-primary">Abrir PDF</button>
         </div>
-        <iframe id="pdf-viewer"></iframe>
     </div>
     
-    <!-- Área de Texto -->
+    <!-- Visualizador de PDF -->
     <div class="panel">
-        <h3 class="panel-title">3. Área de Cópia</h3>
-        <textarea id="text-area" placeholder="Cole aqui o texto copiado do PDF (Ctrl+V)"></textarea>
-        <div style="margin-top: 10px;">
-            <button id="btn-clear" style="background:#f8f9fa; border:1px solid #ddd;">Limpar</button>
-            <button id="btn-copy" class="primary">Copiar Todo Texto</button>
+        <div class="panel-header">2. Visualizar e Selecionar Texto</div>
+        <div class="panel-body">
+            <div class="steps">
+                <strong>Como extrair o texto:</strong>
+                <ol>
+                    <li>Após o PDF carregar, clique dentro do visualizador</li>
+                    <li>Pressione <strong>Ctrl+A</strong> para selecionar todo o texto</li>
+                    <li>Pressione <strong>Ctrl+C</strong> para copiar o texto selecionado</li>
+                    <li>Cole o texto na área abaixo usando <strong>Ctrl+V</strong></li>
+                </ol>
+                <p><small>Nota: Se não conseguir selecionar todo o texto de uma vez, você pode selecionar por partes e colar abaixo.</small></p>
+            </div>
+            
+            <iframe id="pdf-viewer"></iframe>
+        </div>
+    </div>
+    
+    <!-- Área de texto -->
+    <div class="panel">
+        <div class="panel-header">3. Texto Extraído</div>
+        <div class="panel-body">
+            <textarea id="text-area" placeholder="Cole aqui o texto copiado do PDF (Ctrl+V)"></textarea>
+            <button id="btn-clear" class="btn">Limpar</button>
+            <button id="btn-copy" class="btn btn-primary">Copiar Todo Texto</button>
         </div>
     </div>
     
@@ -61,150 +162,44 @@
         const btnClear = document.getElementById('btn-clear');
         const btnCopy = document.getElementById('btn-copy');
         
-        // Variáveis
-        let pdfJsLoaded = false;
-        
-        // Eventos
+        // Event Listeners
         btnOpenPdf.addEventListener('click', openPdf);
         btnClear.addEventListener('click', clearText);
         btnCopy.addEventListener('click', copyText);
-        pdfViewer.addEventListener('load', onPdfLoaded);
         
         // Abrir PDF
         function openPdf() {
             const url = urlInput.value.trim();
             if (!url) {
-                alert('Por favor, insira o link do PDF');
+                alert('Por favor, insira o link do PDF do PJe');
                 return;
             }
             
-            // Alterar texto do botão para indicar carregamento
-            btnOpenPdf.textContent = 'Carregando...';
+            // Mostrar indicador de carregamento
+            const originalText = btnOpenPdf.innerHTML;
+            btnOpenPdf.innerHTML = '<span class="spinner"></span> Carregando...';
             btnOpenPdf.disabled = true;
             
-            // Salvar URL para uso futuro
+            // Salvar URL no armazenamento local
             localStorage.setItem('pje-pdf-url', url);
-            
-            // Limpar área de texto
-            textArea.value = '';
             
             // Carregar PDF no iframe
             pdfViewer.src = url;
             
-            // Tentar extrair automaticamente (pode falhar devido a CORS)
-            tryAutoExtract(url);
+            // Restaurar botão quando o iframe carregar
+            pdfViewer.onload = function() {
+                btnOpenPdf.innerHTML = originalText;
+                btnOpenPdf.disabled = false;
+                
+                // Destacar as instruções para guiar o usuário
+                document.querySelector('.steps').classList.add('highlight');
+                setTimeout(() => {
+                    document.querySelector('.steps').classList.remove('highlight');
+                }, 1500);
+            };
         }
         
-        // Quando o PDF carregar no iframe
-        function onPdfLoaded() {
-            // Restaurar botão
-            btnOpenPdf.textContent = 'Abrir PDF';
-            btnOpenPdf.disabled = false;
-            
-            // Tentar capturar texto do iframe (provavelmente falhará devido a CORS)
-            setTimeout(captureIframeText, 2000);
-        }
-        
-        // Tentativa de extração automática com fetch
-        async function tryAutoExtract(url) {
-            try {
-                // Carregar PDF.js se necessário
-                if (!pdfJsLoaded) {
-                    await loadPdfJs();
-                }
-                
-                // Tentar buscar PDF com credenciais
-                const response = await fetch(url, {
-                    credentials: 'include',
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
-                }
-                
-                const pdfData = await response.arrayBuffer();
-                
-                // Extrair texto
-                const text = await extractTextFromPdf(pdfData);
-                
-                if (text && text.trim().length > 0) {
-                    textArea.value = text;
-                    return true;
-                }
-                
-            } catch (error) {
-                console.log('Auto-extração falhou:', error);
-                // Silenciosamente falha - apenas log
-            }
-            
-            return false;
-        }
-        
-        // Tentar capturar texto do iframe (provavelmente falhará devido a CORS)
-        function captureIframeText() {
-            try {
-                const frameDoc = pdfViewer.contentDocument || pdfViewer.contentWindow.document;
-                
-                if (frameDoc) {
-                    // Tenta diferentes métodos para capturar texto
-                    const textDivs = frameDoc.querySelectorAll('.textLayer div');
-                    if (textDivs && textDivs.length > 0) {
-                        const text = Array.from(textDivs).map(div => div.textContent).join(' ');
-                        textArea.value = text;
-                        return;
-                    }
-                    
-                    // Método alternativo
-                    if (frameDoc.body && frameDoc.body.innerText) {
-                        textArea.value = frameDoc.body.innerText;
-                    }
-                }
-            } catch (error) {
-                console.log('Captura do iframe falhou:', error);
-                // Falha silenciosamente - esperado devido a CORS
-            }
-        }
-        
-        // Carregar PDF.js
-        async function loadPdfJs() {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js';
-                script.onload = function() {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
-                    pdfJsLoaded = true;
-                    resolve();
-                };
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-        
-        // Extrair texto do PDF
-        async function extractTextFromPdf(arrayBuffer) {
-            const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)});
-            const pdf = await loadingTask.promise;
-            
-            let fullText = '';
-            
-            // Processar cada página
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                
-                // Extrair texto dos itens
-                const pageText = textContent.items
-                    .map(item => item.str)
-                    .join(' ');
-                
-                fullText += `=== Página ${i} ===\n${pageText}\n\n`;
-            }
-            
-            return fullText;
-        }
-        
-        // Limpar área de texto
+        // Limpar texto
         function clearText() {
             textArea.value = '';
         }
@@ -220,11 +215,10 @@
             document.execCommand('copy');
             
             // Feedback visual
-            const originalBgColor = textArea.style.backgroundColor;
-            textArea.style.backgroundColor = '#d4edda';
+            textArea.classList.add('highlight');
             setTimeout(() => {
-                textArea.style.backgroundColor = originalBgColor;
-            }, 500);
+                textArea.classList.remove('highlight');
+            }, 1500);
         }
         
         // Carregar URL salva
