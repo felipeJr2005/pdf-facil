@@ -113,52 +113,64 @@ try {
     $isPdf = (substr($content, 0, 4) === '%PDF');
     $isHtml = (stripos($content, '<html') !== false);
     
+    logMsg("É PDF: " . ($isPdf ? 'sim' : 'não'));
+    logMsg("É HTML: " . ($isHtml ? 'sim' : 'não'));
+    
     if ($isPdf) {
-        logMsg("PDF detectado");
+        logMsg("PDF detectado - enviando para cliente");
         
-        // Headers CORS
+        // Headers CORS obrigatórios
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type');
         
         if ($action === 'download') {
-            // Forçar download
+            // Download forçado
+            logMsg("Modo download forçado");
             header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="documento.pdf"');
+            header('Content-Disposition: attachment; filename="documento_' . date('Y-m-d_H-i-s') . '.pdf"');
             header('Content-Length: ' . strlen($content));
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Expires: 0');
         } else {
             // Visualização normal
+            logMsg("Modo visualização normal");
             header('Content-Type: application/pdf');
             header('Content-Disposition: inline; filename="documento.pdf"');
             header('Content-Length: ' . strlen($content));
         }
         
         echo $content;
-        logMsg("PDF enviado com sucesso");
+        logMsg("PDF enviado com sucesso - " . strlen($content) . " bytes");
         
     } else {
-        logMsg("Não é PDF - HTML detectado: " . ($isHtml ? 'sim' : 'não'));
+        logMsg("Conteúdo não é PDF");
         
         if ($isHtml) {
             // Página de login detectada
-            $preview = strip_tags(substr($content, 0, 200));
+            $preview = strip_tags(substr($content, 0, 300));
             $error = [
                 'error' => true,
                 'message' => 'Página de login detectada',
                 'preview' => $preview,
-                'suggestion' => 'Use iframe para fazer login primeiro'
+                'suggestion' => 'Use iframe para fazer login primeiro',
+                'size' => strlen($content)
             ];
+            logMsg("HTML detectado - possível login: " . substr($preview, 0, 100));
         } else {
             $error = [
                 'error' => true,
                 'message' => 'Conteúdo não é PDF',
-                'content_type' => $contentType
+                'content_type' => $contentType,
+                'size' => strlen($content)
             ];
+            logMsg("Conteúdo desconhecido - Tipo: $contentType");
         }
         
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         http_response_code(400);
-        echo json_encode($error);
+        echo json_encode($error, JSON_UNESCAPED_UNICODE);
     }
     
 } catch (Exception $e) {

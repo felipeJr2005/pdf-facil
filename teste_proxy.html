@@ -148,26 +148,55 @@
                 return;
             }
             
-            log('Iniciando download...');
+            log('Iniciando download via servidor...');
             
             try {
-                const response = await fetch(`pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`);
+                const downloadUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`;
+                log('URL de download: ' + downloadUrl);
                 
-                if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
+                const response = await fetch(downloadUrl);
+                log(`Resposta do servidor: ${response.status}`);
+                
+                const contentType = response.headers.get('content-type');
+                log(`Content-Type: ${contentType}`);
+                
+                if (response.ok && contentType && contentType.includes('application/pdf')) {
+                    log('Convertendo resposta para blob...');
                     const blob = await response.blob();
-                    const downloadUrl = URL.createObjectURL(blob);
+                    log(`Blob criado: ${blob.size} bytes`);
+                    
+                    const downloadUrl2 = URL.createObjectURL(blob);
                     
                     const a = document.createElement('a');
-                    a.href = downloadUrl;
+                    a.href = downloadUrl2;
                     a.download = 'documento_' + Date.now() + '.pdf';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    
+                    log('Iniciando download do blob...');
+                    a.click();
+                    
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl2);
+                    
+                    log('✅ PDF baixado via blob!', 'success');
+                } else if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    log('❌ Servidor retornou erro: ' + errorData.message, 'error');
+                    
+                    // Fallback: download direto
+                    log('Tentando download direto...');
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'documento_direto_' + Date.now() + '.pdf';
+                    a.target = '_blank';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    
-                    URL.revokeObjectURL(downloadUrl);
-                    log('✅ PDF baixado!', 'success');
+                    log('⚠️ Download direto tentado', 'warning');
                 } else {
-                    log('❌ Não foi possível baixar via servidor', 'error');
+                    log('❌ Resposta inválida do servidor', 'error');
+                    log('Content-Type recebido: ' + contentType);
                     
                     // Fallback: download direto
                     const a = document.createElement('a');
@@ -177,7 +206,7 @@
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    log('⚠️ Tentativa de download direto', 'warning');
+                    log('⚠️ Fallback para download direto', 'warning');
                 }
             } catch (error) {
                 log('❌ Erro no download: ' + error.message, 'error');
