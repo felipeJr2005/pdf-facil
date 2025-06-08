@@ -43,10 +43,32 @@ try {
     
     $url = $_GET['url'];
     $action = $_GET['action'] ?? 'proxy';
+    $force = isset($_GET['force']); // Forçar download mesmo com login
     $debug = isset($_GET['debug']);
     
     logMsg("URL: $url");
     logMsg("Ação: $action");
+    logMsg("Forçar: " . ($force ? 'sim' : 'não'));
+    
+    // Headers especiais para PJe (simular navegador logado)
+    $headers = [
+        'Accept: application/pdf,text/html,application/xhtml+xml,*/*;q=0.9',
+        'Accept-Language: pt-BR,pt;q=0.9,en;q=0.8',
+        'Accept-Encoding: gzip, deflate, br',
+        'Connection: keep-alive',
+        'Upgrade-Insecure-Requests: 1',
+        'Sec-Fetch-Dest: document',
+        'Sec-Fetch-Mode: navigate',
+        'Sec-Fetch-Site: same-origin',
+        'Cache-Control: no-cache',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ];
+    
+    // Se é PJe, adicionar headers específicos
+    if (strpos($url, 'pje.') !== false) {
+        $headers[] = 'Referer: https://pje.cloud.tjpe.jus.br/1g/';
+        $headers[] = 'X-Requested-With: XMLHttpRequest';
+    }
     
     // Configurar cURL
     $ch = curl_init();
@@ -54,15 +76,17 @@ try {
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 5,
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_CONNECTTIMEOUT => 30,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_HTTPHEADER => [
-            'Accept: application/pdf,text/html,*/*',
-            'Accept-Language: pt-BR,pt;q=0.9',
-            'Cache-Control: no-cache'
-        ]
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_ENCODING => '', // Aceitar gzip
+        CURLOPT_COOKIESESSION => true,
+        CURLOPT_COOKIEFILE => '', // Usar cookies
+        CURLOPT_COOKIEJAR => '',  // Salvar cookies
     ]);
     
     logMsg("Executando cURL...");
