@@ -1,367 +1,110 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrator de PDF do PJe - Captura do iFrame</title>
+    <title>Extrator de Texto do PJe</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .card-header {
-            background-color: #f5f5f5;
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-body {
-            padding: 15px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-control {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .btn-group {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #f5f5f5;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-        }
-        .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
-            color: white;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            border-color: #dc3545;
-            color: white;
-        }
-        .btn-warning {
-            background-color: #ffc107;
-            border-color: #ffc107;
-            color: #212529;
-        }
-        .btn:hover {
-            opacity: 0.9;
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .alert {
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        .alert-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .alert-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        #result-text {
-            width: 100%;
-            min-height: 200px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        #log-container {
-            height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-        }
-        .log-entry {
-            margin-bottom: 3px;
-        }
-        .text-info { color: #0c5460; }
-        .text-success { color: #155724; }
-        .text-error { color: #721c24; }
-        .hidden {
-            display: none;
-        }
-        .spinner {
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            border: 2px solid rgba(0,0,0,0.1);
-            border-top: 2px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .auth-status {
-            display: flex;
-            align-items: center;
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        .auth-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .auth-indicator.authenticated {
-            background-color: #28a745;
-        }
-        .auth-indicator.not-authenticated {
-            background-color: #dc3545;
-        }
-        #pdf-container {
-            width: 100%;
-            height: 500px;
-            position: relative;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .iframe-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            color: white;
-            font-size: 1.5rem;
-            text-align: center;
-            padding: 20px;
-        }
-        .steps {
-            list-style-type: decimal;
-            padding-left: 20px;
-        }
-        .steps li {
-            margin-bottom: 10px;
-        }
+        body { font-family: sans-serif; margin: 20px; }
+        input { width: 100%; padding: 5px; margin-bottom: 10px; }
+        button { padding: 5px 10px; margin-right: 5px; }
+        pre { border: 1px solid #ccc; padding: 10px; max-height: 300px; overflow: auto; }
+        .log { font-family: monospace; font-size: 12px; }
     </style>
 </head>
 <body>
-    <h1>Extrator de PDF do PJe - Captura do iFrame</h1>
+    <h3>Extrator de Texto do PJe</h3>
     
-    <!-- Entrada do Link -->
-    <div class="card">
-        <div class="card-header">Abrir PDF do PJe</div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="pje-pdf-url" class="form-label">Link do PDF do PJe</label>
-                <input type="url" class="form-control" id="pje-pdf-url" placeholder="Cole o link do PDF aqui">
-            </div>
-            
-            <div class="btn-group">
-                <button id="btn-open-pdf" class="btn btn-primary">Abrir PDF no iFrame</button>
-                <button id="btn-open-new-tab" class="btn">Abrir em Nova Aba</button>
-            </div>
-            
-            <div id="status-message" class="alert hidden"></div>
+    <div>
+        <input type="url" id="pdf-url" placeholder="Cole o link do PDF do PJe aqui">
+        <div>
+            <button id="btn-view">Abrir PDF</button>
+            <button id="btn-download">Baixar PDF</button>
+            <button id="btn-extract">Extrair com Fetch</button>
+            <button id="btn-xhr">Extrair com XHR</button>
         </div>
     </div>
     
-    <!-- Container de PDF -->
-    <div id="pdf-viewer" class="card hidden">
-        <div class="card-header">
-            <span>Visualização do PDF</span>
-            <div>
-                <button id="btn-extract-text" class="btn btn-success">Extrair Texto do PDF</button>
-                <button id="btn-capture-iframe" class="btn btn-warning">Capturar do iFrame</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div id="pdf-container">
-                <iframe id="pdf-iframe" allowfullscreen></iframe>
-                <div id="iframe-overlay" class="iframe-overlay hidden">
-                    Processando PDF...
-                </div>
-            </div>
-        </div>
+    <div id="pdf-container" style="display:none; margin-top: 15px;">
+        <iframe id="pdf-iframe" width="100%" height="400" style="border:1px solid #ccc;"></iframe>
     </div>
     
-    <!-- Resultado -->
-    <div id="result-container" class="card hidden">
-        <div class="card-header">
-            <span>Texto Extraído</span>
-            <button id="btn-copy-text" class="btn">Copiar</button>
-        </div>
-        <div class="card-body">
-            <textarea id="result-text" readonly></textarea>
-        </div>
-    </div>
+    <h4>Texto Extraído:</h4>
+    <pre id="result"></pre>
     
-    <!-- Log -->
-    <div class="card">
-        <div class="card-header">
-            <span>Log</span>
-            <button id="btn-clear-log" class="btn btn-sm">Limpar</button>
-        </div>
-        <div class="card-body">
-            <div id="log-container"></div>
-        </div>
-    </div>
+    <h4>Log:</h4>
+    <div id="log" class="log"></div>
     
     <script>
-        // Elementos DOM
-        const urlInput = document.getElementById('pje-pdf-url');
-        const btnOpenPdf = document.getElementById('btn-open-pdf');
-        const btnOpenNewTab = document.getElementById('btn-open-new-tab');
-        const pdfViewer = document.getElementById('pdf-viewer');
+        // Elementos
+        const urlInput = document.getElementById('pdf-url');
+        const btnView = document.getElementById('btn-view');
+        const btnDownload = document.getElementById('btn-download');
+        const btnExtract = document.getElementById('btn-extract');
+        const btnXhr = document.getElementById('btn-xhr');
+        const pdfContainer = document.getElementById('pdf-container');
         const pdfIframe = document.getElementById('pdf-iframe');
-        const iframeOverlay = document.getElementById('iframe-overlay');
-        const btnExtractText = document.getElementById('btn-extract-text');
-        const btnCaptureIframe = document.getElementById('btn-capture-iframe');
-        const statusMessage = document.getElementById('status-message');
-        const resultContainer = document.getElementById('result-container');
-        const resultText = document.getElementById('result-text');
-        const btnCopyText = document.getElementById('btn-copy-text');
-        const logContainer = document.getElementById('log-container');
-        const btnClearLog = document.getElementById('btn-clear-log');
+        const result = document.getElementById('result');
+        const logElement = document.getElementById('log');
         
-        // Adicionar event listeners
-        btnOpenPdf.addEventListener('click', openPdfInIframe);
-        btnOpenNewTab.addEventListener('click', openPdfInNewTab);
-        btnExtractText.addEventListener('click', extractTextFromIframePdf);
-        btnCaptureIframe.addEventListener('click', captureIframeContent);
-        btnCopyText.addEventListener('click', copyText);
-        btnClearLog.addEventListener('click', clearLog);
+        // Carregar PDF.js
+        let pdfJsLoaded = false;
         
-        // Abrir PDF no iFrame
-        function openPdfInIframe() {
+        // Eventos
+        btnView.addEventListener('click', viewPdf);
+        btnDownload.addEventListener('click', downloadPdf);
+        btnExtract.addEventListener('click', extractWithFetch);
+        btnXhr.addEventListener('click', extractWithXhr);
+        
+        // Funções
+        function log(message) {
+            console.log(message);
+            logElement.innerHTML += message + '<br>';
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function viewPdf() {
             const url = urlInput.value.trim();
-            
             if (!url) {
-                showStatus('Por favor, insira um link do PDF', 'warning');
+                log('Digite uma URL válida');
                 return;
             }
             
-            log(`Abrindo PDF no iFrame: ${url}`, 'info');
             pdfIframe.src = url;
-            pdfViewer.classList.remove('hidden');
-            
-            pdfIframe.onload = function() {
-                log('PDF carregado no iFrame', 'success');
-                showStatus('PDF carregado. Agora você pode extrair o texto.', 'success');
-            };
-            
-            pdfIframe.onerror = function() {
-                log('Erro ao carregar PDF no iFrame', 'error');
-                showStatus('Erro ao carregar PDF. Tente abrir em uma nova aba.', 'danger');
-            };
+            pdfContainer.style.display = 'block';
+            log(`PDF aberto: ${url}`);
         }
         
-        // Abrir PDF em nova aba
-        function openPdfInNewTab() {
+        function downloadPdf() {
             const url = urlInput.value.trim();
-            
             if (!url) {
-                showStatus('Por favor, insira um link do PDF', 'warning');
+                log('Digite uma URL válida');
                 return;
             }
             
-            log(`Abrindo PDF em nova aba: ${url}`, 'info');
+            // Abrir em nova janela para download
             window.open(url, '_blank');
+            log('PDF aberto em nova janela para download');
         }
         
-        // Extrair texto do PDF no iFrame usando PDF.js
-        async function extractTextFromIframePdf() {
-            if (!pdfIframe.src) {
-                showStatus('Nenhum PDF carregado no iFrame', 'warning');
+        // Método 1: Extrair com Fetch API
+        async function extractWithFetch() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                log('Digite uma URL válida');
                 return;
             }
             
-            showOverlay('Extraindo texto do PDF...');
-            log('Iniciando extração de texto do PDF...', 'info');
+            log(`Tentando extrair texto com Fetch: ${url}`);
+            result.textContent = 'Processando...';
             
             try {
-                // Carregar PDF.js se necessário
-                if (typeof pdfjsLib === 'undefined') {
-                    log('Carregando biblioteca PDF.js...', 'info');
-                    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js');
-                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
-                }
-                
-                // Tentar obter o PDF diretamente da URL
-                log('Buscando PDF da URL...', 'info');
-                const pdfUrl = pdfIframe.src;
-                
-                // Usar fetch com credenciais incluídas
-                const response = await fetch(pdfUrl, {
+                // Tentar com credenciais incluídas
+                const response = await fetch(url, {
                     credentials: 'include',
-                    mode: 'cors'
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/pdf,*/*'
+                    }
                 });
                 
                 if (!response.ok) {
@@ -369,242 +112,134 @@
                 }
                 
                 const pdfData = await response.arrayBuffer();
-                log(`PDF obtido: ${formatBytes(pdfData.byteLength)}`, 'success');
+                log(`PDF obtido: ${pdfData.byteLength} bytes`);
                 
-                // Carregar o PDF com PDF.js
-                const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfData) });
-                const pdf = await loadingTask.promise;
-                
-                log(`PDF carregado: ${pdf.numPages} página(s)`, 'success');
-                
-                // Extrair texto de todas as páginas
-                let fullText = '';
-                
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    log(`Processando página ${i}...`, 'info');
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    
-                    // Extrair texto dos itens
-                    const pageText = textContent.items
-                        .map(item => item.str)
-                        .join(' ');
-                    
-                    fullText += `--- Página ${i} ---\n${pageText}\n\n`;
+                // Carregar PDF.js se necessário
+                if (!pdfJsLoaded) {
+                    await loadPdfJs();
                 }
                 
-                // Exibir o texto extraído
-                resultText.value = fullText;
-                resultContainer.classList.remove('hidden');
-                hideOverlay();
-                
-                log('Texto extraído com sucesso', 'success');
-                showStatus('Texto extraído com sucesso!', 'success');
+                // Extrair texto
+                const text = await extractTextFromPdf(pdfData);
+                result.textContent = text;
+                log('Texto extraído com sucesso');
                 
             } catch (error) {
-                hideOverlay();
-                log(`Erro ao extrair texto: ${error.message}`, 'error');
-                showStatus(`Erro: ${error.message}. Tente usar o método de captura do iFrame.`, 'danger');
-                
-                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-                    log('Este erro pode estar relacionado a restrições de CORS. Tente o método de captura do iFrame.', 'info');
-                }
+                log(`Erro: ${error.message}`);
+                result.textContent = `Erro: ${error.message}`;
             }
         }
         
-        // Capturar conteúdo do iFrame - Método Alternativo
-        function captureIframeContent() {
-            if (!pdfIframe.src) {
-                showStatus('Nenhum PDF carregado no iFrame', 'warning');
+        // Método 2: Extrair com XMLHttpRequest
+        function extractWithXhr() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                log('Digite uma URL válida');
                 return;
             }
             
-            showOverlay('Capturando conteúdo do iFrame...');
-            log('Tentando capturar conteúdo do iFrame...', 'info');
+            log(`Tentando extrair texto com XHR: ${url}`);
+            result.textContent = 'Processando...';
             
-            try {
-                // Tentar acessar o conteúdo do iFrame
-                const iframeWindow = pdfIframe.contentWindow;
-                const iframeDocument = iframeWindow.document;
-                
-                // Se for um PDF que usa o visualizador do navegador
-                if (iframeDocument.body && iframeDocument.body.innerText) {
-                    const text = iframeDocument.body.innerText;
-                    log('Conteúdo capturado do corpo do iFrame', 'success');
-                    
-                    resultText.value = text;
-                    resultContainer.classList.remove('hidden');
-                    
-                    hideOverlay();
-                    showStatus('Texto capturado com sucesso!', 'success');
-                    return;
-                }
-                
-                // Se for um PDF renderizado pelo PDF.js do navegador
-                const pdfViewerElements = iframeDocument.querySelectorAll('.textLayer div');
-                
-                if (pdfViewerElements.length > 0) {
-                    log(`Encontrados ${pdfViewerElements.length} elementos de texto no visualizador de PDF`, 'success');
-                    
-                    let extractedText = '';
-                    pdfViewerElements.forEach((element, index) => {
-                        extractedText += element.textContent + ' ';
-                    });
-                    
-                    resultText.value = extractedText;
-                    resultContainer.classList.remove('hidden');
-                    
-                    hideOverlay();
-                    showStatus('Texto capturado com sucesso!', 'success');
-                    return;
-                }
-                
-                // Tentar encontrar elementos de <embed> ou <object> que contenham o PDF
-                const embedElements = iframeDocument.querySelectorAll('embed[type="application/pdf"], object[type="application/pdf"]');
-                
-                if (embedElements.length > 0) {
-                    log('PDF incorporado encontrado, mas não é possível extrair diretamente', 'warning');
-                    
-                    // Tentar capturar texto visível na página
-                    const textNodes = [];
-                    const walker = iframeDocument.createTreeWalker(
-                        iframeDocument.body,
-                        NodeFilter.SHOW_TEXT,
-                        null,
-                        false
-                    );
-                    
-                    let node;
-                    while (node = walker.nextNode()) {
-                        if (node.textContent.trim()) {
-                            textNodes.push(node.textContent.trim());
-                        }
-                    }
-                    
-                    if (textNodes.length > 0) {
-                        resultText.value = textNodes.join('\n');
-                        resultContainer.classList.remove('hidden');
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'arraybuffer';
+            xhr.withCredentials = true;
+            
+            xhr.onload = async function() {
+                if (this.status >= 200 && this.status < 300) {
+                    try {
+                        log(`PDF obtido: ${xhr.response.byteLength} bytes`);
                         
-                        hideOverlay();
-                        showStatus('Texto parcial capturado!', 'warning');
-                        return;
+                        // Carregar PDF.js se necessário
+                        if (!pdfJsLoaded) {
+                            await loadPdfJs();
+                        }
+                        
+                        // Extrair texto
+                        const text = await extractTextFromPdf(xhr.response);
+                        result.textContent = text;
+                        log('Texto extraído com sucesso');
+                        
+                    } catch (error) {
+                        log(`Erro ao processar PDF: ${error.message}`);
+                        result.textContent = `Erro: ${error.message}`;
                     }
+                } else {
+                    log(`Erro HTTP: ${this.status}`);
+                    result.textContent = `Erro HTTP: ${this.status}`;
                 }
-                
-                // Se chegou aqui, não foi possível extrair o texto
-                hideOverlay();
-                log('Não foi possível capturar texto do iFrame', 'error');
-                showStatus('Não foi possível extrair texto do iFrame. O PDF pode estar protegido ou em um formato não acessível.', 'warning');
-                
-                // Sugerir captura manual
-                const manualText = `Não foi possível extrair o texto automaticamente. Você pode tentar:
-
-1. Abrir o PDF em uma nova aba e usar Ctrl+A, Ctrl+C para copiar o texto manualmente.
-2. Usar a ferramenta de "Selecionar Texto" do visualizador de PDF e copiar manualmente.
-3. Salvar o PDF e usar uma ferramenta de OCR específica.`;
-                
-                resultText.value = manualText;
-                resultContainer.classList.remove('hidden');
-                
-            } catch (error) {
-                hideOverlay();
-                log(`Erro ao capturar conteúdo do iFrame: ${error.message}`, 'error');
-                showStatus(`Erro: ${error.message}. O iFrame pode estar com restrições de segurança.`, 'danger');
-                
-                // Mensagem de erro detalhada
-                if (error.message.includes('cross-origin') || error.message.includes('access denied')) {
-                    log('Erro de segurança cross-origin. Não é possível acessar o conteúdo do iFrame diretamente.', 'error');
-                    
-                    // Sugerir solução alternativa
-                    const alternativeText = `Erro de segurança: Não é possível acessar o conteúdo do iFrame devido a restrições de segurança cross-origin.
-
-Alternativas:
-1. Abra o PDF diretamente em uma nova aba usando o botão "Abrir em Nova Aba"
-2. Após abrir na nova aba, você pode usar Ctrl+A, Ctrl+C para copiar o texto manualmente
-3. Use o menu de contexto (botão direito) e selecione "Salvar como" para baixar o PDF`;
-                    
-                    resultText.value = alternativeText;
-                    resultContainer.classList.remove('hidden');
-                }
-            }
-        }
-        
-        // Exibir/ocultar overlay
-        function showOverlay(message) {
-            iframeOverlay.textContent = message || 'Processando...';
-            iframeOverlay.classList.remove('hidden');
-        }
-        
-        function hideOverlay() {
-            iframeOverlay.classList.add('hidden');
-        }
-        
-        // Exibir mensagem de status
-        function showStatus(message, type = 'info') {
-            statusMessage.textContent = message;
-            statusMessage.className = `alert alert-${type}`;
-            statusMessage.classList.remove('hidden');
-        }
-        
-        // Adicionar entrada ao log
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span class="text-${type}">[${timestamp}]</span> ${message}`;
-            logContainer.appendChild(entry);
-            logContainer.scrollTop = logContainer.scrollHeight;
-            console.log(`[${timestamp}] ${message}`);
-        }
-        
-        // Limpar log
-        function clearLog() {
-            logContainer.innerHTML = '';
-            log('Log limpo', 'info');
-        }
-        
-        // Copiar texto
-        function copyText() {
-            if (!resultText.value) {
-                showStatus('Não há texto para copiar', 'warning');
-                return;
-            }
+            };
             
-            try {
-                resultText.select();
-                document.execCommand('copy');
-                showStatus('Texto copiado para a área de transferência', 'success');
-            } catch (error) {
-                showStatus('Erro ao copiar texto: ' + error.message, 'danger');
-            }
+            xhr.onerror = function() {
+                log('Erro de rede ao buscar o PDF');
+                result.textContent = 'Erro de rede ao buscar o PDF';
+            };
+            
+            xhr.send();
         }
         
-        // Carregar script dinamicamente
-        function loadScript(src) {
+        // Carregar PDF.js
+        async function loadPdfJs() {
+            log('Carregando PDF.js...');
+            
             return new Promise((resolve, reject) => {
+                // Carregar script principal
                 const script = document.createElement('script');
-                script.src = src;
-                script.onload = resolve;
-                script.onerror = reject;
+                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js';
+                script.onload = function() {
+                    // Configurar worker
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+                    pdfJsLoaded = true;
+                    log('PDF.js carregado com sucesso');
+                    resolve();
+                };
+                script.onerror = function() {
+                    reject(new Error('Erro ao carregar PDF.js'));
+                };
                 document.head.appendChild(script);
             });
         }
         
-        // Formatar tamanho de arquivo
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
+        // Extrair texto do PDF
+        async function extractTextFromPdf(arrayBuffer) {
+            const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)});
+            const pdf = await loadingTask.promise;
             
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            log(`PDF carregado: ${pdf.numPages} página(s)`);
             
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            let fullText = '';
             
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            // Processar cada página
+            for (let i = 1; i <= pdf.numPages; i++) {
+                log(`Processando página ${i}...`);
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                
+                // Extrair texto dos itens
+                const pageText = textContent.items
+                    .map(item => item.str)
+                    .join(' ');
+                
+                fullText += `--- Página ${i} ---\n${pageText}\n\n`;
+            }
+            
+            return fullText;
         }
         
-        // Log inicial
-        log('Extrator de PDF do PJe - Captura do iFrame - inicializado', 'success');
+        // Carregar URL da última sessão
+        const savedUrl = localStorage.getItem('pje-pdf-url');
+        if (savedUrl) {
+            urlInput.value = savedUrl;
+            log('URL carregada da sessão anterior');
+        }
+        
+        // Salvar URL ao digitar
+        urlInput.addEventListener('input', () => {
+            localStorage.setItem('pje-pdf-url', urlInput.value);
+        });
+        
+        log('Extrator de texto do PJe inicializado');
     </script>
 </body>
 </html>
