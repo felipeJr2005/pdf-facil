@@ -3,507 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tesseract.js v6 - Versão Final</title>
+    <title>OCR Tesseract.js v6</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            color: #4361ee;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .option {
-            padding: 15px;
-            background: #f8f9ff;
-            border-radius: 6px;
-            border: 1px solid #e0e7ff;
-        }
-        
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        
-        select {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            background-color: white;
-            font-size: 14px;
-        }
-        
-        .file-input {
-            padding: 25px;
-            border: 2px dashed #4361ee;
-            border-radius: 8px;
-            text-align: center;
-            margin: 20px 0;
-            cursor: pointer;
-            background-color: #fafbff;
-            transition: all 0.2s ease;
-        }
-        
-        .file-input:hover {
-            background-color: #f0f4ff;
-            border-color: #3a56d4;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #4361ee, #3a56d4);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin: 15px 0;
-            transition: all 0.2s ease;
-        }
-        
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
-        }
-        
-        button:disabled {
-            background: linear-gradient(135deg, #a0aec0, #cbd5e0);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .log {
-            background: #f8f8f8;
-            border: 1px solid #ddd;
-            padding: 12px;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 20px;
-            font-size: 14px;
-            line-height: 1.5;
-            border-radius: 6px;
-        }
-        
-        .log-entry {
-            margin-bottom: 4px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .log-error {
-            color: #e53e3e;
-        }
-        
-        .log-warning {
-            color: #dd6b20;
-        }
-        
-        .log-success {
-            color: #38a169;
-        }
-        
-        .result {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            display: none;
-        }
-        
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .result textarea {
-            width: 100%;
-            min-height: 200px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            font-family: monospace;
-            border-radius: 4px;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-weight: bold;
-            color: #4361ee;
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            color: #666;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        img.preview {
-            max-width: 100%;
-            max-height: 250px;
-            margin: 15px auto;
-            display: block;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .warning-badge {
-            display: inline-block;
-            background-color: #FEFCE8;
-            color: #D97706;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 8px;
-            border: 1px solid #FEF08A;
-        }
-        
-        .info-tip {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-        }
-        
-        .version-info {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 3px solid rgba(67, 97, 238, 0.3);
-            border-radius: 50%;
-            border-top-color: #4361ee;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .processing {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-            color: #4361ee;
-            font-weight: bold;
-            display: none;
-        }
-        
-        .copy-btn {
-            background: #e2e8f0;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 10px;
-            color: #4a5568;
-            transition: all 0.2s;
-        }
-        
-        .copy-btn:hover {
-            background: #cbd5e0;
-        }
+        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 15px; }
+        select, button { padding: 5px; margin: 5px 0; width: 100%; }
+        .upload { border: 1px dashed #999; padding: 10px; text-align: center; cursor: pointer; margin: 10px 0; }
+        img { max-width: 100%; max-height: 200px; margin: 10px 0; }
+        #result { border: 1px solid #ddd; padding: 10px; min-height: 100px; margin-top: 10px; white-space: pre-wrap; }
+        .hidden { display: none; }
+        #log { font-family: monospace; font-size: 12px; margin-top: 10px; color: #666; }
+        .warning { color: #d97706; font-size: 12px; margin-top: 5px; }
+        .options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0; }
+        .options label { display: block; margin-bottom: 5px; }
+        @media (max-width: 600px) { .options { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>OCR com Tesseract.js v6</h1>
-        
-        <div class="file-input" id="fileInput">
-            <p><strong>Clique ou arraste uma imagem aqui</strong></p>
-            <p style="font-size: 14px; color: #666;">Formatos suportados: JPG, PNG</p>
-            <input type="file" id="fileUpload" accept=".jpg,.jpeg,.png" style="display:none">
+    <h2>OCR com Tesseract.js v6</h2>
+    
+    <div class="upload" id="uploadArea">
+        Selecione ou arraste uma imagem
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+    
+    <img id="preview" class="hidden">
+    
+    <div class="options">
+        <div>
+            <label>Idioma:</label>
+            <select id="language">
+                <option value="por">Português</option>
+                <option value="eng">Inglês</option>
+                <option value="spa">Espanhol</option>
+                <option value="fra">Francês</option>
+            </select>
         </div>
         
-        <img id="preview" class="preview hidden">
-        
-        <div class="options">
-            <div class="option">
-                <label for="language">Idioma:</label>
-                <select id="language">
-                    <option value="por">Português</option>
-                    <option value="eng">Inglês</option>
-                    <option value="spa">Espanhol</option>
-                    <option value="fra">Francês</option>
-                </select>
-            </div>
-            
-            <div class="option">
-                <label for="ocrMode">Modo OCR:</label>
-                <select id="ocrMode">
-                    <option value="1">LSTM (Recomendado)</option>
-                    <option value="0">Legado</option>
-                    <option value="2">Combinado</option>
-                </select>
-            </div>
-            
-            <div class="option">
-                <label for="segMode">Segmentação:</label>
-                <select id="segMode">
-                    <option value="1">Automática com OSD</option>
-                    <option value="3">Página completa</option>
-                    <option value="6">Bloco uniforme</option>
-                    <option value="7">Linha única</option>
-                </select>
-                <div class="info-tip">Nota: A opção "Linha única" pode causar erros na versão 6.x.</div>
-            </div>
+        <div>
+            <label>Modo OCR:</label>
+            <select id="ocrMode">
+                <option value="1">LSTM (Recomendado)</option>
+                <option value="0">Legado</option>
+                <option value="2">Combinado</option>
+            </select>
         </div>
         
-        <button id="processBtn" disabled>Processar Imagem</button>
-        
-        <div id="processing" class="processing">
-            <div class="spinner"></div>
-            <span>Processando imagem...</span>
-        </div>
-        
-        <div id="resultContainer" class="result">
-            <div class="result-header">
-                <h3>Texto Reconhecido</h3>
-                <button id="copyBtn" class="copy-btn">Copiar texto</button>
+        <div>
+            <label>Segmentação:</label>
+            <select id="segMode">
+                <option value="1">Automática com OSD</option>
+                <option value="3">Página completa</option>
+                <option value="6">Bloco uniforme</option>
+                <option value="7">Linha única</option>
+            </select>
+            <div class="warning" id="lineWarning" style="display:none">
+                Nota: "Linha única" pode causar erros
             </div>
-            <textarea id="resultText" readonly></textarea>
-            
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value" id="wordCount">0</div>
-                    <div class="stat-label">Palavras</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="charCount">0</div>
-                    <div class="stat-label">Caracteres</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="timeCount">0s</div>
-                    <div class="stat-label">Tempo</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="log" id="log">
-            <div class="log-entry">Inicializando Tesseract.js v6...</div>
         </div>
     </div>
     
-    <div class="version-info">
-        Tesseract.js v6.0.1 • Compatível com GitHub Pages e Railway
-    </div>
+    <button id="processBtn" disabled>Processar</button>
+    
+    <div id="result"></div>
+    <div id="log"></div>
     
     <script>
-        // Elementos DOM
+        // Elementos
+        const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const fileUpload = document.getElementById('fileUpload');
         const preview = document.getElementById('preview');
-        const languageSelect = document.getElementById('language');
-        const ocrModeSelect = document.getElementById('ocrMode');
-        const segModeSelect = document.getElementById('segMode');
+        const language = document.getElementById('language');
+        const ocrMode = document.getElementById('ocrMode');
+        const segMode = document.getElementById('segMode');
+        const lineWarning = document.getElementById('lineWarning');
         const processBtn = document.getElementById('processBtn');
-        const processing = document.getElementById('processing');
-        const resultContainer = document.getElementById('resultContainer');
-        const resultText = document.getElementById('resultText');
-        const copyBtn = document.getElementById('copyBtn');
-        const wordCount = document.getElementById('wordCount');
-        const charCount = document.getElementById('charCount');
-        const timeCount = document.getElementById('timeCount');
+        const result = document.getElementById('result');
         const log = document.getElementById('log');
         
-        // Variáveis globais
+        // Variáveis
         let selectedFile = null;
         
-        // Função para adicionar log
-        function addLog(message, type = 'info') {
-            const now = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'log-error' : 
-                              type === 'warning' ? 'log-warning' : 
-                              type === 'success' ? 'log-success' : '';
-            
-            log.innerHTML += `<div class="log-entry ${className}">[${now}] ${message}</div>`;
-            log.scrollTop = log.scrollHeight;
-            
-            console.log(`[${now}] [${type.toUpperCase()}] ${message}`);
+        // Eventos
+        uploadArea.onclick = () => fileInput.click();
+        fileInput.onchange = handleFile;
+        processBtn.onclick = processImage;
+        
+        // Aviso para linha única
+        segMode.onchange = () => {
+            lineWarning.style.display = segMode.value === '7' ? 'block' : 'none';
+        };
+        
+        // Upload (drag & drop)
+        uploadArea.addEventListener('dragover', e => { e.preventDefault(); });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile({ target: { files: e.dataTransfer.files } });
+        });
+        
+        // Inicializar
+        function init() {
+            loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js')
+                .then(() => logMsg('✓ Tesseract.js carregado'))
+                .catch(err => logMsg('✗ Erro: ' + err.message));
         }
         
-        // Carregar Tesseract.js v6
-        function loadTesseract() {
+        // Carregar script
+        function loadScript(src) {
             return new Promise((resolve, reject) => {
-                addLog('Carregando Tesseract.js v6...');
-                
                 const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js';
-                script.onload = () => {
-                    addLog('Tesseract.js v6 carregado com sucesso!', 'success');
-                    resolve();
-                };
-                script.onerror = () => {
-                    addLog('Erro ao carregar Tesseract.js', 'error');
-                    reject(new Error('Falha ao carregar Tesseract.js'));
-                };
-                
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
                 document.head.appendChild(script);
             });
         }
         
-        // Configurar eventos de UI
-        function setupEventListeners() {
-            // Selecionar arquivo
-            fileInput.addEventListener('click', () => {
-                fileUpload.click();
-            });
-            
-            fileUpload.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    handleFileSelect(e.target.files[0]);
-                }
-            });
-            
-            // Drag and drop
-            fileInput.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                fileInput.style.borderColor = '#3a56d4';
-                fileInput.style.backgroundColor = '#eef2ff';
-            });
-            
-            fileInput.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                fileInput.style.borderColor = '#4361ee';
-                fileInput.style.backgroundColor = '#fafbff';
-            });
-            
-            fileInput.addEventListener('drop', (e) => {
-                e.preventDefault();
-                fileInput.style.borderColor = '#4361ee';
-                fileInput.style.backgroundColor = '#fafbff';
-                
-                if (e.dataTransfer.files.length > 0) {
-                    handleFileSelect(e.dataTransfer.files[0]);
-                }
-            });
-            
-            // Validação de segmentação
-            segModeSelect.addEventListener('change', (e) => {
-                if (e.target.value === '7') {
-                    addLog('A opção "Linha única" pode causar erros com Tesseract.js v6', 'warning');
-                }
-            });
-            
-            // Botão de processamento
-            processBtn.addEventListener('click', processImage);
-            
-            // Botão de cópia
-            copyBtn.addEventListener('click', () => {
-                resultText.select();
-                document.execCommand('copy');
-                addLog('Texto copiado para a área de transferência', 'success');
-            });
-        }
-        
-        // Manipular seleção de arquivo
-        function handleFileSelect(file) {
-            if (!file.type.match('image.*')) {
-                alert('Por favor, selecione uma imagem válida.');
-                return;
-            }
+        // Manipular arquivo
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
             
             selectedFile = file;
-            addLog(`Arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
+            processBtn.disabled = false;
             
-            // Mostrar preview
+            // Preview
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = e => {
                 preview.src = e.target.result;
                 preview.classList.remove('hidden');
             };
             reader.readAsDataURL(file);
             
-            // Ativar botão de processamento
-            processBtn.disabled = false;
+            logMsg(`Arquivo: ${file.name}`);
         }
         
         // Processar imagem
         async function processImage() {
             if (!selectedFile) return;
             
-            const language = languageSelect.value;
-            const ocrMode = ocrModeSelect.value;
-            const segMode = segModeSelect.value;
+            const langValue = language.value;
+            const ocrValue = ocrMode.value;
+            const segValue = segMode.value;
             
-            addLog(`Iniciando OCR com: Idioma=${language}, Modo=${ocrMode}, Segmentação=${segMode}`);
-            
-            // Aviso para linha única
-            if (segMode === '7') {
-                addLog('ATENÇÃO: Você selecionou "Linha única", que pode causar erros', 'warning');
-            }
-            
-            // Preparar UI
             processBtn.disabled = true;
-            processing.style.display = 'flex';
-            resultContainer.style.display = 'none';
-            resultText.value = '';
-            
-            const startTime = performance.now();
+            result.textContent = 'Processando...';
+            logMsg(`Iniciando OCR (Idioma: ${langValue}, Modo: ${ocrValue}, Segmentação: ${segValue})`);
             
             try {
-                // Converter imagem para base64
-                addLog('Convertendo imagem...');
+                // Carregar imagem
                 const reader = new FileReader();
                 const imageData = await new Promise((resolve, reject) => {
                     reader.onload = e => resolve(e.target.result);
@@ -511,90 +158,58 @@
                     reader.readAsDataURL(selectedFile);
                 });
                 
-                addLog('Criando worker...');
-                // Criar worker com idioma (método v6)
-                const worker = await Tesseract.createWorker(language);
-                addLog('Worker criado com sucesso!', 'success');
+                // Processar com Tesseract
+                logMsg('Criando worker...');
+                const worker = await Tesseract.createWorker(langValue);
                 
                 try {
-                    // Configurar parâmetros
-                    addLog('Configurando parâmetros...');
-                    
+                    logMsg('Configurando parâmetros...');
                     await worker.setParameters({
-                        tessedit_ocr_engine_mode: ocrMode,
-                        tessedit_pageseg_mode: segMode
+                        tessedit_ocr_engine_mode: ocrValue,
+                        tessedit_pageseg_mode: segValue
                     });
-                    
-                    addLog('Parâmetros configurados com sucesso!', 'success');
                 } catch (paramError) {
-                    addLog(`Erro ao configurar parâmetros: ${paramError.message}`, 'error');
+                    logMsg(`Aviso: erro nos parâmetros, usando modo padrão - ${paramError.message}`);
                     
-                    // Se o erro for na linha única, tente novamente com página completa
-                    if (segMode === '7') {
-                        addLog('Tentando novamente com segmentação "Página completa"...', 'warning');
+                    // Se erro for com linha única, tente com página completa
+                    if (segValue === '7') {
+                        logMsg('Tentando com "Página completa" (3)');
                         try {
                             await worker.setParameters({
-                                tessedit_ocr_engine_mode: ocrMode,
-                                tessedit_pageseg_mode: '3' // Página completa
+                                tessedit_ocr_engine_mode: ocrValue,
+                                tessedit_pageseg_mode: '3'
                             });
-                            addLog('Usando configuração alternativa', 'success');
-                        } catch (fallbackError) {
-                            addLog('Usando apenas configurações padrão', 'warning');
+                        } catch (e) {
+                            logMsg('Usando configurações padrão');
                         }
-                    } else {
-                        addLog('Continuando com configurações padrão', 'warning');
                     }
                 }
                 
-                addLog('Reconhecendo texto...');
+                logMsg('Reconhecendo texto...');
                 const { data } = await worker.recognize(imageData);
-                addLog('Texto reconhecido com sucesso!', 'success');
-                
-                addLog('Finalizando worker...');
                 await worker.terminate();
                 
-                // Calcular estatísticas
-                const endTime = performance.now();
-                const processingTime = ((endTime - startTime) / 1000).toFixed(2);
-                const words = data.text.trim().split(/\s+/).filter(w => w.length > 0).length;
-                const chars = data.text.length;
-                
-                // Atualizar estatísticas
-                wordCount.textContent = words;
-                charCount.textContent = chars;
-                timeCount.textContent = processingTime + 's';
-                
                 // Mostrar resultado
-                resultText.value = data.text;
-                resultContainer.style.display = 'block';
-                
-                addLog(`OCR concluído em ${processingTime}s! (${words} palavras, ${chars} caracteres)`, 'success');
+                result.textContent = data.text;
+                logMsg('✓ OCR concluído!');
                 
             } catch (error) {
-                addLog(`ERRO: ${error.message}`, 'error');
-                console.error('Erro detalhado:', error);
-                alert(`Erro ao processar imagem: ${error.message}`);
+                result.textContent = 'Erro: ' + error.message;
+                logMsg('✗ Erro: ' + error.message);
             } finally {
-                // Ocultar progresso
-                processing.style.display = 'none';
                 processBtn.disabled = false;
             }
         }
         
-        // Inicializar aplicativo
-        async function init() {
-            try {
-                await loadTesseract();
-                setupEventListeners();
-                addLog('Aplicativo inicializado. Pronto para processar imagens!', 'success');
-            } catch (error) {
-                addLog(`Erro na inicialização: ${error.message}`, 'error');
-                alert('Erro ao inicializar o aplicativo. Tente recarregar a página.');
-            }
+        // Adicionar log
+        function logMsg(msg) {
+            const now = new Date().toLocaleTimeString();
+            log.innerHTML += `[${now}] ${msg}<br>`;
+            console.log(`[${now}] ${msg}`);
         }
         
-        // Iniciar quando a página carregar
-        document.addEventListener('DOMContentLoaded', init);
+        // Inicializar
+        init();
     </script>
 </body>
 </html>
