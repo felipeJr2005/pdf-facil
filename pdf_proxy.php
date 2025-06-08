@@ -1,7 +1,7 @@
 <?php
 // PDF Proxy - Bypass CORS para PDFs de tribunais
-// Versão: 1.0
-// Uso: pdf_proxy.php?url=LINK_DO_PDF
+// Versão: 2.0 - Com melhorias para PJe e debug avançado
+// Uso: pdf_proxy.php?url=LINK_DO_PDF&debug=1&strategy=iframe
 
 // Configuração de log
 $log_dir = __DIR__;
@@ -16,18 +16,33 @@ function logMessage($message) {
     file_put_contents($log_path, "[$timestamp] $message\n", FILE_APPEND | LOCK_EX);
 }
 
+function debugLog($message) {
+    global $debug_mode;
+    if ($debug_mode) {
+        logMessage("DEBUG: " . $message);
+    }
+}
+
 // Iniciar log
-logMessage("=== PDF PROXY INICIADO ===");
+logMessage("=== PDF PROXY V2.0 INICIADO ===");
 
 // Configurações
 set_time_limit(300); // 5 minutos
-ini_set('memory_limit', '256M');
+ini_set('memory_limit', '512M'); // Aumentado para 512MB
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+// Parâmetros
+$debug_mode = isset($_GET['debug']) && $_GET['debug'] == '1';
+$strategy = $_GET['strategy'] ?? 'direct'; // direct, iframe, session
+$save_response = isset($_GET['save']) && $_GET['save'] == '1';
+
+logMessage("Modo debug: " . ($debug_mode ? 'ATIVADO' : 'DESATIVADO'));
+logMessage("Estratégia: " . $strategy);
+
 // Headers de segurança
 header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
+header('X-Frame-Options: SAMEORIGIN'); // Alterado para permitir iframe
 header('X-XSS-Protection: 1; mode=block');
 
 try {
@@ -38,59 +53,44 @@ try {
     
     $pdf_url = $_GET['url'];
     logMessage("URL solicitada: " . $pdf_url);
+    debugLog("Parâmetros recebidos: " . print_r($_GET, true));
     
     // Validar se é uma URL válida
     if (!filter_var($pdf_url, FILTER_VALIDATE_URL)) {
         throw new Exception("URL inválida");
     }
     
-    // Verificar se o domínio é permitido (segurança)
-    $allowed_domains = [
-        'pje.trt', 'pje.jt', 'pje.tst', 'pje.cjf', 'pje.cnj',
-        'tjsp.jus.br', 'tjrj.jus.br', 'tjmg.jus.br', 'tjrs.jus.br',
-        'trf1.jus.br', 'trf2.jus.br', 'trf3.jus.br', 'trf4.jus.br', 'trf5.jus.br',
-        'stf.jus.br', 'stj.jus.br', 'tst.jus.br'
-    ];
+    // Analisar a URL
+    $url_parts = parse_url($pdf_url);
+    $url_host = $url_parts['host'];
+    $url_path = $url_parts['path'] ?? '';
+    $url_query = $url_parts['query'] ?? '';
     
-    $url_host = parse_url($pdf_url, PHP_URL_HOST);
-    $domain_allowed = false;
+    debugLog("Host: $url_host");
+    debugLog("Path: $url_path");
+    debugLog("Query: $url_query");
     
-    foreach ($allowed_domains as $domain) {
-        if (strpos($url_host, $domain) !== false) {
-            $domain_allowed = true;
-            break;
-        }
+    // Detectar tipo de tribunal
+    $tribunal_type = detectTribunalType($url_host);
+    logMessage("Tipo de tribunal detectado: " . $tribunal_type);
+    
+    // Escolher estratégia baseada no tribunal
+    if ($strategy === 'auto') {
+        $strategy = chooseStrategy($tribunal_type, $url_path);
+        logMessage("Estratégia automática escolhida: " . $strategy);
     }
     
-    if (!$domain_allowed) {
-        logMessage("Domínio não permitido: " . $url_host);
-        // Para desenvolvimento, vamos permitir todos os domínios
-        // throw new Exception("Domínio não permitido por segurança");
-        logMessage("AVISO: Domínio não está na lista permitida, mas prosseguindo...");
-    }
+    // Configurar headers específicos por tribunal
+    $headers = getHeadersForTribunal($tribunal_type, $pdf_url);
+    debugLog("Headers configurados: " . print_r($headers, true));
     
     logMessage("Iniciando download do PDF...");
     
-    // Configurar cURL para simular um navegador real
+    // Configurar cURL
     $ch = curl_init();
     
-    // Headers que simulam um navegador real
-    $headers = [
-        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept: application/pdf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language: pt-BR,pt;q=0.9,en;q=0.8',
-        'Accept-Encoding: gzip, deflate, br',
-        'DNT: 1',
-        'Connection: keep-alive',
-        'Upgrade-Insecure-Requests: 1',
-        'Sec-Fetch-Dest: document',
-        'Sec-Fetch-Mode: navigate',
-        'Sec-Fetch-Site: none',
-        'Cache-Control: max-age=0'
-    ];
-    
-    // Configurações do cURL
-    curl_setopt_array($ch, [
+    // Configurações básicas do cURL
+    $curl_options = [
         CURLOPT_URL => $pdf_url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
@@ -101,16 +101,37 @@ try {
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_ENCODING => '', // Aceita gzip, deflate
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        CURLOPT_REFERER => $pdf_url, // Usar a própria URL como referer
         CURLOPT_COOKIESESSION => true,
         CURLOPT_COOKIEFILE => '', // Habilita cookies
         CURLOPT_COOKIEJAR => '', // Salva cookies
         CURLOPT_HEADER => false,
         CURLOPT_NOBODY => false,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0,
-        CURLOPT_VERBOSE => false
-    ]);
+        CURLOPT_VERBOSE => $debug_mode
+    ];
+    
+    // Configurações específicas por estratégia
+    switch ($strategy) {
+        case 'pje':
+            $curl_options = array_merge($curl_options, getPjeSpecificOptions($pdf_url));
+            break;
+        case 'session':
+            $curl_options = array_merge($curl_options, getSessionBasedOptions());
+            break;
+        case 'iframe':
+            $curl_options = array_merge($curl_options, getIframeCompatibleOptions());
+            break;
+    }
+    
+    curl_setopt_array($ch, $curl_options);
+    
+    if ($debug_mode) {
+        // Capturar headers de resposta em modo debug
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
+            debugLog("Response Header: " . trim($header));
+            return strlen($header);
+        });
+    }
     
     logMessage("Executando requisição cURL...");
     
@@ -129,6 +150,7 @@ try {
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $content_length = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
     $total_time = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+    $effective_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     
     curl_close($ch);
     
@@ -136,6 +158,18 @@ try {
     logMessage("Content-Type: $content_type");
     logMessage("Tamanho: " . strlen($pdf_content) . " bytes");
     logMessage("Tempo total: {$total_time}s");
+    logMessage("URL efetiva: $effective_url");
+    
+    // Análise detalhada do conteúdo
+    $content_analysis = analyzeContent($pdf_content);
+    logMessage("Análise do conteúdo: " . json_encode($content_analysis));
+    
+    // Salvar resposta para debug (se solicitado)
+    if ($save_response && $debug_mode) {
+        $debug_file = $log_dir . '/debug_response_' . date('Y-m-d_H-i-s') . '.html';
+        file_put_contents($debug_file, $pdf_content);
+        logMessage("Resposta salva para debug: " . $debug_file);
+    }
     
     // Verificar se a requisição foi bem-sucedida
     if ($http_code !== 200) {
@@ -143,24 +177,43 @@ try {
     }
     
     // Verificar se realmente recebemos um PDF
-    $pdf_signature = substr($pdf_content, 0, 4);
-    if ($pdf_signature !== '%PDF') {
-        logMessage("AVISO: Conteúdo não parece ser um PDF. Primeiros 50 chars: " . substr($pdf_content, 0, 50));
+    if (!$content_analysis['is_pdf']) {
         
-        // Verificar se é HTML (página de erro/login)
-        if (stripos($pdf_content, '<html') !== false || stripos($pdf_content, '<!DOCTYPE') !== false) {
-            throw new Exception("Recebido HTML em vez de PDF. Pode ser necessário autenticação.");
+        if ($content_analysis['is_html']) {
+            // Se recebemos HTML, tentar estratégias alternativas
+            logMessage("HTML detectado. Tentando estratégias alternativas...");
+            
+            // Estratégia 1: Procurar por iframe ou link direto
+            $pdf_link = extractPdfLinkFromHtml($pdf_content);
+            if ($pdf_link) {
+                logMessage("Link de PDF encontrado no HTML: " . $pdf_link);
+                // Fazer nova requisição para o link encontrado
+                return downloadPdfFromLink($pdf_link, $headers);
+            }
+            
+            // Estratégia 2: Verificar se é página de login
+            if (isLoginPage($pdf_content)) {
+                throw new Exception("Página de login detectada. É necessário estar autenticado no navegador para acessar este PDF.");
+            }
+            
+            // Estratégia 3: Verificar se é página de erro
+            if (isErrorPage($pdf_content)) {
+                $error_msg = extractErrorMessage($pdf_content);
+                throw new Exception("Página de erro: " . $error_msg);
+            }
+            
+            // Se chegou aqui, retornar informações para debug
+            $preview = substr(strip_tags($pdf_content), 0, 500);
+            throw new Exception("Recebido HTML em vez de PDF. Preview: " . $preview);
         }
         
-        // Se não é HTML, pode ser PDF válido mesmo sem a assinatura padrão
-        logMessage("Prosseguindo mesmo sem assinatura PDF padrão...");
-    }
-    
-    // Verificar tamanho mínimo
-    if (strlen($pdf_content) < 1024) { // Menor que 1KB
-        logMessage("AVISO: Arquivo muito pequeno: " . strlen($pdf_content) . " bytes");
-        logMessage("Conteúdo: " . substr($pdf_content, 0, 200));
-        throw new Exception("Arquivo PDF muito pequeno ou inválido");
+        // Verificar tamanho mínimo
+        if (strlen($pdf_content) < 1024) {
+            logMessage("AVISO: Arquivo muito pequeno: " . strlen($pdf_content) . " bytes");
+            $preview = substr($pdf_content, 0, 200);
+            logMessage("Conteúdo: " . $preview);
+            throw new Exception("Arquivo PDF muito pequeno ou inválido. Conteúdo: " . $preview);
+        }
     }
     
     logMessage("PDF baixado com sucesso!");
@@ -168,7 +221,10 @@ try {
     // Configurar headers para enviar o PDF
     header('Content-Type: application/pdf');
     header('Content-Length: ' . strlen($pdf_content));
-    header('Content-Disposition: inline; filename="documento.pdf"');
+    
+    // Nome do arquivo baseado na URL
+    $filename = generateFilename($pdf_url);
+    header('Content-Disposition: inline; filename="' . $filename . '"');
     
     // Headers para permitir CORS
     header('Access-Control-Allow-Origin: *');
@@ -176,7 +232,7 @@ try {
     header('Access-Control-Allow-Headers: Content-Type');
     
     // Headers de cache
-    header('Cache-Control: public, max-age=3600'); // Cache por 1 hora
+    header('Cache-Control: public, max-age=3600');
     header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
     
     // Enviar o PDF
@@ -188,16 +244,228 @@ try {
 } catch (Exception $e) {
     logMessage("ERRO: " . $e->getMessage());
     
+    // Em modo debug, incluir mais informações
+    $error_response = [
+        'error' => true,
+        'message' => $e->getMessage(),
+        'timestamp' => date('Y-m-d H:i:s'),
+        'url' => $pdf_url ?? 'não fornecida',
+        'strategy' => $strategy ?? 'não definida'
+    ];
+    
+    if ($debug_mode && isset($content_analysis)) {
+        $error_response['content_analysis'] = $content_analysis;
+        $error_response['http_code'] = $http_code ?? 'não disponível';
+        $error_response['content_type'] = $content_type ?? 'não disponível';
+    }
+    
     // Enviar erro como JSON
     header('Content-Type: application/json');
     header('Access-Control-Allow-Origin: *');
     http_response_code(500);
     
-    echo json_encode([
-        'error' => true,
-        'message' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
+    echo json_encode($error_response, JSON_UNESCAPED_UNICODE);
+}
+
+// ===== FUNÇÕES AUXILIARES =====
+
+function detectTribunalType($host) {
+    if (strpos($host, 'pje.') !== false) return 'pje';
+    if (strpos($host, 'tjsp.') !== false) return 'tjsp';
+    if (strpos($host, 'tjrj.') !== false) return 'tjrj';
+    if (strpos($host, 'trf') !== false) return 'trf';
+    if (strpos($host, 'stf.') !== false) return 'stf';
+    if (strpos($host, 'stj.') !== false) return 'stj';
+    return 'generico';
+}
+
+function chooseStrategy($tribunal_type, $path) {
+    switch ($tribunal_type) {
+        case 'pje':
+            return 'pje';
+        case 'tjsp':
+        case 'tjrj':
+            return 'session';
+        default:
+            return 'direct';
+    }
+}
+
+function getHeadersForTribunal($tribunal_type, $url) {
+    $base_headers = [
+        'Accept: application/pdf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language: pt-BR,pt;q=0.9,en;q=0.8',
+        'Accept-Encoding: gzip, deflate, br',
+        'DNT: 1',
+        'Connection: keep-alive',
+        'Upgrade-Insecure-Requests: 1',
+        'Sec-Fetch-Dest: document',
+        'Sec-Fetch-Mode: navigate',
+        'Sec-Fetch-Site: cross-site',
+        'Cache-Control: max-age=0'
+    ];
+    
+    switch ($tribunal_type) {
+        case 'pje':
+            return array_merge($base_headers, [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer: ' . dirname($url),
+                'X-Requested-With: XMLHttpRequest',
+                'Accept: application/pdf,*/*'
+            ]);
+            
+        case 'tjsp':
+            return array_merge($base_headers, [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer: https://esaj.tjsp.jus.br/'
+            ]);
+            
+        default:
+            return array_merge($base_headers, [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            ]);
+    }
+}
+
+function getPjeSpecificOptions($url) {
+    return [
+        CURLOPT_REFERER => dirname($url),
+        CURLOPT_AUTOREFERER => true,
+        CURLOPT_FRESH_CONNECT => true,
+        CURLOPT_FORBID_REUSE => false,
+        CURLOPT_TCP_KEEPALIVE => 1,
+        CURLOPT_TCP_KEEPIDLE => 2,
+        CURLOPT_TCP_KEEPINTVL => 2
+    ];
+}
+
+function getSessionBasedOptions() {
+    return [
+        CURLOPT_COOKIESESSION => true,
+        CURLOPT_FRESH_CONNECT => false,
+        CURLOPT_FORBID_REUSE => false
+    ];
+}
+
+function getIframeCompatibleOptions() {
+    return [
+        CURLOPT_REFERER => '',
+        CURLOPT_AUTOREFERER => false
+    ];
+}
+
+function analyzeContent($content) {
+    $analysis = [
+        'size' => strlen($content),
+        'is_pdf' => false,
+        'is_html' => false,
+        'is_json' => false,
+        'is_empty' => strlen($content) < 10,
+        'preview' => substr($content, 0, 100)
+    ];
+    
+    // Verificar se é PDF
+    if (substr($content, 0, 4) === '%PDF') {
+        $analysis['is_pdf'] = true;
+    }
+    
+    // Verificar se é HTML
+    if (stripos($content, '<html') !== false || stripos($content, '<!DOCTYPE') !== false) {
+        $analysis['is_html'] = true;
+    }
+    
+    // Verificar se é JSON
+    if (substr(trim($content), 0, 1) === '{' || substr(trim($content), 0, 1) === '[') {
+        $analysis['is_json'] = true;
+    }
+    
+    return $analysis;
+}
+
+function isLoginPage($html) {
+    $login_indicators = [
+        'login', 'senha', 'password', 'entrar', 'autenticar',
+        'type="password"', 'name="password"', 'id="password"',
+        'Usuario', 'CPF', 'CNPJ'
+    ];
+    
+    $html_lower = strtolower($html);
+    foreach ($login_indicators as $indicator) {
+        if (strpos($html_lower, strtolower($indicator)) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function isErrorPage($html) {
+    $error_indicators = [
+        'erro', 'error', 'não encontrado', 'not found',
+        'acesso negado', 'access denied', 'forbidden',
+        'sessão expirada', 'session expired'
+    ];
+    
+    $html_lower = strtolower($html);
+    foreach ($error_indicators as $indicator) {
+        if (strpos($html_lower, strtolower($indicator)) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function extractErrorMessage($html) {
+    // Tentar extrair mensagem de erro comum
+    $patterns = [
+        '/<title[^>]*>(.*?)<\/title>/i',
+        '/<h1[^>]*>(.*?)<\/h1>/i',
+        '/<div[^>]*class[^>]*error[^>]*>(.*?)<\/div>/i'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $html, $matches)) {
+            return strip_tags($matches[1]);
+        }
+    }
+    
+    return 'Erro não identificado';
+}
+
+function extractPdfLinkFromHtml($html) {
+    // Procurar por links diretos para PDF
+    $patterns = [
+        '/src=["\']([^"\']*\.pdf[^"\']*)["\']/',
+        '/href=["\']([^"\']*\.pdf[^"\']*)["\']/',
+        '/url\(["\']?([^"\']*\.pdf[^"\']*)["\']?\)/'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $html, $matches)) {
+            return $matches[1];
+        }
+    }
+    
+    return null;
+}
+
+function downloadPdfFromLink($link, $headers) {
+    // Implementar download recursivo (simplificado)
+    logMessage("Tentando download recursivo do link: " . $link);
+    // Por enquanto, retornar erro - implementar se necessário
+    throw new Exception("Link PDF encontrado, mas download recursivo ainda não implementado: " . $link);
+}
+
+function generateFilename($url) {
+    $path = parse_url($url, PHP_URL_PATH);
+    $filename = basename($path);
+    
+    if (empty($filename) || !strpos($filename, '.')) {
+        $filename = 'documento_' . date('Y-m-d_H-i-s') . '.pdf';
+    }
+    
+    return $filename;
 }
 
 // Função para lidar com requisições OPTIONS (preflight CORS)

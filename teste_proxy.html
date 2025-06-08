@@ -114,8 +114,27 @@
         </div>
         
         <div class="form-group">
+            <label>
+                <input type="checkbox" id="debugMode"> Modo Debug (logs detalhados)
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label for="strategy">Estratégia:</label>
+            <select id="strategy">
+                <option value="auto">Automática (recomendado)</option>
+                <option value="direct">Direta</option>
+                <option value="pje">PJe Específico</option>
+                <option value="session">Baseada em Sessão</option>
+                <option value="iframe">Compatível com Iframe</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
             <button onclick="testarProxy()">🔍 Testar Proxy</button>
             <button onclick="testarDireto()">🌐 Testar Direto (comparação)</button>
+            <button onclick="testarIframe()">🖼️ Testar via Iframe</button>
+            <button onclick="verLogs()">📋 Ver Logs do Servidor</button>
             <button onclick="limparLog()">🗑️ Limpar Log</button>
         </div>
         
@@ -222,10 +241,15 @@
                 return;
             }
             
-            // Construir URL do proxy (assumindo que está no mesmo diretório)
-            const proxyUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}`;
+            const debugMode = document.getElementById('debugMode').checked;
+            const strategy = document.getElementById('strategy').value;
             
-            log('🔍 Testando via proxy: ' + proxyUrl);
+            // Construir URL do proxy com parâmetros
+            let proxyUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}`;
+            if (debugMode) proxyUrl += '&debug=1&save=1';
+            if (strategy !== 'auto') proxyUrl += `&strategy=${strategy}`;
+            
+            log(`🔍 Testando via proxy (${strategy}): ` + proxyUrl);
             showStatus('Testando via proxy...', 'info');
             
             try {
@@ -247,10 +271,113 @@
                     } else if (contentType && contentType.includes('application/json')) {
                         // Erro retornado pelo proxy
                         const errorData = await response.json();
+                        log('❌ Detalhes do erro: ' + JSON.stringify(errorData, null, 2), 'error');
                         throw new Error(errorData.message || 'Erro desconhecido do proxy');
                     } else {
                         log('⚠️ Resposta do proxy não é um PDF', 'warning');
                         showStatus('Proxy respondeu, mas não retornou um PDF válido.', 'warning');
+                    }
+                } else {
+                    // Tentar ler mensagem de erro
+                    const text = await response.text();
+                    try {
+                        const errorData = JSON.parse(text);
+                        log('❌ Detalhes do erro: ' + JSON.stringify(errorData, null, 2), 'error');
+                        throw new Error(errorData.message || 'Erro do proxy');
+                    } catch {
+                        throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no proxy: ${error.message}`, 'error');
+                showStatus(`Proxy falhou: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testarIframe() {
+            const url = document.getElementById('pdfUrl').value.trim();
+            if (!url) {
+                showStatus('Por favor, insira uma URL', 'error');
+                return;
+            }
+            
+            log('🖼️ Testando via iframe direto: ' + url);
+            showStatus('Testando iframe...', 'info');
+            
+            try {
+                // Criar iframe temporário para teste
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.height = '600px';
+                iframe.style.border = '1px solid #ddd';
+                
+                // Tentar carregar no iframe
+                iframe.src = url;
+                
+                // Aguardar carregamento
+                iframe.onload = function() {
+                    log('✅ Iframe carregou com sucesso!', 'success');
+                    showStatus('PDF carregou no iframe! Pode usar estratégia de captura.', 'success');
+                    
+                    // Substituir o viewer atual
+                    const viewer = document.getElementById('pdfViewer');
+                    viewer.parentNode.replaceChild(iframe, viewer);
+                    iframe.id = 'pdfViewer';
+                    
+                    document.getElementById('resultContainer').style.display = 'block';
+                };
+                
+                iframe.onerror = function() {
+                    log('❌ Iframe falhou ao carregar', 'error');
+                    showStatus('Iframe não conseguiu carregar o PDF.', 'error');
+                };
+                
+                // Timeout para verificar se carregou
+                setTimeout(() => {
+                    if (!iframe.contentDocument) {
+                        log('⚠️ Timeout no iframe - pode estar bloqueado por CORS', 'warning');
+                        showStatus('Iframe demorou para carregar - possível bloqueio CORS.', 'warning');
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                log(`❌ Erro no teste de iframe: ${error.message}`, 'error');
+                showStatus(`Iframe falhou: ${error.message}`, 'error');
+            }
+        }
+        
+        async function verLogs() {
+            log('📋 Buscando logs do servidor...');
+            
+            try {
+                // Tentar acessar o log do proxy
+                const response = await fetch('pdf_proxy_log.txt');
+                
+                if (response.ok) {
+                    const logContent = await response.text();
+                    const lines = logContent.split('\n').slice(-50); // Últimas 50 linhas
+                    
+                    log('📋 === LOGS DO SERVIDOR (últimas 50 linhas) ===');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            if (line.includes('ERRO')) {
+                                log(line, 'error');
+                            } else if (line.includes('DEBUG')) {
+                                log(line, 'warning');
+                            } else {
+                                log(line, 'info');
+                            }
+                        }
+                    });
+                    log('📋 === FIM DOS LOGS ===');
+                } else {
+                    log('❌ Não foi possível acessar os logs do servidor', 'error');
+                }
+            } catch (error) {
+                log(`❌ Erro ao buscar logs: ${error.message}`, 'error');
+            }
+        }', 'warning');
                     }
                 } else {
                     // Tentar ler mensagem de erro
