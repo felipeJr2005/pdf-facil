@@ -51,10 +51,15 @@
         }
         button:hover {
             background: #005a87;
+            transform: translateY(-1px);
         }
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
+            transform: none;
+        }
+        button:active {
+            transform: translateY(0);
         }
         .status {
             padding: 10px;
@@ -233,11 +238,23 @@
                 const response = await fetch('pdf_proxy.php?test=ping');
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    log('✅ Proxy conectado: ' + data.message, 'success');
-                    log('📅 Timestamp: ' + data.timestamp, 'info');
-                    log('🐘 PHP Version: ' + data.php_version, 'info');
-                    showStatus('Proxy funcionando corretamente!', 'success');
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        log('✅ Proxy conectado: ' + data.message, 'success');
+                        log('📅 Timestamp: ' + data.timestamp, 'info');
+                        log('🐘 PHP Version: ' + data.php_version, 'info');
+                        if (data.features) {
+                            log('🔧 Funcionalidades: ' + data.features.join(', '), 'info');
+                        }
+                        showStatus('Proxy funcionando corretamente!', 'success');
+                    } else {
+                        // Recebeu HTML em vez de JSON
+                        const text = await response.text();
+                        log('⚠️ Proxy retornou HTML em vez de JSON:', 'warning');
+                        log('Conteúdo: ' + text.substring(0, 200), 'warning');
+                        showStatus('Proxy respondeu mas com formato incorreto.', 'warning');
+                    }
                 } else {
                     throw new Error(`HTTP ${response.status}`);
                 }
@@ -404,17 +421,29 @@
                     const captureControls = document.createElement('div');
                     captureControls.style.margin = '10px';
                     captureControls.style.textAlign = 'center';
-                    captureControls.innerHTML = `
-                        <button onclick="forcarDownloadIframe()" style="background: #28a745; margin: 5px;">
-                            📥 Forçar Download
-                        </button>
-                        <button onclick="capturarParaServidor()" style="background: #007cba; margin: 5px;">
-                            🚀 Capturar para Servidor
-                        </button>
-                        <button onclick="abrirEmNovaAba()" style="background: #6f42c1; margin: 5px;">
-                            🔗 Abrir em Nova Aba
-                        </button>
-                    `;
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = '📥 Forçar Download';
+                    downloadBtn.style.background = '#28a745';
+                    downloadBtn.style.margin = '5px';
+                    downloadBtn.onclick = forcarDownloadIframe;
+                    
+                    const captureBtn = document.createElement('button');
+                    captureBtn.textContent = '🚀 Capturar para Servidor';
+                    captureBtn.style.background = '#007cba';
+                    captureBtn.style.margin = '5px';
+                    captureBtn.onclick = capturarParaServidor;
+                    
+                    const openBtn = document.createElement('button');
+                    openBtn.textContent = '🔗 Abrir em Nova Aba';
+                    openBtn.style.background = '#6f42c1';
+                    openBtn.style.margin = '5px';
+                    openBtn.onclick = abrirEmNovaAba;
+                    
+                    captureControls.appendChild(downloadBtn);
+                    captureControls.appendChild(captureBtn);
+                    captureControls.appendChild(openBtn);
+                    
                     container.appendChild(captureControls);
                     
                     // Verificar periodicamente se virou PDF
@@ -515,7 +544,7 @@
         
         // ===== FUNÇÕES DE CAPTURA =====
         
-        function forcarDownloadIframe() {
+        window.forcarDownloadIframe = function() {
             log('📥 Forçando download do iframe...');
             
             try {
@@ -562,9 +591,9 @@
                 log(`❌ Erro no download: ${error.message}`, 'error');
                 showStatus('Erro no download. Tente "Abrir em Nova Aba".', 'error');
             }
-        }
+        };
         
-        async function capturarParaServidor() {
+        window.capturarParaServidor = async function() {
             log('🚀 Iniciando captura para servidor...');
             
             try {
@@ -624,9 +653,9 @@
                 log(`❌ Erro na captura pelo servidor: ${error.message}`, 'error');
                 showStatus('Falha na captura pelo servidor. Tente download direto.', 'error');
             }
-        }
+        };
         
-        function abrirEmNovaAba() {
+        window.abrirEmNovaAba = function() {
             const pdfUrl = window.detectedPdfUrl || document.getElementById('pdfUrl').value;
             if (!pdfUrl) {
                 log('❌ URL do PDF não encontrada', 'error');
@@ -636,7 +665,7 @@
             log('🔗 Abrindo PDF em nova aba: ' + pdfUrl);
             window.open(pdfUrl, '_blank');
             showStatus('PDF aberto em nova aba!', 'success');
-        }
+        };
         
         // Log inicial
         document.addEventListener('DOMContentLoaded', function() {
@@ -654,6 +683,26 @@
             log('4. Teste primeiro o acesso direto para ver se há CORS');
             log('5. Se falhar, teste via proxy ou iframe');
             log('6. Use os botões de captura quando o PDF aparecer');
+            
+            // Debug: verificar se elementos existem
+            const elementos = ['pdfUrl', 'debugMode', 'strategy'];
+            elementos.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    log(`✅ Elemento ${id} encontrado`);
+                } else {
+                    log(`❌ Elemento ${id} NÃO encontrado`, 'error');
+                }
+            });
+            
+            // Adicionar listeners de debug para todos os botões
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON') {
+                    log(`🖱️ Clique no botão: ${e.target.textContent || e.target.innerHTML}`, 'info');
+                }
+            });
+            
+            log('🎯 Sistema pronto para uso!');
         });
     </script>
 </body>
