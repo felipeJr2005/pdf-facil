@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator de PDF do PJe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #f5f5f5;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        #result-text {
+            width: 100%;
+            min-height: 200px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #log-container {
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .log-entry {
+            margin-bottom: 3px;
+        }
+        .text-info { color: #0c5460; }
+        .text-success { color: #155724; }
+        .text-error { color: #721c24; }
+        .hidden {
+            display: none;
+        }
+        .spinner {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Extrator de PDF do PJe</h1>
+    
+    <div class="card">
+        <div class="card-header">Entrada</div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="pje-pdf-url" class="form-label">Link do PDF do PJe</label>
+                <input type="url" class="form-control" id="pje-pdf-url" placeholder="Cole o link do PDF aqui">
+            </div>
+            
+            <div class="btn-group">
+                <button id="btn-fetch-direct" class="btn btn-primary">Método 1: Direto</button>
+                <button id="btn-fetch-creds" class="btn btn-primary">Método 2: Com Credenciais</button>
+                <button id="btn-fetch-xhr" class="btn btn-primary">Método 3: XHR</button>
+            </div>
+            
+            <div id="status-message" class="alert hidden"></div>
+        </div>
+    </div>
+    
+    <div id="result-container" class="card hidden">
+        <div class="card-header">
+            <span>Texto Extraído</span>
+            <button id="btn-copy-text" class="btn" style="float: right; margin-top: -5px;">Copiar</button>
+        </div>
+        <div class="card-body">
+            <textarea id="result-text" readonly></textarea>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Log</div>
+        <div class="card-body">
+            <div id="log-container"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Elementos DOM
+        const urlInput = document.getElementById('pje-pdf-url');
+        const btnDirect = document.getElementById('btn-fetch-direct');
+        const btnCreds = document.getElementById('btn-fetch-creds');
+        const btnXhr = document.getElementById('btn-fetch-xhr');
+        const statusMessage = document.getElementById('status-message');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result-text');
+        const btnCopyText = document.getElementById('btn-copy-text');
+        const logContainer = document.getElementById('log-container');
+        
+        // Adicionar event listeners
+        btnDirect.addEventListener('click', () => fetchPdf('direct'));
+        btnCreds.addEventListener('click', () => fetchPdf('creds'));
+        btnXhr.addEventListener('click', () => fetchPdf('xhr'));
+        btnCopyText.addEventListener('click', copyText);
+        
+        // Exibir mensagem de status
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = `alert alert-${type}`;
+            statusMessage.classList.remove('hidden');
+        }
+        
+        // Adicionar entrada ao log
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="text-${type}">[${timestamp}]</span> ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        // Copiar texto
+        function copyText() {
+            if (!resultText.value) {
+                showStatus('Não há texto para copiar', 'warning');
+                return;
+            }
+            
+            try {
+                resultText.select();
+                document.execCommand('copy');
+                showStatus('Texto copiado para a área de transferência', 'success');
+            } catch (error) {
+                showStatus('Erro ao copiar texto: ' + error.message, 'danger');
+            }
+        }
+        
+        // Função principal para buscar e processar PDF
+        async function fetchPdf(method) {
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showStatus('Por favor, insira um link do PDF', 'warning');
+                return;
+            }
+            
+            // Validar URL (opcional)
+            if (!url.includes('pje') && !confirm('Esta URL não parece ser do PJe. Continuar mesmo assim?')) {
+                return;
+            }
+            
+            // Resetar UI
+            resultContainer.classList.add('hidden');
+            resultText.value = '';
+            
+            // Mostrar status de carregamento
+            showStatus('Buscando PDF, aguarde...', 'info');
+            
+            // Desabilitar botões durante o carregamento
+            [btnDirect, btnCreds, btnXhr].forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner"></span> Aguarde...`;
+            });
+            
+            try {
+                log(`Tentando buscar PDF (${method}): ${url}`, 'info');
+                
+                // Tentar buscar o PDF com o método selecionado
+                let pdfArrayBuffer;
+                
+                switch (method) {
+                    case 'direct':
+                        pdfArrayBuffer = await fetchPdfDirect(url);
+                        break;
+                    case 'creds':
+                        pdfArrayBuffer = await fetchPdfWithCredentials(url);
+                        break;
+                    case 'xhr':
+                        pdfArrayBuffer = await fetchPdfWithXhr(url);
+                        break;
+                }
+                
+                if (!pdfArrayBuffer) {
+                    throw new Error('Não foi possível obter dados do PDF');
+                }
+                
+                log(`PDF baixado com sucesso (${formatBytes(pdfArrayBuffer.byteLength)})`, 'success');
+                
+                // Carregar PDF.js se ainda não estiver carregado
+                if (typeof pdfjsLib === 'undefined') {
+                    log('Carregando biblioteca PDF.js...', 'info');
+                    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js');
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+                }
+                
+                // Extrair texto do PDF
+                log('Extraindo texto do PDF...', 'info');
+                const text = await extractTextFromPdf(pdfArrayBuffer);
+                
+                if (text.trim()) {
+                    resultText.value = text;
+                    resultContainer.classList.remove('hidden');
+                    showStatus('Texto extraído com sucesso!', 'success');
+                    log('Texto extraído com sucesso', 'success');
+                } else {
+                    showStatus('Não foi possível extrair texto do PDF. Pode ser uma imagem escaneada.', 'warning');
+                    log('PDF sem texto extraível', 'info');
+                }
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showStatus(`Erro: ${error.message}`, 'danger');
+                log(`Erro: ${error.message}`, 'error');
+                
+                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    log('Este erro pode estar relacionado a restrições de CORS. Tente outro método.', 'info');
+                }
+            } finally {
+                // Restaurar botões
+                btnDirect.disabled = false;
+                btnDirect.textContent = 'Método 1: Direto';
+                
+                btnCreds.disabled = false;
+                btnCreds.textContent = 'Método 2: Com Credenciais';
+                
+                btnXhr.disabled = false;
+                btnXhr.textContent = 'Método 3: XHR';
+            }
+        }
+        
+        // Método 1: Busca direta
+        async function fetchPdfDirect(url) {
+            log('Usando método direto para buscar PDF', 'info');
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            return await response.arrayBuffer();
+        }
+        
+        // Método 2: Com credenciais
+        async function fetchPdfWithCredentials(url) {
+            log('Usando método com credenciais para buscar PDF', 'info');
+            const response = await fetch(url, {
+                credentials: 'include',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/pdf,*/*',
+                    'Referer': new URL(url).origin
+                }
+            });
+            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+            return await response.arrayBuffer();
+        }
+        
+        // Método 3: Com XMLHttpRequest (pode contornar algumas restrições de CORS)
+        function fetchPdfWithXhr(url) {
+            log('Usando método XHR para buscar PDF', 'info');
+            
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.responseType = 'arraybuffer';
+                xhr.withCredentials = true;
+                
+                xhr.onload = function() {
+                    if (this.status >= 200 && this.status < 300) {
+                        resolve(this.response);
+                    } else {
+                        reject(new Error(`Erro HTTP: ${this.status}`));
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    reject(new Error('Erro de rede ao buscar o PDF'));
+                };
+                
+                xhr.send();
+            });
+        }
+        
+        // Extrair texto do PDF
+        async function extractTextFromPdf(arrayBuffer) {
+            const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(arrayBuffer)});
+            const pdf = await loadingTask.promise;
+            
+            log(`PDF carregado: ${pdf.numPages} página(s)`, 'success');
+            
+            let fullText = '';
+            
+            // Processar cada página
+            for (let i = 1; i <= pdf.numPages; i++) {
+                log(`Processando página ${i}...`, 'info');
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                
+                // Extrair texto das items
+                const pageText = textContent.items
+                    .map(item => item.str)
+                    .join(' ');
+                    
+                fullText += `--- Página ${i} ---\n${pageText}\n\n`;
+            }
+            
+            return fullText;
+        }
+        
+        // Carregar script dinamicamente
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Formatar tamanho de arquivo
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        
+        // Log inicial
+        log('Extrator de PDF do PJe inicializado', 'info');
+    </script>
+</body>
+</html>
