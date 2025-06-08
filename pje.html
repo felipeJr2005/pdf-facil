@@ -2,474 +2,68 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PJe PDF Interceptor</title>
+    <title>PJe Simples - Teste Básico</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .panel { border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; }
         .form-control { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .btn { padding: 8px 15px; margin-right: 10px; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; border: none; }
+        .btn { padding: 8px 15px; margin-right: 10px; cursor: pointer; background: #007bff; color: white; border: none; }
         #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ddd; }
-        #log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
-        .info { color: blue; }
+        #log { background: #f8f9fa; padding: 10px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; }
     </style>
 </head>
 <body>
-    <h2>PJe PDF Interceptor - Teste de Captura</h2>
+    <h2>PJe Simples - Só testar se abre</h2>
     
-    <div class="panel">
-        <h3>1. URL do PJe</h3>
-        <input type="url" id="pdf-url" class="form-control" placeholder="Cole o link do PDF do PJe aqui" value="https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/137195928">
-        <button id="btn-load" class="btn btn-primary">Carregar PJe</button>
-        <button id="btn-start-intercept" class="btn btn-primary">🕵️ Ativar Interceptação</button>
-        <button id="btn-clear-log" class="btn">Limpar Log</button>
-    </div>
+    <input type="url" id="pdf-url" class="form-control" placeholder="URL do PJe" value="https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/137195928">
+    <button id="btn-load" class="btn">Carregar</button>
+    <button id="btn-test" class="btn">Teste Básico</button>
     
-    <div class="panel">
-        <h3>2. PJe Iframe</h3>
-        <iframe id="pdf-viewer"></iframe>
-    </div>
+    <br><br>
+    <iframe id="pdf-viewer"></iframe>
     
-    <div class="panel">
-        <h3>3. Log de Interceptação</h3>
-        <div id="log">Aguardando interceptação...</div>
-    </div>
+    <div id="log">Log...</div>
 
     <script>
         const urlInput = document.getElementById('pdf-url');
         const btnLoad = document.getElementById('btn-load');
-        const btnIntercept = document.getElementById('btn-start-intercept');
-        const btnClearLog = document.getElementById('btn-clear-log');
+        const btnTest = document.getElementById('btn-test');
         const pdfViewer = document.getElementById('pdf-viewer');
         const logDiv = document.getElementById('log');
         
-        let interceptActive = false;
-        let capturedPdf = null;
-        
-        // Função de log
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
-            logDiv.innerHTML += `[${timestamp}] <span class="${className}">${message}</span>\n`;
+        function log(msg) {
+            logDiv.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
             logDiv.scrollTop = logDiv.scrollHeight;
-            console.log(`[${timestamp}] ${message}`);
         }
         
-        // Carregar PJe
+        // Só carregar iframe - SIMPLES
         btnLoad.addEventListener('click', function() {
             const url = urlInput.value.trim();
-            if (!url) {
-                log('❌ URL não informada', 'error');
-                return;
-            }
-            
-            log('🔄 Carregando PJe no iframe...', 'info');
+            log('Carregando: ' + url);
             pdfViewer.src = url;
-            
-            pdfViewer.onload = function() {
-                log('✅ PJe carregado no iframe', 'success');
-                
-                // Tentar injetar interceptador no iframe
-                if (interceptActive) {
-                    setTimeout(() => {
-                        injectInterceptorIntoIframe();
-                    }, 2000); // Aguardar 2s para garantir que carregou
-                }
-                
-                log('💡 Faça login e prepare para clicar no botão roxo', 'info');
-            };
-            
-            pdfViewer.onerror = function() {
-                log('❌ Erro ao carregar PJe no iframe', 'error');
-            };
         });
         
-        // Ativar interceptação
-        btnIntercept.addEventListener('click', function() {
-            if (interceptActive) {
-                log('⚠️ Interceptação já está ativa', 'info');
-                return;
-            }
+        // Teste básico de interceptação - SEM INJEÇÃO
+        btnTest.addEventListener('click', function() {
+            log('=== TESTE BÁSICO ===');
             
-            interceptActive = true;
-            log('🕵️ Ativando interceptação de downloads...', 'info');
-            
-            // Setup interceptação no contexto principal (fallback)
-            setupInterception();
-            
-            // Se iframe já está carregado, injetar também
-            if (pdfViewer.src) {
-                setTimeout(() => {
-                    injectInterceptorIntoIframe();
-                }, 1000);
-            }
-            
-            btnIntercept.textContent = '✅ Interceptação Ativa';
-            btnIntercept.disabled = true;
-        });
-        
-        // Limpar log
-        btnClearLog.addEventListener('click', function() {
-            logDiv.innerHTML = 'Log limpo...\n';
-        });
-        
-        // Setup da interceptação
-        function setupInterception() {
-            log('🔧 Configurando interceptação de fetch/XMLHttpRequest...', 'info');
-            
-            // Interceptar fetch
+            // Interceptar fetch APENAS no contexto atual
             const originalFetch = window.fetch;
             window.fetch = function(...args) {
                 const url = args[0];
-                
                 if (typeof url === 'string') {
-                    log(`🔍 Fetch detectado: ${url.substring(0, 100)}...`, 'info');
-                    
-                    // URLs que nos interessam
-                    const isPjeDownload = url.includes('pje.cloud.tjpe.jus.br') && url.includes('documento/download');
-                    const isMinioUrl = url.includes('docs-1g-minio-api.pje.cloud.tjpe.jus.br');
-                    const isAwsSignedUrl = url.includes('X-Amz-Algorithm');
-                    
-                    if (isPjeDownload || isMinioUrl || isAwsSignedUrl) {
-                        log(`🎯 URL PJe interceptada!`, 'success');
-                        log(`📋 URL: ${url.substring(0, 150)}...`, 'info');
-                        
-                        return originalFetch.apply(this, args)
-                            .then(response => {
-                                log(`📄 Resposta recebida: Status ${response.status}`, 'info');
-                                
-                                if (response.ok) {
-                                    const contentType = response.headers.get('content-type') || '';
-                                    const contentDisposition = response.headers.get('content-disposition') || '';
-                                    
-                                    log(`📄 Content-Type: ${contentType}`, 'info');
-                                    log(`📎 Content-Disposition: ${contentDisposition}`, 'info');
-                                    
-                                    // Se é PDF ou conteúdo baixável
-                                    if (contentType.includes('application/pdf') || 
-                                        contentType.includes('application/octet-stream') ||
-                                        isMinioUrl || isAwsSignedUrl) {
-                                        
-                                        log('🎉 PDF DETECTADO! Capturando...', 'success');
-                                        
-                                        // Clonar resposta para capturar
-                                        const clonedResponse = response.clone();
-                                        clonedResponse.blob().then(blob => {
-                                            log(`💾 PDF capturado! Tamanho: ${blob.size} bytes`, 'success');
-                                            
-                                            // Salvar PDF capturado
-                                            capturedPdf = blob;
-                                            
-                                            // Verificar se é realmente PDF
-                                            const reader = new FileReader();
-                                            reader.onload = function(e) {
-                                                const arrayBuffer = e.target.result;
-                                                const bytes = new Uint8Array(arrayBuffer.slice(0, 4));
-                                                const header = String.fromCharCode(...bytes);
-                                                
-                                                if (header === '%PDF') {
-                                                    log('✅ CONFIRMADO: É um PDF válido!', 'success');
-                                                    log('🎯 CAPTURA REALIZADA COM SUCESSO!', 'success');
-                                                    
-                                                    // Aqui podemos adicionar o OCR depois
-                                                    log('💡 Próximo passo: implementar OCR...', 'info');
-                                                } else {
-                                                    log(`⚠️ Header não é PDF: ${header}`, 'error');
-                                                }
-                                            };
-                                            reader.readAsArrayBuffer(blob.slice(0, 10));
-                                            
-                                        }).catch(err => {
-                                            log(`❌ Erro ao capturar blob: ${err.message}`, 'error');
-                                        });
-                                    }
-                                } else {
-                                    log(`❌ Resposta com erro: ${response.status} - ${response.statusText}`, 'error');
-                                }
-                                
-                                return response;
-                            })
-                            .catch(error => {
-                                log(`❌ Erro na interceptação: ${error.message}`, 'error');
-                                return Promise.reject(error);
-                            });
-                    }
+                    log('FETCH: ' + url.substring(0, 80) + '...');
                 }
-                
                 return originalFetch.apply(this, args);
             };
             
-            // Interceptar XMLHttpRequest
-            const originalXHR = window.XMLHttpRequest;
-            window.XMLHttpRequest = function() {
-                const xhr = new originalXHR();
-                const originalOpen = xhr.open;
-                
-                xhr.open = function(method, url, ...args) {
-                    if (typeof url === 'string' && (
-                        url.includes('documento/download') || 
-                        url.includes('docs-1g-minio-api') ||
-                        url.includes('X-Amz-Algorithm')
-                    )) {
-                        log(`🔍 XHR interceptado: ${url.substring(0, 100)}...`, 'info');
-                        
-                        xhr.addEventListener('load', function() {
-                            if (xhr.status === 200) {
-                                log('🎉 XHR PDF detectado!', 'success');
-                                
-                                if (xhr.response instanceof Blob) {
-                                    log(`💾 PDF XHR capturado! Tamanho: ${xhr.response.size} bytes`, 'success');
-                                    capturedPdf = xhr.response;
-                                } else if (xhr.responseType === 'arraybuffer') {
-                                    const blob = new Blob([xhr.response], {type: 'application/pdf'});
-                                    log(`💾 PDF XHR (ArrayBuffer) capturado! Tamanho: ${blob.size} bytes`, 'success');
-                                    capturedPdf = blob;
-                                }
-                            }
-                        });
-                    }
-                    
-                    return originalOpen.apply(this, [method, url, ...args]);
-                };
-                
-                return xhr;
-            };
-            
-            // Interceptar downloads diretos (elementos <a>)
-            document.addEventListener('click', function(event) {
-                const target = event.target.closest('a');
-                if (target && target.href) {
-                    const href = target.href;
-                    
-                    if (href.includes('download') || href.includes('documento') || 
-                        href.includes('minio') || href.includes('.pdf')) {
-                        log(`🖱️ Click em link de download: ${href.substring(0, 100)}...`, 'info');
-                    }
-                }
-            }, true);
-            
-            log('✅ Interceptação ativa!', 'success');
-            log('🎯 Monitorando: fetch, XHR, clicks em links', 'info');
-        }
-        
-        // Injetar interceptor no iframe
-        function injectInterceptorIntoIframe() {
-            try {
-                log('🔄 Tentando injetar interceptor no iframe...', 'info');
-                
-                const iframeDoc = pdfViewer.contentDocument || pdfViewer.contentWindow.document;
-                const iframeWindow = pdfViewer.contentWindow;
-                
-                if (!iframeDoc || !iframeWindow) {
-                    log('❌ Não foi possível acessar contexto do iframe (CORS)', 'error');
-                    log('🔧 Tentando abordagem alternativa...', 'info');
-                    
-                    // Abordagem alternativa: monitorar mudanças no iframe
-                    monitorIframeActivity();
-                    return;
-                }
-                
-                log('✅ Contexto do iframe acessível!', 'success');
-                
-                // Injetar interceptor no contexto do iframe
-                const script = iframeDoc.createElement('script');
-                script.textContent = `
-                    console.log('🚀 Interceptor injetado no iframe PJe!');
-                    
-                    // Interceptar fetch no iframe
-                    const originalFetch = window.fetch;
-                    window.fetch = function(...args) {
-                        const url = args[0];
-                        
-                        if (typeof url === 'string') {
-                            console.log('🔍 [IFRAME] Fetch:', url.substring(0, 100) + '...');
-                            
-                            const isPjeDownload = url.includes('documento/download');
-                            const isMinioUrl = url.includes('docs-1g-minio-api');
-                            const isAwsSignedUrl = url.includes('X-Amz-Algorithm');
-                            
-                            if (isPjeDownload || isMinioUrl || isAwsSignedUrl) {
-                                console.log('🎯 [IFRAME] URL PJe detectada!');
-                                
-                                // Notificar página pai
-                                window.parent.postMessage({
-                                    type: 'PJE_DOWNLOAD_DETECTED',
-                                    url: url,
-                                    source: 'iframe'
-                                }, '*');
-                                
-                                return originalFetch.apply(this, args)
-                                    .then(response => {
-                                        console.log('📄 [IFRAME] Resposta:', response.status);
-                                        
-                                        if (response.ok) {
-                                            const contentType = response.headers.get('content-type') || '';
-                                            
-                                            if (contentType.includes('application/pdf') || 
-                                                contentType.includes('application/octet-stream') ||
-                                                isMinioUrl || isAwsSignedUrl) {
-                                                
-                                                console.log('🎉 [IFRAME] PDF detectado!');
-                                                
-                                                // Capturar PDF
-                                                const clonedResponse = response.clone();
-                                                clonedResponse.blob().then(blob => {
-                                                    console.log('💾 [IFRAME] PDF capturado:', blob.size, 'bytes');
-                                                    
-                                                    // Notificar página pai com o PDF
-                                                    const reader = new FileReader();
-                                                    reader.onload = function(e) {
-                                                        window.parent.postMessage({
-                                                            type: 'PJE_PDF_CAPTURED',
-                                                            data: e.target.result,
-                                                            size: blob.size,
-                                                            url: url
-                                                        }, '*');
-                                                    };
-                                                    reader.readAsDataURL(blob);
-                                                });
-                                            }
-                                        }
-                                        
-                                        return response;
-                                    });
-                            }
-                        }
-                        
-                        return originalFetch.apply(this, args);
-                    };
-                    
-                    // Interceptar XHR no iframe
-                    const originalXHR = window.XMLHttpRequest;
-                    window.XMLHttpRequest = function() {
-                        const xhr = new originalXHR();
-                        const originalOpen = xhr.open;
-                        
-                        xhr.open = function(method, url, ...args) {
-                            if (typeof url === 'string' && (
-                                url.includes('documento/download') || 
-                                url.includes('docs-1g-minio-api') ||
-                                url.includes('X-Amz-Algorithm')
-                            )) {
-                                console.log('🔍 [IFRAME] XHR:', url.substring(0, 100) + '...');
-                                
-                                xhr.addEventListener('load', function() {
-                                    if (xhr.status === 200) {
-                                        console.log('🎉 [IFRAME] XHR PDF detectado!');
-                                        
-                                        let blob;
-                                        if (xhr.response instanceof Blob) {
-                                            blob = xhr.response;
-                                        } else if (xhr.responseType === 'arraybuffer') {
-                                            blob = new Blob([xhr.response], {type: 'application/pdf'});
-                                        }
-                                        
-                                        if (blob) {
-                                            console.log('💾 [IFRAME] XHR PDF capturado:', blob.size, 'bytes');
-                                            
-                                            const reader = new FileReader();
-                                            reader.onload = function(e) {
-                                                window.parent.postMessage({
-                                                    type: 'PJE_PDF_CAPTURED',
-                                                    data: e.target.result,
-                                                    size: blob.size,
-                                                    url: url
-                                                }, '*');
-                                            };
-                                            reader.readAsDataURL(blob);
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            return originalOpen.apply(this, [method, url, ...args]);
-                        };
-                        
-                        return xhr;
-                    };
-                    
-                    console.log('✅ [IFRAME] Interceptação ativa no iframe!');
-                `;
-                
-                iframeDoc.head.appendChild(script);
-                log('✅ Interceptor injetado no iframe com sucesso!', 'success');
-                
-            } catch (error) {
-                log(`❌ Erro ao injetar no iframe: ${error.message}`, 'error');
-                log('🔧 Usando abordagem alternativa...', 'info');
-                monitorIframeActivity();
-            }
-        }
-        
-        // Monitorar atividade do iframe (quando não consegue injetar)
-        function monitorIframeActivity() {
-            log('🔍 Monitorando atividade do iframe via eventos...', 'info');
-            
-            // Monitorar mudanças na URL do iframe
-            let lastIframeUrl = '';
-            setInterval(() => {
-                try {
-                    const currentUrl = pdfViewer.contentWindow.location.href;
-                    if (currentUrl !== lastIframeUrl) {
-                        lastIframeUrl = currentUrl;
-                        log(`🔄 URL do iframe mudou: ${currentUrl}`, 'info');
-                    }
-                } catch (e) {
-                    // Ignorar erros de CORS
-                }
-            }, 1000);
-        }
-        
-        // Escutar mensagens do iframe
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type) {
-                switch (event.data.type) {
-                    case 'PJE_DOWNLOAD_DETECTED':
-                        log(`🎯 [IFRAME] Download detectado: ${event.data.url}`, 'success');
-                        break;
-                        
-                    case 'PJE_PDF_CAPTURED':
-                        log(`🎉 [IFRAME] PDF CAPTURADO! Tamanho: ${event.data.size} bytes`, 'success');
-                        
-                        // Converter de volta para blob
-                        fetch(event.data.data)
-                            .then(res => res.blob())
-                            .then(blob => {
-                                capturedPdf = blob;
-                                log('✅ PDF salvo na variável capturedPdf', 'success');
-                                log('🎯 CAPTURA REALIZADA COM SUCESSO!', 'success');
-                                
-                                // Verificar header PDF
-                                const reader = new FileReader();
-                                reader.onload = function(e) {
-                                    const arrayBuffer = e.target.result;
-                                    const bytes = new Uint8Array(arrayBuffer.slice(0, 4));
-                                    const header = String.fromCharCode(...bytes);
-                                    
-                                    if (header === '%PDF') {
-                                        log('✅ CONFIRMADO: É um PDF válido!', 'success');
-                                        log('💡 Próximo passo: implementar OCR...', 'info');
-                                    } else {
-                                        log(`⚠️ Header não é PDF: ${header}`, 'error');
-                                    }
-                                };
-                                reader.readAsArrayBuffer(blob.slice(0, 10));
-                            });
-                        break;
-                }
-            }
+            log('Interceptação ativa no contexto principal');
+            log('Agora clique no botão roxo e veja se aparece algo');
         });
-        }
         
-        // Auto-carregar URL se já estiver preenchida
-        window.addEventListener('load', function() {
-            if (urlInput.value.trim()) {
-                log('🔄 Auto-carregando URL...', 'info');
-                btnLoad.click();
-            }
-        });
+        // Auto-carregar
+        if (urlInput.value) {
+            btnLoad.click();
+        }
     </script>
 </body>
 </html>
