@@ -27,12 +27,16 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input[type="url"] {
+        input[type="url"], select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
         }
         button {
             background: #007cba;
@@ -43,6 +47,7 @@
             cursor: pointer;
             font-size: 14px;
             margin-right: 10px;
+            margin-bottom: 5px;
         }
         button:hover {
             background: #005a87;
@@ -66,7 +71,7 @@
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 15px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 12px;
@@ -105,7 +110,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔧 Teste do PDF Proxy</h1>
+        <h1>🔧 Teste do PDF Proxy v2.0</h1>
         <p>Este testador verifica se o proxy está funcionando corretamente para baixar PDFs de sites com CORS.</p>
         
         <div class="form-group">
@@ -131,6 +136,7 @@
         </div>
         
         <div class="form-group">
+            <button onclick="testarConexaoProxy()">🔧 Testar Conexão do Proxy</button>
             <button onclick="testarProxy()">🔍 Testar Proxy</button>
             <button onclick="testarDireto()">🌐 Testar Direto (comparação)</button>
             <button onclick="testarIframe()">🖼️ Testar via Iframe</button>
@@ -147,7 +153,7 @@
                 https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf
             </div>
             <div class="example-url" onclick="usarUrl(this)">
-                https://pje.trt3.jus.br/exemplo.pdf
+                https://eppg.fgv.br/sites/default/files/teste.pdf
             </div>
         </div>
         
@@ -193,6 +199,28 @@
             document.getElementById('log').innerHTML = '';
             document.getElementById('status').innerHTML = '';
             document.getElementById('resultContainer').style.display = 'none';
+        }
+        
+        async function testarConexaoProxy() {
+            log('🔧 Testando conexão com o proxy...');
+            showStatus('Verificando se o proxy está funcionando...', 'info');
+            
+            try {
+                const response = await fetch('pdf_proxy.php?test=ping');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Proxy conectado: ' + data.message, 'success');
+                    log('📅 Timestamp: ' + data.timestamp, 'info');
+                    log('🐘 PHP Version: ' + data.php_version, 'info');
+                    showStatus('Proxy funcionando corretamente!', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Erro de conexão com proxy: ${error.message}`, 'error');
+                showStatus(`Proxy não está funcionando: ${error.message}`, 'error');
+            }
         }
         
         async function testarDireto() {
@@ -335,9 +363,16 @@
                 
                 // Timeout para verificar se carregou
                 setTimeout(() => {
-                    if (!iframe.contentDocument) {
-                        log('⚠️ Timeout no iframe - pode estar bloqueado por CORS', 'warning');
-                        showStatus('Iframe demorou para carregar - possível bloqueio CORS.', 'warning');
+                    try {
+                        // Tentar acessar o conteúdo do iframe
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (!doc) {
+                            log('⚠️ Timeout no iframe - bloqueado por CORS', 'warning');
+                            showStatus('Iframe demorou para carregar - possível bloqueio CORS.', 'warning');
+                        }
+                    } catch (e) {
+                        log('⚠️ Iframe carregou mas está bloqueado por CORS', 'warning');
+                        showStatus('Iframe carregou mas conteúdo não acessível (CORS).', 'warning');
                     }
                 }, 5000);
                 
@@ -377,33 +412,18 @@
             } catch (error) {
                 log(`❌ Erro ao buscar logs: ${error.message}`, 'error');
             }
-        }', 'warning');
-                    }
-                } else {
-                    // Tentar ler mensagem de erro
-                    const text = await response.text();
-                    try {
-                        const errorData = JSON.parse(text);
-                        throw new Error(errorData.message || 'Erro do proxy');
-                    } catch {
-                        throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
-                    }
-                }
-                
-            } catch (error) {
-                log(`❌ Erro no proxy: ${error.message}`, 'error');
-                showStatus(`Proxy falhou: ${error.message}`, 'error');
-            }
         }
         
         // Log inicial
         document.addEventListener('DOMContentLoaded', function() {
-            log('🚀 Testador do PDF Proxy carregado');
+            log('🚀 Testador do PDF Proxy v2.0 carregado');
             log('📝 Instruções:');
             log('1. Cole uma URL de PDF na caixa acima');
-            log('2. Teste primeiro o acesso direto para ver se há CORS');
-            log('3. Se falhar, teste via proxy');
-            log('4. Compare os resultados');
+            log('2. Escolha o modo debug se quiser detalhes');
+            log('3. Selecione uma estratégia ou deixe automática');
+            log('4. Teste primeiro o acesso direto para ver se há CORS');
+            log('5. Se falhar, teste via proxy');
+            log('6. Compare os resultados');
         });
     </script>
 </body>

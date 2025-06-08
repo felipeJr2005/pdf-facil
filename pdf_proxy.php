@@ -477,4 +477,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
+
+// Função de debug simples para testar se o proxy está funcionando
+if (isset($_GET['test']) && $_GET['test'] === 'ping') {
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+    echo json_encode([
+        'status' => 'ok',
+        'message' => 'PDF Proxy v2.0 funcionando',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'php_version' => PHP_VERSION
+    ]);
+    exit();
+}
 ?>
