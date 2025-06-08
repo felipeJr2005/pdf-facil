@@ -46,6 +46,7 @@
         <div>
             <button onclick="baixarPDF()">Baixar PDF</button>
             <button onclick="procurarBotao()">🔍 Procurar Botão</button>
+            <button onclick="interceptarDownload()">🕵️ Interceptar Download</button>
         </div>
     </div>
     
@@ -140,7 +141,7 @@
         }
         
         function simularClique() {
-            log('🤖 Simulando clique no botão de download...');
+            log('🤖 Iniciando estratégia de download automático...');
             
             const iframe = document.getElementById('pdfViewer');
             if (!iframe) {
@@ -148,47 +149,110 @@
                 return;
             }
             
+            // Estratégia 1: Interceptar downloads via monitoramento
+            log('📡 Configurando interceptação de downloads...');
+            
+            // Tentar enviar comando via postMessage
             try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframe.contentWindow.postMessage({
+                    action: 'auto_download',
+                    command: 'find_download_button'
+                }, '*');
+                log('📨 Comando enviado via postMessage');
+            } catch (error) {
+                log('❌ PostMessage falhou: ' + error.message, 'error');
+            }
+            
+            // Estratégia 2: Monitorar mudanças na URL do iframe
+            log('👁️ Iniciando monitoramento de URL...');
+            let tentativas = 0;
+            const maxTentativas = 30; // 1 minuto
+            
+            const intervalo = setInterval(() => {
+                tentativas++;
                 
-                if (iframeDoc) {
-                    log('✅ Acesso ao iframe obtido!');
+                try {
+                    // Tentar acessar a URL atual
+                    const urlAtual = iframe.contentWindow.location.href;
                     
-                    // Procurar botões de download
-                    const botoes = iframeDoc.querySelectorAll('button, a, [role="button"]');
-                    log(`Encontrados ${botoes.length} elementos clicáveis`);
-                    
-                    let encontrou = false;
-                    botoes.forEach((botao, index) => {
-                        const texto = (botao.textContent || botao.title || '').toLowerCase();
-                        const attrs = Array.from(botao.attributes).map(a => a.name + '=' + a.value).join(' ').toLowerCase();
+                    if (urlAtual && urlAtual !== iframe.src) {
+                        log(`🔄 URL mudou: ${urlAtual.substring(0, 100)}...`);
                         
-                        if (texto.includes('download') || texto.includes('baixar') || 
-                            attrs.includes('download') || attrs.includes('baixar')) {
+                        // Se detectar URL de download, tentar capturar
+                        if (urlAtual.includes('.pdf') || urlAtual.includes('download')) {
+                            log('🎯 URL de PDF detectada!', 'success');
+                            clearInterval(intervalo);
                             
-                            log(`🎯 Botão encontrado: "${texto}" - clicando...`);
-                            botao.click();
-                            encontrou = true;
+                            // Tentar baixar via fetch
+                            fetch(urlAtual)
+                                .then(response => {
+                                    if (response.ok) {
+                                        return response.blob();
+                                    }
+                                    throw new Error('Falha na resposta');
+                                })
+                                .then(blob => {
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'pje_capturado_' + Date.now() + '.pdf';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    log('✅ PDF capturado automaticamente!', 'success');
+                                })
+                                .catch(err => {
+                                    log('❌ Falha na captura automática: ' + err.message, 'error');
+                                    // Fallback: abrir em nova aba
+                                    window.open(urlAtual, '_blank');
+                                    log('🔗 PDF aberto em nova aba', 'warning');
+                                });
                         }
-                    });
-                    
-                    if (!encontrou) {
-                        log('❌ Nenhum botão de download encontrado');
-                        // Tentar Ctrl+S
-                        log('⚡ Tentando Ctrl+S...');
-                        const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true });
-                        iframe.contentWindow.dispatchEvent(event);
-                    } else {
-                        log('✅ Clique simulado!', 'success');
                     }
                     
-                } else {
-                    log('❌ CORS bloqueou acesso ao iframe', 'error');
+                } catch (corsError) {
+                    // CORS é normal, continua tentando
+                    if (tentativas % 10 === 0) {
+                        log(`⏳ Monitorando... tentativa ${tentativas}/${maxTentativas}`);
+                    }
                 }
                 
-            } catch (error) {
-                log('❌ Erro na simulação: ' + error.message, 'error');
-            }
+                if (tentativas >= maxTentativas) {
+                    clearInterval(intervalo);
+                    log('⏰ Timeout do monitoramento. Tente clicar manualmente no botão de download.', 'warning');
+                }
+            }, 2000);
+            
+            // Estratégia 3: Simular eventos de teclado comuns
+            log('⌨️ Enviando comandos de teclado...');
+            setTimeout(() => {
+                try {
+                    // Simular Ctrl+S (Salvar)
+                    const eventCtrlS = new KeyboardEvent('keydown', {
+                        key: 's',
+                        ctrlKey: true,
+                        bubbles: true
+                    });
+                    iframe.contentWindow.dispatchEvent(eventCtrlS);
+                    
+                    // Simular Ctrl+Shift+S (Salvar como)
+                    const eventCtrlShiftS = new KeyboardEvent('keydown', {
+                        key: 's',
+                        ctrlKey: true,
+                        shiftKey: true,
+                        bubbles: true
+                    });
+                    iframe.contentWindow.dispatchEvent(eventCtrlShiftS);
+                    
+                    log('⚡ Comandos Ctrl+S enviados');
+                } catch (error) {
+                    log('❌ Falha nos comandos de teclado: ' + error.message, 'error');
+                }
+            }, 1000);
+            
+            log('✅ Monitoramento ativo! Faça login e aguarde...', 'success');
+            log('💡 Dica: Após fazer login, clique no botão de download do PDF');
         }
         
         function procurarBotao() {
@@ -256,9 +320,89 @@
             }
         }
         
+        function interceptarDownload() {
+            log('🕵️ Configurando interceptação de downloads...');
+            
+            // Configurar interceptação de requisições de download
+            const originalFetch = window.fetch;
+            
+            window.fetch = function(...args) {
+                const url = args[0];
+                
+                if (typeof url === 'string' && (url.includes('.pdf') || url.includes('download'))) {
+                    log('🎯 Download interceptado: ' + url.substring(0, 80) + '...');
+                    
+                    // Fazer a requisição original
+                    return originalFetch.apply(this, args)
+                        .then(response => {
+                            if (response.ok && response.headers.get('content-type')?.includes('application/pdf')) {
+                                log('✅ PDF interceptado!', 'success');
+                                
+                                // Clonar a resposta para não quebrar o original
+                                const clonedResponse = response.clone();
+                                
+                                // Baixar automaticamente
+                                clonedResponse.blob().then(blob => {
+                                    const downloadUrl = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = downloadUrl;
+                                    a.download = 'interceptado_' + Date.now() + '.pdf';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(downloadUrl);
+                                    log('💾 Download automático realizado!', 'success');
+                                });
+                            }
+                            
+                            return response;
+                        });
+                }
+                
+                return originalFetch.apply(this, args);
+            };
+            
+            log('✅ Interceptação ativa! Qualquer download de PDF será capturado.', 'success');
+            
+            // Também monitorar clicks na página
+            document.addEventListener('click', function(event) {
+                const target = event.target;
+                const href = target.href || target.getAttribute('href');
+                
+                if (href && (href.includes('.pdf') || href.includes('download'))) {
+                    log('🖱️ Click em link de PDF detectado: ' + href);
+                }
+            });
+            
+            log('👂 Monitoramento de clicks ativo também...');
+        }
+        
         // Inicialização
         log('🚀 Sistema carregado');
-        log('📝 Para PJe: Iframe → Login → Simular Clique');
+        log('📝 Para PJe: Iframe → Login → Simular Clique → Aguardar');
+        
+        // Configurar listener para postMessage (caso o iframe responda)
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.action === 'download_detected') {
+                log('📨 Download detectado via postMessage: ' + event.data.url);
+                
+                // Tentar baixar automaticamente
+                fetch(event.data.url)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'postmessage_' + Date.now() + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        log('✅ Download via postMessage realizado!', 'success');
+                    })
+                    .catch(err => log('❌ Falha no download via postMessage: ' + err.message, 'error'));
+            }
+        });
     </script>
 </body>
 </html>
