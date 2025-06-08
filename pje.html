@@ -70,6 +70,14 @@
             
             pdfViewer.onload = function() {
                 log('✅ PJe carregado no iframe', 'success');
+                
+                // Tentar injetar interceptador no iframe
+                if (interceptActive) {
+                    setTimeout(() => {
+                        injectInterceptorIntoIframe();
+                    }, 2000); // Aguardar 2s para garantir que carregou
+                }
+                
                 log('💡 Faça login e prepare para clicar no botão roxo', 'info');
             };
             
@@ -87,7 +95,17 @@
             
             interceptActive = true;
             log('🕵️ Ativando interceptação de downloads...', 'info');
+            
+            // Setup interceptação no contexto principal (fallback)
             setupInterception();
+            
+            // Se iframe já está carregado, injetar também
+            if (pdfViewer.src) {
+                setTimeout(() => {
+                    injectInterceptorIntoIframe();
+                }, 1000);
+            }
+            
             btnIntercept.textContent = '✅ Interceptação Ativa';
             btnIntercept.disabled = true;
         });
@@ -234,7 +252,215 @@
             
             log('✅ Interceptação ativa!', 'success');
             log('🎯 Monitorando: fetch, XHR, clicks em links', 'info');
-            log('💡 Agora clique no botão ROXO no PJe!', 'info');
+        }
+        
+        // Injetar interceptor no iframe
+        function injectInterceptorIntoIframe() {
+            try {
+                log('🔄 Tentando injetar interceptor no iframe...', 'info');
+                
+                const iframeDoc = pdfViewer.contentDocument || pdfViewer.contentWindow.document;
+                const iframeWindow = pdfViewer.contentWindow;
+                
+                if (!iframeDoc || !iframeWindow) {
+                    log('❌ Não foi possível acessar contexto do iframe (CORS)', 'error');
+                    log('🔧 Tentando abordagem alternativa...', 'info');
+                    
+                    // Abordagem alternativa: monitorar mudanças no iframe
+                    monitorIframeActivity();
+                    return;
+                }
+                
+                log('✅ Contexto do iframe acessível!', 'success');
+                
+                // Injetar interceptor no contexto do iframe
+                const script = iframeDoc.createElement('script');
+                script.textContent = `
+                    console.log('🚀 Interceptor injetado no iframe PJe!');
+                    
+                    // Interceptar fetch no iframe
+                    const originalFetch = window.fetch;
+                    window.fetch = function(...args) {
+                        const url = args[0];
+                        
+                        if (typeof url === 'string') {
+                            console.log('🔍 [IFRAME] Fetch:', url.substring(0, 100) + '...');
+                            
+                            const isPjeDownload = url.includes('documento/download');
+                            const isMinioUrl = url.includes('docs-1g-minio-api');
+                            const isAwsSignedUrl = url.includes('X-Amz-Algorithm');
+                            
+                            if (isPjeDownload || isMinioUrl || isAwsSignedUrl) {
+                                console.log('🎯 [IFRAME] URL PJe detectada!');
+                                
+                                // Notificar página pai
+                                window.parent.postMessage({
+                                    type: 'PJE_DOWNLOAD_DETECTED',
+                                    url: url,
+                                    source: 'iframe'
+                                }, '*');
+                                
+                                return originalFetch.apply(this, args)
+                                    .then(response => {
+                                        console.log('📄 [IFRAME] Resposta:', response.status);
+                                        
+                                        if (response.ok) {
+                                            const contentType = response.headers.get('content-type') || '';
+                                            
+                                            if (contentType.includes('application/pdf') || 
+                                                contentType.includes('application/octet-stream') ||
+                                                isMinioUrl || isAwsSignedUrl) {
+                                                
+                                                console.log('🎉 [IFRAME] PDF detectado!');
+                                                
+                                                // Capturar PDF
+                                                const clonedResponse = response.clone();
+                                                clonedResponse.blob().then(blob => {
+                                                    console.log('💾 [IFRAME] PDF capturado:', blob.size, 'bytes');
+                                                    
+                                                    // Notificar página pai com o PDF
+                                                    const reader = new FileReader();
+                                                    reader.onload = function(e) {
+                                                        window.parent.postMessage({
+                                                            type: 'PJE_PDF_CAPTURED',
+                                                            data: e.target.result,
+                                                            size: blob.size,
+                                                            url: url
+                                                        }, '*');
+                                                    };
+                                                    reader.readAsDataURL(blob);
+                                                });
+                                            }
+                                        }
+                                        
+                                        return response;
+                                    });
+                            }
+                        }
+                        
+                        return originalFetch.apply(this, args);
+                    };
+                    
+                    // Interceptar XHR no iframe
+                    const originalXHR = window.XMLHttpRequest;
+                    window.XMLHttpRequest = function() {
+                        const xhr = new originalXHR();
+                        const originalOpen = xhr.open;
+                        
+                        xhr.open = function(method, url, ...args) {
+                            if (typeof url === 'string' && (
+                                url.includes('documento/download') || 
+                                url.includes('docs-1g-minio-api') ||
+                                url.includes('X-Amz-Algorithm')
+                            )) {
+                                console.log('🔍 [IFRAME] XHR:', url.substring(0, 100) + '...');
+                                
+                                xhr.addEventListener('load', function() {
+                                    if (xhr.status === 200) {
+                                        console.log('🎉 [IFRAME] XHR PDF detectado!');
+                                        
+                                        let blob;
+                                        if (xhr.response instanceof Blob) {
+                                            blob = xhr.response;
+                                        } else if (xhr.responseType === 'arraybuffer') {
+                                            blob = new Blob([xhr.response], {type: 'application/pdf'});
+                                        }
+                                        
+                                        if (blob) {
+                                            console.log('💾 [IFRAME] XHR PDF capturado:', blob.size, 'bytes');
+                                            
+                                            const reader = new FileReader();
+                                            reader.onload = function(e) {
+                                                window.parent.postMessage({
+                                                    type: 'PJE_PDF_CAPTURED',
+                                                    data: e.target.result,
+                                                    size: blob.size,
+                                                    url: url
+                                                }, '*');
+                                            };
+                                            reader.readAsDataURL(blob);
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            return originalOpen.apply(this, [method, url, ...args]);
+                        };
+                        
+                        return xhr;
+                    };
+                    
+                    console.log('✅ [IFRAME] Interceptação ativa no iframe!');
+                `;
+                
+                iframeDoc.head.appendChild(script);
+                log('✅ Interceptor injetado no iframe com sucesso!', 'success');
+                
+            } catch (error) {
+                log(`❌ Erro ao injetar no iframe: ${error.message}`, 'error');
+                log('🔧 Usando abordagem alternativa...', 'info');
+                monitorIframeActivity();
+            }
+        }
+        
+        // Monitorar atividade do iframe (quando não consegue injetar)
+        function monitorIframeActivity() {
+            log('🔍 Monitorando atividade do iframe via eventos...', 'info');
+            
+            // Monitorar mudanças na URL do iframe
+            let lastIframeUrl = '';
+            setInterval(() => {
+                try {
+                    const currentUrl = pdfViewer.contentWindow.location.href;
+                    if (currentUrl !== lastIframeUrl) {
+                        lastIframeUrl = currentUrl;
+                        log(`🔄 URL do iframe mudou: ${currentUrl}`, 'info');
+                    }
+                } catch (e) {
+                    // Ignorar erros de CORS
+                }
+            }, 1000);
+        }
+        
+        // Escutar mensagens do iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'PJE_DOWNLOAD_DETECTED':
+                        log(`🎯 [IFRAME] Download detectado: ${event.data.url}`, 'success');
+                        break;
+                        
+                    case 'PJE_PDF_CAPTURED':
+                        log(`🎉 [IFRAME] PDF CAPTURADO! Tamanho: ${event.data.size} bytes`, 'success');
+                        
+                        // Converter de volta para blob
+                        fetch(event.data.data)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                capturedPdf = blob;
+                                log('✅ PDF salvo na variável capturedPdf', 'success');
+                                log('🎯 CAPTURA REALIZADA COM SUCESSO!', 'success');
+                                
+                                // Verificar header PDF
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    const arrayBuffer = e.target.result;
+                                    const bytes = new Uint8Array(arrayBuffer.slice(0, 4));
+                                    const header = String.fromCharCode(...bytes);
+                                    
+                                    if (header === '%PDF') {
+                                        log('✅ CONFIRMADO: É um PDF válido!', 'success');
+                                        log('💡 Próximo passo: implementar OCR...', 'info');
+                                    } else {
+                                        log(`⚠️ Header não é PDF: ${header}`, 'error');
+                                    }
+                                };
+                                reader.readAsArrayBuffer(blob.slice(0, 10));
+                            });
+                        break;
+                }
+            }
+        });
         }
         
         // Auto-carregar URL se já estiver preenchida
