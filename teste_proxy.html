@@ -16,37 +16,28 @@
 </head>
 <body>
     <div class="container">
-        <h1>Teste PDF Proxy v2.2</h1>
+        <h1>Teste PDF Proxy v2.3</h1>
         
         <label>URL do PDF:</label>
         <input type="url" id="pdfUrl" placeholder="Cole aqui a URL do PDF">
         
         <label><input type="checkbox" id="debugMode"> Modo Debug</label>
         
-        <label>Estratégia:</label>
-        <select id="strategy">
-            <option value="auto">Automática</option>
-            <option value="direct">Direta</option>
-            <option value="pje">PJe</option>
-        </select>
-        
         <div>
             <button onclick="testarPing()">Testar Conexão</button>
             <button onclick="testarProxy()">Testar Proxy</button>
-            <button onclick="testarDireto()">Testar Direto</button>
             <button onclick="testarIframe()">Testar Iframe</button>
-            <button onclick="extrairDoIframe()">Extrair do Iframe</button>
-            <button onclick="limparLog()">Limpar Log</button>
+            <button onclick="limparLog()">Limpar</button>
         </div>
         
         <h3>URLs de Exemplo:</h3>
-        <div class="example-url" onclick="usarUrl(this)">
+        <div class="example-url" onclick="usarUrl('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')">
             https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
         </div>
-        <div class="example-url" onclick="usarUrl(this)">
+        <div class="example-url" onclick="usarUrl('https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf')">
             https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf
         </div>
-        <div class="example-url" onclick="usarUrl(this)">
+        <div class="example-url" onclick="usarUrl('https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979')">
             https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979
         </div>
     </div>
@@ -55,8 +46,8 @@
         <h3>Resultado</h3>
         <iframe id="pdfViewer" class="pdf-viewer"></iframe>
         <div>
-            <button onclick="forcarDownload()">Forçar Download</button>
-            <button onclick="capturarServidor()">Capturar Servidor</button>
+            <button onclick="baixarPDF()">Baixar PDF</button>
+            <button onclick="tentarCapturar()">Tentar Capturar</button>
         </div>
     </div>
     
@@ -74,15 +65,15 @@
             logEl.scrollTop = logEl.scrollHeight;
         }
         
-        function usarUrl(element) {
-            const text = element.textContent.trim();
-            document.getElementById('pdfUrl').value = text;
-            log('URL selecionada: ' + text);
+        function usarUrl(url) {
+            document.getElementById('pdfUrl').value = url;
+            log('URL selecionada: ' + url);
         }
         
         function limparLog() {
             document.getElementById('log').innerHTML = '';
             document.getElementById('resultContainer').style.display = 'none';
+            log('Log limpo');
         }
         
         async function testarPing() {
@@ -100,40 +91,16 @@
             }
         }
         
-        async function testarDireto() {
-            const url = document.getElementById('pdfUrl').value.trim();
-            if (!url) return log('❌ URL vazia', 'error');
-            
-            log('Testando acesso direto...');
-            try {
-                const response = await fetch(url);
-                log(`Resposta: ${response.status} ${response.statusText}`);
-                if (response.ok) {
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/pdf')) {
-                        log('✅ PDF acessível diretamente', 'success');
-                        mostrarPDF(url);
-                    } else {
-                        log('⚠️ Não é PDF: ' + contentType, 'warning');
-                    }
-                } else {
-                    log('❌ Falha no acesso direto', 'error');
-                }
-            } catch (error) {
-                log('❌ Erro direto: ' + error.message, 'error');
-            }
-        }
-        
         async function testarProxy() {
             const url = document.getElementById('pdfUrl').value.trim();
-            if (!url) return log('❌ URL vazia', 'error');
+            if (!url) {
+                log('❌ URL vazia', 'error');
+                return;
+            }
             
             const debug = document.getElementById('debugMode').checked;
-            const strategy = document.getElementById('strategy').value;
-            
             let proxyUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}`;
             if (debug) proxyUrl += '&debug=1';
-            if (strategy !== 'auto') proxyUrl += `&strategy=${strategy}`;
             
             log('Testando via proxy...');
             try {
@@ -157,7 +124,10 @@
         
         function testarIframe() {
             const url = document.getElementById('pdfUrl').value.trim();
-            if (!url) return log('❌ URL vazia', 'error');
+            if (!url) {
+                log('❌ URL vazia', 'error');
+                return;
+            }
             
             log('Carregando no iframe...');
             mostrarPDF(url);
@@ -168,182 +138,20 @@
             document.getElementById('pdfViewer').src = url;
             document.getElementById('resultContainer').style.display = 'block';
             window.currentPdfUrl = url;
+            log('PDF carregado na visualização');
         }
         
-        function forcarDownload() {
+        async function baixarPDF() {
             const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
-            if (!url) return log('❌ Nenhuma URL para download', 'error');
-            
-            log('Iniciando download real...');
-            
-            try {
-                // Tentar acessar o iframe autenticado
-                const iframe = document.getElementById('pdfViewer');
-                let pdfUrl = url;
-                
-                // Verificar se consegue acessar a URL atual do iframe (após login)
-                try {
-                    const iframeUrl = iframe.contentWindow.location.href;
-                    if (iframeUrl && iframeUrl !== 'about:blank' && iframeUrl.includes('download')) {
-                        pdfUrl = iframeUrl;
-                        log('Usando URL autenticada do iframe: ' + pdfUrl);
-                    }
-                } catch (corsError) {
-                    log('CORS bloqueou acesso ao iframe, usando URL original');
-                }
-                
-                // Estratégia 1: Tentar via proxy com captura de sessão
-                fetch(`pdf_proxy.php?url=${encodeURIComponent(pdfUrl)}&action=download&force=1`)
-                    .then(response => {
-                        if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
-                            return response.blob();
-                        } else {
-                            throw new Error('Proxy não conseguiu capturar PDF autenticado');
-                        }
-                    })
-                    .then(blob => {
-                        // Download real do blob
-                        const downloadUrl = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = downloadUrl;
-                        a.download = 'documento_baixado_' + Date.now() + '.pdf';
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(downloadUrl);
-                        log('✅ PDF baixado para pasta de downloads!', 'success');
-                    })
-                    .catch(error => {
-                        log('❌ Falha na captura via proxy: ' + error.message, 'error');
-                        
-                        // Estratégia 2: Download direto (pode só abrir no navegador)
-                        log('Tentando download direto...');
-                        const a = document.createElement('a');
-                        a.href = pdfUrl;
-                        a.download = 'documento_direto_' + Date.now() + '.pdf';
-                        a.target = '_blank';
-                        // Forçar atributo download
-                        a.setAttribute('download', 'documento_direto_' + Date.now() + '.pdf');
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        log('⚠️ Download direto tentado (pode abrir no navegador)', 'warning');
-                    });
-                    
-            } catch (error) {
-                log('❌ Erro no download: ' + error.message, 'error');
-            }
-        }
-        
-        function extrairDoIframe() {
-            log('🎯 Tentando extrair PDF do iframe autenticado...');
-            
-            const iframe = document.getElementById('pdfViewer');
-            if (!iframe || !iframe.src) {
-                return log('❌ Iframe não carregado', 'error');
+            if (!url) {
+                log('❌ Nenhuma URL para download', 'error');
+                return;
             }
             
+            log('Iniciando download...');
+            
             try {
-                // Estratégia 1: Verificar se consegue acessar URL atual
-                try {
-                    const iframeUrl = iframe.contentWindow.location.href;
-                    log('URL do iframe: ' + iframeUrl);
-                    
-                    if (iframeUrl.includes('download') || iframeUrl.includes('.pdf')) {
-                        log('🎯 URL de PDF detectada no iframe!', 'success');
-                        
-                        // Tentar baixar via fetch usando a URL autenticada
-                        fetch(iframeUrl)
-                            .then(response => {
-                                if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
-                                    return response.blob();
-                                } else {
-                                    throw new Error('Resposta não é PDF');
-                                }
-                            })
-                            .then(blob => {
-                                const downloadUrl = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = downloadUrl;
-                                a.download = 'pdf_extraido_' + Date.now() + '.pdf';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(downloadUrl);
-                                log('✅ PDF extraído e baixado com sucesso!', 'success');
-                            })
-                            .catch(error => {
-                                log('❌ Falha na extração: ' + error.message, 'error');
-                                // Fallback: tentar via proxy
-                                tentarViaProxy(iframeUrl);
-                            });
-                    } else {
-                        log('⚠️ URL do iframe não parece ser PDF', 'warning');
-                    }
-                    
-                } catch (corsError) {
-                    log('❌ CORS bloqueou acesso à URL do iframe', 'error');
-                    
-                    // Estratégia 2: Tentar injetar script no iframe
-                    try {
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        if (iframeDoc) {
-                            // Verificar se há link de download no PDF
-                            const downloadLinks = iframeDoc.querySelectorAll('a[href*="download"], a[download]');
-                            if (downloadLinks.length > 0) {
-                                log('🔗 Link de download encontrado no iframe!', 'success');
-                                const downloadUrl = downloadLinks[0].href;
-                                tentarViaProxy(downloadUrl);
-                            } else {
-                                log('❌ Nenhum link de download encontrado', 'error');
-                            }
-                        }
-                    } catch (error2) {
-                        log('❌ Não foi possível acessar conteúdo do iframe', 'error');
-                    }
-                }
-                
-            } catch (error) {
-                log('❌ Erro na extração: ' + error.message, 'error');
-            }
-        }
-        
-        function tentarViaProxy(url) {
-            log('🔄 Tentando capturar via proxy: ' + url);
-            
-            const proxyUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}&action=download&force=1`;
-            
-            fetch(proxyUrl)
-                .then(response => {
-                    if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
-                        return response.blob();
-                    } else {
-                        throw new Error('Proxy falhou');
-                    }
-                })
-                .then(blob => {
-                    const downloadUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = 'pdf_proxy_' + Date.now() + '.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(downloadUrl);
-                    log('✅ PDF capturado via proxy!', 'success');
-                })
-                .catch(error => {
-                    log('❌ Proxy também falhou: ' + error.message, 'error');
-                });
-        }
-            const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
-            if (!url) return log('❌ Nenhuma URL para capturar', 'error');
-            
-            log('Capturando via servidor...');
-            try {
-                const captureUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`;
-                const response = await fetch(captureUrl);
+                const response = await fetch(`pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`);
                 
                 if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
                     const blob = await response.blob();
@@ -351,25 +159,77 @@
                     
                     const a = document.createElement('a');
                     a.href = downloadUrl;
-                    a.download = 'capturado_' + Date.now() + '.pdf';
+                    a.download = 'documento_' + Date.now() + '.pdf';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     
                     URL.revokeObjectURL(downloadUrl);
-                    log('✅ Capturado e baixado pelo servidor', 'success');
+                    log('✅ PDF baixado!', 'success');
                 } else {
-                    log('❌ Servidor não conseguiu capturar', 'error');
+                    log('❌ Não foi possível baixar via servidor', 'error');
+                    
+                    // Fallback: download direto
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'documento_direto_' + Date.now() + '.pdf';
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    log('⚠️ Tentativa de download direto', 'warning');
                 }
             } catch (error) {
-                log('❌ Erro captura: ' + error.message, 'error');
+                log('❌ Erro no download: ' + error.message, 'error');
             }
         }
         
-        // Log inicial
-        document.addEventListener('DOMContentLoaded', function() {
-            log('🚀 Sistema carregado - Teste básico de funcionalidade');
-        });
+        async function tentarCapturar() {
+            const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
+            if (!url) {
+                log('❌ Nenhuma URL para capturar', 'error');
+                return;
+            }
+            
+            log('Tentando capturar...');
+            
+            // Tentar acessar URL atual do iframe
+            try {
+                const iframe = document.getElementById('pdfViewer');
+                const iframeUrl = iframe.contentWindow.location.href;
+                
+                if (iframeUrl && iframeUrl !== url) {
+                    log('URL iframe: ' + iframeUrl);
+                    
+                    const response = await fetch(`pdf_proxy.php?url=${encodeURIComponent(iframeUrl)}&action=download`);
+                    
+                    if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
+                        const blob = await response.blob();
+                        const downloadUrl = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = 'capturado_' + Date.now() + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        
+                        URL.revokeObjectURL(downloadUrl);
+                        log('✅ PDF capturado do iframe!', 'success');
+                    } else {
+                        log('❌ Falha na captura', 'error');
+                    }
+                } else {
+                    log('⚠️ URL do iframe não mudou', 'warning');
+                }
+            } catch (error) {
+                log('❌ CORS bloqueou acesso ao iframe', 'error');
+            }
+        }
+        
+        // Inicialização
+        log('🚀 Sistema carregado');
+        log('📝 Cole uma URL e teste as funcionalidades');
     </script>
 </body>
 </html>
