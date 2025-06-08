@@ -2,230 +2,246 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Extrator de PDF do PJe</title>
+    <title>PJe PDF Interceptor</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0;
-            padding: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        h2 { 
-            margin-top: 0;
-            color: #333;
-        }
-        .panel {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .panel-header {
-            background-color: #f5f5f5;
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-        }
-        .panel-body {
-            padding: 15px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        .btn {
-            padding: 8px 15px;
-            background-color: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #0069d9;
-        }
-        .btn:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-        }
-        #pdf-viewer {
-            width: 100%;
-            height: 500px;
-            border: 1px solid #ddd;
-        }
-        .steps {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #007bff;
-            margin-bottom: 15px;
-        }
-        .steps ol {
-            margin-top: 10px;
-            margin-bottom: 0;
-            padding-left: 20px;
-        }
-        .steps li {
-            margin-bottom: 8px;
-        }
-        #text-area {
-            width: 100%;
-            min-height: 200px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            font-size: 14px;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-        }
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(0,0,0,0.1);
-            border-top: 2px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 5px;
-            vertical-align: text-bottom;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .highlight {
-            animation: highlight 1.5s ease;
-        }
-        @keyframes highlight {
-            0% { background-color: #d4edda; }
-            100% { background-color: transparent; }
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .panel { border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; }
+        .form-control { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { padding: 8px 15px; margin-right: 10px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; border: none; }
+        #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ddd; }
+        #log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
     </style>
 </head>
 <body>
-    <h2>Extrator de PDF do PJe</h2>
+    <h2>PJe PDF Interceptor - Teste de Captura</h2>
     
-    <!-- Painel de entrada -->
     <div class="panel">
-        <div class="panel-header">1. Abrir PDF do PJe</div>
-        <div class="panel-body">
-            <input type="url" id="pdf-url" class="form-control" placeholder="Cole o link do PDF do PJe aqui">
-            <button id="btn-open-pdf" class="btn btn-primary">Abrir PDF</button>
-        </div>
+        <h3>1. URL do PJe</h3>
+        <input type="url" id="pdf-url" class="form-control" placeholder="Cole o link do PDF do PJe aqui" value="https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/137195928">
+        <button id="btn-load" class="btn btn-primary">Carregar PJe</button>
+        <button id="btn-start-intercept" class="btn btn-primary">🕵️ Ativar Interceptação</button>
+        <button id="btn-clear-log" class="btn">Limpar Log</button>
     </div>
     
-    <!-- Visualizador de PDF -->
     <div class="panel">
-        <div class="panel-header">2. Visualizar e Selecionar Texto</div>
-        <div class="panel-body">
-            <div class="steps">
-                <strong>Como extrair o texto:</strong>
-                <ol>
-                    <li>Após o PDF carregar, clique dentro do visualizador</li>
-                    <li>Pressione <strong>Ctrl+A</strong> para selecionar todo o texto</li>
-                    <li>Pressione <strong>Ctrl+C</strong> para copiar o texto selecionado</li>
-                    <li>Cole o texto na área abaixo usando <strong>Ctrl+V</strong></li>
-                </ol>
-                <p><small>Nota: Se não conseguir selecionar todo o texto de uma vez, você pode selecionar por partes e colar abaixo.</small></p>
-            </div>
-            
-            <iframe id="pdf-viewer"></iframe>
-        </div>
+        <h3>2. PJe Iframe</h3>
+        <iframe id="pdf-viewer"></iframe>
     </div>
     
-    <!-- Área de texto -->
     <div class="panel">
-        <div class="panel-header">3. Texto Extraído</div>
-        <div class="panel-body">
-            <textarea id="text-area" placeholder="Cole aqui o texto copiado do PDF (Ctrl+V)"></textarea>
-            <button id="btn-clear" class="btn">Limpar</button>
-            <button id="btn-copy" class="btn btn-primary">Copiar Todo Texto</button>
-        </div>
+        <h3>3. Log de Interceptação</h3>
+        <div id="log">Aguardando interceptação...</div>
     </div>
-    
+
     <script>
-        // Elementos DOM
         const urlInput = document.getElementById('pdf-url');
-        const btnOpenPdf = document.getElementById('btn-open-pdf');
+        const btnLoad = document.getElementById('btn-load');
+        const btnIntercept = document.getElementById('btn-start-intercept');
+        const btnClearLog = document.getElementById('btn-clear-log');
         const pdfViewer = document.getElementById('pdf-viewer');
-        const textArea = document.getElementById('text-area');
-        const btnClear = document.getElementById('btn-clear');
-        const btnCopy = document.getElementById('btn-copy');
+        const logDiv = document.getElementById('log');
         
-        // Event Listeners
-        btnOpenPdf.addEventListener('click', openPdf);
-        btnClear.addEventListener('click', clearText);
-        btnCopy.addEventListener('click', copyText);
+        let interceptActive = false;
+        let capturedPdf = null;
         
-        // Abrir PDF
-        function openPdf() {
+        // Função de log
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            logDiv.innerHTML += `[${timestamp}] <span class="${className}">${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        // Carregar PJe
+        btnLoad.addEventListener('click', function() {
             const url = urlInput.value.trim();
             if (!url) {
-                alert('Por favor, insira o link do PDF do PJe');
+                log('❌ URL não informada', 'error');
                 return;
             }
             
-            // Mostrar indicador de carregamento
-            const originalText = btnOpenPdf.innerHTML;
-            btnOpenPdf.innerHTML = '<span class="spinner"></span> Carregando...';
-            btnOpenPdf.disabled = true;
-            
-            // Salvar URL no armazenamento local
-            localStorage.setItem('pje-pdf-url', url);
-            
-            // Carregar PDF no iframe
+            log('🔄 Carregando PJe no iframe...', 'info');
             pdfViewer.src = url;
             
-            // Restaurar botão quando o iframe carregar
             pdfViewer.onload = function() {
-                btnOpenPdf.innerHTML = originalText;
-                btnOpenPdf.disabled = false;
-                
-                // Destacar as instruções para guiar o usuário
-                document.querySelector('.steps').classList.add('highlight');
-                setTimeout(() => {
-                    document.querySelector('.steps').classList.remove('highlight');
-                }, 1500);
+                log('✅ PJe carregado no iframe', 'success');
+                log('💡 Faça login e prepare para clicar no botão roxo', 'info');
             };
-        }
+            
+            pdfViewer.onerror = function() {
+                log('❌ Erro ao carregar PJe no iframe', 'error');
+            };
+        });
         
-        // Limpar texto
-        function clearText() {
-            textArea.value = '';
-        }
-        
-        // Copiar texto
-        function copyText() {
-            if (!textArea.value) {
-                alert('Não há texto para copiar');
+        // Ativar interceptação
+        btnIntercept.addEventListener('click', function() {
+            if (interceptActive) {
+                log('⚠️ Interceptação já está ativa', 'info');
                 return;
             }
             
-            textArea.select();
-            document.execCommand('copy');
+            interceptActive = true;
+            log('🕵️ Ativando interceptação de downloads...', 'info');
+            setupInterception();
+            btnIntercept.textContent = '✅ Interceptação Ativa';
+            btnIntercept.disabled = true;
+        });
+        
+        // Limpar log
+        btnClearLog.addEventListener('click', function() {
+            logDiv.innerHTML = 'Log limpo...\n';
+        });
+        
+        // Setup da interceptação
+        function setupInterception() {
+            log('🔧 Configurando interceptação de fetch/XMLHttpRequest...', 'info');
             
-            // Feedback visual
-            textArea.classList.add('highlight');
-            setTimeout(() => {
-                textArea.classList.remove('highlight');
-            }, 1500);
+            // Interceptar fetch
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                const url = args[0];
+                
+                if (typeof url === 'string') {
+                    log(`🔍 Fetch detectado: ${url.substring(0, 100)}...`, 'info');
+                    
+                    // URLs que nos interessam
+                    const isPjeDownload = url.includes('pje.cloud.tjpe.jus.br') && url.includes('documento/download');
+                    const isMinioUrl = url.includes('docs-1g-minio-api.pje.cloud.tjpe.jus.br');
+                    const isAwsSignedUrl = url.includes('X-Amz-Algorithm');
+                    
+                    if (isPjeDownload || isMinioUrl || isAwsSignedUrl) {
+                        log(`🎯 URL PJe interceptada!`, 'success');
+                        log(`📋 URL: ${url.substring(0, 150)}...`, 'info');
+                        
+                        return originalFetch.apply(this, args)
+                            .then(response => {
+                                log(`📄 Resposta recebida: Status ${response.status}`, 'info');
+                                
+                                if (response.ok) {
+                                    const contentType = response.headers.get('content-type') || '';
+                                    const contentDisposition = response.headers.get('content-disposition') || '';
+                                    
+                                    log(`📄 Content-Type: ${contentType}`, 'info');
+                                    log(`📎 Content-Disposition: ${contentDisposition}`, 'info');
+                                    
+                                    // Se é PDF ou conteúdo baixável
+                                    if (contentType.includes('application/pdf') || 
+                                        contentType.includes('application/octet-stream') ||
+                                        isMinioUrl || isAwsSignedUrl) {
+                                        
+                                        log('🎉 PDF DETECTADO! Capturando...', 'success');
+                                        
+                                        // Clonar resposta para capturar
+                                        const clonedResponse = response.clone();
+                                        clonedResponse.blob().then(blob => {
+                                            log(`💾 PDF capturado! Tamanho: ${blob.size} bytes`, 'success');
+                                            
+                                            // Salvar PDF capturado
+                                            capturedPdf = blob;
+                                            
+                                            // Verificar se é realmente PDF
+                                            const reader = new FileReader();
+                                            reader.onload = function(e) {
+                                                const arrayBuffer = e.target.result;
+                                                const bytes = new Uint8Array(arrayBuffer.slice(0, 4));
+                                                const header = String.fromCharCode(...bytes);
+                                                
+                                                if (header === '%PDF') {
+                                                    log('✅ CONFIRMADO: É um PDF válido!', 'success');
+                                                    log('🎯 CAPTURA REALIZADA COM SUCESSO!', 'success');
+                                                    
+                                                    // Aqui podemos adicionar o OCR depois
+                                                    log('💡 Próximo passo: implementar OCR...', 'info');
+                                                } else {
+                                                    log(`⚠️ Header não é PDF: ${header}`, 'error');
+                                                }
+                                            };
+                                            reader.readAsArrayBuffer(blob.slice(0, 10));
+                                            
+                                        }).catch(err => {
+                                            log(`❌ Erro ao capturar blob: ${err.message}`, 'error');
+                                        });
+                                    }
+                                } else {
+                                    log(`❌ Resposta com erro: ${response.status} - ${response.statusText}`, 'error');
+                                }
+                                
+                                return response;
+                            })
+                            .catch(error => {
+                                log(`❌ Erro na interceptação: ${error.message}`, 'error');
+                                return Promise.reject(error);
+                            });
+                    }
+                }
+                
+                return originalFetch.apply(this, args);
+            };
+            
+            // Interceptar XMLHttpRequest
+            const originalXHR = window.XMLHttpRequest;
+            window.XMLHttpRequest = function() {
+                const xhr = new originalXHR();
+                const originalOpen = xhr.open;
+                
+                xhr.open = function(method, url, ...args) {
+                    if (typeof url === 'string' && (
+                        url.includes('documento/download') || 
+                        url.includes('docs-1g-minio-api') ||
+                        url.includes('X-Amz-Algorithm')
+                    )) {
+                        log(`🔍 XHR interceptado: ${url.substring(0, 100)}...`, 'info');
+                        
+                        xhr.addEventListener('load', function() {
+                            if (xhr.status === 200) {
+                                log('🎉 XHR PDF detectado!', 'success');
+                                
+                                if (xhr.response instanceof Blob) {
+                                    log(`💾 PDF XHR capturado! Tamanho: ${xhr.response.size} bytes`, 'success');
+                                    capturedPdf = xhr.response;
+                                } else if (xhr.responseType === 'arraybuffer') {
+                                    const blob = new Blob([xhr.response], {type: 'application/pdf'});
+                                    log(`💾 PDF XHR (ArrayBuffer) capturado! Tamanho: ${blob.size} bytes`, 'success');
+                                    capturedPdf = blob;
+                                }
+                            }
+                        });
+                    }
+                    
+                    return originalOpen.apply(this, [method, url, ...args]);
+                };
+                
+                return xhr;
+            };
+            
+            // Interceptar downloads diretos (elementos <a>)
+            document.addEventListener('click', function(event) {
+                const target = event.target.closest('a');
+                if (target && target.href) {
+                    const href = target.href;
+                    
+                    if (href.includes('download') || href.includes('documento') || 
+                        href.includes('minio') || href.includes('.pdf')) {
+                        log(`🖱️ Click em link de download: ${href.substring(0, 100)}...`, 'info');
+                    }
+                }
+            }, true);
+            
+            log('✅ Interceptação ativa!', 'success');
+            log('🎯 Monitorando: fetch, XHR, clicks em links', 'info');
+            log('💡 Agora clique no botão ROXO no PJe!', 'info');
         }
         
-        // Carregar URL salva
+        // Auto-carregar URL se já estiver preenchida
         window.addEventListener('load', function() {
-            const savedUrl = localStorage.getItem('pje-pdf-url');
-            if (savedUrl) {
-                urlInput.value = savedUrl;
+            if (urlInput.value.trim()) {
+                log('🔄 Auto-carregando URL...', 'info');
+                btnLoad.click();
             }
         });
     </script>
