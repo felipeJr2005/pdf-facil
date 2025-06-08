@@ -2,29 +2,29 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Extrator de PDF com Mozilla PDF.js</title>
+    <title>Extrator de Texto de PDF Renderizado</title>
     <style>
         body { font-family: sans-serif; margin: 20px; }
         input { width: 100%; padding: 5px; margin-bottom: 10px; }
-        button { padding: 5px 10px; margin-right: 5px; }
+        button { padding: 5px 10px; margin-right: 5px; margin-bottom: 10px; }
         pre { border: 1px solid #ccc; padding: 10px; max-height: 300px; overflow: auto; }
         .log { font-family: monospace; font-size: 12px; }
-        #pdf-frame { width: 100%; height: 600px; border: 1px solid #ccc; }
+        #pdf-iframe { border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-    <h3>Extrator de PDF com Mozilla PDF.js</h3>
+    <h3>Extrator de Texto de PDF Renderizado</h3>
     
     <div>
         <input type="url" id="pdf-url" placeholder="Cole o link do PDF do PJe aqui">
         <div>
-            <button id="btn-view-mozilla">Abrir no Visualizador Mozilla</button>
-            <button id="btn-capture">Tentar Capturar Texto</button>
+            <button id="btn-view">Abrir PDF</button>
+            <button id="btn-capture-rendered">Capturar Texto Renderizado</button>
         </div>
     </div>
     
-    <div style="margin-top: 15px;">
-        <iframe id="pdf-frame" allowfullscreen></iframe>
+    <div id="pdf-container" style="margin-top: 15px;">
+        <iframe id="pdf-iframe" width="100%" height="500"></iframe>
     </div>
     
     <h4>Texto Extraído:</h4>
@@ -34,116 +34,146 @@
     <div id="log" class="log"></div>
     
     <script>
-        // Elementos DOM
+        // Elementos
         const urlInput = document.getElementById('pdf-url');
-        const btnViewMozilla = document.getElementById('btn-view-mozilla');
-        const btnCapture = document.getElementById('btn-capture');
-        const pdfFrame = document.getElementById('pdf-frame');
+        const btnView = document.getElementById('btn-view');
+        const btnCaptureRendered = document.getElementById('btn-capture-rendered');
+        const pdfIframe = document.getElementById('pdf-iframe');
         const result = document.getElementById('result');
         const logElement = document.getElementById('log');
         
         // Eventos
-        btnViewMozilla.addEventListener('click', openInMozillaViewer);
-        btnCapture.addEventListener('click', captureText);
+        btnView.addEventListener('click', viewPdf);
+        btnCaptureRendered.addEventListener('click', captureRenderedText);
+        pdfIframe.addEventListener('load', onIframeLoad);
+        
+        // Inicialização
+        let pdfLoaded = false;
         
         // Funções
         function log(message) {
             console.log(message);
-            const timestamp = new Date().toLocaleTimeString();
-            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+            logElement.innerHTML += message + '<br>';
             logElement.scrollTop = logElement.scrollHeight;
         }
         
-        function openInMozillaViewer() {
+        function viewPdf() {
             const url = urlInput.value.trim();
             if (!url) {
                 log('Digite uma URL válida');
                 return;
             }
             
-            // URL do visualizador Mozilla PDF.js
-            const viewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
+            pdfLoaded = false;
+            log(`Abrindo PDF: ${url}`);
             
-            log(`Abrindo PDF no visualizador Mozilla: ${url}`);
-            pdfFrame.src = viewerUrl;
+            // Tentar abrir o PDF com visualizador personalizado para facilitar extração
+            const viewerUrl = `${getBaseUrl()}/web/viewer.html?file=${encodeURIComponent(url)}`;
+            pdfIframe.src = viewerUrl;
+            
+            // Se falhar após 3 segundos, tentar método direto
+            setTimeout(() => {
+                if (!pdfLoaded) {
+                    log('Tentando método de visualização direta...');
+                    pdfIframe.src = url;
+                }
+            }, 3000);
         }
         
-        function captureText() {
-            log('Tentando capturar texto do visualizador...');
+        function onIframeLoad() {
+            pdfLoaded = true;
+            log('PDF carregado no iframe');
+            
+            // Detectar se o visualizador PDF.js foi carregado
+            try {
+                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
+                if (iframeDoc && iframeDoc.querySelector('.textLayer')) {
+                    log('Visualizador PDF.js detectado');
+                }
+            } catch (e) {
+                log('Não foi possível acessar o conteúdo do iframe (restrições de segurança)');
+            }
+        }
+        
+        function captureRenderedText() {
+            log('Tentando capturar texto renderizado...');
             
             try {
-                // Tentar acessar o iframe
-                const frameWindow = pdfFrame.contentWindow;
-                const frameDocument = frameWindow.document;
+                // Tentar acessar o documento do iframe
+                const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
                 
-                // Tentar método 1: Usar API do PDF.js
-                if (frameWindow.PDFViewerApplication) {
-                    log('PDF.js API detectada, tentando extrair texto...');
-                    
-                    const pdfViewer = frameWindow.PDFViewerApplication.pdfViewer;
-                    const currentPageNumber = pdfViewer.currentPageNumber;
-                    const pageCount = pdfViewer.pagesCount;
-                    
-                    log(`PDF tem ${pageCount} páginas, página atual: ${currentPageNumber}`);
-                    
-                    // Tentar acessar o texto
-                    const textContent = frameDocument.querySelector('.textLayer');
-                    if (textContent) {
-                        const text = textContent.innerText;
-                        result.textContent = text;
-                        log('Texto extraído da camada de texto');
-                        return;
-                    }
+                if (!iframeDoc) {
+                    throw new Error('Não foi possível acessar o documento do iframe');
                 }
                 
-                // Método 2: Capturar divs da camada de texto
-                const textDivs = frameDocument.querySelectorAll('.textLayer div');
-                if (textDivs && textDivs.length > 0) {
-                    log(`Encontradas ${textDivs.length} divs de texto`);
+                // Tentar método 1: Capturar texto da camada de texto do PDF.js
+                const textLayerElements = iframeDoc.querySelectorAll('.textLayer div');
+                if (textLayerElements && textLayerElements.length > 0) {
+                    log(`Encontrados ${textLayerElements.length} elementos de texto`);
                     
                     let text = '';
-                    textDivs.forEach(div => {
-                        text += div.textContent + ' ';
+                    textLayerElements.forEach(element => {
+                        text += element.textContent + ' ';
                     });
                     
                     result.textContent = text;
-                    log('Texto extraído das divs da camada de texto');
+                    log('Texto capturado com sucesso da camada de texto');
                     return;
                 }
                 
-                // Método 3: Buscar texto em qualquer lugar
-                const bodyText = frameDocument.body.innerText;
+                // Tentar método 2: Capturar todo o texto visível
+                const bodyText = iframeDoc.body.innerText;
                 if (bodyText) {
-                    // Filtrar texto da UI do visualizador
-                    const lines = bodyText.split('\n').filter(line => 
-                        !line.includes('of') && 
-                        !line.includes('Page') && 
-                        line.trim().length > 0
-                    );
-                    
-                    result.textContent = lines.join('\n');
-                    log('Texto extraído do corpo do documento');
+                    result.textContent = bodyText;
+                    log('Texto capturado do corpo do documento');
                     return;
                 }
                 
-                throw new Error('Não foi possível encontrar texto no visualizador');
+                // Tentar método 3: Capturar todos os nós de texto
+                const textNodes = [];
+                const walker = iframeDoc.createTreeWalker(
+                    iframeDoc.body, 
+                    NodeFilter.SHOW_TEXT,
+                    null, 
+                    false
+                );
+                
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.trim()) {
+                        textNodes.push(node.textContent.trim());
+                    }
+                }
+                
+                if (textNodes.length > 0) {
+                    result.textContent = textNodes.join('\n');
+                    log(`Capturados ${textNodes.length} nós de texto`);
+                    return;
+                }
+                
+                // Se chegamos aqui, não conseguimos extrair texto
+                throw new Error('Nenhum texto encontrado no documento');
                 
             } catch (error) {
-                log(`Erro ao capturar texto: ${error.message}`);
+                log(`Erro: ${error.message}`);
                 
-                if (error.message.includes('cross-origin') || error.message.includes('security')) {
-                    log('Erro de segurança cross-origin detectado');
-                    
-                    // Sugerir método manual
-                    result.textContent = `
+                // Sugerir alternativa
+                const manualApproach = `
 Não foi possível extrair o texto automaticamente devido a restrições de segurança.
 
-Como alternativa, você pode usar o visualizador Mozilla que está aberto:
-1. Clique no ícone de seleção de texto (ícone com cursor de texto)
-2. Selecione o texto que deseja copiar
-3. Use Ctrl+C para copiar e cole aqui`;
-                }
+Como alternativa, você pode:
+1. Usar a ferramenta Copiar do visualizador de PDF (geralmente um ícone ou comando no menu de contexto)
+2. Selecionar o texto manualmente e copiar (Ctrl+C)
+3. Usar um leitor de PDF externo que permita cópia`;
+                
+                result.textContent = manualApproach;
             }
+        }
+        
+        // Obter URL base para o PDF.js
+        function getBaseUrl() {
+            // Usar CDN público do PDF.js
+            return 'https://mozilla.github.io/pdf.js';
         }
         
         // Carregar URL da última sessão
@@ -158,7 +188,7 @@ Como alternativa, você pode usar o visualizador Mozilla que está aberto:
             localStorage.setItem('pje-pdf-url', urlInput.value);
         });
         
-        log('Extrator com visualizador Mozilla inicializado');
+        log('Extrator de texto de PDF renderizado inicializado');
     </script>
 </body>
 </html>
