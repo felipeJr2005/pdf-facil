@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Teste PDF Proxy v2.3</h1>
+        <h1>Teste PDF Proxy v2.4</h1>
         
         <label>URL do PDF:</label>
         <input type="url" id="pdfUrl" placeholder="Cole aqui a URL do PDF">
@@ -27,16 +27,13 @@
             <button onclick="testarPing()">Testar Conexão</button>
             <button onclick="testarProxy()">Testar Proxy</button>
             <button onclick="testarIframe()">Testar Iframe</button>
-            <button onclick="simularCliqueBaixar()">🤖 Simular Clique Baixar</button>
+            <button onclick="simularClique()">🤖 Simular Clique</button>
             <button onclick="limparLog()">Limpar</button>
         </div>
         
         <h3>URLs de Exemplo:</h3>
         <div class="example-url" onclick="usarUrl('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')">
             https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf
-        </div>
-        <div class="example-url" onclick="usarUrl('https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf')">
-            https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf
         </div>
         <div class="example-url" onclick="usarUrl('https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979')">
             https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/147308979
@@ -48,9 +45,7 @@
         <iframe id="pdfViewer" class="pdf-viewer"></iframe>
         <div>
             <button onclick="baixarPDF()">Baixar PDF</button>
-            <button onclick="tentarCapturar()">Tentar Capturar</button>
-            <button onclick="procurarBotaoBaixar()">🔍 Procurar Botão Baixar</button>
-            <button onclick="monitorarIframe()">👁️ Monitorar Iframe</button>
+            <button onclick="procurarBotao()">🔍 Procurar Botão</button>
         </div>
     </div>
     
@@ -144,122 +139,12 @@
             log('PDF carregado na visualização');
         }
         
-        async function baixarPDF() {
-            const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
-            if (!url) {
-                log('❌ Nenhuma URL para download', 'error');
-                return;
-            }
-            
-            log('Iniciando download via servidor...');
-            
-            try {
-                const downloadUrl = `pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`;
-                log('URL de download: ' + downloadUrl);
-                
-                const response = await fetch(downloadUrl);
-                log(`Resposta do servidor: ${response.status}`);
-                
-                const contentType = response.headers.get('content-type');
-                log(`Content-Type: ${contentType}`);
-                
-                if (response.ok && contentType && contentType.includes('application/pdf')) {
-                    log('Convertendo resposta para blob...');
-                    const blob = await response.blob();
-                    log(`Blob criado: ${blob.size} bytes`);
-                    
-                    const downloadUrl2 = URL.createObjectURL(blob);
-                    
-                    const a = document.createElement('a');
-                    a.href = downloadUrl2;
-                    a.download = 'documento_' + Date.now() + '.pdf';
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    
-                    log('Iniciando download do blob...');
-                    a.click();
-                    
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(downloadUrl2);
-                    
-                    log('✅ PDF baixado via blob!', 'success');
-                } else if (contentType && contentType.includes('application/json')) {
-                    const errorData = await response.json();
-                    log('❌ Servidor retornou erro: ' + errorData.message, 'error');
-                    
-                    // Fallback: download direto
-                    log('Tentando download direto...');
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'documento_direto_' + Date.now() + '.pdf';
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    log('⚠️ Download direto tentado', 'warning');
-                } else {
-                    log('❌ Resposta inválida do servidor', 'error');
-                    log('Content-Type recebido: ' + contentType);
-                    
-                    // Fallback: download direto
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'documento_direto_' + Date.now() + '.pdf';
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    log('⚠️ Fallback para download direto', 'warning');
-                }
-            } catch (error) {
-                log('❌ Erro no download: ' + error.message, 'error');
-            }
-        }
-        
-        async function tentarCapturar() {
-            const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
-            if (!url) {
-                log('❌ Nenhuma URL para capturar', 'error');
-                return;
-            }
-            
-            log('Tentando capturar...');
-            
-            // Tentar acessar URL atual do iframe
-            try {
-                const iframe = document.getElementById('pdfViewer');
-                const iframeUrl = iframe.contentWindow.location.href;
-                
-                if (iframeUrl && iframeUrl !== url) {
-                    log('URL iframe: ' + iframeUrl);
-                    
-                    const response = await fetch(`pdf_proxy.php?url=${encodeURIComponent(iframeUrl)}&action=download`);
-                    
-                    if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
-                        const blob = await response.blob();
-                        const downloadUrl = URL.createObjectURL(blob);
-                        
-                        const a = document.createElement('a');
-                        a.href = downloadUrl;
-                        a.download = 'capturado_' + Date.now() + '.pdf';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        
-                        URL.revokeObjectURL(downloadUrl);
-                        log('✅ PDF capturado do iframe!', 'success');
-                    } else {
-                        log('❌ Falha na captura', 'error');
-                    }
-                } else {
-                    log('⚠️ URL do iframe não mudou', 'warning');
-                }
-        function simularCliqueBaixar() {
-            log('🤖 Iniciando simulação de clique no botão baixar...');
+        function simularClique() {
+            log('🤖 Simulando clique no botão de download...');
             
             const iframe = document.getElementById('pdfViewer');
-            if (!iframe || !iframe.src) {
-                log('❌ Iframe não carregado', 'error');
+            if (!iframe) {
+                log('❌ Iframe não encontrado', 'error');
                 return;
             }
             
@@ -267,72 +152,38 @@
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 
                 if (iframeDoc) {
-                    log('✅ Acesso ao documento do iframe obtido!');
+                    log('✅ Acesso ao iframe obtido!');
                     
-                    // Procurar diferentes tipos de botões de download
-                    const seletores = [
-                        'button[title*="ownload"]',
-                        'button[title*="Baixar"]',
-                        'a[download]',
-                        'button[data-download]',
-                        '[aria-label*="download"]',
-                        '[aria-label*="baixar"]',
-                        'button:contains("Baixar")',
-                        '.download-button',
-                        '#download',
-                        '[role="button"][title*="download"]'
-                    ];
+                    // Procurar botões de download
+                    const botoes = iframeDoc.querySelectorAll('button, a, [role="button"]');
+                    log(`Encontrados ${botoes.length} elementos clicáveis`);
                     
-                    let botaoEncontrado = false;
-                    
-                    for (const seletor of seletores) {
-                        const botoes = iframeDoc.querySelectorAll(seletor);
-                        if (botoes.length > 0) {
-                            log(`🎯 Botão encontrado com seletor: ${seletor}`);
-                            
-                            botoes.forEach((botao, index) => {
-                                log(`Botão ${index + 1}: ${botao.outerHTML.substring(0, 100)}...`);
-                                
-                                // Simular clique
-                                botao.click();
-                                log(`✅ Clique simulado no botão ${index + 1}!`, 'success');
-                                botaoEncontrado = true;
-                            });
-                            
-                            if (botaoEncontrado) break;
-                        }
-                    }
-                    
-                    if (!botaoEncontrado) {
-                        log('❌ Nenhum botão de download encontrado');
-                        log('📋 Listando todos os botões disponíveis...');
+                    let encontrou = false;
+                    botoes.forEach((botao, index) => {
+                        const texto = (botao.textContent || botao.title || '').toLowerCase();
+                        const attrs = Array.from(botao.attributes).map(a => a.name + '=' + a.value).join(' ').toLowerCase();
                         
-                        const todosBotoes = iframeDoc.querySelectorAll('button, a[href]');
-                        todosBotoes.forEach((botao, index) => {
-                            const texto = botao.textContent || botao.title || botao.getAttribute('aria-label') || '';
-                            log(`Botão ${index + 1}: ${texto} - ${botao.tagName}`);
-                        });
+                        if (texto.includes('download') || texto.includes('baixar') || 
+                            attrs.includes('download') || attrs.includes('baixar')) {
+                            
+                            log(`🎯 Botão encontrado: "${texto}" - clicando...`);
+                            botao.click();
+                            encontrou = true;
+                        }
+                    });
+                    
+                    if (!encontrou) {
+                        log('❌ Nenhum botão de download encontrado');
+                        // Tentar Ctrl+S
+                        log('⚡ Tentando Ctrl+S...');
+                        const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true });
+                        iframe.contentWindow.dispatchEvent(event);
+                    } else {
+                        log('✅ Clique simulado!', 'success');
                     }
                     
                 } else {
-                    log('❌ CORS bloqueou acesso ao documento do iframe', 'error');
-                    log('💡 Tentando estratégia alternativa...');
-                    
-                    // Estratégia alternativa: simular eventos de teclado
-                    iframe.contentWindow.postMessage({
-                        action: 'simulateDownload',
-                        method: 'keyboard'
-                    }, '*');
-                    
-                    // Simular Ctrl+S
-                    const event = new KeyboardEvent('keydown', {
-                        key: 's',
-                        ctrlKey: true,
-                        bubbles: true
-                    });
-                    iframe.contentWindow.dispatchEvent(event);
-                    
-                    log('⚡ Eventos de teclado Ctrl+S enviados');
+                    log('❌ CORS bloqueou acesso ao iframe', 'error');
                 }
                 
             } catch (error) {
@@ -340,8 +191,8 @@
             }
         }
         
-        function procurarBotaoBaixar() {
-            log('🔍 Procurando botões de download no iframe...');
+        function procurarBotao() {
+            log('🔍 Procurando botões no iframe...');
             
             const iframe = document.getElementById('pdfViewer');
             if (!iframe) {
@@ -353,103 +204,61 @@
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 
                 if (iframeDoc) {
-                    log('✅ Analisando conteúdo do iframe...');
+                    const botoes = iframeDoc.querySelectorAll('button, a, input[type="button"]');
+                    log(`📊 Total: ${botoes.length} botões`);
                     
-                    // Procurar elementos com texto relacionado a download
-                    const elementos = iframeDoc.querySelectorAll('*');
-                    let encontrados = 0;
-                    
-                    elementos.forEach((el, index) => {
-                        const texto = el.textContent || el.title || el.getAttribute('aria-label') || '';
-                        const attrs = el.getAttributeNames().join(', ');
-                        
-                        if (texto.toLowerCase().includes('download') || 
-                            texto.toLowerCase().includes('baixar') ||
-                            attrs.toLowerCase().includes('download')) {
-                            
-                            log(`🎯 Elemento ${index}: ${el.tagName} - "${texto}" - [${attrs}]`);
-                            encontrados++;
+                    botoes.forEach((botao, index) => {
+                        if (index < 5) { // Mostrar apenas os primeiros 5
+                            const texto = botao.textContent || botao.value || '';
+                            log(`${index + 1}: "${texto}" - ${botao.tagName}`);
                         }
                     });
                     
-                    if (encontrados === 0) {
-                        log('❌ Nenhum elemento relacionado a download encontrado');
-                        
-                        // Listar todos os botões
-                        const botoes = iframeDoc.querySelectorAll('button, input[type="button"], a');
-                        log(`📊 Total de botões/links encontrados: ${botoes.length}`);
-                        
-                        botoes.forEach((botao, index) => {
-                            if (index < 10) { // Mostrar apenas os primeiros 10
-                                const texto = botao.textContent || botao.value || botao.href || '';
-                                log(`Botão ${index + 1}: "${texto.substring(0, 50)}" - ${botao.tagName}`);
-                            }
-                        });
-                    } else {
-                        log(`✅ ${encontrados} elementos de download encontrados!`, 'success');
-                    }
-                    
                 } else {
-                    log('❌ CORS bloqueou análise do iframe', 'error');
+                    log('❌ CORS bloqueou análise', 'error');
                 }
                 
             } catch (error) {
-                log('❌ Erro na análise: ' + error.message, 'error');
+                log('❌ Erro: ' + error.message, 'error');
             }
         }
         
-        function monitorarIframe() {
-            log('👁️ Iniciando monitoramento do iframe...');
-            
-            const iframe = document.getElementById('pdfViewer');
-            if (!iframe) {
-                log('❌ Iframe não encontrado', 'error');
+        async function baixarPDF() {
+            const url = window.currentPdfUrl || document.getElementById('pdfUrl').value;
+            if (!url) {
+                log('❌ Nenhuma URL para download', 'error');
                 return;
             }
             
-            // Monitorar mudanças na URL
-            let urlAnterior = iframe.src;
+            log('Baixando PDF...');
             
-            const intervalo = setInterval(() => {
-                try {
-                    const urlAtual = iframe.contentWindow.location.href;
+            try {
+                const response = await fetch(`pdf_proxy.php?url=${encodeURIComponent(url)}&action=download`);
+                
+                if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
+                    const blob = await response.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
                     
-                    if (urlAtual !== urlAnterior) {
-                        log(`🔄 URL mudou: ${urlAtual}`);
-                        urlAnterior = urlAtual;
-                        
-                        // Se mudou para uma URL de download, tentar capturar
-                        if (urlAtual.includes('download') || urlAtual.includes('.pdf')) {
-                            log('🎯 URL de download detectada!', 'success');
-                            // Tentar baixar via fetch
-                            fetch(urlAtual)
-                                .then(response => response.blob())
-                                .then(blob => {
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = 'monitorado_' + Date.now() + '.pdf';
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                    log('✅ Download automático realizado!', 'success');
-                                })
-                                .catch(err => log('❌ Falha no download automático: ' + err.message, 'error'));
-                        }
-                    }
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'documento_' + Date.now() + '.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
                     
-                } catch (corsError) {
-                    // CORS normal, continua monitorando
+                    URL.revokeObjectURL(downloadUrl);
+                    log('✅ PDF baixado!', 'success');
+                } else {
+                    log('❌ Falha no download via servidor', 'error');
                 }
-            }, 2000);
-            
-            // Parar monitoramento após 2 minutos
-            setTimeout(() => {
-                clearInterval(intervalo);
-                log('⏹️ Monitoramento interrompido após 2 minutos');
-            }, 120000);
-            
-            log('✅ Monitoramento ativo por 2 minutos...', 'success');
+            } catch (error) {
+                log('❌ Erro: ' + error.message, 'error');
+            }
         }
+        
+        // Inicialização
+        log('🚀 Sistema carregado');
+        log('📝 Para PJe: Iframe → Login → Simular Clique');
     </script>
 </body>
 </html>
