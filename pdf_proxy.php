@@ -1,40 +1,37 @@
 <?php
 <?php
-// Função de debug simples ANTES de qualquer processamento
+// Resposta de ping PRIMEIRO - antes de qualquer output
 if (isset($_GET['test']) && $_GET['test'] === 'ping') {
-    // Não carregar mais nada, responder imediatamente
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
     
-    $response = [
+    $response = json_encode([
         'status' => 'ok',
-        'message' => 'PDF Proxy v2.0 funcionando',
+        'message' => 'PDF Proxy v2.1 funcionando',
         'timestamp' => date('Y-m-d H:i:s'),
         'php_version' => PHP_VERSION,
-        'memory_limit' => ini_get('memory_limit'),
-        'max_execution_time' => ini_get('max_execution_time'),
-        'server' => $_SERVER['SERVER_NAME'] ?? 'desconhecido'
-    ];
+        'features' => ['proxy', 'capture', 'download']
+    ], JSON_UNESCAPED_UNICODE);
     
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    echo $response;
     exit();
 }
 
-// Função para lidar com requisições OPTIONS (preflight CORS)
+// CORS OPTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');
-    header('Access-Control-Max-Age: 86400'); // 24 horas
     http_response_code(200);
     exit();
 }
 
-// PDF Proxy - Bypass CORS para PDFs de tribunais
-// Versão: 2.0 - Com melhorias para PJe e debug avançado
-// Uso: pdf_proxy.php?url=LINK_DO_PDF&debug=1&strategy=iframe
+// PDF Proxy Unificado - Proxy + Captura + Download
+// Versão: 2.1 - Funcionalidades unificadas
+// Usos: 
+// - pdf_proxy.php?url=LINK&debug=1&strategy=auto (proxy normal)
+// - pdf_proxy.php?url=LINK&action=download (captura e download)
+// - pdf_proxy.php?url=LINK&action=capture (apenas captura)
 
 // Configuração de log
 $log_dir = __DIR__;
@@ -68,10 +65,12 @@ error_reporting(E_ALL);
 // Parâmetros
 $debug_mode = isset($_GET['debug']) && $_GET['debug'] == '1';
 $strategy = $_GET['strategy'] ?? 'direct'; // direct, iframe, session
+$action = $_GET['action'] ?? 'proxy'; // proxy, download, capture
 $save_response = isset($_GET['save']) && $_GET['save'] == '1';
 
 logMessage("Modo debug: " . ($debug_mode ? 'ATIVADO' : 'DESATIVADO'));
 logMessage("Estratégia: " . $strategy);
+logMessage("Ação: " . $action);
 
 // Headers de segurança
 header('X-Content-Type-Options: nosniff');
@@ -251,25 +250,57 @@ try {
     
     logMessage("PDF baixado com sucesso!");
     
-    // Configurar headers para enviar o PDF
-    header('Content-Type: application/pdf');
-    header('Content-Length: ' . strlen($pdf_content));
-    
-    // Nome do arquivo baseado na URL
-    $filename = generateFilename($pdf_url);
-    header('Content-Disposition: inline; filename="' . $filename . '"');
-    
-    // Headers para permitir CORS
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
-    
-    // Headers de cache
-    header('Cache-Control: public, max-age=3600');
-    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
-    
-    // Enviar o PDF
-    echo $pdf_content;
+    // Comportamento baseado na ação solicitada
+    if ($action === 'download') {
+        // Forçar download do arquivo
+        $filename = generateFilename($pdf_url);
+        
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . strlen($pdf_content));
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: 0');
+        
+        // Headers para permitir CORS
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type');
+        
+        echo $pdf_content;
+        logMessage("PDF enviado para download: " . $filename);
+        
+    } else if ($action === 'capture') {
+        // Retornar informações sobre a captura
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'PDF capturado com sucesso',
+            'size' => strlen($pdf_content),
+            'filename' => generateFilename($pdf_url),
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        logMessage("Informações de captura retornadas");
+        
+    } else {
+        // Comportamento padrão - proxy normal
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . strlen($pdf_content));
+        header('Content-Disposition: inline; filename="' . generateFilename($pdf_url) . '"');
+        
+        // Headers para permitir CORS
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type');
+        
+        // Headers de cache
+        header('Cache-Control: public, max-age=3600');
+        header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
+        
+        echo $pdf_content;
+        logMessage("PDF enviado via proxy normal");
+    }
     
     logMessage("PDF enviado com sucesso para o cliente");
     logMessage("=== PROCESSO CONCLUÍDO ===");

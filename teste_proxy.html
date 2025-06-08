@@ -110,8 +110,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔧 Teste do PDF Proxy v2.0</h1>
-        <p>Este testador verifica se o proxy está funcionando corretamente para baixar PDFs de sites com CORS.</p>
+        <h1>🔧 Teste do PDF Proxy v2.1 Unificado</h1>
+        <p>Sistema unificado para proxy, captura e download de PDFs protegidos por CORS.</p>
         
         <div class="form-group">
             <label for="pdfUrl">URL do PDF:</label>
@@ -400,45 +400,63 @@
                     overlay.style.display = 'none';
                     log('✅ Overlay removido. Verificando se é PDF...', 'success');
                     
+                    // Adicionar botões de captura
+                    const captureControls = document.createElement('div');
+                    captureControls.style.margin = '10px';
+                    captureControls.style.textAlign = 'center';
+                    captureControls.innerHTML = `
+                        <button onclick="forcarDownloadIframe()" style="background: #28a745; margin: 5px;">
+                            📥 Forçar Download
+                        </button>
+                        <button onclick="capturarParaServidor()" style="background: #007cba; margin: 5px;">
+                            🚀 Capturar para Servidor
+                        </button>
+                        <button onclick="abrirEmNovaAba()" style="background: #6f42c1; margin: 5px;">
+                            🔗 Abrir em Nova Aba
+                        </button>
+                    `;
+                    container.appendChild(captureControls);
+                    
                     // Verificar periodicamente se virou PDF
                     const checkInterval = setInterval(() => {
                         try {
                             const currentUrl = iframe.contentWindow.location.href;
                             if (currentUrl.includes('.pdf') || currentUrl.includes('download')) {
                                 log('📄 PDF detectado no iframe!', 'success');
-                                showStatus('PDF detectado! Agora você pode tentar capturar via proxy.', 'success');
+                                showStatus('PDF detectado! Use os botões de captura abaixo.', 'success');
                                 clearInterval(checkInterval);
                                 
-                                // Adicionar botão para tentar capturar via proxy
-                                const captureBtn = document.createElement('button');
-                                captureBtn.textContent = '📥 Tentar Capturar via Proxy';
-                                captureBtn.style.margin = '10px';
-                                captureBtn.onclick = () => {
-                                    // Usar a URL atual do iframe
-                                    document.getElementById('pdfUrl').value = currentUrl;
-                                    log('🔄 Tentando capturar PDF detectado: ' + currentUrl);
-                                    testarProxy();
-                                };
-                                container.appendChild(captureBtn);
+                                // Adicionar URL detectada aos controles
+                                const urlInfo = document.createElement('div');
+                                urlInfo.style.margin = '10px';
+                                urlInfo.style.fontSize = '12px';
+                                urlInfo.style.background = '#f8f9fa';
+                                urlInfo.style.padding = '10px';
+                                urlInfo.style.borderRadius = '4px';
+                                urlInfo.innerHTML = `<strong>URL do PDF:</strong><br><code>${currentUrl}</code>`;
+                                container.appendChild(urlInfo);
+                                
+                                // Atualizar URL global para captura
+                                window.detectedPdfUrl = currentUrl;
                             }
                         } catch (e) {
-                            // CORS - normal, mas vamos tentar outra estratégia
-                            // Verificar se o iframe mudou visualmente
-                            try {
-                                const iframeDoc = iframe.contentDocument;
-                                if (iframeDoc && iframeDoc.body) {
-                                    const bodyText = iframeDoc.body.innerText || '';
-                                    if (bodyText.includes('%PDF') || bodyText.length < 100) {
-                                        log('📄 Possível PDF detectado por análise de conteúdo!', 'success');
-                                        showStatus('Possível PDF detectado! Tente capturar.', 'success');
-                                        clearInterval(checkInterval);
-                                    }
+                            // CORS - vamos assumir que é PDF após um tempo
+                            setTimeout(() => {
+                                if (checkInterval) {
+                                    log('⏰ Assumindo que PDF carregou (CORS impediu verificação)', 'warning');
+                                    showStatus('PDF provavelmente carregou. Use os botões de captura.', 'warning');
+                                    clearInterval(checkInterval);
+                                    window.detectedPdfUrl = url; // Usar URL original
                                 }
-                            } catch (e2) {
-                                // Duplo CORS - completamente normal
-                            }
+                            }, 8000);
                         }
                     }, 2000);
+                    
+                    // Parar verificação após 30 segundos
+                    setTimeout(() => {
+                        if (checkInterval) clearInterval(checkInterval);
+                    }, 30000);
+                });
                     
                     // Parar verificação após 30 segundos
                     setTimeout(() => {
@@ -495,16 +513,147 @@
             }
         }
         
+        // ===== FUNÇÕES DE CAPTURA =====
+        
+        function forcarDownloadIframe() {
+            log('📥 Forçando download do iframe...');
+            
+            try {
+                const iframe = document.getElementById('pdfViewer') || document.querySelector('iframe');
+                if (!iframe) {
+                    throw new Error('Iframe não encontrado');
+                }
+                
+                // Estratégia 1: Tentar acessar URL atual do iframe
+                try {
+                    const currentUrl = iframe.contentWindow.location.href;
+                    log('🔗 URL atual do iframe: ' + currentUrl);
+                    
+                    // Criar link de download
+                    const a = document.createElement('a');
+                    a.href = currentUrl;
+                    a.download = 'documento_pje_' + new Date().getTime() + '.pdf';
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    log('✅ Download iniciado via URL do iframe', 'success');
+                    showStatus('Download iniciado! Verifique a pasta de downloads.', 'success');
+                    
+                } catch (corsError) {
+                    // CORS bloqueou - usar URL original
+                    const originalUrl = window.detectedPdfUrl || document.getElementById('pdfUrl').value;
+                    log('⚠️ CORS bloqueou acesso à URL do iframe. Usando URL original: ' + originalUrl, 'warning');
+                    
+                    const a = document.createElement('a');
+                    a.href = originalUrl;
+                    a.download = 'documento_pje_' + new Date().getTime() + '.pdf';
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    log('✅ Download iniciado via URL original', 'success');
+                    showStatus('Download iniciado com URL original!', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no download: ${error.message}`, 'error');
+                showStatus('Erro no download. Tente "Abrir em Nova Aba".', 'error');
+            }
+        }
+        
+        async function capturarParaServidor() {
+            log('🚀 Iniciando captura para servidor...');
+            
+            try {
+                const pdfUrl = window.detectedPdfUrl || document.getElementById('pdfUrl').value;
+                if (!pdfUrl) {
+                    throw new Error('URL do PDF não encontrada');
+                }
+                
+                log('📡 Enviando URL para servidor capturar: ' + pdfUrl);
+                showStatus('Enviando para servidor capturar...', 'info');
+                
+                // Usar o proxy unificado com action=download
+                const captureUrl = `pdf_proxy.php?url=${encodeURIComponent(pdfUrl)}&action=download&debug=1`;
+                
+                const response = await fetch(captureUrl);
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('application/pdf')) {
+                        // PDF capturado com sucesso
+                        const blob = await response.blob();
+                        const downloadUrl = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = 'documento_capturado_' + new Date().getTime() + '.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        
+                        URL.revokeObjectURL(downloadUrl);
+                        
+                        log('✅ PDF capturado pelo servidor e baixado!', 'success');
+                        showStatus('PDF capturado com sucesso pelo servidor!', 'success');
+                        
+                    } else if (contentType && contentType.includes('application/json')) {
+                        // Resposta JSON - verificar se é erro ou sucesso
+                        const jsonResponse = await response.json();
+                        if (jsonResponse.error) {
+                            throw new Error(jsonResponse.message || 'Erro na captura');
+                        } else {
+                            log('✅ Captura realizada: ' + jsonResponse.message, 'success');
+                            showStatus('Captura realizada com sucesso!', 'success');
+                        }
+                    } else {
+                        // HTML ou outro tipo - erro
+                        const text = await response.text();
+                        log('⚠️ Servidor retornou: ' + text.substring(0, 200), 'warning');
+                        showStatus('Servidor não conseguiu capturar PDF. Pode precisar de login.', 'warning');
+                    }
+                } else {
+                    throw new Error(`Servidor retornou erro: ${response.status}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Erro na captura pelo servidor: ${error.message}`, 'error');
+                showStatus('Falha na captura pelo servidor. Tente download direto.', 'error');
+            }
+        }
+        
+        function abrirEmNovaAba() {
+            const pdfUrl = window.detectedPdfUrl || document.getElementById('pdfUrl').value;
+            if (!pdfUrl) {
+                log('❌ URL do PDF não encontrada', 'error');
+                return;
+            }
+            
+            log('🔗 Abrindo PDF em nova aba: ' + pdfUrl);
+            window.open(pdfUrl, '_blank');
+            showStatus('PDF aberto em nova aba!', 'success');
+        }
+        
         // Log inicial
         document.addEventListener('DOMContentLoaded', function() {
-            log('🚀 Testador do PDF Proxy v2.0 carregado');
-            log('📝 Instruções:');
+            log('🚀 Testador do PDF Proxy v2.1 Unificado carregado');
+            log('📝 Funcionalidades:');
+            log('• Proxy normal (visualização)');
+            log('• Captura com download forçado');
+            log('• Iframe para login no PJe');
+            log('• Debug avançado');
+            log('');
+            log('📋 Instruções:');
             log('1. Cole uma URL de PDF na caixa acima');
             log('2. Escolha o modo debug se quiser detalhes');
             log('3. Selecione uma estratégia ou deixe automática');
             log('4. Teste primeiro o acesso direto para ver se há CORS');
-            log('5. Se falhar, teste via proxy');
-            log('6. Compare os resultados');
+            log('5. Se falhar, teste via proxy ou iframe');
+            log('6. Use os botões de captura quando o PDF aparecer');
         });
     </script>
 </body>
