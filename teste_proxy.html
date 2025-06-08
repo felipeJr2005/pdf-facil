@@ -27,6 +27,7 @@
             <button onclick="testarPing()">Testar Conexão</button>
             <button onclick="testarProxy()">Testar Proxy</button>
             <button onclick="testarIframe()">Testar Iframe</button>
+            <button onclick="simularCliqueBaixar()">🤖 Simular Clique Baixar</button>
             <button onclick="limparLog()">Limpar</button>
         </div>
         
@@ -48,6 +49,8 @@
         <div>
             <button onclick="baixarPDF()">Baixar PDF</button>
             <button onclick="tentarCapturar()">Tentar Capturar</button>
+            <button onclick="procurarBotaoBaixar()">🔍 Procurar Botão Baixar</button>
+            <button onclick="monitorarIframe()">👁️ Monitorar Iframe</button>
         </div>
     </div>
     
@@ -251,14 +254,202 @@
                 } else {
                     log('⚠️ URL do iframe não mudou', 'warning');
                 }
+        function simularCliqueBaixar() {
+            log('🤖 Iniciando simulação de clique no botão baixar...');
+            
+            const iframe = document.getElementById('pdfViewer');
+            if (!iframe || !iframe.src) {
+                log('❌ Iframe não carregado', 'error');
+                return;
+            }
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (iframeDoc) {
+                    log('✅ Acesso ao documento do iframe obtido!');
+                    
+                    // Procurar diferentes tipos de botões de download
+                    const seletores = [
+                        'button[title*="ownload"]',
+                        'button[title*="Baixar"]',
+                        'a[download]',
+                        'button[data-download]',
+                        '[aria-label*="download"]',
+                        '[aria-label*="baixar"]',
+                        'button:contains("Baixar")',
+                        '.download-button',
+                        '#download',
+                        '[role="button"][title*="download"]'
+                    ];
+                    
+                    let botaoEncontrado = false;
+                    
+                    for (const seletor of seletores) {
+                        const botoes = iframeDoc.querySelectorAll(seletor);
+                        if (botoes.length > 0) {
+                            log(`🎯 Botão encontrado com seletor: ${seletor}`);
+                            
+                            botoes.forEach((botao, index) => {
+                                log(`Botão ${index + 1}: ${botao.outerHTML.substring(0, 100)}...`);
+                                
+                                // Simular clique
+                                botao.click();
+                                log(`✅ Clique simulado no botão ${index + 1}!`, 'success');
+                                botaoEncontrado = true;
+                            });
+                            
+                            if (botaoEncontrado) break;
+                        }
+                    }
+                    
+                    if (!botaoEncontrado) {
+                        log('❌ Nenhum botão de download encontrado');
+                        log('📋 Listando todos os botões disponíveis...');
+                        
+                        const todosBotoes = iframeDoc.querySelectorAll('button, a[href]');
+                        todosBotoes.forEach((botao, index) => {
+                            const texto = botao.textContent || botao.title || botao.getAttribute('aria-label') || '';
+                            log(`Botão ${index + 1}: ${texto} - ${botao.tagName}`);
+                        });
+                    }
+                    
+                } else {
+                    log('❌ CORS bloqueou acesso ao documento do iframe', 'error');
+                    log('💡 Tentando estratégia alternativa...');
+                    
+                    // Estratégia alternativa: simular eventos de teclado
+                    iframe.contentWindow.postMessage({
+                        action: 'simulateDownload',
+                        method: 'keyboard'
+                    }, '*');
+                    
+                    // Simular Ctrl+S
+                    const event = new KeyboardEvent('keydown', {
+                        key: 's',
+                        ctrlKey: true,
+                        bubbles: true
+                    });
+                    iframe.contentWindow.dispatchEvent(event);
+                    
+                    log('⚡ Eventos de teclado Ctrl+S enviados');
+                }
+                
             } catch (error) {
-                log('❌ CORS bloqueou acesso ao iframe', 'error');
+                log('❌ Erro na simulação: ' + error.message, 'error');
             }
         }
         
-        // Inicialização
-        log('🚀 Sistema carregado');
-        log('📝 Cole uma URL e teste as funcionalidades');
+        function procurarBotaoBaixar() {
+            log('🔍 Procurando botões de download no iframe...');
+            
+            const iframe = document.getElementById('pdfViewer');
+            if (!iframe) {
+                log('❌ Iframe não encontrado', 'error');
+                return;
+            }
+            
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (iframeDoc) {
+                    log('✅ Analisando conteúdo do iframe...');
+                    
+                    // Procurar elementos com texto relacionado a download
+                    const elementos = iframeDoc.querySelectorAll('*');
+                    let encontrados = 0;
+                    
+                    elementos.forEach((el, index) => {
+                        const texto = el.textContent || el.title || el.getAttribute('aria-label') || '';
+                        const attrs = el.getAttributeNames().join(', ');
+                        
+                        if (texto.toLowerCase().includes('download') || 
+                            texto.toLowerCase().includes('baixar') ||
+                            attrs.toLowerCase().includes('download')) {
+                            
+                            log(`🎯 Elemento ${index}: ${el.tagName} - "${texto}" - [${attrs}]`);
+                            encontrados++;
+                        }
+                    });
+                    
+                    if (encontrados === 0) {
+                        log('❌ Nenhum elemento relacionado a download encontrado');
+                        
+                        // Listar todos os botões
+                        const botoes = iframeDoc.querySelectorAll('button, input[type="button"], a');
+                        log(`📊 Total de botões/links encontrados: ${botoes.length}`);
+                        
+                        botoes.forEach((botao, index) => {
+                            if (index < 10) { // Mostrar apenas os primeiros 10
+                                const texto = botao.textContent || botao.value || botao.href || '';
+                                log(`Botão ${index + 1}: "${texto.substring(0, 50)}" - ${botao.tagName}`);
+                            }
+                        });
+                    } else {
+                        log(`✅ ${encontrados} elementos de download encontrados!`, 'success');
+                    }
+                    
+                } else {
+                    log('❌ CORS bloqueou análise do iframe', 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Erro na análise: ' + error.message, 'error');
+            }
+        }
+        
+        function monitorarIframe() {
+            log('👁️ Iniciando monitoramento do iframe...');
+            
+            const iframe = document.getElementById('pdfViewer');
+            if (!iframe) {
+                log('❌ Iframe não encontrado', 'error');
+                return;
+            }
+            
+            // Monitorar mudanças na URL
+            let urlAnterior = iframe.src;
+            
+            const intervalo = setInterval(() => {
+                try {
+                    const urlAtual = iframe.contentWindow.location.href;
+                    
+                    if (urlAtual !== urlAnterior) {
+                        log(`🔄 URL mudou: ${urlAtual}`);
+                        urlAnterior = urlAtual;
+                        
+                        // Se mudou para uma URL de download, tentar capturar
+                        if (urlAtual.includes('download') || urlAtual.includes('.pdf')) {
+                            log('🎯 URL de download detectada!', 'success');
+                            // Tentar baixar via fetch
+                            fetch(urlAtual)
+                                .then(response => response.blob())
+                                .then(blob => {
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'monitorado_' + Date.now() + '.pdf';
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                    log('✅ Download automático realizado!', 'success');
+                                })
+                                .catch(err => log('❌ Falha no download automático: ' + err.message, 'error'));
+                        }
+                    }
+                    
+                } catch (corsError) {
+                    // CORS normal, continua monitorando
+                }
+            }, 2000);
+            
+            // Parar monitoramento após 2 minutos
+            setTimeout(() => {
+                clearInterval(intervalo);
+                log('⏹️ Monitoramento interrompido após 2 minutos');
+            }, 120000);
+            
+            log('✅ Monitoramento ativo por 2 minutos...', 'success');
+        }
     </script>
 </body>
 </html>
