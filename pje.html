@@ -2,68 +2,441 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PJe Simples - Teste Básico</title>
+    <title>PJe Multi-Interceptor - Todas as Abordagens</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .form-control { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .btn { padding: 8px 15px; margin-right: 10px; cursor: pointer; background: #007bff; color: white; border: none; }
-        #pdf-viewer { width: 100%; height: 500px; border: 1px solid #ddd; }
-        #log { background: #f8f9fa; padding: 10px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .panel { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .form-control { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+        .btn { padding: 8px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; }
+        #pdf-viewer { width: 100%; height: 400px; border: 1px solid #ddd; }
+        #log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 11px; white-space: pre-wrap; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2>PJe Simples - Só testar se abre</h2>
+    <h2>🚀 PJe Multi-Interceptor - TODAS AS ABORDAGENS</h2>
     
-    <input type="url" id="pdf-url" class="form-control" placeholder="URL do PJe" value="https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/137195928">
-    <button id="btn-load" class="btn">Carregar</button>
-    <button id="btn-test" class="btn">Teste Básico</button>
+    <div class="panel">
+        <h3>🎯 URL e Controles</h3>
+        <input type="url" id="pdf-url" class="form-control" value="https://pje.cloud.tjpe.jus.br/1g/seam/resource/rest/pje-legacy/documento/download/137195928">
+        <button id="btn-load" class="btn">Carregar PJe</button>
+        <button id="btn-all" class="btn btn-success">🔥 ATIVAR TODAS AS INTERCEPTAÇÕES</button>
+        <button id="btn-clear" class="btn btn-warning">Limpar Log</button>
+    </div>
     
-    <br><br>
-    <iframe id="pdf-viewer"></iframe>
+    <div class="panel">
+        <h3>📱 Interceptações Individuais</h3>
+        <button id="btn-fetch" class="btn">1️⃣ Fetch Hook</button>
+        <button id="btn-xhr" class="btn">2️⃣ XHR Hook</button>
+        <button id="btn-sw" class="btn">3️⃣ Service Worker</button>
+        <button id="btn-dom" class="btn">4️⃣ DOM Monitor</button>
+        <button id="btn-network" class="btn">5️⃣ Network Monitor</button>
+        <button id="btn-iframe" class="btn">6️⃣ Iframe Injection</button>
+        <button id="btn-proxy" class="btn">7️⃣ URL Proxy</button>
+    </div>
     
-    <div id="log">Log...</div>
+    <div class="panel">
+        <h3>🖥️ PJe Iframe</h3>
+        <iframe id="pdf-viewer"></iframe>
+    </div>
+    
+    <div class="panel">
+        <h3>📊 Log de Interceptações</h3>
+        <div id="log">Aguardando interceptações...\n</div>
+    </div>
 
     <script>
         const urlInput = document.getElementById('pdf-url');
-        const btnLoad = document.getElementById('btn-load');
-        const btnTest = document.getElementById('btn-test');
         const pdfViewer = document.getElementById('pdf-viewer');
         const logDiv = document.getElementById('log');
         
-        function log(msg) {
-            logDiv.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
+        let interceptionsActive = [];
+        let capturedData = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : '';
+            logDiv.innerHTML += `[${timestamp}] <span class="${className}">${message}</span>\n`;
             logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
         }
         
-        // Só carregar iframe - SIMPLES
-        btnLoad.addEventListener('click', function() {
+        // ===== CARREGAR PJE =====
+        document.getElementById('btn-load').addEventListener('click', () => {
             const url = urlInput.value.trim();
-            log('Carregando: ' + url);
+            log('🔄 Carregando PJe...', 'info');
             pdfViewer.src = url;
+            pdfViewer.onload = () => log('✅ PJe carregado', 'success');
         });
         
-        // Teste básico de interceptação - SEM INJEÇÃO
-        btnTest.addEventListener('click', function() {
-            log('=== TESTE BÁSICO ===');
+        // ===== LIMPAR LOG =====
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            logDiv.innerHTML = 'Log limpo...\n';
+        });
+        
+        // ===== ATIVAR TODAS =====
+        document.getElementById('btn-all').addEventListener('click', () => {
+            log('🔥 ATIVANDO TODAS AS INTERCEPTAÇÕES!', 'warning');
+            setupFetchHook();
+            setupXHRHook();
+            setupServiceWorker();
+            setupDOMMonitor();
+            setupNetworkMonitor();
+            setupIframeInjection();
+            setupURLProxy();
+            log('🚀 TODAS AS INTERCEPTAÇÕES ATIVAS!', 'success');
+        });
+        
+        // ===== 1️⃣ FETCH HOOK =====
+        document.getElementById('btn-fetch').addEventListener('click', setupFetchHook);
+        
+        function setupFetchHook() {
+            if (interceptionsActive.includes('fetch')) return;
+            interceptionsActive.push('fetch');
             
-            // Interceptar fetch APENAS no contexto atual
+            log('1️⃣ Ativando Fetch Hook...', 'info');
+            
             const originalFetch = window.fetch;
             window.fetch = function(...args) {
                 const url = args[0];
+                
                 if (typeof url === 'string') {
-                    log('FETCH: ' + url.substring(0, 80) + '...');
+                    log(`🔍 [FETCH] ${url.substring(0, 100)}...`, 'info');
+                    
+                    if (url.includes('pje') || url.includes('documento') || url.includes('minio') || url.includes('.pdf')) {
+                        log(`🎯 [FETCH] PJe URL detectada!`, 'success');
+                        
+                        return originalFetch.apply(this, args)
+                            .then(response => {
+                                log(`📄 [FETCH] Status: ${response.status}`, 'info');
+                                
+                                if (response.ok) {
+                                    const contentType = response.headers.get('content-type') || '';
+                                    
+                                    if (contentType.includes('pdf') || url.includes('.pdf')) {
+                                        log(`🎉 [FETCH] PDF DETECTADO!`, 'success');
+                                        
+                                        const cloned = response.clone();
+                                        cloned.blob().then(blob => {
+                                            log(`💾 [FETCH] PDF Capturado: ${blob.size} bytes`, 'success');
+                                            capturedData.push({method: 'fetch', blob, url});
+                                        });
+                                    }
+                                }
+                                
+                                return response;
+                            });
+                    }
                 }
+                
                 return originalFetch.apply(this, args);
             };
             
-            log('Interceptação ativa no contexto principal');
-            log('Agora clique no botão roxo e veja se aparece algo');
+            log('✅ [FETCH] Hook ativo', 'success');
+        }
+        
+        // ===== 2️⃣ XHR HOOK =====
+        document.getElementById('btn-xhr').addEventListener('click', setupXHRHook);
+        
+        function setupXHRHook() {
+            if (interceptionsActive.includes('xhr')) return;
+            interceptionsActive.push('xhr');
+            
+            log('2️⃣ Ativando XHR Hook...', 'info');
+            
+            const originalXHR = window.XMLHttpRequest;
+            window.XMLHttpRequest = function() {
+                const xhr = new originalXHR();
+                const originalOpen = xhr.open;
+                
+                xhr.open = function(method, url, ...args) {
+                    if (typeof url === 'string') {
+                        log(`🔍 [XHR] ${method} ${url.substring(0, 100)}...`, 'info');
+                        
+                        if (url.includes('pje') || url.includes('documento') || url.includes('minio') || url.includes('.pdf')) {
+                            log(`🎯 [XHR] PJe URL detectada!`, 'success');
+                            
+                            xhr.addEventListener('load', function() {
+                                if (xhr.status === 200) {
+                                    log(`🎉 [XHR] Resposta OK recebida!`, 'success');
+                                    
+                                    if (xhr.response instanceof Blob) {
+                                        log(`💾 [XHR] Blob capturado: ${xhr.response.size} bytes`, 'success');
+                                        capturedData.push({method: 'xhr', blob: xhr.response, url});
+                                    } else if (xhr.responseType === 'arraybuffer') {
+                                        const blob = new Blob([xhr.response], {type: 'application/pdf'});
+                                        log(`💾 [XHR] ArrayBuffer capturado: ${blob.size} bytes`, 'success');
+                                        capturedData.push({method: 'xhr', blob, url});
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    return originalOpen.apply(this, [method, url, ...args]);
+                };
+                
+                return xhr;
+            };
+            
+            log('✅ [XHR] Hook ativo', 'success');
+        }
+        
+        // ===== 3️⃣ SERVICE WORKER =====
+        document.getElementById('btn-sw').addEventListener('click', setupServiceWorker);
+        
+        function setupServiceWorker() {
+            if (interceptionsActive.includes('sw')) return;
+            interceptionsActive.push('sw');
+            
+            log('3️⃣ Ativando Service Worker...', 'info');
+            
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('fetch', function(event) {
+                        const url = event.request.url;
+                        
+                        if (url.includes('pje') || url.includes('documento') || url.includes('minio') || url.includes('.pdf')) {
+                            console.log('[SW] Interceptando:', url);
+                            
+                            event.respondWith(
+                                fetch(event.request).then(response => {
+                                    if (response.ok) {
+                                        const contentType = response.headers.get('content-type') || '';
+                                        
+                                        if (contentType.includes('pdf') || url.includes('.pdf')) {
+                                            console.log('[SW] PDF detectado!');
+                                            
+                                            // Clonar para capturar
+                                            const cloned = response.clone();
+                                            cloned.blob().then(blob => {
+                                                self.clients.matchAll().then(clients => {
+                                                    clients.forEach(client => {
+                                                        client.postMessage({
+                                                            type: 'SW_PDF_CAPTURED',
+                                                            size: blob.size,
+                                                            url: url
+                                                        });
+                                                    });
+                                                });
+                                            });
+                                        }
+                                    }
+                                    
+                                    return response;
+                                })
+                            );
+                        }
+                    });
+                `;
+                
+                const blob = new Blob([swCode], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => {
+                        log('✅ [SW] Service Worker registrado', 'success');
+                        
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data.type === 'SW_PDF_CAPTURED') {
+                                log(`🎉 [SW] PDF capturado via Service Worker! ${event.data.size} bytes`, 'success');
+                            }
+                        });
+                    })
+                    .catch(err => log(`❌ [SW] Erro: ${err.message}`, 'error'));
+            } else {
+                log('❌ [SW] Service Worker não suportado', 'error');
+            }
+        }
+        
+        // ===== 4️⃣ DOM MONITOR =====
+        document.getElementById('btn-dom').addEventListener('click', setupDOMMonitor);
+        
+        function setupDOMMonitor() {
+            if (interceptionsActive.includes('dom')) return;
+            interceptionsActive.push('dom');
+            
+            log('4️⃣ Ativando DOM Monitor...', 'info');
+            
+            // Monitorar cliques
+            document.addEventListener('click', function(event) {
+                const target = event.target;
+                log(`🖱️ [DOM] Click em: ${target.tagName} ${target.className}`, 'info');
+                
+                if (target.href && (target.href.includes('download') || target.href.includes('.pdf'))) {
+                    log(`🎯 [DOM] Link de download clicado: ${target.href}`, 'success');
+                }
+            }, true);
+            
+            // Monitorar mudanças no DOM
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1) { // Element
+                                if (node.href && node.href.includes('.pdf')) {
+                                    log(`🎯 [DOM] Novo link PDF adicionado: ${node.href}`, 'success');
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+            
+            observer.observe(document.body, {childList: true, subtree: true});
+            
+            log('✅ [DOM] Monitor ativo', 'success');
+        }
+        
+        // ===== 5️⃣ NETWORK MONITOR =====
+        document.getElementById('btn-network').addEventListener('click', setupNetworkMonitor);
+        
+        function setupNetworkMonitor() {
+            if (interceptionsActive.includes('network')) return;
+            interceptionsActive.push('network');
+            
+            log('5️⃣ Ativando Network Monitor...', 'info');
+            
+            // Performance Observer para requisições
+            if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver(list => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.name.includes('pje') || entry.name.includes('documento') || entry.name.includes('.pdf')) {
+                            log(`🌐 [NETWORK] Requisição detectada: ${entry.name}`, 'success');
+                            log(`📊 [NETWORK] Duração: ${entry.duration}ms`, 'info');
+                        }
+                    }
+                });
+                
+                observer.observe({entryTypes: ['resource']});
+                log('✅ [NETWORK] Performance Observer ativo', 'success');
+            }
+            
+            // Navigation API
+            if ('navigation' in window) {
+                window.navigation.addEventListener('navigate', event => {
+                    if (event.destination.url.includes('pdf') || event.destination.url.includes('download')) {
+                        log(`🎯 [NAVIGATION] Navegação para: ${event.destination.url}`, 'success');
+                    }
+                });
+            }
+        }
+        
+        // ===== 6️⃣ IFRAME INJECTION =====
+        document.getElementById('btn-iframe').addEventListener('click', setupIframeInjection);
+        
+        function setupIframeInjection() {
+            if (interceptionsActive.includes('iframe')) return;
+            interceptionsActive.push('iframe');
+            
+            log('6️⃣ Ativando Iframe Injection...', 'info');
+            
+            // Tentar injetar no iframe
+            setTimeout(() => {
+                try {
+                    const iframeDoc = pdfViewer.contentDocument;
+                    const iframeWindow = pdfViewer.contentWindow;
+                    
+                    if (iframeDoc && iframeWindow) {
+                        log('✅ [IFRAME] Acesso ao contexto obtido', 'success');
+                        
+                        const script = iframeDoc.createElement('script');
+                        script.textContent = `
+                            console.log('[IFRAME] Script injetado!');
+                            
+                            // Hook no contexto do iframe
+                            const originalFetch = window.fetch;
+                            window.fetch = function(...args) {
+                                console.log('[IFRAME] Fetch:', args[0]);
+                                
+                                if (args[0] && args[0].includes('pdf')) {
+                                    window.parent.postMessage({
+                                        type: 'IFRAME_PDF_DETECTED',
+                                        url: args[0]
+                                    }, '*');
+                                }
+                                
+                                return originalFetch.apply(this, args);
+                            };
+                        `;
+                        
+                        iframeDoc.head.appendChild(script);
+                        log('✅ [IFRAME] Script injetado com sucesso', 'success');
+                    } else {
+                        log('❌ [IFRAME] Não foi possível acessar contexto (CORS)', 'error');
+                    }
+                } catch (e) {
+                    log(`❌ [IFRAME] Erro na injeção: ${e.message}`, 'error');
+                }
+            }, 2000);
+        }
+        
+        // ===== 7️⃣ URL PROXY =====
+        document.getElementById('btn-proxy').addEventListener('click', setupURLProxy);
+        
+        function setupURLProxy() {
+            if (interceptionsActive.includes('proxy')) return;
+            interceptionsActive.push('proxy');
+            
+            log('7️⃣ Ativando URL Proxy...', 'info');
+            
+            // Interceptar mudanças de URL
+            let currentUrl = window.location.href;
+            
+            setInterval(() => {
+                if (window.location.href !== currentUrl) {
+                    currentUrl = window.location.href;
+                    log(`🔄 [PROXY] URL mudou: ${currentUrl}`, 'info');
+                }
+            }, 1000);
+            
+            // Interceptar History API
+            const originalPushState = history.pushState;
+            const originalReplaceState = history.replaceState;
+            
+            history.pushState = function(...args) {
+                log(`🔄 [PROXY] pushState: ${args[2]}`, 'info');
+                return originalPushState.apply(this, args);
+            };
+            
+            history.replaceState = function(...args) {
+                log(`🔄 [PROXY] replaceState: ${args[2]}`, 'info');
+                return originalReplaceState.apply(this, args);
+            };
+            
+            log('✅ [PROXY] URL Monitor ativo', 'success');
+        }
+        
+        // ===== ESCUTAR MENSAGENS =====
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type) {
+                switch (event.data.type) {
+                    case 'IFRAME_PDF_DETECTED':
+                        log(`🎯 [IFRAME] PDF detectado: ${event.data.url}`, 'success');
+                        break;
+                }
+            }
         });
         
-        // Auto-carregar
-        if (urlInput.value) {
-            btnLoad.click();
+        // ===== AUTO-CARREGAR =====
+        if (urlInput.value.trim()) {
+            document.getElementById('btn-load').click();
         }
+        
+        // ===== STATUS PERIÓDICO =====
+        setInterval(() => {
+            if (capturedData.length > 0) {
+                log(`📊 Status: ${capturedData.length} PDFs capturados`, 'success');
+            }
+        }, 10000);
+        
+        log('🚀 Sistema Multi-Interceptor carregado!', 'success');
+        log('💡 Clique em "ATIVAR TODAS AS INTERCEPTAÇÕES" e teste!', 'info');
     </script>
 </body>
 </html>
