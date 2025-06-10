@@ -127,8 +127,8 @@ async function processPage(pageNum) {
         // Analisar qualidade da página
         const qualityScore = analyzePageQuality(canvas);
         
-        // Aplicar pré-processamento baseado na qualidade
-        const processedCanvas = applyPreprocessing(canvas, qualityScore, pageNum);
+        // AQUI É O PONTO CHAVE - Aplicar pré-processamento COM logs
+        const processedCanvas = applyPreprocessingWithLogs(canvas, qualityScore, pageNum);
 
         // Armazenar resultado
         processedPages.push({
@@ -213,14 +213,17 @@ function analyzePageQuality(canvas) {
     return Math.min(0.95, Math.max(0.15, qualityScore));
 }
 
-function applyPreprocessing(canvas, qualityScore, pageNum) {
+// NOVA FUNÇÃO - Com logs explícitos
+function applyPreprocessingWithLogs(canvas, qualityScore, pageNum) {
     if (qualityScore >= 0.8) {
+        log(`🔧 Página ${pageNum}: Processamento LEVE aplicado (alta qualidade)`);
         return applyLightProcessing(canvas);
     } else if (qualityScore >= 0.6) {
+        log(`🔧 Página ${pageNum}: Processamento MODERADO aplicado (qualidade média)`);
         return applyModerateProcessing(canvas);
     } else {
-        log(`🔧 Página ${pageNum}: OpenCV - Processamento avançado aplicado (qualidade baixa)`);
-        return applyHeavyProcessing(canvas);
+        log(`🔧 Página ${pageNum}: Processamento PESADO aplicado (baixa qualidade - OpenCV)`);
+        return applyHeavyProcessing(canvas, pageNum);
     }
 }
 
@@ -248,16 +251,17 @@ function applyModerateProcessing(canvas) {
     return processedCanvas;
 }
 
-function applyHeavyProcessing(canvas) {
+function applyHeavyProcessing(canvas, pageNum) {
     if (openCVReady && typeof cv !== 'undefined') {
-        return applyOpenCVProcessing(canvas);
+        log(`🔬 Página ${pageNum}: Aplicando algoritmos OpenCV avançados...`);
+        return applyOpenCVProcessing(canvas, pageNum);
     } else {
-        log('⚠️ OpenCV não disponível - usando processamento básico avançado');
+        log(`⚠️ Página ${pageNum}: OpenCV indisponível - usando processamento básico avançado`);
         return applyBasicHeavyProcessing(canvas);
     }
 }
 
-function applyOpenCVProcessing(canvas) {
+function applyOpenCVProcessing(canvas, pageNum) {
     try {
         const src = cv.imread(canvas);
         const gray = new cv.Mat();
@@ -286,11 +290,11 @@ function applyOpenCVProcessing(canvas) {
         blurred.delete();
         binary.delete();
         
-        log('✅ OpenCV: Processamento avançado concluído com sucesso');
+        log(`✅ Página ${pageNum}: OpenCV processamento concluído com SUCESSO!`);
         return processedCanvas;
         
     } catch (error) {
-        log(`❌ Erro OpenCV: ${error.message} - Usando processamento básico`);
+        log(`❌ Página ${pageNum}: Erro OpenCV: ${error.message} - Fallback para básico`);
         return applyBasicHeavyProcessing(canvas);
     }
 }
@@ -320,15 +324,25 @@ function finalizarProcessamento() {
     log(`🎉 Processamento concluído em ${duration}s`);
     log(`📊 ${stats.processedPages} páginas processadas`);
     
-    // Estatísticas de qualidade - CORRIGIDO
-    const qualityStats = processedPages.reduce((acc, page) => {
-        if (page.quality >= 0.8) acc.high++;
-        else if (page.quality >= 0.6) acc.medium++;
-        else acc.low++;
-        return acc;
-    }, { high: 0, medium: 0, low: 0 });
+    // ESTATÍSTICAS DETALHADAS DE QUALIDADE
+    let highQuality = 0;
+    let mediumQuality = 0;
+    let lowQuality = 0;
     
-    log(`📈 Qualidade detectada: ${qualityStats.high} alta, ${qualityStats.medium} média, ${qualityStats.low} baixa`);
+    processedPages.forEach(page => {
+        if (page.quality >= 0.8) {
+            highQuality++;
+        } else if (page.quality >= 0.6) {
+            mediumQuality++;
+        } else {
+            lowQuality++;
+        }
+    });
+    
+    log(`📈 ANÁLISE DE QUALIDADE:`);
+    log(`   └─ ${highQuality} páginas de ALTA qualidade (≥80%)`);
+    log(`   └─ ${mediumQuality} páginas de MÉDIA qualidade (60-79%)`);
+    log(`   └─ ${lowQuality} páginas de BAIXA qualidade (<60%) - OpenCV aplicado`);
     
     // Mostrar resultados
     document.getElementById('progressArea').style.display = 'none';
