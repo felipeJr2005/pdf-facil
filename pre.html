@@ -5,7 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pré-processamento de PDFs Judiciais</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/opencv.js/4.9.0/opencv.js"></script>
+    <script>
+        // Configurar worker do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Variável global para controlar carregamento do OpenCV
+        window.openCVReady = false;
+        
+        // Função para carregar OpenCV
+        function loadOpenCV() {
+            return new Promise((resolve, reject) => {
+                if (window.openCVReady) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/opencv.js/4.9.0/opencv.js';
+                script.onload = function() {
+                    // OpenCV precisa de um tempo para inicializar
+                    const checkReady = () => {
+                        if (typeof cv !== 'undefined' && cv.Mat) {
+                            window.openCVReady = true;
+                            log('✅ OpenCV carregado e pronto');
+                            resolve();
+                        } else {
+                            setTimeout(checkReady, 100);
+                        }
+                    };
+                    checkReady();
+                };
+                script.onerror = function() {
+                    log('❌ Erro ao carregar OpenCV, processamento será limitado');
+                    window.openCVReady = false;
+                    resolve(); // Continua sem OpenCV
+                };
+                document.head.appendChild(script);
+            });
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -358,10 +396,7 @@
     </div>
 
     <script>
-        // Configuração do PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        // Variáveis globais
+        // Configuração do PDF.js e inicialização
         let pdfDocument = null;
         let processedPages = [];
         let processingStats = {
@@ -375,6 +410,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             log('Sistema inicializado. Aguardando upload de PDF...');
+            
+            // Carregar OpenCV em background
+            loadOpenCV().then(() => {
+                log('🚀 Sistema pronto para processamento avançado');
+            }).catch(() => {
+                log('⚠️ Sistema funcionando em modo básico (sem OpenCV)');
+            });
         });
 
         function setupEventListeners() {
@@ -495,20 +537,19 @@
         }
 
         async function waitForOpenCV() {
-            return new Promise((resolve) => {
-                log('🔄 Aguardando OpenCV carregar...');
-                
-                const checkOpenCV = () => {
-                    if (typeof cv !== 'undefined' && cv.Mat) {
-                        log('✅ OpenCV carregado com sucesso');
-                        resolve();
-                    } else {
-                        setTimeout(checkOpenCV, 500);
-                    }
-                };
-                
-                checkOpenCV();
-            });
+            // Se OpenCV já está pronto, continua
+            if (window.openCVReady) {
+                log('✅ OpenCV já carregado, continuando...');
+                return;
+            }
+            
+            // Se não tem OpenCV, tenta carregar
+            log('🔄 Carregando OpenCV para processamento avançado...');
+            try {
+                await loadOpenCV();
+            } catch (error) {
+                log('⚠️ Continuando sem OpenCV - processamento básico apenas');
+            }
         }
 
         async function processPage(pageNum) {
@@ -664,13 +705,13 @@
 
         function applyAggressivePreprocessing(canvas) {
             // Para documentos de baixa qualidade - pipeline completo
-            log('🔧 Aplicando processamento agressivo (OpenCV)...');
+            log('🔧 Aplicando processamento agressivo...');
             
             try {
                 // Verificar se OpenCV está disponível
-                if (typeof cv === 'undefined' || !cv.Mat) {
-                    log('⚠️ OpenCV não disponível, usando processamento fallback');
-                    return applyModeratePreprocessing(canvas);
+                if (!window.openCVReady || typeof cv === 'undefined' || !cv.Mat) {
+                    log('⚠️ OpenCV não disponível, usando processamento básico intenso');
+                    return applyBasicIntensivePreprocessing(canvas);
                 }
 
                 // Converter canvas para Mat do OpenCV
@@ -714,14 +755,38 @@
                 result.delete();
                 clahe.delete();
                 
-                log('✅ Processamento agressivo concluído');
+                log('✅ Processamento agressivo (OpenCV) concluído');
                 return processedCanvas;
                 
             } catch (error) {
                 log(`⚠️ Erro no processamento OpenCV: ${error.message}`);
                 console.error('Erro OpenCV:', error);
-                return applyModeratePreprocessing(canvas);
+                return applyBasicIntensivePreprocessing(canvas);
             }
+        }
+
+        function applyBasicIntensivePreprocessing(canvas) {
+            // Fallback sem OpenCV - processamento básico intenso
+            const processedCanvas = document.createElement('canvas');
+            processedCanvas.width = canvas.width;
+            processedCanvas.height = canvas.height;
+            const ctx = processedCanvas.getContext('2d');
+            
+            // Aplicar filtros CSS intensos
+            ctx.filter = 'contrast(200%) brightness(110%) saturate(0%) blur(0.5px)';
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Segunda passada para nitidez
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCtx.filter = 'contrast(150%) brightness(105%)';
+            tempCtx.drawImage(processedCanvas, 0, 0);
+            
+            log('✅ Processamento básico intenso concluído');
+            return tempCanvas;
         }
 
         function getPreprocessingType(qualityScore) {
