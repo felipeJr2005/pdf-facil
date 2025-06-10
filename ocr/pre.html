@@ -174,7 +174,24 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="opencv.js"></script>
+
+<script>
+console.log('📦 Iniciando carregamento OpenCV via CDN...');
+window.openCVReady = false;
+
+function onOpenCVReady() {
+    window.openCVReady = true;
+    console.log('🔥 OpenCV CDN carregado e VALIDADO!');
+    console.log('✅ Algoritmos avançados disponíveis');
+}
+</script>
+<script async src="https://docs.opencv.org/4.8.0/opencv.js" 
+        onload="cv.onRuntimeInitialized = onOpenCVReady;" 
+        onerror="console.log('❌ Erro ao carregar OpenCV CDN')">
+</script>
+
+
+    
     <script src="js/config.js"></script>
     <script src="js/preprocessador.js?v=2025061004"></script>
 </body>
