@@ -1,5 +1,5 @@
 // ========================================
-// PDFFacil - Processador v2.2 - OTIMIZADO
+// PDFFacil - Processador v2.4 - OTIMIZADO
 // ========================================
 
 console.log("🔥 PROCESSADOR V3.0 MEGA-OTIMIZADO CARREGADO!");
@@ -528,10 +528,18 @@ function applyOptimizedNativeProcessing(canvas, pageNum) {
         log(`📈 Página ${pageNum}: Upscaling 2x aplicado (melhora OCR)`);
         
         // TÉCNICA 2: CLAHE MUITO SUAVE (realçar sem degradar)
-        const clahe = cv.createCLAHE(1.2, new cv.Size(8, 8));
-        const enhanced = new cv.Mat();
-        clahe.apply(upscaled, enhanced);
-        log(`🌟 Página ${pageNum}: CLAHE suave aplicado (1.2)`);
+        // Fallback: usar ajuste de contraste se CLAHE não disponível
+        let enhanced;
+        if (typeof cv.createCLAHE === 'function') {
+            const clahe = cv.createCLAHE(1.2, new cv.Size(8, 8));
+            enhanced = new cv.Mat();
+            clahe.apply(upscaled, enhanced);
+            log(`🌟 Página ${pageNum}: CLAHE suave aplicado (1.2)`);
+        } else {
+            enhanced = new cv.Mat();
+            upscaled.convertTo(enhanced, -1, 1.2, 10); // Contraste 20% + brilho +10
+            log(`🌟 Página ${pageNum}: Ajuste de contraste aplicado (fallback)`);
+        }
         
         // TÉCNICA 3: AJUSTE SUTIL DE CONTRASTE (sem threshold agressivo)
         const adjusted = new cv.Mat();
@@ -583,10 +591,18 @@ function applyLightOpenCVProcessing(canvas, pageNum) {
         log(`📈 Página ${pageNum}: Upscaling 2x aplicado`);
         
         // TÉCNICA 2: CLAHE MODERADO
-        const clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
-        const enhanced = new cv.Mat();
-        clahe.apply(upscaled, enhanced);
-        log(`🌟 Página ${pageNum}: CLAHE moderado aplicado`);
+        // Fallback: usar ajuste de contraste se CLAHE não disponível
+        let enhanced;
+        if (typeof cv.createCLAHE === 'function') {
+            const clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
+            enhanced = new cv.Mat();
+            clahe.apply(upscaled, enhanced);
+            log(`🌟 Página ${pageNum}: CLAHE moderado aplicado`);
+        } else {
+            enhanced = new cv.Mat();
+            upscaled.convertTo(enhanced, -1, 1.4, 15); // Contraste 40% + brilho +15
+            log(`🌟 Página ${pageNum}: Ajuste moderado aplicado (fallback)`);
+        }
         
         // TÉCNICA 3: THRESHOLD MODERADO
         const binary = new cv.Mat();
@@ -638,10 +654,18 @@ function applyFullOpenCVProcessing(canvas, pageNum) {
         log(`📈 Página ${pageNum}: Upscaling 3x aplicado`);
         
         // TÉCNICA 2: CLAHE FORTE
-        const clahe = cv.createCLAHE(3.0, new cv.Size(8, 8));
-        const enhanced = new cv.Mat();
-        clahe.apply(upscaled, enhanced);
-        log(`🌟 Página ${pageNum}: CLAHE forte aplicado`);
+        // Fallback: usar ajuste de contraste se CLAHE não disponível
+        let enhanced;
+        if (typeof cv.createCLAHE === 'function') {
+            const clahe = cv.createCLAHE(3.0, new cv.Size(8, 8));
+            enhanced = new cv.Mat();
+            clahe.apply(upscaled, enhanced);
+            log(`🌟 Página ${pageNum}: CLAHE forte aplicado`);
+        } else {
+            enhanced = new cv.Mat();
+            upscaled.convertTo(enhanced, -1, 1.6, 20); // Contraste 60% + brilho +20
+            log(`🌟 Página ${pageNum}: Ajuste forte aplicado (fallback)`);
+        }
         
         // TÉCNICA 3: DENOISING
         const denoised = new cv.Mat();
