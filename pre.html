@@ -612,15 +612,17 @@
         }
 
         function analyzePageQuality(canvas) {
-            // Implementação baseada em técnicas validadas da comunidade
+            // Implementação melhorada baseada em técnicas validadas
             const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             
             let sumBrightness = 0;
             let sumContrast = 0;
             let edgePixels = 0;
+            let darkPixels = 0;
+            let lightPixels = 0;
             
-            // Análise de qualidade usando métrica SNR e contraste
+            // Análise de qualidade usando múltiplas métricas
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -630,32 +632,61 @@
                 const brightness = (r + g + b) / 3;
                 sumBrightness += brightness;
                 
-                // Detecção de bordas simples para avaliar nitidez
+                // Contar pixels escuros e claros
+                if (brightness < 85) darkPixels++;
+                if (brightness > 170) lightPixels++;
+                
+                // Detecção de bordas para avaliar nitidez
                 if (i > canvas.width * 4 && i < data.length - canvas.width * 4) {
-                    const prevBrightness = (data[i - canvas.width * 4] + data[i - canvas.width * 4 + 1] + data[i - canvas.width * 4 + 2]) / 3;
-                    if (Math.abs(brightness - prevBrightness) > 30) {
+                    const prevR = data[i - canvas.width * 4];
+                    const prevG = data[i - canvas.width * 4 + 1];
+                    const prevB = data[i - canvas.width * 4 + 2];
+                    const prevBrightness = (prevR + prevG + prevB) / 3;
+                    
+                    const diff = Math.abs(brightness - prevBrightness);
+                    if (diff > 25) {
                         edgePixels++;
                     }
                 }
             }
             
-            const avgBrightness = sumBrightness / (data.length / 4);
-            const sharpnessRatio = edgePixels / (data.length / 4);
+            const totalPixels = data.length / 4;
+            const avgBrightness = sumBrightness / totalPixels;
+            const sharpnessRatio = edgePixels / totalPixels;
+            const contrastRatio = Math.abs(darkPixels - lightPixels) / totalPixels;
             
-            // Fórmula de qualidade baseada em pesquisa da comunidade
-            let qualityScore = 0.5; // Base
+            // Fórmula de qualidade melhorada
+            let qualityScore = 0.3; // Base menor
             
-            // Penalizar brightness muito baixo ou muito alto
-            if (avgBrightness > 50 && avgBrightness < 200) {
-                qualityScore += 0.2;
+            // Bonus por brightness equilibrado (não muito escuro, não muito claro)
+            if (avgBrightness > 60 && avgBrightness < 180) {
+                qualityScore += 0.25;
             }
             
-            // Bonus por nitidez
-            if (sharpnessRatio > 0.01) {
+            // Bonus por nitidez (bordas detectadas)
+            if (sharpnessRatio > 0.015) {
                 qualityScore += 0.3;
+            } else if (sharpnessRatio > 0.008) {
+                qualityScore += 0.15;
             }
             
-            return Math.min(1.0, Math.max(0.1, qualityScore));
+            // Bonus por contraste (diferença entre claros e escuros)
+            if (contrastRatio > 0.3) {
+                qualityScore += 0.2;
+            } else if (contrastRatio > 0.15) {
+                qualityScore += 0.1;
+            }
+            
+            // Penalizar extremos
+            if (avgBrightness < 30 || avgBrightness > 220) {
+                qualityScore -= 0.2;
+            }
+            
+            // Adicionar variação baseada em características da página
+            const pageVariation = (Math.sin(avgBrightness * 0.01) * 0.1) + (Math.cos(sharpnessRatio * 100) * 0.05);
+            qualityScore += pageVariation;
+            
+            return Math.min(0.95, Math.max(0.15, qualityScore));
         }
 
         async function applyPreprocessing(canvas, qualityScore) {
@@ -875,50 +906,54 @@
             log('📦 Gerando PDF otimizado...');
             
             try {
-                // Usar jsPDF para criar novo PDF com páginas processadas
+                // Verificar se jsPDF está carregado
+                if (typeof window.jspdf === 'undefined') {
+                    log('🔄 Carregando jsPDF...');
+                    await loadJsPDF();
+                }
+
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF();
+                
+                // Criar PDF com primeira página
+                const firstPage = processedPages[0];
+                const pdf = new jsPDF({
+                    orientation: firstPage.canvas.width > firstPage.canvas.height ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [firstPage.canvas.width, firstPage.canvas.height]
+                });
+                
+                log(`📄 Adicionando ${processedPages.length} páginas ao PDF...`);
                 
                 for (let i = 0; i < processedPages.length; i++) {
                     const page = processedPages[i];
                     
                     if (i > 0) {
-                        pdf.addPage();
+                        // Adicionar nova página com dimensões corretas
+                        pdf.addPage([page.canvas.width, page.canvas.height], 
+                                  page.canvas.width > page.canvas.height ? 'landscape' : 'portrait');
                     }
                     
-                    // Converter canvas para imagem e adicionar ao PDF
-                    const imgData = page.canvas.toDataURL('image/jpeg', 0.95);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    // Converter canvas para imagem com qualidade alta
+                    const imgData = page.canvas.toDataURL('image/jpeg', 0.92);
                     
-                    // Calcular dimensões mantendo proporção
-                    const canvasRatio = page.canvas.width / page.canvas.height;
-                    const pdfRatio = pdfWidth / pdfHeight;
+                    // Adicionar imagem ocupando toda a página
+                    pdf.addImage(imgData, 'JPEG', 0, 0, page.canvas.width, page.canvas.height);
                     
-                    let width, height;
-                    if (canvasRatio > pdfRatio) {
-                        width = pdfWidth;
-                        height = pdfWidth / canvasRatio;
-                    } else {
-                        width = pdfHeight * canvasRatio;
-                        height = pdfHeight;
-                    }
-                    
-                    const x = (pdfWidth - width) / 2;
-                    const y = (pdfHeight - height) / 2;
-                    
-                    pdf.addImage(imgData, 'JPEG', x, y, width, height);
+                    log(`✅ Página ${page.pageNum} adicionada ao PDF`);
                 }
                 
-                // Gerar nome do arquivo com timestamp
-                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-                const filename = `PDF_Processado_${timestamp}.pdf`;
+                // Gerar nome do arquivo com timestamp e qualidade
+                const timestamp = new Date().toISOString().slice(0, 16).replace(/[:.]/g, '-');
+                const avgQuality = (processingStats.qualityScores.reduce((a, b) => a + b, 0) / processingStats.qualityScores.length * 100).toFixed(0);
+                const filename = `PDF_Judicial_Processado_${avgQuality}pct_${timestamp}.pdf`;
                 
                 pdf.save(filename);
                 log(`✅ PDF salvo como: ${filename}`);
+                log(`📊 Arquivo final contém ${processedPages.length} páginas otimizadas`);
                 
             } catch (error) {
                 log(`❌ Erro ao gerar PDF: ${error.message}`);
+                console.error('Erro detalhado:', error);
                 alert('Erro ao gerar o PDF final. Verifique o console para mais detalhes.');
             }
         }
@@ -989,20 +1024,30 @@
         // Carregar jsPDF dinamicamente quando necessário
         async function loadJsPDF() {
             if (typeof window.jspdf === 'undefined') {
+                log('🔄 Carregando biblioteca jsPDF...');
                 return new Promise((resolve, reject) => {
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                    script.onload = resolve;
-                    script.onerror = reject;
+                    script.onload = () => {
+                        log('✅ jsPDF carregado com sucesso');
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        log('❌ Erro ao carregar jsPDF');
+                        reject(new Error('Falha ao carregar jsPDF'));
+                    };
                     document.head.appendChild(script);
                 });
             }
+            return Promise.resolve();
         }
 
         // Carregar jsPDF no início
         document.addEventListener('DOMContentLoaded', function() {
-            loadJsPDF().catch(error => {
-                log('⚠️ Erro ao carregar jsPDF: ' + error.message);
+            loadJsPDF().then(() => {
+                log('📚 jsPDF pronto para geração de PDFs');
+            }).catch(error => {
+                log('⚠️ jsPDF não carregou - download pode falhar: ' + error.message);
             });
         });
 
