@@ -3,67 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pré-processamento de PDFs Judiciais</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        // Configurar worker do PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        // Variável global para controlar carregamento do OpenCV
-        window.openCVReady = false;
-        
-        // Função para carregar OpenCV com inicialização correta
-        function loadOpenCV() {
-            return new Promise((resolve, reject) => {
-                if (window.openCVReady) {
-                    resolve();
-                    return;
-                }
-                
-                log('🔄 Carregando OpenCV.js...');
-                
-                const script = document.createElement('script');
-                // Usar URL oficial da documentação OpenCV
-                script.src = 'https://docs.opencv.org/4.x/opencv.js';
-                
-                script.onload = function() {
-                    log('📦 OpenCV.js baixado, aguardando inicialização...');
-                    
-                    // SOLUÇÃO CORRETA: usar onRuntimeInitialized
-                    if (typeof cv !== 'undefined') {
-                        cv['onRuntimeInitialized'] = () => {
-                            window.openCVReady = true;
-                            log('✅ OpenCV.js totalmente inicializado e pronto!');
-                            resolve();
-                        };
-                    } else {
-                        // Fallback: aguardar cv estar disponível
-                        const checkCV = () => {
-                            if (typeof cv !== 'undefined' && cv.Mat) {
-                                cv['onRuntimeInitialized'] = () => {
-                                    window.openCVReady = true;
-                                    log('✅ OpenCV.js inicializado (fallback)!');
-                                    resolve();
-                                };
-                            } else {
-                                setTimeout(checkCV, 100);
-                            }
-                        };
-                        checkCV();
-                    }
-                };
-                
-                script.onerror = function() {
-                    log('❌ Erro ao carregar OpenCV.js da URL oficial');
-                    log('💡 Sugestão: hospede opencv.js no seu servidor para evitar CORS');
-                    window.openCVReady = false;
-                    resolve(); // Continua sem OpenCV
-                };
-                
-                document.head.appendChild(script);
-            });
-        }
-    </script>
+    <title>Pré-processamento PDF - PDFFacil</title>
     <style>
         * {
             margin: 0;
@@ -79,61 +19,38 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
+            border-radius: 15px;
             padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
             text-align: center;
-        }
-        
-        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
             font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 300;
         }
         
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .content {
-            padding: 40px;
-        }
-        
-        .upload-section {
+        .upload-area {
+            text-align: center;
             border: 3px dashed #3498db;
             border-radius: 15px;
             padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            margin: 30px 0;
             background: #f8f9fa;
+            transition: all 0.3s ease;
         }
         
-        .upload-section:hover {
+        .upload-area:hover {
             background: #e9ecef;
             transform: translateY(-2px);
         }
         
-        .upload-section.dragover {
-            border-color: #2ecc71;
-            background: #d5f4e6;
-        }
-        
-        .upload-icon {
-            font-size: 4rem;
-            color: #3498db;
-            margin-bottom: 20px;
+        #fileInput {
+            display: none;
         }
         
         .btn {
@@ -144,8 +61,8 @@
             border-radius: 25px;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
             margin: 10px;
+            transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
         
@@ -166,11 +83,20 @@
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
         
-        .progress-section {
-            margin: 30px 0;
+        .log-area {
+            background: #2c3e50;
+            color: #ecf0f1;
             padding: 20px;
-            background: #f8f9fa;
             border-radius: 15px;
+            margin: 20px 0;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .progress-area {
+            margin: 20px 0;
             display: none;
         }
         
@@ -188,1094 +114,96 @@
             background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
             width: 0%;
             transition: width 0.3s ease;
-            border-radius: 10px;
         }
         
-        .log-section {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            font-family: 'Courier New', monospace;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .log-entry {
-            margin: 5px 0;
-            padding: 5px 0;
-            border-bottom: 1px solid #34495e;
-        }
-        
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-        
-        .page-preview {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .results-area {
+            text-align: center;
             margin: 30px 0;
+            display: none;
         }
         
-        .page-card {
-            background: white;
-            border-radius: 15px;
+        .status {
+            background: #e8f5e8;
+            color: #27ae60;
             padding: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .page-card canvas {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-        }
-        
-        .page-info {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-        }
-        
-        .quality-indicator {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            margin: 5px;
-        }
-        
-        .quality-alta { background: #d5f4e6; color: #27ae60; }
-        .quality-media { background: #fef9e7; color: #f39c12; }
-        .quality-baixa { background: #fadbd8; color: #e74c3c; }
-        
-        .processing-stats {
-            background: #ecf0f1;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            display: none;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
             border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #3498db;
-        }
-        
-        .stat-label {
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-
-        #fileInput {
-            display: none;
-        }
-        
-        .results-section {
-            margin-top: 30px;
-            display: none;
-        }
-        
-        .download-btn {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            margin: 20px 0;
+            border-left: 4px solid #27ae60;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📄 Pré-processamento de PDFs Judiciais</h1>
-            <p>Sistema otimizado para documentos de processos judiciais brasileiros</p>
+        <h1>📄 Pré-processamento PDFs Judiciais</h1>
+        
+        <div class="upload-area">
+            <div style="font-size: 3rem; margin-bottom: 15px;">📎</div>
+            <h3>Selecione seu PDF judicial</h3>
+            <p>Suporte para documentos de promotoria, delegacia, advogados e PJe</p>
+            <input type="file" id="fileInput" accept=".pdf" />
+            <br><br>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                Selecionar PDF
+            </button>
+            <button class="btn btn-success" id="processBtn" disabled onclick="processarPDF()">
+                🚀 Processar PDF
+            </button>
         </div>
-
-        <div class="content">
-    <!-- Seção de Upload -->
-            <div class="upload-section" id="uploadSection">
-                <div class="upload-icon">📎</div>
-                <h3>Clique no botão abaixo ou arraste seu PDF judicial</h3>
-                <p>Suporte para PDFs de promotoria, delegacia, advogados, PJe e documentos nativos</p>
-                <input type="file" id="fileInput" accept=".pdf" />
-                <button class="btn" onclick="document.getElementById('fileInput').click()">
-                    Selecionar PDF
-                </button>
+        
+        <div class="log-area" id="logArea">
+            <div id="logContent"></div>
+        </div>
+        
+        <div class="progress-area" id="progressArea">
+            <h4>Processando PDF...</h4>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
             </div>
-
-            <!-- Seção de Controles -->
-            <div style="text-align: center; margin: 30px 0;">
-                <button class="btn btn-success" id="processBtn" disabled onclick="processarPDF()">
-                    🚀 Processar PDF
-                </button>
-                <button class="btn" id="configBtn" onclick="toggleConfig()">
-                    ⚙️ Configurações Avançadas
-                </button>
-            </div>
-
-            <!-- Configurações Avançadas (inicialmente oculta) -->
-            <div id="configSection" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 15px; margin: 20px 0;">
-                <h4>Configurações de Processamento</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
-                    <div>
-                        <label>Resolução alvo (DPI):</label>
-                        <select id="targetDPI">
-                            <option value="300" selected>300 DPI (Recomendado)</option>
-                            <option value="400">400 DPI (Alta qualidade)</option>
-                            <option value="600">600 DPI (Máxima qualidade)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Modo de processamento:</label>
-                        <select id="processingMode">
-                            <option value="adaptive" selected>Adaptativo (Recomendado)</option>
-                            <option value="aggressive">Agressivo (Docs muito ruins)</option>
-                            <option value="conservative">Conservativo (Docs bons)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Threshold de qualidade:</label>
-                        <input type="range" id="qualityThreshold" min="0.3" max="0.9" step="0.1" value="0.6">
-                        <span id="thresholdValue">0.6</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seção de Progresso -->
-            <div class="progress-section" id="progressSection">
-                <h4>Processando PDF...</h4>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <p id="progressText">Inicializando...</p>
-            </div>
-
-            <!-- Log de Processamento -->
-            <div class="log-section" id="logSection">
-                <h4>Log de Processamento</h4>
-                <div id="logContent"></div>
-            </div>
-
-            <!-- Estatísticas de Processamento -->
-            <div class="processing-stats" id="statsSection">
-                <h4>Estatísticas do Processamento</h4>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalPages">0</div>
-                        <div class="stat-label">Total de Páginas</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="pagesProcessed">0</div>
-                        <div class="stat-label">Páginas Processadas</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="avgQuality">0%</div>
-                        <div class="stat-label">Qualidade Média</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="processingTime">0s</div>
-                        <div class="stat-label">Tempo Total</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preview das Páginas -->
-            <div class="page-preview" id="pagePreview"></div>
-
-            <!-- Seção de Resultados -->
-            <div class="results-section" id="resultsSection">
+            <p id="progressText">Inicializando...</p>
+        </div>
+        
+        <div class="results-area" id="resultsArea">
+            <div class="status">
                 <h3>✅ Processamento Concluído!</h3>
-                <p>Seu PDF foi otimizado com sucesso. As páginas foram pré-processadas usando técnicas adaptativas validadas pela comunidade.</p>
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="btn download-btn" id="downloadBtn" onclick="baixarResultado()">
-                        💾 Baixar PDF Processado
-                    </button>
-                    <button class="btn" onclick="reiniciarProcesso()">
-                        🔄 Processar Novo PDF
-                    </button>
-                </div>
+                <p>Seu PDF foi otimizado com sucesso</p>
             </div>
+            <button class="btn btn-success" onclick="baixarPDF()">💾 Baixar PDF Processado</button>
+            <button class="btn" onclick="reiniciar()">🔄 Processar Novo PDF</button>
         </div>
     </div>
 
+    <!-- Scripts essenciais -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="opencv.js"></script>
     <script>
-        // Configuração do PDF.js e inicialização
-        let pdfDocument = null;
-        let processedPages = [];
-        let processingStats = {
-            totalPages: 0,
-            processedPages: 0,
-            startTime: null,
-            qualityScores: []
-        };
-
-        // Inicialização
+        // JavaScript básico - será expandido nos próximos passos
         document.addEventListener('DOMContentLoaded', function() {
-            setupEventListeners();
-            log('Sistema inicializado. Aguardando upload de PDF...');
-            
-            // Carregar OpenCV em background
-            loadOpenCV().then(() => {
-                log('🚀 Sistema pronto para processamento avançado');
-            }).catch(() => {
-                log('⚠️ Sistema funcionando em modo básico (sem OpenCV)');
-            });
+            log('🚀 Sistema PDFFacil carregado');
+            log('📦 Inicializando OpenCV...');
         });
-
-        function setupEventListeners() {
-            const fileInput = document.getElementById('fileInput');
-            const uploadSection = document.getElementById('uploadSection');
-            const qualityThreshold = document.getElementById('qualityThreshold');
-
-            fileInput.addEventListener('change', handleFileSelect);
-            
-            // Drag and drop
-            uploadSection.addEventListener('dragover', handleDragOver);
-            uploadSection.addEventListener('drop', handleDrop);
-            uploadSection.addEventListener('dragleave', handleDragLeave);
-            
-            // REMOVER o click automático - estava causando loop
-            // uploadSection.addEventListener('click', () => fileInput.click());
-
-            // Threshold slider
-            qualityThreshold.addEventListener('input', function() {
-                document.getElementById('thresholdValue').textContent = this.value;
-            });
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('dragover');
-        }
-
-        function handleDragLeave(e) {
-            e.currentTarget.classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type === 'application/pdf') {
-                handleFileSelect({ target: { files: files } });
-            }
-        }
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.type !== 'application/pdf') {
-                alert('Por favor, selecione um arquivo PDF válido.');
-                return;
-            }
-
-            log(`📄 PDF carregado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-            
-            const fileReader = new FileReader();
-            fileReader.onload = function() {
-                loadPDF(new Uint8Array(this.result));
-            };
-            fileReader.readAsArrayBuffer(file);
-
-            document.getElementById('processBtn').disabled = false;
-        }
-
-        async function loadPDF(pdfData) {
-            try {
-                pdfDocument = await pdfjsLib.getDocument(pdfData).promise;
-                processingStats.totalPages = pdfDocument.numPages;
-                
-                log(`📊 PDF carregado com sucesso: ${pdfDocument.numPages} páginas`);
-                document.getElementById('totalPages').textContent = pdfDocument.numPages;
-                
-            } catch (error) {
-                log(`❌ Erro ao carregar PDF: ${error.message}`);
-                alert('Erro ao carregar o PDF. Verifique se o arquivo não está corrompido.');
-            }
-        }
-
-        async function processarPDF() {
-            if (!pdfDocument) {
-                alert('Primeiro carregue um PDF!');
-                return;
-            }
-
-            // Resetar estado
-            processedPages = [];
-            processingStats.processedPages = 0;
-            processingStats.startTime = Date.now();
-            processingStats.qualityScores = [];
-
-            // Mostrar seções de progresso
-            document.getElementById('progressSection').style.display = 'block';
-            document.getElementById('logSection').style.display = 'block';
-            document.getElementById('statsSection').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
-            
-            // Desabilitar botão
-            document.getElementById('processBtn').disabled = true;
-
-            log('🚀 Iniciando processamento do PDF...');
-            
-            try {
-                // Aguardar OpenCV carregar
-                await waitForOpenCV();
-                
-                // Processar cada página
-                for (let i = 1; i <= pdfDocument.numPages; i++) {
-                    await processPage(i);
-                    updateProgress(i, pdfDocument.numPages);
-                }
-
-                // Finalizar processamento
-                finalizarProcessamento();
-
-            } catch (error) {
-                log(`❌ Erro durante o processamento: ${error.message}`);
-                alert('Erro durante o processamento. Verifique o console para mais detalhes.');
-            }
-
-            document.getElementById('processBtn').disabled = false;
-        }
-
-        async function waitForOpenCV() {
-            // Se OpenCV já está pronto, continua
-            if (window.openCVReady) {
-                log('✅ OpenCV já carregado, continuando...');
-                return;
-            }
-            
-            // Se não tem OpenCV, tenta carregar
-            log('🔄 Carregando OpenCV para processamento avançado...');
-            try {
-                await loadOpenCV();
-            } catch (error) {
-                log('⚠️ Continuando sem OpenCV - processamento básico apenas');
-            }
-        }
-
-        async function processPage(pageNum) {
-            log(`📄 Processando página ${pageNum}...`);
-            const pageStartTime = Date.now();
-
-            try {
-                const page = await pdfDocument.getPage(pageNum);
-                
-                // Configurações baseadas na pesquisa
-                const targetDPI = parseInt(document.getElementById('targetDPI').value);
-                const scale = targetDPI / 72; // Conversão validada pela comunidade
-                const viewport = page.getViewport({ scale });
-
-                // Canvas para renderização
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                // Renderizar página
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-
-                await page.render(renderContext).promise;
-
-                // Analisar qualidade da página
-                const qualityScore = analyzePageQuality(canvas);
-                processingStats.qualityScores.push(qualityScore);
-                
-                log(`📊 Página ${pageNum}: Qualidade detectada ${(qualityScore * 100).toFixed(1)}%`);
-
-                // Aplicar pré-processamento adaptativo baseado na qualidade
-                const processedCanvas = await applyPreprocessing(canvas, qualityScore);
-
-                // Armazenar resultado
-                processedPages.push({
-                    pageNum,
-                    canvas: processedCanvas,
-                    originalQuality: qualityScore,
-                    preprocessingApplied: getPreprocessingType(qualityScore)
-                });
-
-                // Atualizar preview
-                addPagePreview(pageNum, processedCanvas, qualityScore);
-
-                processingStats.processedPages++;
-                document.getElementById('pagesProcessed').textContent = processingStats.processedPages;
-
-                const pageEndTime = Date.now();
-                const processingTime = pageEndTime - pageStartTime;
-                log(`✅ Página ${pageNum} processada em ${processingTime}ms (Qualidade: ${(qualityScore * 100).toFixed(1)}%)`);
-
-            } catch (error) {
-                log(`❌ Erro na página ${pageNum}: ${error.message}`);
-                console.error('Erro detalhado:', error);
-            }
-        }
-
-        function analyzePageQuality(canvas) {
-            // Implementação melhorada baseada em técnicas validadas
-            const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            let sumBrightness = 0;
-            let sumContrast = 0;
-            let edgePixels = 0;
-            let darkPixels = 0;
-            let lightPixels = 0;
-            
-            // Análise de qualidade usando múltiplas métricas
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                
-                // Brightness média
-                const brightness = (r + g + b) / 3;
-                sumBrightness += brightness;
-                
-                // Contar pixels escuros e claros
-                if (brightness < 85) darkPixels++;
-                if (brightness > 170) lightPixels++;
-                
-                // Detecção de bordas para avaliar nitidez
-                if (i > canvas.width * 4 && i < data.length - canvas.width * 4) {
-                    const prevR = data[i - canvas.width * 4];
-                    const prevG = data[i - canvas.width * 4 + 1];
-                    const prevB = data[i - canvas.width * 4 + 2];
-                    const prevBrightness = (prevR + prevG + prevB) / 3;
-                    
-                    const diff = Math.abs(brightness - prevBrightness);
-                    if (diff > 25) {
-                        edgePixels++;
-                    }
-                }
-            }
-            
-            const totalPixels = data.length / 4;
-            const avgBrightness = sumBrightness / totalPixels;
-            const sharpnessRatio = edgePixels / totalPixels;
-            const contrastRatio = Math.abs(darkPixels - lightPixels) / totalPixels;
-            
-            // Fórmula de qualidade melhorada
-            let qualityScore = 0.3; // Base menor
-            
-            // Bonus por brightness equilibrado (não muito escuro, não muito claro)
-            if (avgBrightness > 60 && avgBrightness < 180) {
-                qualityScore += 0.25;
-            }
-            
-            // Bonus por nitidez (bordas detectadas)
-            if (sharpnessRatio > 0.015) {
-                qualityScore += 0.3;
-            } else if (sharpnessRatio > 0.008) {
-                qualityScore += 0.15;
-            }
-            
-            // Bonus por contraste (diferença entre claros e escuros)
-            if (contrastRatio > 0.3) {
-                qualityScore += 0.2;
-            } else if (contrastRatio > 0.15) {
-                qualityScore += 0.1;
-            }
-            
-            // Penalizar extremos
-            if (avgBrightness < 30 || avgBrightness > 220) {
-                qualityScore -= 0.2;
-            }
-            
-            // Adicionar variação baseada em características da página
-            const pageVariation = (Math.sin(avgBrightness * 0.01) * 0.1) + (Math.cos(sharpnessRatio * 100) * 0.05);
-            qualityScore += pageVariation;
-            
-            return Math.min(0.95, Math.max(0.15, qualityScore));
-        }
-
-        async function applyPreprocessing(canvas, qualityScore) {
-            const processingMode = document.getElementById('processingMode').value;
-            const qualityThreshold = parseFloat(document.getElementById('qualityThreshold').value);
-            
-            // Estratégia adaptativa baseada na pesquisa
-            if (qualityScore >= 0.8) {
-                // Alta qualidade - processamento mínimo
-                return applyLightPreprocessing(canvas);
-            } else if (qualityScore >= qualityThreshold) {
-                // Qualidade média - processamento moderado
-                return applyModeratePreprocessing(canvas);
-            } else {
-                // Baixa qualidade - processamento agressivo
-                return applyAggressivePreprocessing(canvas);
-            }
-        }
-
-        function applyLightPreprocessing(canvas) {
-            // Para documentos de alta qualidade - apenas correções mínimas
-            const processedCanvas = document.createElement('canvas');
-            processedCanvas.width = canvas.width;
-            processedCanvas.height = canvas.height;
-            const ctx = processedCanvas.getContext('2d');
-            
-            // Aplicar leve melhoria de contraste
-            ctx.filter = 'contrast(110%) brightness(102%)';
-            ctx.drawImage(canvas, 0, 0);
-            
-            return processedCanvas;
-        }
-
-        function applyModeratePreprocessing(canvas) {
-            // Para documentos de qualidade média
-            const processedCanvas = document.createElement('canvas');
-            processedCanvas.width = canvas.width;
-            processedCanvas.height = canvas.height;
-            const ctx = processedCanvas.getContext('2d');
-            
-            // Aplicar filtros moderados baseados na pesquisa
-            ctx.filter = 'contrast(125%) brightness(105%) saturate(110%)';
-            ctx.drawImage(canvas, 0, 0);
-            
-            return processedCanvas;
-        }
-
-        function applyAggressivePreprocessing(canvas) {
-            // Para documentos de baixa qualidade - pipeline completo
-            log('🔧 Aplicando processamento agressivo com OpenCV...');
-            
-            try {
-                // Verificar se OpenCV está REALMENTE pronto
-                if (!window.openCVReady || typeof cv === 'undefined' || !cv.Mat) {
-                    log('⚠️ OpenCV não disponível, usando processamento básico intenso');
-                    return applyBasicIntensivePreprocessing(canvas);
-                }
-
-                // Converter canvas para Mat do OpenCV
-                const src = cv.imread(canvas);
-                
-                // 1. Conversão para grayscale
-                const gray = new cv.Mat();
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-                
-                // 2. Median blur para remover ruído (ksize=3 validado pela comunidade)
-                const blurred = new cv.Mat();
-                cv.medianBlur(gray, blurred, 3);
-                
-                // 3. Adaptive threshold (parâmetros validados: blockSize=11, C=2)
-                const binary = new cv.Mat();
-                cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
-                
-                // 4. Aplicar CLAHE para melhorar contraste (clipLimit=2.0 validado)
-                const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
-                const enhanced = new cv.Mat();
-                clahe.apply(gray, enhanced); // Aplicar no gray original
-                
-                // 5. Combinar binary e enhanced
-                const result = new cv.Mat();
-                cv.addWeighted(binary, 0.7, enhanced, 0.3, 0, result);
-                
-                // 6. Operação morfológica final (closing para conectar caracteres)
-                const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
-                const morphed = new cv.Mat();
-                cv.morphologyEx(result, morphed, cv.MORPH_CLOSE, kernel);
-                
-                // Converter de volta para canvas
-                const processedCanvas = document.createElement('canvas');
-                processedCanvas.width = canvas.width;
-                processedCanvas.height = canvas.height;
-                cv.imshow(processedCanvas, morphed);
-                
-                // IMPORTANTE: Limpeza da memória (evita vazamentos)
-                src.delete();
-                gray.delete();
-                blurred.delete();
-                binary.delete();
-                enhanced.delete();
-                result.delete();
-                morphed.delete();
-                kernel.delete();
-                clahe.delete();
-                
-                log('✅ Processamento agressivo OpenCV concluído com sucesso!');
-                return processedCanvas;
-                
-            } catch (error) {
-                log(`⚠️ Erro no processamento OpenCV: ${error.message}`);
-                console.error('Erro detalhado OpenCV:', error);
-                return applyBasicIntensivePreprocessing(canvas);
-            }
-        }
-
-        function applyBasicIntensivePreprocessing(canvas) {
-            // Fallback sem OpenCV - processamento básico intenso
-            const processedCanvas = document.createElement('canvas');
-            processedCanvas.width = canvas.width;
-            processedCanvas.height = canvas.height;
-            const ctx = processedCanvas.getContext('2d');
-            
-            // Aplicar filtros CSS intensos
-            ctx.filter = 'contrast(200%) brightness(110%) saturate(0%) blur(0.5px)';
-            ctx.drawImage(canvas, 0, 0);
-            
-            // Segunda passada para nitidez
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            tempCtx.filter = 'contrast(150%) brightness(105%)';
-            tempCtx.drawImage(processedCanvas, 0, 0);
-            
-            log('✅ Processamento básico intenso concluído');
-            return tempCanvas;
-        }
-
-        function getPreprocessingType(qualityScore) {
-            if (qualityScore >= 0.8) return 'Leve';
-            if (qualityScore >= 0.6) return 'Moderado';
-            return 'Agressivo';
-        }
-
-        function addPagePreview(pageNum, canvas, qualityScore) {
-            const previewContainer = document.getElementById('pagePreview');
-            
-            const pageCard = document.createElement('div');
-            pageCard.className = 'page-card';
-            
-            // Criar thumbnail
-            const thumbnail = document.createElement('canvas');
-            const thumbCtx = thumbnail.getContext('2d');
-            const scale = Math.min(200 / canvas.width, 200 / canvas.height);
-            thumbnail.width = canvas.width * scale;
-            thumbnail.height = canvas.height * scale;
-            thumbCtx.drawImage(canvas, 0, 0, thumbnail.width, thumbnail.height);
-            
-            // Determinar cor da qualidade
-            let qualityClass = 'quality-baixa';
-            let qualityText = 'Baixa';
-            if (qualityScore >= 0.8) {
-                qualityClass = 'quality-alta';
-                qualityText = 'Alta';
-            } else if (qualityScore >= 0.6) {
-                qualityClass = 'quality-media';
-                qualityText = 'Média';
-            }
-            
-            pageCard.innerHTML = `
-                ${thumbnail.outerHTML}
-                <div class="page-info">
-                    <strong>Página ${pageNum}</strong><br>
-                    <span class="quality-indicator ${qualityClass}">
-                        ${qualityText} (${(qualityScore * 100).toFixed(1)}%)
-                    </span><br>
-                    <small>Processamento: ${getPreprocessingType(qualityScore)}</small>
-                </div>
-            `;
-            
-            previewContainer.appendChild(pageCard);
-        }
-
-        function updateProgress(current, total) {
-            const percentage = (current / total) * 100;
-            document.getElementById('progressFill').style.width = percentage + '%';
-            document.getElementById('progressText').textContent = 
-                `Processando página ${current} de ${total} (${percentage.toFixed(1)}%)`;
-        }
-
-        function finalizarProcessamento() {
-            const endTime = Date.now();
-            const totalTime = ((endTime - processingStats.startTime) / 1000).toFixed(1);
-            const avgQuality = (processingStats.qualityScores.reduce((a, b) => a + b, 0) / processingStats.qualityScores.length * 100).toFixed(1);
-            
-            // Atualizar estatísticas
-            document.getElementById('avgQuality').textContent = avgQuality + '%';
-            document.getElementById('processingTime').textContent = totalTime + 's';
-            
-            // Mostrar seção de resultados
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('progressSection').style.display = 'none';
-            
-            log(`🎉 Processamento concluído em ${totalTime}s`);
-            log(`📊 Qualidade média: ${avgQuality}%`);
-            log(`📄 ${processingStats.processedPages} de ${processingStats.totalPages} páginas processadas`);
-            
-            // Analisar distribuição de qualidade
-            const altaQualidade = processingStats.qualityScores.filter(q => q >= 0.8).length;
-            const mediaQualidade = processingStats.qualityScores.filter(q => q >= 0.6 && q < 0.8).length;
-            const baixaQualidade = processingStats.qualityScores.filter(q => q < 0.6).length;
-            
-            log(`📈 Distribuição: ${altaQualidade} alta, ${mediaQualidade} média, ${baixaQualidade} baixa qualidade`);
-        }
-
-        async function baixarResultado() {
-            if (processedPages.length === 0) {
-                alert('Nenhuma página foi processada ainda!');
-                return;
-            }
-
-            log('📦 Gerando PDF otimizado...');
-            
-            try {
-                // Verificar se jsPDF está carregado
-                if (typeof window.jspdf === 'undefined') {
-                    log('🔄 Carregando jsPDF...');
-                    await loadJsPDF();
-                }
-
-                const { jsPDF } = window.jspdf;
-                
-                // Criar PDF com primeira página
-                const firstPage = processedPages[0];
-                const pdf = new jsPDF({
-                    orientation: firstPage.canvas.width > firstPage.canvas.height ? 'landscape' : 'portrait',
-                    unit: 'px',
-                    format: [firstPage.canvas.width, firstPage.canvas.height]
-                });
-                
-                log(`📄 Adicionando ${processedPages.length} páginas ao PDF...`);
-                
-                for (let i = 0; i < processedPages.length; i++) {
-                    const page = processedPages[i];
-                    
-                    if (i > 0) {
-                        // Adicionar nova página com dimensões corretas
-                        pdf.addPage([page.canvas.width, page.canvas.height], 
-                                  page.canvas.width > page.canvas.height ? 'landscape' : 'portrait');
-                    }
-                    
-                    // Converter canvas para imagem com qualidade alta
-                    const imgData = page.canvas.toDataURL('image/jpeg', 0.92);
-                    
-                    // Adicionar imagem ocupando toda a página
-                    pdf.addImage(imgData, 'JPEG', 0, 0, page.canvas.width, page.canvas.height);
-                    
-                    log(`✅ Página ${page.pageNum} adicionada ao PDF`);
-                }
-                
-                // Gerar nome do arquivo com timestamp e qualidade
-                const timestamp = new Date().toISOString().slice(0, 16).replace(/[:.]/g, '-');
-                const avgQuality = (processingStats.qualityScores.reduce((a, b) => a + b, 0) / processingStats.qualityScores.length * 100).toFixed(0);
-                const filename = `PDF_Judicial_Processado_${avgQuality}pct_${timestamp}.pdf`;
-                
-                pdf.save(filename);
-                log(`✅ PDF salvo como: ${filename}`);
-                log(`📊 Arquivo final contém ${processedPages.length} páginas otimizadas`);
-                
-            } catch (error) {
-                log(`❌ Erro ao gerar PDF: ${error.message}`);
-                console.error('Erro detalhado:', error);
-                alert('Erro ao gerar o PDF final. Verifique o console para mais detalhes.');
-            }
-        }
-
-        function reiniciarProcesso() {
-            // Resetar estado
-            pdfDocument = null;
-            processedPages = [];
-            processingStats = {
-                totalPages: 0,
-                processedPages: 0,
-                startTime: null,
-                qualityScores: []
-            };
-            
-            // Limpar interface
-            document.getElementById('fileInput').value = '';
-            document.getElementById('processBtn').disabled = true;
-            document.getElementById('progressSection').style.display = 'none';
-            document.getElementById('logSection').style.display = 'none';
-            document.getElementById('statsSection').style.display = 'none';
-            document.getElementById('resultsSection').style.display = 'none';
-            document.getElementById('pagePreview').innerHTML = '';
-            document.getElementById('logContent').innerHTML = '';
-            
-            // Resetar contadores
-            document.getElementById('totalPages').textContent = '0';
-            document.getElementById('pagesProcessed').textContent = '0';
-            document.getElementById('avgQuality').textContent = '0%';
-            document.getElementById('processingTime').textContent = '0s';
-            
-            log('🔄 Sistema reiniciado. Aguardando novo PDF...');
-        }
-
-        function toggleConfig() {
-            const configSection = document.getElementById('configSection');
-            const isVisible = configSection.style.display !== 'none';
-            configSection.style.display = isVisible ? 'none' : 'block';
-        }
-
+        
         function log(message) {
             const logContent = document.getElementById('logContent');
             const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.textContent = `[${timestamp}] ${message}`;
-            logContent.appendChild(logEntry);
+            const entry = document.createElement('div');
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContent.appendChild(entry);
             logContent.scrollTop = logContent.scrollHeight;
-            
-            console.log(message);
         }
-
-        // Função para detectar tipo de documento (implementação futura)
-        function detectDocumentType(canvas) {
-            // Aqui poderia ser implementada lógica para detectar:
-            // - Documentos escaneados vs nativos
-            // - Tipo de fonte do sistema judicial
-            // - Presença de logos/marcas d'água
-            // - Layout típico de cada tipo de documento
-            
-            return {
-                isScanned: true, // Por enquanto assume escaneado
-                sourceType: 'unknown', // promotoria, delegacia, advogado, pje, etc.
-                confidence: 0.5
-            };
+        
+        // Funções placeholder - serão implementadas nos próximos passos
+        function processarPDF() {
+            log('⏳ Processamento será implementado no próximo passo');
         }
-
-        // Carregar jsPDF dinamicamente quando necessário
-        async function loadJsPDF() {
-            if (typeof window.jspdf === 'undefined') {
-                log('🔄 Carregando biblioteca jsPDF...');
-                return new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                    script.onload = () => {
-                        log('✅ jsPDF carregado com sucesso');
-                        resolve();
-                    };
-                    script.onerror = () => {
-                        log('❌ Erro ao carregar jsPDF');
-                        reject(new Error('Falha ao carregar jsPDF'));
-                    };
-                    document.head.appendChild(script);
-                });
-            }
-            return Promise.resolve();
+        
+        function baixarPDF() {
+            log('💾 Download será implementado no próximo passo');
         }
-
-        // Carregar jsPDF no início
-        document.addEventListener('DOMContentLoaded', function() {
-            loadJsPDF().then(() => {
-                log('📚 jsPDF pronto para geração de PDFs');
-            }).catch(error => {
-                log('⚠️ jsPDF não carregou - download pode falhar: ' + error.message);
-            });
-        });
-
-        // Função para análise avançada de qualidade (implementação baseada na pesquisa)
-        function advancedQualityAnalysis(canvas) {
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            // Métricas validadas pela comunidade
-            let snr = 0; // Signal-to-Noise Ratio
-            let contrast = 0;
-            let sharpness = 0;
-            let textRatio = 0;
-            
-            // Análise de histograma para detectar bimodalidade (indicativo de texto)
-            const histogram = new Array(256).fill(0);
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-                histogram[gray]++;
-            }
-            
-            // Detectar picos no histograma (texto bem definido tem distribuição bimodal)
-            let peaks = 0;
-            for (let i = 1; i < histogram.length - 1; i++) {
-                if (histogram[i] > histogram[i - 1] && histogram[i] > histogram[i + 1] && histogram[i] > 100) {
-                    peaks++;
-                }
-            }
-            
-            // Calcular métricas de qualidade
-            const totalPixels = data.length / 4;
-            textRatio = peaks >= 2 ? 0.8 : 0.3; // Bimodal indica texto claro
-            
-            // Combinar métricas usando pesos validados pela pesquisa
-            const qualityScore = (textRatio * 0.4 + sharpness * 0.3 + contrast * 0.2 + snr * 0.1);
-            
-            return {
-                overall: Math.min(1.0, Math.max(0.1, qualityScore)),
-                snr,
-                contrast,
-                sharpness,
-                textRatio,
-                peaks,
-                recommendation: getProcessingRecommendation(qualityScore)
-            };
+        
+        function reiniciar() {
+            location.reload();
         }
-
-        function getProcessingRecommendation(qualityScore) {
-            if (qualityScore >= 0.8) {
-                return {
-                    type: 'minimal',
-                    description: 'Documento de alta qualidade - apenas ajustes mínimos',
-                    techniques: ['brightness_adjustment', 'light_contrast']
-                };
-            } else if (qualityScore >= 0.6) {
-                return {
-                    type: 'moderate',
-                    description: 'Qualidade média - processamento moderado recomendado',
-                    techniques: ['adaptive_threshold', 'noise_reduction', 'contrast_enhancement']
-                };
-            } else {
-                return {
-                    type: 'aggressive',
-                    description: 'Baixa qualidade - pipeline completo necessário',
-                    techniques: ['deskewing', 'median_blur', 'adaptive_threshold', 'clahe', 'morphological_ops']
-                };
-            }
-        }
-
-        // Implementação de deskewing (correção de inclinação) baseada na pesquisa
-        function correctSkew(src) {
-            try {
-                // Detectar linhas usando Hough Transform
-                const lines = new cv.Mat();
-                const gray = new cv.Mat();
-                const edges = new cv.Mat();
-                
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-                cv.Canny(gray, edges, 50, 150);
-                cv.HoughLines(edges, lines, 1, Math.PI / 180, 100);
-                
-                // Calcular ângulo médio das linhas horizontais
-                let angles = [];
-                for (let i = 0; i < lines.rows; i++) {
-                    const rho = lines.data32F[i * 2];
-                    const theta = lines.data32F[i * 2 + 1];
-                    
-                    // Filtrar apenas linhas aproximadamente horizontais
-                    const angleDeg = (theta * 180 / Math.PI) - 90;
-                    if (Math.abs(angleDeg) < 45) {
-                        angles.push(angleDeg);
-                    }
-                }
-                
-                if (angles.length > 0) {
-                    // Calcular ângulo mediano para robustez
-                    angles.sort((a, b) => a - b);
-                    const medianAngle = angles[Math.floor(angles.length / 2)];
-                    
-                    // Aplicar rotação apenas se o ângulo for significativo
-                    if (Math.abs(medianAngle) > 0.5) {
-                        const center = new cv.Point2(src.cols / 2, src.rows / 2);
-                        const rotMatrix = cv.getRotationMatrix2D(center, medianAngle, 1.0);
-                        const rotated = new cv.Mat();
-                        cv.warpAffine(src, rotated, rotMatrix, src.size());
-                        
-                        // Limpeza
-                        rotMatrix.delete();
-                        return rotated;
-                    }
-                }
-                
-                // Limpeza
-                lines.delete();
-                gray.delete();
-                edges.delete();
-                
-                return src.clone();
-                
-            } catch (error) {
-                log(`⚠️ Erro na correção de inclinação: ${error.message}`);
-                return src.clone();
-            }
-        }
-
-        // Sistema de cache para evitar reprocessamento
-        const preprocessingCache = new Map();
-
-        function getCacheKey(canvas, qualityScore, settings) {
-            // Gerar hash simples baseado nas dimensões e configurações
-            return `${canvas.width}x${canvas.height}_${qualityScore.toFixed(3)}_${JSON.stringify(settings)}`;
-        }
-
-        // Monitoramento de performance
-        const performanceMetrics = {
-            pageProcessingTimes: [],
-            totalMemoryUsage: 0,
-            averageQualityImprovement: 0
-        };
-
-        function trackPerformance(pageNum, startTime, endTime, originalQuality, finalQuality) {
-            const processingTime = endTime - startTime;
-            performanceMetrics.pageProcessingTimes.push(processingTime);
-            
-            const qualityImprovement = finalQuality - originalQuality;
-            performanceMetrics.averageQualityImprovement = 
-                (performanceMetrics.averageQualityImprovement + qualityImprovement) / 2;
-            
-            log(`⏱️ Página ${pageNum}: ${processingTime.toFixed(0)}ms, melhoria: ${(qualityImprovement * 100).toFixed(1)}%`);
-        }
-
-        // Exportar relatório de processamento
-        function generateProcessingReport() {
-            const report = {
-                timestamp: new Date().toISOString(),
-                document: {
-                    totalPages: processingStats.totalPages,
-                    processedPages: processingStats.processedPages,
-                    processingTimeSeconds: (Date.now() - processingStats.startTime) / 1000
-                },
-                quality: {
-                    scores: processingStats.qualityScores,
-                    average: processingStats.qualityScores.reduce((a, b) => a + b, 0) / processingStats.qualityScores.length,
-                    distribution: {
-                        high: processingStats.qualityScores.filter(q => q >= 0.8).length,
-                        medium: processingStats.qualityScores.filter(q => q >= 0.6 && q < 0.8).length,
-                        low: processingStats.qualityScores.filter(q => q < 0.6).length
-                    }
-                },
-                performance: performanceMetrics,
-                settings: {
-                    targetDPI: document.getElementById('targetDPI').value,
-                    processingMode: document.getElementById('processingMode').value,
-                    qualityThreshold: document.getElementById('qualityThreshold').value
-                }
-            };
-            
-            // Disponibilizar para download
-            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `relatorio_processamento_${new Date().toISOString().slice(0, 10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Adicionar botão para relatório na seção de resultados
-        document.addEventListener('DOMContentLoaded', function() {
-            const resultsSection = document.getElementById('resultsSection');
-            const reportBtn = document.createElement('button');
-            reportBtn.className = 'btn';
-            reportBtn.textContent = '📊 Baixar Relatório';
-            reportBtn.onclick = generateProcessingReport;
-            
-            // Adicionar após o botão de download
-            const downloadBtn = document.getElementById('downloadBtn');
-            downloadBtn.parentNode.insertBefore(reportBtn, downloadBtn.nextSibling);
-        });
     </script>
-
-    <!-- Carregar jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
