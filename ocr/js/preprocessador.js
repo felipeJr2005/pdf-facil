@@ -1,4 +1,3 @@
-
 // Configurações globais
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -156,6 +155,7 @@ function analyzePageQuality(canvas) {
     let edgePixels = 0;
     let darkPixels = 0;
     let lightPixels = 0;
+    let totalTextPixels = 0;
     
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -167,6 +167,7 @@ function analyzePageQuality(canvas) {
         
         if (brightness < 85) darkPixels++;
         if (brightness > 170) lightPixels++;
+        if (brightness < 128) totalTextPixels++; // Pixels que podem ser texto
         
         // Detectar bordas para medir nitidez
         if (i > canvas.width * 4) {
@@ -185,15 +186,26 @@ function analyzePageQuality(canvas) {
     const avgBrightness = sumBrightness / totalPixels;
     const sharpnessRatio = edgePixels / totalPixels;
     const contrastRatio = Math.abs(darkPixels - lightPixels) / totalPixels;
+    const textDensity = totalTextPixels / totalPixels;
     
     // Calcular score de qualidade
     let qualityScore = 0.3;
     
-    if (avgBrightness > 60 && avgBrightness < 180) qualityScore += 0.25;
-    if (sharpnessRatio > 0.015) qualityScore += 0.3;
-    else if (sharpnessRatio > 0.008) qualityScore += 0.15;
-    if (contrastRatio > 0.3) qualityScore += 0.2;
-    else if (contrastRatio > 0.15) qualityScore += 0.1;
+    // Avaliar brilho
+    if (avgBrightness > 60 && avgBrightness < 180) qualityScore += 0.2;
+    
+    // Avaliar nitidez
+    if (sharpnessRatio > 0.015) qualityScore += 0.25;
+    else if (sharpnessRatio > 0.008) qualityScore += 0.1;
+    
+    // Avaliar contraste
+    if (contrastRatio > 0.3) qualityScore += 0.15;
+    else if (contrastRatio > 0.15) qualityScore += 0.05;
+    
+    // Avaliar densidade de conteúdo (NOVO)
+    if (textDensity > 0.15) qualityScore += 0.15;  // Página com bastante conteúdo
+    else if (textDensity > 0.05) qualityScore += 0.1;   // Página com conteúdo médio
+    else qualityScore -= 0.2;  // Página quase vazia (como página 17)
     
     // Penalizar extremos
     if (avgBrightness < 30 || avgBrightness > 220) qualityScore -= 0.2;
@@ -245,7 +257,7 @@ function applyHeavyProcessing(canvas) {
 
 function applyOpenCVProcessing(canvas) {
     try {
-        log('🔧 Aplicando processamento OpenCV...');
+        log('🔧 OpenCV: Processamento avançado aplicado');
         
         const src = cv.imread(canvas);
         const gray = new cv.Mat();
@@ -254,8 +266,9 @@ function applyOpenCVProcessing(canvas) {
         
         // Pipeline OpenCV validado
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        cv.medianBlur(gray, blurred, 3);
-        cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+        cv.medianBlur(gray, blurred, CONFIG.opencv.medianBlur);
+        cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 
+                           CONFIG.opencv.adaptiveThreshold.blockSize, CONFIG.opencv.adaptiveThreshold.C);
         
         const processedCanvas = document.createElement('canvas');
         processedCanvas.width = canvas.width;
@@ -268,11 +281,11 @@ function applyOpenCVProcessing(canvas) {
         blurred.delete();
         binary.delete();
         
-        log('✅ Processamento OpenCV concluído');
+        log('✅ OpenCV: Processamento concluído com sucesso');
         return processedCanvas;
         
     } catch (error) {
-        log(`⚠️ Erro OpenCV: ${error.message}`);
+        log(`⚠️ Erro OpenCV: ${error.message} - Usando processamento básico`);
         return applyBasicHeavyProcessing(canvas);
     }
 }
@@ -302,6 +315,16 @@ function finalizarProcessamento() {
     log(`🎉 Processamento concluído em ${duration}s`);
     log(`📊 ${stats.processedPages} páginas processadas`);
     
+    // Estatísticas de qualidade
+    const qualityStats = processedPages.reduce((acc, page) => {
+        if (page.quality >= 0.8) acc.high++;
+        else if (page.quality >= 0.6) acc.medium++;
+        else acc.low++;
+        return acc;
+    }, { high: 0, medium: 0, low: 0 });
+    
+    log(`📈 Qualidade: ${qualityStats.high} alta, ${qualityStats.medium} média, ${qualityStats.low} baixa`);
+    
     // Mostrar resultados
     document.getElementById('progressArea').style.display = 'none';
     document.getElementById('resultsArea').style.display = 'block';
@@ -323,7 +346,7 @@ async function baixarPDF() {
             if (i > 0) pdf.addPage();
             
             const page = processedPages[i];
-            const imgData = page.canvas.toDataURL('image/jpeg', 0.92);
+            const imgData = page.canvas.toDataURL('image/jpeg', CONFIG.output.jpegQuality);
             
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
