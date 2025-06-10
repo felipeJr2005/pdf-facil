@@ -12,7 +12,7 @@
         // Variável global para controlar carregamento do OpenCV
         window.openCVReady = false;
         
-        // Função para carregar OpenCV
+        // Função para carregar OpenCV com inicialização correta
         function loadOpenCV() {
             return new Promise((resolve, reject) => {
                 if (window.openCVReady) {
@@ -20,26 +20,46 @@
                     return;
                 }
                 
+                log('🔄 Carregando OpenCV.js...');
+                
                 const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/opencv.js/4.9.0/opencv.js';
+                // Usar URL oficial da documentação OpenCV
+                script.src = 'https://docs.opencv.org/4.x/opencv.js';
+                
                 script.onload = function() {
-                    // OpenCV precisa de um tempo para inicializar
-                    const checkReady = () => {
-                        if (typeof cv !== 'undefined' && cv.Mat) {
+                    log('📦 OpenCV.js baixado, aguardando inicialização...');
+                    
+                    // SOLUÇÃO CORRETA: usar onRuntimeInitialized
+                    if (typeof cv !== 'undefined') {
+                        cv['onRuntimeInitialized'] = () => {
                             window.openCVReady = true;
-                            log('✅ OpenCV carregado e pronto');
+                            log('✅ OpenCV.js totalmente inicializado e pronto!');
                             resolve();
-                        } else {
-                            setTimeout(checkReady, 100);
-                        }
-                    };
-                    checkReady();
+                        };
+                    } else {
+                        // Fallback: aguardar cv estar disponível
+                        const checkCV = () => {
+                            if (typeof cv !== 'undefined' && cv.Mat) {
+                                cv['onRuntimeInitialized'] = () => {
+                                    window.openCVReady = true;
+                                    log('✅ OpenCV.js inicializado (fallback)!');
+                                    resolve();
+                                };
+                            } else {
+                                setTimeout(checkCV, 100);
+                            }
+                        };
+                        checkCV();
+                    }
                 };
+                
                 script.onerror = function() {
-                    log('❌ Erro ao carregar OpenCV, processamento será limitado');
+                    log('❌ Erro ao carregar OpenCV.js da URL oficial');
+                    log('💡 Sugestão: hospede opencv.js no seu servidor para evitar CORS');
                     window.openCVReady = false;
                     resolve(); // Continua sem OpenCV
                 };
+                
                 document.head.appendChild(script);
             });
         }
@@ -736,10 +756,10 @@
 
         function applyAggressivePreprocessing(canvas) {
             // Para documentos de baixa qualidade - pipeline completo
-            log('🔧 Aplicando processamento agressivo...');
+            log('🔧 Aplicando processamento agressivo com OpenCV...');
             
             try {
-                // Verificar se OpenCV está disponível
+                // Verificar se OpenCV está REALMENTE pronto
                 if (!window.openCVReady || typeof cv === 'undefined' || !cv.Mat) {
                     log('⚠️ OpenCV não disponível, usando processamento básico intenso');
                     return applyBasicIntensivePreprocessing(canvas);
@@ -747,16 +767,14 @@
 
                 // Converter canvas para Mat do OpenCV
                 const src = cv.imread(canvas);
-                const dst = new cv.Mat();
-                
-                // Pipeline baseado nas técnicas validadas pela comunidade
                 
                 // 1. Conversão para grayscale
-                cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+                const gray = new cv.Mat();
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
                 
-                // 2. Median blur para remover ruído (ksize=3 validado)
+                // 2. Median blur para remover ruído (ksize=3 validado pela comunidade)
                 const blurred = new cv.Mat();
-                cv.medianBlur(dst, blurred, 3);
+                cv.medianBlur(gray, blurred, 3);
                 
                 // 3. Adaptive threshold (parâmetros validados: blockSize=11, C=2)
                 const binary = new cv.Mat();
@@ -765,33 +783,40 @@
                 // 4. Aplicar CLAHE para melhorar contraste (clipLimit=2.0 validado)
                 const clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
                 const enhanced = new cv.Mat();
-                clahe.apply(blurred, enhanced);
+                clahe.apply(gray, enhanced); // Aplicar no gray original
                 
-                // 5. Combinar resultados
+                // 5. Combinar binary e enhanced
                 const result = new cv.Mat();
-                cv.bitwise_and(binary, enhanced, result);
+                cv.addWeighted(binary, 0.7, enhanced, 0.3, 0, result);
+                
+                // 6. Operação morfológica final (closing para conectar caracteres)
+                const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(2, 2));
+                const morphed = new cv.Mat();
+                cv.morphologyEx(result, morphed, cv.MORPH_CLOSE, kernel);
                 
                 // Converter de volta para canvas
                 const processedCanvas = document.createElement('canvas');
                 processedCanvas.width = canvas.width;
                 processedCanvas.height = canvas.height;
-                cv.imshow(processedCanvas, result);
+                cv.imshow(processedCanvas, morphed);
                 
-                // Limpeza da memória
+                // IMPORTANTE: Limpeza da memória (evita vazamentos)
                 src.delete();
-                dst.delete();
+                gray.delete();
                 blurred.delete();
                 binary.delete();
                 enhanced.delete();
                 result.delete();
+                morphed.delete();
+                kernel.delete();
                 clahe.delete();
                 
-                log('✅ Processamento agressivo (OpenCV) concluído');
+                log('✅ Processamento agressivo OpenCV concluído com sucesso!');
                 return processedCanvas;
                 
             } catch (error) {
                 log(`⚠️ Erro no processamento OpenCV: ${error.message}`);
-                console.error('Erro OpenCV:', error);
+                console.error('Erro detalhado OpenCV:', error);
                 return applyBasicIntensivePreprocessing(canvas);
             }
         }
