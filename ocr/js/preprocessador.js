@@ -1,8 +1,8 @@
 // ========================================
-// PDFFacil - Processador v2.1 - CALIBRADO
+// PDFFacil - Processador v2.2 - OTIMIZADO
 // ========================================
 
-console.log("🔥 PROCESSADOR V2.1 CALIBRADO CARREGADO!");
+console.log("🔥 PROCESSADOR V2.2 OTIMIZADO CARREGADO!");
 
 // Configurações globais
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -10,13 +10,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 // Variáveis do sistema
 let pdfDocument = null;
 let processedPages = [];
-let stats = { totalPages: 0, processedPages: 0, startTime: null };
+let stats = { totalPages: 0, processedPages: 0, startTime: null, nativeOptimized: 0, lightProcessed: 0, fullProcessed: 0 };
 let openCVReady = false;
 
 // Inicialização do sistema
 document.addEventListener('DOMContentLoaded', function() {
-    log('🚀 PDFFacil - Sistema CALIBRADO inicializado');
-    log('🆕 Usando DETECTOR INTELIGENTE de documentos');
+    log('🚀 PDFFacil - Sistema OTIMIZADO inicializado');
+    log('🆕 Usando DETECTOR INTELIGENTE + OTIMIZAÇÃO UNIVERSAL');
     setupEventListeners();
     initializeOpenCV();
 });
@@ -32,7 +32,7 @@ function initializeOpenCV() {
         if (typeof cv !== 'undefined') {
             cv['onRuntimeInitialized'] = () => {
                 openCVReady = true;
-                log('✅ OpenCV CALIBRADO carregado e pronto!');
+                log('✅ OpenCV OTIMIZADO carregado e pronto!');
             };
         } else {
             setTimeout(checkOpenCV, 100);
@@ -79,7 +79,7 @@ async function processarPDF() {
         return;
     }
 
-    log('🔄 Iniciando processamento CALIBRADO...');
+    log('🔄 Iniciando processamento OTIMIZADO...');
     
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resultsArea').style.display = 'none';
@@ -87,6 +87,9 @@ async function processarPDF() {
 
     processedPages = [];
     stats.processedPages = 0;
+    stats.nativeOptimized = 0;
+    stats.lightProcessed = 0;
+    stats.fullProcessed = 0;
     stats.startTime = Date.now();
 
     try {
@@ -127,8 +130,8 @@ async function processPage(pageNum) {
         // Analisar qualidade da página
         const qualityScore = analyzePageQuality(canvas);
         
-        // NOVA FUNÇÃO: Processamento inteligente calibrado
-        const processedCanvas = applyIntelligentPreprocessing(canvas, qualityScore, pageNum);
+        // NOVA FUNÇÃO: Processamento inteligente otimizado
+        const processedCanvas = applyIntelligentOptimization(canvas, qualityScore, pageNum);
 
         processedPages.push({
             pageNum,
@@ -203,7 +206,7 @@ function analyzePageQuality(canvas) {
 }
 
 // ========================================
-// DETECTOR INTELIGENTE DE DOCUMENTO
+// DETECTOR INTELIGENTE CALIBRADO
 // ========================================
 
 function detectDocumentType(canvas, qualityScore) {
@@ -215,7 +218,7 @@ function detectDocumentType(canvas, qualityScore) {
     const textSharpness = detectTextSharpness(data, canvas.width, canvas.height);
     const colorVariation = detectColorVariation(data);
     
-    // Detecção de padrões visuais específicos
+    // Detecção de padrões visuais específicos (CALIBRADOS)
     const hasPJePattern = detectPJePattern(canvas);
     const hasBNMPPattern = detectBNMPPattern(canvas);
     const hasEmailPattern = detectEmailPattern(canvas);
@@ -270,80 +273,106 @@ function detectColorVariation(data) {
 }
 
 function detectPJePattern(canvas) {
-    // Detectar características visuais do PJe
+    // CALIBRADO: Detector mais específico para PJe
     const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 500), Math.min(canvas.height, 200));
+    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 600), Math.min(canvas.height, 300));
     
-    // Procurar padrões de cor/layout típicos do PJe (header azul, layout estruturado)
-    let bluePixels = 0;
-    let structuredLayout = 0;
+    let specificBluePixels = 0;
+    let pjeHeaderPattern = 0;
+    let structuredElements = 0;
     
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i];
         const g = imageData.data[i + 1];
         const b = imageData.data[i + 2];
         
-        // Detectar tons de azul típicos do PJe
-        if (b > r + 30 && b > g + 20 && b > 100) {
-            bluePixels++;
+        // MAIS ESPECÍFICO: Tom de azul muito específico do PJe
+        if (b > 150 && b > r + 50 && b > g + 30 && r < 100 && g < 120) {
+            specificBluePixels++;
         }
         
-        // Detectar layout estruturado (linhas horizontais)
-        if (r > 200 && g > 200 && b > 200) {
-            structuredLayout++;
+        // Detectar header estruturado do PJe
+        if (b > 130 && r < 80 && g < 100) {
+            pjeHeaderPattern++;
+        }
+        
+        // Layout muito estruturado
+        if (r > 240 && g > 240 && b > 240) {
+            structuredElements++;
         }
     }
     
-    return (bluePixels > 100 || structuredLayout > 1000);
+    // THRESHOLDS MAIS RESTRITIVOS
+    const hasStrongBlueHeader = specificBluePixels > 500;
+    const hasTypicalLayout = pjeHeaderPattern > 300 && structuredElements > 3000;
+    
+    return hasStrongBlueHeader && hasTypicalLayout;
 }
 
 function detectBNMPPattern(canvas) {
-    // Detectar padrões visuais do BNMP
+    // CALIBRADO: Detector mais específico para BNMP
     const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 500), Math.min(canvas.height, 300));
+    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 500), Math.min(canvas.height, 400));
     
-    let officialLayout = 0;
-    let blackText = 0;
+    let officialTextPattern = 0;
+    let cleanWhiteBackground = 0;
+    let formalStructure = 0;
     
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i];
         const g = imageData.data[i + 1];
         const b = imageData.data[i + 2];
         
-        // Detectar texto preto em fundo branco (padrão BNMP)
-        if (r < 50 && g < 50 && b < 50) {
-            blackText++;
+        // Texto preto muito definido
+        if (r < 30 && g < 30 && b < 30) {
+            officialTextPattern++;
         }
         
-        // Detectar layout oficial estruturado
-        if (r > 240 && g > 240 && b > 240) {
-            officialLayout++;
+        // Fundo branco muito limpo
+        if (r > 250 && g > 250 && b > 250) {
+            cleanWhiteBackground++;
+        }
+        
+        // Estrutura formal (cinza claro para tabelas/borders)
+        if (r > 200 && r < 240 && g > 200 && g < 240 && b > 200 && b < 240) {
+            formalStructure++;
         }
     }
     
-    return (blackText > 500 && officialLayout > 2000);
+    // THRESHOLDS MAIS ESPECÍFICOS
+    const hasOfficialFormat = officialTextPattern > 1000 && cleanWhiteBackground > 5000;
+    const hasTypicalBNMPLayout = formalStructure > 200;
+    
+    return hasOfficialFormat && hasTypicalBNMPLayout;
 }
 
 function detectEmailPattern(canvas) {
-    // Detectar características de email (Outlook, Firefox)
+    // CALIBRADO: Detector para emails/browser
     const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 600), Math.min(canvas.height, 150));
+    const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 700), Math.min(canvas.height, 200));
     
-    let browserElements = 0;
+    let browserUIElements = 0;
+    let emailInterface = 0;
     
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i];
         const g = imageData.data[i + 1];
         const b = imageData.data[i + 2];
         
-        // Detectar elementos típicos de interface de email/browser
-        if ((r > 200 && g > 200 && b > 250) || // Azul claro
-            (r > 230 && g > 230 && b > 230)) {   // Cinza claro
-            browserElements++;
+        // Elementos típicos de interface (azul claro, cinza interface)
+        if ((r > 220 && g > 230 && b > 250) || // Azul muito claro
+            (r > 240 && g > 240 && b > 240 && r < 250)) { // Cinza interface
+            browserUIElements++;
+        }
+        
+        // Elementos de email (tons específicos de interface web)
+        if (r > 200 && g > 210 && b > 230 && Math.abs(r-g) < 20) {
+            emailInterface++;
         }
     }
     
-    return browserElements > 1000;
+    // THRESHOLD MAIS ESPECÍFICO
+    return browserUIElements > 2000 && emailInterface > 500;
 }
 
 function classifyDocumentType(metrics) {
@@ -356,115 +385,183 @@ function classifyDocumentType(metrics) {
         qualityScore
     } = metrics;
     
-    // REGRAS BASEADAS NA NOSSA ANÁLISE
+    // ========================================
+    // NOVA LÓGICA: SEMPRE OTIMIZAR!
+    // ========================================
     
-    // 1. DOCUMENTOS NATIVOS (NUNCA PROCESSAR) - Páginas 1-6, 10-17
+    // 1. DOCUMENTOS NATIVOS (OTIMIZAÇÃO SUAVE)
     if (hasPJePattern) {
         return {
             type: 'PJE_NATIVE',
-            shouldProcess: false,
+            shouldProcess: true,
+            processingLevel: 'OPTIMIZED_NATIVE',
             confidence: 0.95,
-            reason: 'PJe detectado - texto nativo perfeito'
+            reason: 'PJe detectado - aplicar otimizações validadas'
         };
     }
     
     if (hasBNMPPattern) {
         return {
             type: 'BNMP_NATIVE',
-            shouldProcess: false,
+            shouldProcess: true,
+            processingLevel: 'OPTIMIZED_NATIVE',
             confidence: 0.90,
-            reason: 'BNMP detectado - documento oficial limpo'
+            reason: 'BNMP detectado - aplicar otimizações validadas'
         };
     }
     
     if (hasEmailPattern) {
         return {
             type: 'EMAIL_CONVERTED',
-            shouldProcess: false,
+            shouldProcess: true,
+            processingLevel: 'OPTIMIZED_NATIVE',
             confidence: 0.85,
-            reason: 'Email detectado - já em boa qualidade'
+            reason: 'Email detectado - aplicar otimizações validadas'
         };
     }
     
-    // 2. DOCUMENTOS DE ALTA QUALIDADE (NÃO PROCESSAR)
+    // 2. DOCUMENTOS DE ALTA QUALIDADE (OTIMIZAÇÃO SUAVE)
     if (qualityScore > 0.7 && textSharpness > 0.8) {
         return {
             type: 'HIGH_QUALITY',
-            shouldProcess: false,
+            shouldProcess: true,
+            processingLevel: 'OPTIMIZED_NATIVE',
             confidence: 0.85,
-            reason: 'Alta qualidade detectada - preservar original'
+            reason: 'Alta qualidade - aplicar otimizações suaves'
         };
     }
     
-    // 3. QUALIDADE MÉDIA (PROCESSAMENTO LEVE)
+    // 3. QUALIDADE MÉDIA (PROCESSAMENTO MODERADO)
     if (qualityScore > 0.5 && qualityScore <= 0.7) {
         return {
             type: 'MEDIUM_QUALITY',
             shouldProcess: true,
             processingLevel: 'LIGHT',
             confidence: 0.80,
-            reason: 'Qualidade média - processamento suave necessário'
+            reason: 'Qualidade média - processamento moderado'
         };
     }
     
-    // 4. DOCUMENTOS DEGRADADOS (PROCESSAMENTO COMPLETO) - Esperado delegacia páginas ruins
+    // 4. DOCUMENTOS DEGRADADOS (PROCESSAMENTO COMPLETO)
     if (qualityScore <= 0.5) {
         return {
             type: 'DEGRADED_SCAN',
             shouldProcess: true,
             processingLevel: 'FULL',
             confidence: 0.85,
-            reason: 'Documento degradado - processamento completo necessário'
+            reason: 'Documento degradado - processamento completo'
         };
     }
     
-    // 5. DEFAULT CONSERVADOR
+    // 5. DEFAULT: OTIMIZAÇÃO SUAVE
     return {
         type: 'UNKNOWN',
-        shouldProcess: false,
+        shouldProcess: true,
+        processingLevel: 'OPTIMIZED_NATIVE',
         confidence: 0.60,
-        reason: 'Tipo indefinido - preservar por segurança'
+        reason: 'Tipo indefinido - aplicar otimizações básicas'
     };
 }
 
 // ========================================
-// PROCESSAMENTO INTELIGENTE PRINCIPAL
+// PROCESSAMENTO INTELIGENTE OTIMIZADO
 // ========================================
 
-function applyIntelligentPreprocessing(canvas, qualityScore, pageNum) {
+function applyIntelligentOptimization(canvas, qualityScore, pageNum) {
     // 1. DETECTAR TIPO DE DOCUMENTO
     const documentType = detectDocumentType(canvas, qualityScore);
     
     log(`🔍 Página ${pageNum}: ${documentType.type} (${(documentType.confidence * 100).toFixed(1)}%)`);
     log(`📋 Página ${pageNum}: ${documentType.reason}`);
     
-    // 2. APLICAR ESTRATÉGIA BASEADA NO TIPO
-    if (!documentType.shouldProcess) {
-        log(`🚫 Página ${pageNum}: BLOQUEADO - aplicando apenas ajuste mínimo`);
-        return applyMinimalProcessing(canvas);
-    }
+    // 2. APLICAR NÍVEL DE PROCESSAMENTO ADEQUADO
+    let processedCanvas;
     
-    // 3. ESCOLHER NÍVEL DE PROCESSAMENTO
-    if (documentType.processingLevel === 'LIGHT') {
-        log(`🔧 Página ${pageNum}: Processamento SUAVE com OpenCV melhorado`);
-        return applyLightOpenCVProcessing(canvas, pageNum);
-    } else {
-        log(`🔬 Página ${pageNum}: Processamento COMPLETO com OpenCV melhorado`);
-        return applyFullOpenCVProcessing(canvas, pageNum);
+    switch (documentType.processingLevel) {
+        case 'OPTIMIZED_NATIVE':
+            log(`✨ Página ${pageNum}: OTIMIZAÇÕES VALIDADAS aplicadas`);
+            processedCanvas = applyOptimizedNativeProcessing(canvas, pageNum);
+            stats.nativeOptimized++;
+            break;
+            
+        case 'LIGHT':
+            log(`🔧 Página ${pageNum}: Processamento MODERADO aplicado`);
+            processedCanvas = applyLightOpenCVProcessing(canvas, pageNum);
+            stats.lightProcessed++;
+            break;
+            
+        case 'FULL':
+            log(`🔬 Página ${pageNum}: Processamento COMPLETO aplicado`);
+            processedCanvas = applyFullOpenCVProcessing(canvas, pageNum);
+            stats.fullProcessed++;
+            break;
+            
+        default:
+            log(`🔧 Página ${pageNum}: Processamento padrão aplicado`);
+            processedCanvas = applyOptimizedNativeProcessing(canvas, pageNum);
+            stats.nativeOptimized++;
     }
-}
-
-function applyMinimalProcessing(canvas) {
-    const processedCanvas = document.createElement('canvas');
-    processedCanvas.width = canvas.width;
-    processedCanvas.height = canvas.height;
-    const ctx = processedCanvas.getContext('2d');
-    
-    // Conforme definido na análise: apenas ajuste sutil
-    ctx.filter = 'contrast(105%) brightness(101%)';
-    ctx.drawImage(canvas, 0, 0);
     
     return processedCanvas;
+}
+
+// ========================================
+// NOVO: OTIMIZAÇÃO VALIDADA PARA NATIVOS
+// ========================================
+
+function applyOptimizedNativeProcessing(canvas, pageNum) {
+    if (!openCVReady || typeof cv === 'undefined') {
+        log(`⚠️ Página ${pageNum}: OpenCV indisponível - fallback para otimização básica`);
+        return applyBasicOptimization(canvas);
+    }
+    
+    try {
+        log(`✨ Página ${pageNum}: Aplicando OTIMIZAÇÕES VALIDADAS`);
+        
+        const src = cv.imread(canvas);
+        const gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        
+        // TÉCNICA 1: UPSCALING 2x (SEMPRE - melhora OCR)
+        const upscaled = new cv.Mat();
+        cv.resize(gray, upscaled, new cv.Size(0, 0), 2.0, 2.0, cv.INTER_CUBIC);
+        log(`📈 Página ${pageNum}: Upscaling 2x aplicado (melhora OCR)`);
+        
+        // TÉCNICA 2: CLAHE MUITO SUAVE (realçar sem degradar)
+        const clahe = cv.createCLAHE(1.2, new cv.Size(8, 8));
+        const enhanced = new cv.Mat();
+        clahe.apply(upscaled, enhanced);
+        log(`🌟 Página ${pageNum}: CLAHE suave aplicado (1.2)`);
+        
+        // TÉCNICA 3: AJUSTE SUTIL DE CONTRASTE (sem threshold agressivo)
+        const adjusted = new cv.Mat();
+        enhanced.convertTo(adjusted, -1, 1.1, 5); // Contraste 10% + brilho +5
+        log(`🎨 Página ${pageNum}: Ajuste sutil de contraste aplicado`);
+        
+        // Redimensionar de volta ao tamanho original
+        const final = new cv.Mat();
+        cv.resize(adjusted, final, new cv.Size(canvas.width, canvas.height), 0, 0, cv.INTER_AREA);
+        
+        const processedCanvas = document.createElement('canvas');
+        processedCanvas.width = canvas.width;
+        processedCanvas.height = canvas.height;
+        cv.imshow(processedCanvas, final);
+        
+        // Limpeza
+        src.delete();
+        gray.delete();
+        upscaled.delete();
+        enhanced.delete();
+        adjusted.delete();
+        final.delete();
+        
+        log(`✅ Página ${pageNum}: OTIMIZAÇÕES VALIDADAS concluídas!`);
+        return processedCanvas;
+        
+    } catch (error) {
+        log(`❌ Página ${pageNum}: Erro OpenCV: ${error.message}`);
+        return applyBasicOptimization(canvas);
+    }
 }
 
 function applyLightOpenCVProcessing(canvas, pageNum) {
@@ -474,7 +571,7 @@ function applyLightOpenCVProcessing(canvas, pageNum) {
     }
     
     try {
-        log(`🔧 Página ${pageNum}: Aplicando OpenCV SUAVE`);
+        log(`🔧 Página ${pageNum}: Aplicando OpenCV MODERADO`);
         
         const src = cv.imread(canvas);
         const gray = new cv.Mat();
@@ -485,16 +582,16 @@ function applyLightOpenCVProcessing(canvas, pageNum) {
         cv.resize(gray, upscaled, new cv.Size(0, 0), 2.0, 2.0, cv.INTER_CUBIC);
         log(`📈 Página ${pageNum}: Upscaling 2x aplicado`);
         
-        // TÉCNICA 2: CLAHE SUAVE
-        const clahe = cv.createCLAHE(1.5, new cv.Size(8, 8));
+        // TÉCNICA 2: CLAHE MODERADO
+        const clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
         const enhanced = new cv.Mat();
         clahe.apply(upscaled, enhanced);
-        log(`🌟 Página ${pageNum}: CLAHE suave aplicado`);
+        log(`🌟 Página ${pageNum}: CLAHE moderado aplicado`);
         
-        // TÉCNICA 3: THRESHOLD CALIBRADO
+        // TÉCNICA 3: THRESHOLD MODERADO
         const binary = new cv.Mat();
-        cv.adaptiveThreshold(enhanced, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 21, 8);
-        log(`🎯 Página ${pageNum}: Threshold calibrado (21,8) aplicado`);
+        cv.adaptiveThreshold(enhanced, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 19, 7);
+        log(`🎯 Página ${pageNum}: Threshold moderado (19,7) aplicado`);
         
         // Redimensionar de volta
         const final = new cv.Mat();
@@ -513,7 +610,7 @@ function applyLightOpenCVProcessing(canvas, pageNum) {
         binary.delete();
         final.delete();
         
-        log(`✅ Página ${pageNum}: OpenCV SUAVE concluído com sucesso!`);
+        log(`✅ Página ${pageNum}: OpenCV MODERADO concluído com sucesso!`);
         return processedCanvas;
         
     } catch (error) {
@@ -554,7 +651,7 @@ function applyFullOpenCVProcessing(canvas, pageNum) {
         // TÉCNICA 4: THRESHOLD OTIMIZADO
         const binary = new cv.Mat();
         cv.adaptiveThreshold(denoised, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 6);
-        log(`🎯 Página ${pageNum}: Threshold otimizado (15,6) aplicado`);
+        log(`🎯 Página ${pageNum}: Threshold forte (15,6) aplicado`);
         
         // Redimensionar de volta
         const final = new cv.Mat();
@@ -583,6 +680,19 @@ function applyFullOpenCVProcessing(canvas, pageNum) {
     }
 }
 
+function applyBasicOptimization(canvas) {
+    const processedCanvas = document.createElement('canvas');
+    processedCanvas.width = canvas.width;
+    processedCanvas.height = canvas.height;
+    const ctx = processedCanvas.getContext('2d');
+    
+    // Otimizações básicas validadas
+    ctx.filter = 'contrast(110%) brightness(102%) saturate(105%)';
+    ctx.drawImage(canvas, 0, 0);
+    
+    return processedCanvas;
+}
+
 function applyBasicProcessing(canvas, level) {
     const processedCanvas = document.createElement('canvas');
     processedCanvas.width = canvas.width;
@@ -609,19 +719,15 @@ function finalizarProcessamento() {
     const endTime = Date.now();
     const duration = ((endTime - stats.startTime) / 1000).toFixed(1);
     
-    log(`🎉 Processamento CALIBRADO concluído em ${duration}s`);
+    log(`🎉 Processamento OTIMIZADO concluído em ${duration}s`);
     log(`📊 ${stats.processedPages} páginas processadas`);
     
-    // Estatísticas de tipos detectados
-    let nativeBlocked = 0;
-    let lightProcessed = 0;
-    let fullProcessed = 0;
-    
-    // Simular contagem (na implementação real, armazenar durante processamento)
-    log(`📈 ═══ RELATÓRIO DE PROCESSAMENTO INTELIGENTE ═══`);
-    log(`   └─ Documentos nativos BLOQUEADOS: ${nativeBlocked}`);
-    log(`   └─ Processamento SUAVE aplicado: ${lightProcessed}`);
-    log(`   └─ Processamento COMPLETO aplicado: ${fullProcessed}`);
+    // Estatísticas detalhadas de processamento
+    log(`📈 ═══ RELATÓRIO DE PROCESSAMENTO OTIMIZADO ═══`);
+    log(`   └─ Documentos NATIVOS otimizados: ${stats.nativeOptimized}`);
+    log(`   └─ Processamento MODERADO aplicado: ${stats.lightProcessed}`);
+    log(`   └─ Processamento COMPLETO aplicado: ${stats.fullProcessed}`);
+    log(`   └─ Total de páginas melhoradas: ${stats.processedPages}`);
     
     document.getElementById('progressArea').style.display = 'none';
     document.getElementById('resultsArea').style.display = 'block';
@@ -633,7 +739,7 @@ async function baixarPDF() {
         return;
     }
 
-    log('📦 Gerando PDF calibrado...');
+    log('📦 Gerando PDF otimizado...');
     
     try {
         const { jsPDF } = window.jspdf;
@@ -653,10 +759,10 @@ async function baixarPDF() {
         }
         
         const timestamp = new Date().toISOString().slice(0, 16).replace(/[:.]/g, '-');
-        const filename = `PDF_Calibrado_${timestamp}.pdf`;
+        const filename = `PDF_Otimizado_${timestamp}.pdf`;
         
         pdf.save(filename);
-        log(`✅ PDF calibrado salvo: ${filename}`);
+        log(`✅ PDF otimizado salvo: ${filename}`);
         
     } catch (error) {
         log(`❌ Erro ao gerar PDF: ${error.message}`);
@@ -667,7 +773,7 @@ async function baixarPDF() {
 function reiniciar() {
     pdfDocument = null;
     processedPages = [];
-    stats = { totalPages: 0, processedPages: 0, startTime: null };
+    stats = { totalPages: 0, processedPages: 0, startTime: null, nativeOptimized: 0, lightProcessed: 0, fullProcessed: 0 };
     
     document.getElementById('fileInput').value = '';
     document.getElementById('processBtn').disabled = true;
@@ -675,7 +781,7 @@ function reiniciar() {
     document.getElementById('resultsArea').style.display = 'none';
     document.getElementById('logContent').innerHTML = '';
     
-    log('🔄 Sistema CALIBRADO reiniciado');
+    log('🔄 Sistema OTIMIZADO reiniciado');
 }
 
 function log(message) {
