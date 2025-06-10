@@ -78,3 +78,18 @@ function applyPreset(presetName) {
         log(`❌ Preset '${presetName}' não encontrado`);
     }
 }
+
+// Aguardar OpenCV estar realmente pronto
+function waitForOpenCV() {
+    return new Promise((resolve) => {
+        const checkCV = () => {
+            if (window.openCVReady && typeof cv !== 'undefined') {
+                console.log('🔬 OpenCV validado e funcional!');
+                resolve(true);
+            } else {
+                setTimeout(checkCV, 100);
+            }
+        };
+        checkCV();
+    });
+}
