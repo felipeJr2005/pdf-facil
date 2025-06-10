@@ -2,7 +2,7 @@
 // PDFFacil - Processador v2.2 - OTIMIZADO
 // ========================================
 
-console.log("🔥 PROCESSADOR V3.1 MEGA-OTIMIZADO CARREGADO!");
+console.log("🔥 PROCESSADOR V3.0 MEGA-OTIMIZADO CARREGADO!");
 
 // Configurações globais
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -221,33 +221,30 @@ function applyUniversalSafeOptimizations(canvas, qualityScore, pageNum) {
         const gray = new cv.Mat();
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         
-        // TÉCNICA 1: UPSCALING 2x (SEMPRE SEGURO)
+        // TÉCNICA 1: UPSCALING 2x (MANTIDO NO PDF FINAL)
         const upscaled = new cv.Mat();
         cv.resize(gray, upscaled, new cv.Size(0, 0), 2.0, 2.0, cv.INTER_CUBIC);
-        log(`📈 Página ${pageNum}: Upscaling 2x aplicado (melhora OCR)`);
+        log(`📈 Página ${pageNum}: Upscaling 2x aplicado (MANTIDO no PDF final)`);
         
         // TÉCNICA 2: AJUSTES SUTIS (CONTRASTE 105% + BRILHO +3)
         const adjusted = new cv.Mat();
         upscaled.convertTo(adjusted, -1, 1.05, 3); // Contraste 5% + brilho +3
         log(`🎨 Página ${pageNum}: Ajustes seguros aplicados (contraste +5%, brilho +3)`);
         
-        // Redimensionar de volta ao tamanho original
-        const final = new cv.Mat();
-        cv.resize(adjusted, final, new cv.Size(canvas.width, canvas.height), 0, 0, cv.INTER_AREA);
-        
+        // IMPORTANTE: NÃO redimensionar de volta - manter upscaling!
         const processedCanvas = document.createElement('canvas');
-        processedCanvas.width = canvas.width;
-        processedCanvas.height = canvas.height;
-        cv.imshow(processedCanvas, final);
+        processedCanvas.width = canvas.width * 2;   // Manter dobro da largura
+        processedCanvas.height = canvas.height * 2; // Manter dobro da altura
+        cv.imshow(processedCanvas, adjusted);       // Usar imagem upscaled
         
         // Limpeza
         src.delete();
         gray.delete();
         upscaled.delete();
         adjusted.delete();
-        final.delete();
         
-        log(`✅ Página ${pageNum}: Otimizações UNIVERSAIS SEGURAS concluídas!`);
+        log(`✅ Página ${pageNum}: Otimizações SEGURAS + UPSCALING preservado!`);
+        log(`📏 Página ${pageNum}: Resolução final: ${processedCanvas.width}x${processedCanvas.height} (2x original)`);
         return processedCanvas;
         
     } catch (error) {
@@ -257,14 +254,20 @@ function applyUniversalSafeOptimizations(canvas, qualityScore, pageNum) {
 }
 
 function applyBasicSafeOptimizations(canvas) {
+    // Fallback: criar versão 2x maior mesmo sem OpenCV
     const processedCanvas = document.createElement('canvas');
-    processedCanvas.width = canvas.width;
-    processedCanvas.height = canvas.height;
+    processedCanvas.width = canvas.width * 2;   // Dobrar largura
+    processedCanvas.height = canvas.height * 2; // Dobrar altura
     const ctx = processedCanvas.getContext('2d');
     
-    // Aplicar apenas ajustes seguros via CSS
+    // Aplicar ajustes seguros + upscaling via CSS
     ctx.filter = 'contrast(105%) brightness(103%)';
-    ctx.drawImage(canvas, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Desenhar imagem original ampliada 2x
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 
+                           0, 0, processedCanvas.width, processedCanvas.height);
     
     return processedCanvas;
 }function applyBasicProcessing(canvas, level) {
@@ -311,7 +314,7 @@ async function baixarPDF() {
         return;
     }
 
-    log('📦 Gerando PDF otimizado universalmente...');
+    log('📦 Gerando PDF com resolução DOBRADA (melhor OCR)...');
     
     try {
         const { jsPDF } = window.jspdf;
@@ -324,17 +327,39 @@ async function baixarPDF() {
             const jpegQuality = (typeof CONFIG !== 'undefined') ? CONFIG.output.jpegQuality : 0.92;
             const imgData = page.canvas.toDataURL('image/jpeg', jpegQuality);
             
+            // IMPORTANTE: Ajustar tamanho do PDF para acomodar imagem 2x maior
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
             
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            // Calcular proporções para manter aspect ratio
+            const imgAspectRatio = page.canvas.width / page.canvas.height;
+            const pdfAspectRatio = pdfWidth / pdfHeight;
+            
+            let finalWidth, finalHeight;
+            if (imgAspectRatio > pdfAspectRatio) {
+                // Imagem mais larga - ajustar pela largura
+                finalWidth = pdfWidth;
+                finalHeight = pdfWidth / imgAspectRatio;
+            } else {
+                // Imagem mais alta - ajustar pela altura
+                finalHeight = pdfHeight;
+                finalWidth = pdfHeight * imgAspectRatio;
+            }
+            
+            // Centralizar na página
+            const x = (pdfWidth - finalWidth) / 2;
+            const y = (pdfHeight - finalHeight) / 2;
+            
+            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
+            
+            log(`📄 Página ${i + 1}: ${page.canvas.width}x${page.canvas.height} → PDF ${finalWidth.toFixed(1)}x${finalHeight.toFixed(1)}`);
         }
         
         const timestamp = new Date().toISOString().slice(0, 16).replace(/[:.]/g, '-');
-        const filename = `PDF_Universal_Seguro_${timestamp}.pdf`;
+        const filename = `PDF_HighRes_2x_${timestamp}.pdf`;
         
         pdf.save(filename);
-        log(`✅ PDF universal seguro salvo: ${filename}`);
+        log(`✅ PDF alta resolução (2x) salvo: ${filename}`);
         
     } catch (error) {
         log(`❌ Erro ao gerar PDF: ${error.message}`);
