@@ -172,39 +172,9 @@
         </div>
     </div>
 
-    <!-- Scripts essenciais -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="opencv.js"></script>
-<script src="js/preprocessador.js"></script>
-    <script>
-        // JavaScript básico - será expandido nos próximos passos
-        document.addEventListener('DOMContentLoaded', function() {
-            log('🚀 Sistema PDFFacil carregado');
-            log('📦 Inicializando OpenCV...');
-        });
-        
-        function log(message) {
-            const logContent = document.getElementById('logContent');
-            const timestamp = new Date().toLocaleTimeString();
-            const entry = document.createElement('div');
-            entry.textContent = `[${timestamp}] ${message}`;
-            logContent.appendChild(entry);
-            logContent.scrollTop = logContent.scrollHeight;
-        }
-        
-        // Funções placeholder - serão implementadas nos próximos passos
-        function processarPDF() {
-            log('⏳ Processamento será implementado no próximo passo');
-        }
-        
-        function baixarPDF() {
-            log('💾 Download será implementado no próximo passo');
-        }
-        
-        function reiniciar() {
-            location.reload();
-        }
-    </script>
+    <script src="js/preprocessador.js"></script>
 </body>
 </html>
