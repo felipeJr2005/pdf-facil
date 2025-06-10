@@ -128,7 +128,7 @@ async function processPage(pageNum) {
         const qualityScore = analyzePageQuality(canvas);
         
         // Aplicar pré-processamento baseado na qualidade
-        const processedCanvas = applyPreprocessing(canvas, qualityScore);
+        const processedCanvas = applyPreprocessing(canvas, qualityScore, pageNum);
 
         // Armazenar resultado
         processedPages.push({
@@ -213,12 +213,13 @@ function analyzePageQuality(canvas) {
     return Math.min(0.95, Math.max(0.15, qualityScore));
 }
 
-function applyPreprocessing(canvas, qualityScore) {
+function applyPreprocessing(canvas, qualityScore, pageNum) {
     if (qualityScore >= 0.8) {
         return applyLightProcessing(canvas);
     } else if (qualityScore >= 0.6) {
         return applyModerateProcessing(canvas);
     } else {
+        log(`🔧 Página ${pageNum}: OpenCV - Processamento avançado aplicado (qualidade baixa)`);
         return applyHeavyProcessing(canvas);
     }
 }
@@ -251,14 +252,13 @@ function applyHeavyProcessing(canvas) {
     if (openCVReady && typeof cv !== 'undefined') {
         return applyOpenCVProcessing(canvas);
     } else {
+        log('⚠️ OpenCV não disponível - usando processamento básico avançado');
         return applyBasicHeavyProcessing(canvas);
     }
 }
 
 function applyOpenCVProcessing(canvas) {
     try {
-        log('🔧 OpenCV: Processamento avançado aplicado');
-        
         const src = cv.imread(canvas);
         const gray = new cv.Mat();
         const blurred = new cv.Mat();
@@ -266,9 +266,14 @@ function applyOpenCVProcessing(canvas) {
         
         // Pipeline OpenCV validado
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        cv.medianBlur(gray, blurred, CONFIG.opencv.medianBlur);
-        cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 
-                           CONFIG.opencv.adaptiveThreshold.blockSize, CONFIG.opencv.adaptiveThreshold.C);
+        
+        // Usar configurações do CONFIG se disponível
+        const medianBlurSize = (typeof CONFIG !== 'undefined') ? CONFIG.opencv.medianBlur : 3;
+        const blockSize = (typeof CONFIG !== 'undefined') ? CONFIG.opencv.adaptiveThreshold.blockSize : 11;
+        const cValue = (typeof CONFIG !== 'undefined') ? CONFIG.opencv.adaptiveThreshold.C : 2;
+        
+        cv.medianBlur(gray, blurred, medianBlurSize);
+        cv.adaptiveThreshold(blurred, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, cValue);
         
         const processedCanvas = document.createElement('canvas');
         processedCanvas.width = canvas.width;
@@ -281,11 +286,11 @@ function applyOpenCVProcessing(canvas) {
         blurred.delete();
         binary.delete();
         
-        log('✅ OpenCV: Processamento concluído com sucesso');
+        log('✅ OpenCV: Processamento avançado concluído com sucesso');
         return processedCanvas;
         
     } catch (error) {
-        log(`⚠️ Erro OpenCV: ${error.message} - Usando processamento básico`);
+        log(`❌ Erro OpenCV: ${error.message} - Usando processamento básico`);
         return applyBasicHeavyProcessing(canvas);
     }
 }
@@ -315,7 +320,7 @@ function finalizarProcessamento() {
     log(`🎉 Processamento concluído em ${duration}s`);
     log(`📊 ${stats.processedPages} páginas processadas`);
     
-    // Estatísticas de qualidade
+    // Estatísticas de qualidade - CORRIGIDO
     const qualityStats = processedPages.reduce((acc, page) => {
         if (page.quality >= 0.8) acc.high++;
         else if (page.quality >= 0.6) acc.medium++;
@@ -323,7 +328,7 @@ function finalizarProcessamento() {
         return acc;
     }, { high: 0, medium: 0, low: 0 });
     
-    log(`📈 Qualidade: ${qualityStats.high} alta, ${qualityStats.medium} média, ${qualityStats.low} baixa`);
+    log(`📈 Qualidade detectada: ${qualityStats.high} alta, ${qualityStats.medium} média, ${qualityStats.low} baixa`);
     
     // Mostrar resultados
     document.getElementById('progressArea').style.display = 'none';
@@ -346,7 +351,10 @@ async function baixarPDF() {
             if (i > 0) pdf.addPage();
             
             const page = processedPages[i];
-            const imgData = page.canvas.toDataURL('image/jpeg', CONFIG.output.jpegQuality);
+            
+            // Usar configuração do CONFIG se disponível
+            const jpegQuality = (typeof CONFIG !== 'undefined') ? CONFIG.output.jpegQuality : 0.92;
+            const imgData = page.canvas.toDataURL('image/jpeg', jpegQuality);
             
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
