@@ -251,10 +251,10 @@
         </div>
 
         <div class="content">
-            <!-- Seção de Upload -->
+    <!-- Seção de Upload -->
             <div class="upload-section" id="uploadSection">
                 <div class="upload-icon">📎</div>
-                <h3>Clique aqui ou arraste seu PDF judicial</h3>
+                <h3>Clique no botão abaixo ou arraste seu PDF judicial</h3>
                 <p>Suporte para PDFs de promotoria, delegacia, advogados, PJe e documentos nativos</p>
                 <input type="file" id="fileInput" accept=".pdf" />
                 <button class="btn" onclick="document.getElementById('fileInput').click()">
@@ -388,7 +388,9 @@
             uploadSection.addEventListener('dragover', handleDragOver);
             uploadSection.addEventListener('drop', handleDrop);
             uploadSection.addEventListener('dragleave', handleDragLeave);
-            uploadSection.addEventListener('click', () => fileInput.click());
+            
+            // REMOVER o click automático - estava causando loop
+            // uploadSection.addEventListener('click', () => fileInput.click());
 
             // Threshold slider
             qualityThreshold.addEventListener('input', function() {
@@ -494,21 +496,24 @@
 
         async function waitForOpenCV() {
             return new Promise((resolve) => {
-                if (typeof cv !== 'undefined' && cv.Mat) {
-                    resolve();
-                } else {
-                    const checkOpenCV = setInterval(() => {
-                        if (typeof cv !== 'undefined' && cv.Mat) {
-                            clearInterval(checkOpenCV);
-                            resolve();
-                        }
-                    }, 100);
-                }
+                log('🔄 Aguardando OpenCV carregar...');
+                
+                const checkOpenCV = () => {
+                    if (typeof cv !== 'undefined' && cv.Mat) {
+                        log('✅ OpenCV carregado com sucesso');
+                        resolve();
+                    } else {
+                        setTimeout(checkOpenCV, 500);
+                    }
+                };
+                
+                checkOpenCV();
             });
         }
 
         async function processPage(pageNum) {
             log(`📄 Processando página ${pageNum}...`);
+            const pageStartTime = Date.now();
 
             try {
                 const page = await pdfDocument.getPage(pageNum);
@@ -525,14 +530,18 @@
                 canvas.width = viewport.width;
 
                 // Renderizar página
-                await page.render({
+                const renderContext = {
                     canvasContext: context,
                     viewport: viewport
-                }).promise;
+                };
+
+                await page.render(renderContext).promise;
 
                 // Analisar qualidade da página
                 const qualityScore = analyzePageQuality(canvas);
                 processingStats.qualityScores.push(qualityScore);
+                
+                log(`📊 Página ${pageNum}: Qualidade detectada ${(qualityScore * 100).toFixed(1)}%`);
 
                 // Aplicar pré-processamento adaptativo baseado na qualidade
                 const processedCanvas = await applyPreprocessing(canvas, qualityScore);
@@ -551,10 +560,13 @@
                 processingStats.processedPages++;
                 document.getElementById('pagesProcessed').textContent = processingStats.processedPages;
 
-                log(`✅ Página ${pageNum} processada (Qualidade: ${(qualityScore * 100).toFixed(1)}%)`);
+                const pageEndTime = Date.now();
+                const processingTime = pageEndTime - pageStartTime;
+                log(`✅ Página ${pageNum} processada em ${processingTime}ms (Qualidade: ${(qualityScore * 100).toFixed(1)}%)`);
 
             } catch (error) {
                 log(`❌ Erro na página ${pageNum}: ${error.message}`);
+                console.error('Erro detalhado:', error);
             }
         }
 
@@ -652,7 +664,15 @@
 
         function applyAggressivePreprocessing(canvas) {
             // Para documentos de baixa qualidade - pipeline completo
+            log('🔧 Aplicando processamento agressivo (OpenCV)...');
+            
             try {
+                // Verificar se OpenCV está disponível
+                if (typeof cv === 'undefined' || !cv.Mat) {
+                    log('⚠️ OpenCV não disponível, usando processamento fallback');
+                    return applyModeratePreprocessing(canvas);
+                }
+
                 // Converter canvas para Mat do OpenCV
                 const src = cv.imread(canvas);
                 const dst = new cv.Mat();
@@ -681,6 +701,8 @@
                 
                 // Converter de volta para canvas
                 const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = canvas.width;
+                processedCanvas.height = canvas.height;
                 cv.imshow(processedCanvas, result);
                 
                 // Limpeza da memória
@@ -692,10 +714,12 @@
                 result.delete();
                 clahe.delete();
                 
+                log('✅ Processamento agressivo concluído');
                 return processedCanvas;
                 
             } catch (error) {
-                log(`⚠️ Erro no processamento OpenCV, usando fallback: ${error.message}`);
+                log(`⚠️ Erro no processamento OpenCV: ${error.message}`);
+                console.error('Erro OpenCV:', error);
                 return applyModeratePreprocessing(canvas);
             }
         }
