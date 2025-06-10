@@ -2,7 +2,7 @@
 // PDFFacil - Processador v2.2 - OTIMIZADO
 // ========================================
 
-console.log("🔥 PROCESSADOR V2.2 OTIMIZADO CARREGADO!");
+console.log("🔥 PROCESSADOR V3.0 MEGA-OTIMIZADO CARREGADO!");
 
 // Configurações globais
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -15,8 +15,8 @@ let openCVReady = false;
 
 // Inicialização do sistema
 document.addEventListener('DOMContentLoaded', function() {
-    log('🚀 PDFFacil - Sistema OTIMIZADO inicializado');
-    log('🆕 Usando DETECTOR INTELIGENTE + OTIMIZAÇÃO UNIVERSAL');
+    log('🚀 PDFFacil - Sistema MEGA-OTIMIZADO v3.0 inicializado');
+    log('🆕 Usando DETECTOR INTELIGENTE + OTIMIZAÇÃO UNIVERSAL v3.0');
     setupEventListeners();
     initializeOpenCV();
 });
@@ -32,7 +32,7 @@ function initializeOpenCV() {
         if (typeof cv !== 'undefined') {
             cv['onRuntimeInitialized'] = () => {
                 openCVReady = true;
-                log('✅ OpenCV OTIMIZADO carregado e pronto!');
+                log('✅ OpenCV MEGA-OTIMIZADO v3.0 carregado e pronto!');
             };
         } else {
             setTimeout(checkOpenCV, 100);
@@ -79,7 +79,7 @@ async function processarPDF() {
         return;
     }
 
-    log('🔄 Iniciando processamento OTIMIZADO...');
+    log('🔄 Iniciando processamento MEGA-OTIMIZADO v3.0...');
     
     document.getElementById('progressArea').style.display = 'block';
     document.getElementById('resultsArea').style.display = 'none';
@@ -781,7 +781,7 @@ function reiniciar() {
     document.getElementById('resultsArea').style.display = 'none';
     document.getElementById('logContent').innerHTML = '';
     
-    log('🔄 Sistema OTIMIZADO reiniciado');
+    log('🔄 Sistema MEGA-OTIMIZADO v3.0 reiniciado');
 }
 
 function log(message) {
