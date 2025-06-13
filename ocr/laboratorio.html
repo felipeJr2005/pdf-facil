@@ -602,6 +602,9 @@
                     🔍 BUSCA AUTO
                 </button>
                 <button class="btn btn-success" id="saveConfigBtn" onclick="saveConfig()" disabled>💾</button>
+                <button class="btn btn-secondary" id="newPdfBtn" onclick="startNewPDF()" style="display: none;">
+                    📄 NOVO PDF
+                </button>
             </div>
 
             <div class="quality-info" id="qualityInfo">
@@ -912,6 +915,7 @@
                 updateQualityDisplay(); // Mostrar qualidade original
                 document.getElementById('applyBtn').disabled = false;
                 document.getElementById('autoSearchBtn').disabled = false; // Habilitar busca automática
+                document.getElementById('newPdfBtn').style.display = 'inline-block'; // Mostrar botão Novo PDF
                 
                 log(`✅ ${totalPages} páginas carregadas com sucesso`);
                 
@@ -1212,7 +1216,50 @@
             log('↺ Parâmetros resetados para padrão');
         }
 
-        async function startAutoSearch() {
+        function startNewPDF() {
+            // Reset completo do sistema
+            pdfDocument = null;
+            originalPages = [];
+            processedPages = [];
+            currentParams = {};
+            isProcessing = false;
+            isAutoSearching = false;
+            currentPageIndex = 0;
+            bestConfiguration = null;
+            
+            // Limpar input de arquivo
+            document.getElementById('fileInput').value = '';
+            
+            // Resetar parâmetros para padrão
+            changeDocumentType();
+            
+            // Esconder todas as seções
+            document.getElementById('viewerSection').style.display = 'none';
+            document.getElementById('loadingArea').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'flex';
+            
+            // Resetar botões
+            document.getElementById('applyBtn').disabled = true;
+            document.getElementById('autoSearchBtn').disabled = true;
+            document.getElementById('saveConfigBtn').disabled = true;
+            document.getElementById('newPdfBtn').style.display = 'none';
+            
+            // Limpar qualidade display
+            document.getElementById('qualityOriginal').textContent = 'Original: -';
+            document.getElementById('qualityProcessed').textContent = 'Processado: -';
+            document.getElementById('qualityImprovement').textContent = '-';
+            
+            // Limpar status
+            document.getElementById('systemStatus').textContent = 'Aguardando PDF...';
+            document.getElementById('imageResolution').textContent = '-';
+            document.getElementById('processingTime').textContent = '-';
+            document.getElementById('qualityScore').textContent = '-';
+            
+            // Limpar logs
+            document.getElementById('logContent').innerHTML = '';
+            
+            log('🔄 Sistema reiniciado - Pronto para novo PDF');
+        }
             if (isAutoSearching || originalPages.length === 0) return;
 
             log('🔍 Iniciando busca automática pelos melhores parâmetros...');
