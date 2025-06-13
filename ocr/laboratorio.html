@@ -1388,6 +1388,38 @@
         function cancelAutoSearch() {
             autoSearchCancelled = true;
             log('🛑 Cancelando busca automática...');
+            
+            // Se encontrou alguma configuração melhor, aplicar nos controles
+            if (bestConfiguration) {
+                log(`🎯 Aplicando melhor configuração encontrada: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                
+                // Aplicar parâmetros nos controles do laboratório
+                Object.keys(bestConfiguration.params).forEach(paramId => {
+                    const value = bestConfiguration.params[paramId];
+                    currentParams[paramId] = value;
+                    
+                    const slider = document.getElementById(paramId);
+                    const valueDisplay = document.getElementById(`${paramId}_value`);
+                    
+                    if (slider && valueDisplay) {
+                        slider.value = value;
+                        valueDisplay.textContent = value;
+                    }
+                });
+                
+                // Mostrar configuração aplicada nos logs
+                const configStr = Object.keys(bestConfiguration.params)
+                    .map(key => `${key}=${bestConfiguration.params[key]}`)
+                    .join(', ');
+                    
+                log(`⚙️ Controles atualizados: ${configStr}`);
+                log(`💡 Clique em "APLICAR" para processar com esta configuração`);
+                
+                // Habilitar botão aplicar
+                document.getElementById('applyBtn').disabled = false;
+            } else {
+                log('⚠️ Nenhuma melhoria foi encontrada antes do cancelamento');
+            }
         }
 
         function saveConfig() {
