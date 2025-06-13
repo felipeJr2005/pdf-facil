@@ -1355,6 +1355,43 @@
             return config;
         }
 
+        // Função para atualizar visual dos checkboxes
+        function updateLockVisual(paramId) {
+            const checkbox = document.getElementById(`${paramId}_lock`);
+            const lockIcon = checkbox.nextElementSibling;
+            
+            if (checkbox && lockIcon) {
+                if (checkbox.checked) {
+                    lockIcon.style.color = '#f39c12'; // Laranja quando travado
+                    lockIcon.textContent = '🔒';
+                } else {
+                    lockIcon.style.color = '#bdc3c7'; // Cinza quando livre
+                    lockIcon.textContent = '🔓';
+                }
+            }
+        }
+
+        // Inicializar checkboxes ao carregar
+        function initializeLockSystem() {
+            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
+            
+            allParams.forEach(param => {
+                const checkbox = document.getElementById(`${param}_lock`);
+                if (checkbox) {
+                    // Adicionar event listener para mudanças
+                    checkbox.addEventListener('change', () => {
+                        updateLockVisual(param);
+                        log(`🔒 ${param.toUpperCase()}: ${checkbox.checked ? 'TRAVADO' : 'LIVRE'}`);
+                    });
+                    
+                    // Atualizar visual inicial
+                    updateLockVisual(param);
+                }
+            });
+            
+            log('🔒 Sistema de travamento inicializado - Scale travado por padrão');
+        }
+
         // Função para formatar configuração de forma organizada
         function formatConfiguration(config, prefix = '') {
             const parts = [];
