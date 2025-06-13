@@ -292,49 +292,39 @@
             cursor: not-allowed;
         }
         
-        /* MODO DE VISUALIZAÇÃO TOGGLE */
-        .view-toggle {
+        /* QUALIDADE DISPLAY MELHORADO */
+        .quality-info {
             display: flex;
-            gap: 5px;
-            align-items: center;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.8rem;
+            text-align: center;
+            min-width: 120px;
         }
         
-        .toggle-btn {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
+        .quality-original {
+            color: #95a5a6;
         }
         
-        .toggle-btn.active {
-            background: #3498db;
+        .quality-processed {
+            color: #27ae60;
+            font-weight: bold;
         }
         
-        /* CONTAINER DE VISUALIZAÇÃO */
+        .quality-improvement {
+            color: #3498db;
+            font-size: 0.75rem;
+        }
+        
+        /* CONTAINER DE VISUALIZAÇÃO - APENAS LADO A LADO */
         .visualization-container {
             flex: 1;
             position: relative;
             background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        
-        /* MODO LADO A LADO */
-        .side-by-side {
-            display: none;
-            width: 100%;
-            height: 100%;
+            display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2px;
-        }
-        
-        .side-by-side.active {
-            display: grid;
+            overflow: hidden;
         }
         
         .image-panel {
@@ -536,7 +526,7 @@
                 height: auto;
             }
             
-            .side-by-side {
+            .visualization-container {
                 grid-template-columns: 1fr;
                 grid-template-rows: 1fr 1fr;
             }
@@ -575,7 +565,11 @@
                 <button class="btn btn-success" id="saveConfigBtn" onclick="saveConfig()" disabled>💾</button>
             </div>
 
-            <div class="quality-display" id="qualityDisplay">-</div>
+            <div class="quality-info" id="qualityInfo">
+                <div class="quality-original" id="qualityOriginal">Original: -</div>
+                <div class="quality-processed" id="qualityProcessed">Processado: -</div>
+                <div class="quality-improvement" id="qualityImprovement">-</div>
+            </div>
         </div>
     </div>
 
@@ -609,11 +603,6 @@
                     </div>
                 </div>
                 
-                <div class="view-toggle">
-                    <button class="toggle-btn active" id="sliderToggle" onclick="setViewMode('slider')">🔄 Slider</button>
-                    <button class="toggle-btn" id="sideToggle" onclick="setViewMode('side')">↔️ Lado a Lado</button>
-                </div>
-                
                 <div class="nav-controls">
                     <button class="nav-btn" id="prevBtn" onclick="previousPage()" disabled>← Anterior</button>
                     <button class="nav-btn" id="nextBtn" onclick="nextPage()">Próximo →</button>
@@ -622,34 +611,14 @@
 
             <!-- CONTAINER DE VISUALIZAÇÃO -->
             <div class="visualization-container">
-                <!-- MODO SLIDER DE COMPARAÇÃO -->
-                <div class="comparison-slider" id="comparisonSlider">
-                    <img id="baseImage" class="base-image" alt="Original">
-                    
-                    <div class="image-overlay" id="imageOverlay">
-                        <img id="overlayImage" class="overlay-image" alt="Processado">
-                    </div>
-                    
-                    <div class="slider-line" id="sliderLine">
-                        <div class="slider-handle"></div>
-                    </div>
-                    
-                    <div class="comparison-labels">
-                        <div class="comparison-label">Original</div>
-                        <div class="comparison-label">Processado</div>
-                    </div>
+                <!-- LADO A LADO -->
+                <div class="image-panel">
+                    <div class="panel-label">Original</div>
+                    <img id="originalPanel" alt="Original">
                 </div>
-                
-                <!-- MODO LADO A LADO -->
-                <div class="side-by-side" id="sideBySide">
-                    <div class="image-panel">
-                        <div class="panel-label">Original</div>
-                        <img id="originalPanel" alt="Original">
-                    </div>
-                    <div class="image-panel">
-                        <div class="panel-label">Processado</div>
-                        <img id="processedPanel" alt="Processado">
-                    </div>
+                <div class="image-panel">
+                    <div class="panel-label">Processado</div>
+                    <img id="processedPanel" alt="Processado">
                 </div>
                 
                 <!-- PLACEHOLDER QUANDO NÃO HÁ PROCESSAMENTO -->
@@ -693,44 +662,43 @@
         let openCVReady = false;
         let isProcessing = false;
         let currentPageIndex = 0;
-        let viewMode = 'slider'; // 'slider' ou 'side'
 
-        // Configurações por tipo de documento - PARÂMETROS MAIS EXTREMOS PARA VISUALIZAÇÃO
+        // Configurações por tipo de documento - INCLUINDO ESCALA 1.0
         const DOC_TYPES = {
             texto_limpo: {
                 name: "Texto Limpo",
                 controls: [
-                    { id: 'scale', label: 'Scale', min: 1.5, max: 4, value: 3.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.4, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 15, step: 5 }
+                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 1.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.2, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 5, step: 5 }
                 ]
             },
             escaneado: {
                 name: "Escaneado",
                 controls: [
-                    { id: 'scale', label: 'Scale', min: 2, max: 4, value: 3.5, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.6, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 20, step: 5 },
-                    { id: 'blur', label: 'Blur', min: 1, max: 9, value: 5, step: 2 }
+                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 2.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.4, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 10, step: 5 },
+                    { id: 'blur', label: 'Blur', min: 1, max: 9, value: 3, step: 2 }
                 ]
             },
             foto_celular: {
                 name: "Foto Celular",
                 controls: [
-                    { id: 'scale', label: 'Scale', min: 2, max: 4, value: 4.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.5, value: 1.8, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -30, max: 60, value: 25, step: 5 },
+                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 2.5, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.5, value: 1.6, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -30, max: 60, value: 15, step: 5 },
                     { id: 'blur', label: 'Blur', min: 1, max: 9, value: 3, step: 2 }
                 ]
             },
             degradado: {
                 name: "Degradado",
                 controls: [
-                    { id: 'scale', label: 'Scale', min: 2.5, max: 4, value: 4.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.2, max: 3.0, value: 2.2, step: 0.1 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 80, value: 30, step: 5 },
-                    { id: 'blur', label: 'Blur', min: 3, max: 9, value: 7, step: 2 },
-                    { id: 'denoise', label: 'Denoise', min: 5, max: 15, value: 10, step: 1 }
+                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 3.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.2, max: 3.0, value: 1.8, step: 0.1 },
+                    { id: 'brightness', label: 'Brilho', min: -20, max: 80, value: 20, step: 5 },
+                    { id: 'blur', label: 'Blur', min: 3, max: 9, value: 5, step: 2 },
+                    { id: 'denoise', label: 'Denoise', min: 5, max: 15, value: 8, step: 1 }
                 ]
             }
         };
@@ -741,7 +709,6 @@
             initializeOpenCV();
             changeDocumentType();
             setupDragDrop();
-            setupComparisonSlider();
         });
 
         function initializeOpenCV() {
@@ -801,23 +768,6 @@
             }
         }
 
-        function setViewMode(mode) {
-            viewMode = mode;
-            
-            // Atualizar botões
-            document.getElementById('sliderToggle').classList.toggle('active', mode === 'slider');
-            document.getElementById('sideToggle').classList.toggle('active', mode === 'side');
-            
-            // Mostrar/esconder visualizações
-            document.getElementById('comparisonSlider').classList.toggle('hidden', mode !== 'slider');
-            document.getElementById('sideBySide').classList.toggle('active', mode === 'side');
-            
-            // Atualizar visualização atual
-            if (originalPages.length > 0) {
-                displayCurrentPage();
-            }
-        }
-
         function setupDragDrop() {
             const uploadArea = document.querySelector('.upload-area');
             
@@ -837,65 +787,6 @@
                 const files = e.dataTransfer.files;
                 if (files.length > 0 && files[0].type === 'application/pdf') {
                     handleFileSelect({ target: { files: [files[0]] } });
-                }
-            });
-        }
-
-        function setupComparisonSlider() {
-            const sliderLine = document.getElementById('sliderLine');
-            const overlay = document.getElementById('imageOverlay');
-            let isDragging = false;
-
-            function updateSliderPosition(clientX) {
-                const container = document.getElementById('comparisonSlider');
-                const rect = container.getBoundingClientRect();
-                const percentage = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-                
-                sliderLine.style.left = percentage + '%';
-                overlay.style.width = percentage + '%';
-            }
-
-            // Mouse events
-            sliderLine.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                document.body.style.cursor = 'ew-resize';
-                e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    updateSliderPosition(e.clientX);
-                }
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    document.body.style.cursor = '';
-                }
-            });
-
-            // Touch events
-            sliderLine.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                e.preventDefault();
-            });
-
-            document.addEventListener('touchmove', (e) => {
-                if (isDragging && e.touches.length > 0) {
-                    updateSliderPosition(e.touches[0].clientX);
-                    e.preventDefault();
-                }
-            });
-
-            document.addEventListener('touchend', () => {
-                isDragging = false;
-            });
-
-            // Click na área de comparação
-            document.getElementById('comparisonSlider').addEventListener('click', (e) => {
-                if (e.target !== sliderLine && !sliderLine.contains(e.target)) {
-                    updateSliderPosition(e.clientX);
                 }
             });
         }
@@ -1012,33 +903,17 @@
             const currentPage = originalPages[currentPageIndex];
             const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
             
+            // Sempre mostrar imagem original
+            document.getElementById('originalPanel').src = currentPage.imageUrl;
+            
             if (!processedPage) {
-                // Mostrar placeholder
+                // Mostrar placeholder no painel processado
                 document.getElementById('placeholderState').style.display = 'flex';
-                document.getElementById('comparisonSlider').style.display = 'none';
-                document.getElementById('sideBySide').classList.remove('active');
-                updateNavigation();
-                updatePageInfo();
-                return;
-            }
-            
-            // Esconder placeholder
-            document.getElementById('placeholderState').style.display = 'none';
-            
-            if (viewMode === 'slider') {
-                // Modo slider
-                document.getElementById('comparisonSlider').style.display = 'block';
-                document.getElementById('sideBySide').classList.remove('active');
-                
-                document.getElementById('baseImage').src = currentPage.imageUrl;
-                document.getElementById('overlayImage').src = processedPage.imageUrl;
-                
+                document.getElementById('processedPanel').style.display = 'none';
             } else {
-                // Modo lado a lado
-                document.getElementById('comparisonSlider').style.display = 'none';
-                document.getElementById('sideBySide').classList.add('active');
-                
-                document.getElementById('originalPanel').src = currentPage.imageUrl;
+                // Mostrar imagem processada
+                document.getElementById('placeholderState').style.display = 'none';
+                document.getElementById('processedPanel').style.display = 'block';
                 document.getElementById('processedPanel').src = processedPage.imageUrl;
             }
             
@@ -1101,7 +976,7 @@
             document.getElementById('applyBtn').disabled = true;
             document.getElementById('applyBtn').textContent = '⏳ Processando...';
 
-            log('🔄 Iniciando processamento com parâmetros EXTREMOS para visualização...');
+            log('🔄 Iniciando processamento com parâmetros personalizados...');
             console.log('Parâmetros atuais:', currentParams);
 
             const startTime = Date.now();
@@ -1130,14 +1005,14 @@
             isProcessing = false;
             document.getElementById('applyBtn').disabled = false;
             document.getElementById('applyBtn').textContent = '🔄 APLICAR';
-            document.getElementById('systemStatus').textContent = 'Processamento concluído - Arraste slider para comparar';
+            document.getElementById('systemStatus').textContent = 'Processamento concluído - Compare lado a lado';
         }
 
         async function processPageWithParams(originalPage, index) {
-            log(`📄 Processando página ${originalPage.pageNum} com parâmetros extremos...`);
+            log(`📄 Processando página ${originalPage.pageNum} com parâmetros customizados...`);
             
             try {
-                // PROCESSAMENTO VISUAL EXTREMO PARA TESTES
+                // PROCESSAMENTO PERSONALIZADO
                 const processedCanvas = applyExtremeProcessing(originalPage.canvas, currentParams);
                 const quality = analyzePageQuality(processedCanvas);
 
@@ -1158,9 +1033,9 @@
 
         // PROCESSAMENTO EXTREMO PARA VISUALIZAÇÃO CLARA DAS MUDANÇAS
         function applyExtremeProcessing(canvas, params) {
-            const scale = params.scale || 2.0;
-            const contrast = params.contrast || 1.5;
-            const brightness = params.brightness || 10;
+            const scale = Math.max(1.0, params.scale || 1.0); // Garantir que scale nunca seja menor que 1
+            const contrast = params.contrast || 1.2;
+            const brightness = params.brightness || 5;
             
             const processedCanvas = document.createElement('canvas');
             processedCanvas.width = canvas.width * scale;
@@ -1168,38 +1043,40 @@
             const ctx = processedCanvas.getContext('2d');
             
             // APLICAR FILTROS EXTREMOS PARA VISUALIZAÇÃO
-            ctx.filter = `contrast(${contrast * 100}%) brightness(${100 + brightness}%) saturate(150%)`;
+            ctx.filter = `contrast(${contrast * 100}%) brightness(${100 + brightness}%) saturate(130%)`;
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             
-            // Desenhar imagem original ampliada
+            // Desenhar imagem original (ampliada se scale > 1)
             ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 
                                    0, 0, processedCanvas.width, processedCanvas.height);
             
-            // ADICIONAR EFEITO VISUAL PARA DEMONSTRAR PROCESSAMENTO
-            ctx.filter = 'none';
-            ctx.globalCompositeOperation = 'overlay';
-            ctx.fillStyle = `rgba(52, 152, 219, ${0.1})`;
-            ctx.fillRect(0, 0, processedCanvas.width, processedCanvas.height);
+            // ADICIONAR EFEITO VISUAL SUTIL PARA DEMONSTRAR PROCESSAMENTO
+            if (scale > 1.0 || contrast > 1.1 || Math.abs(brightness) > 2) {
+                ctx.filter = 'none';
+                ctx.globalCompositeOperation = 'overlay';
+                ctx.fillStyle = `rgba(52, 152, 219, ${0.05})`;
+                ctx.fillRect(0, 0, processedCanvas.width, processedCanvas.height);
+            }
             
             return processedCanvas;
         }
 
         function updateQualityDisplay() {
-            if (processedPages.length === 0) return;
+            if (processedPages.length === 0 || originalPages.length === 0) return;
 
-            const avgQuality = processedPages.reduce((sum, page) => sum + page.quality, 0) / processedPages.length;
-            const originalAvgQuality = originalPages.reduce((sum, page) => sum + page.quality, 0) / originalPages.length;
+            const avgQualityProcessed = processedPages.reduce((sum, page) => sum + page.quality, 0) / processedPages.length;
+            const avgQualityOriginal = originalPages.reduce((sum, page) => sum + page.quality, 0) / originalPages.length;
             
-            const improvement = ((avgQuality - originalAvgQuality) / originalAvgQuality * 100);
-            const qualityDisplay = document.getElementById('qualityDisplay');
+            const improvement = ((avgQualityProcessed - avgQualityOriginal) / avgQualityOriginal * 100);
             
-            qualityDisplay.innerHTML = `
-                ${(avgQuality * 100).toFixed(1)}%
-                <br><small style="font-size: 0.7rem; ${improvement > 0 ? 'color: #27ae60' : 'color: #e74c3c'}">
-                    ${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%
-                </small>
-            `;
+            // Atualizar display detalhado
+            document.getElementById('qualityOriginal').textContent = `Original: ${(avgQualityOriginal * 100).toFixed(1)}%`;
+            document.getElementById('qualityProcessed').textContent = `Processado: ${(avgQualityProcessed * 100).toFixed(1)}%`;
+            
+            const improvementElement = document.getElementById('qualityImprovement');
+            improvementElement.textContent = `${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%`;
+            improvementElement.style.color = improvement > 0 ? '#27ae60' : '#e74c3c';
         }
 
         function resetParams() {
@@ -1315,12 +1192,6 @@
                     if (!isProcessing) {
                         applyProcessing();
                     }
-                    break;
-                case '1':
-                    setViewMode('slider');
-                    break;
-                case '2':
-                    setViewMode('side');
                     break;
             }
         });
