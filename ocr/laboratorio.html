@@ -106,6 +106,14 @@
             font-size: 0.8rem;
         }
         
+        .param-checkbox {
+            margin-left: 8px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+        
         .lab-actions {
             display: flex;
             gap: 10px;
@@ -837,6 +845,7 @@
                                step="${control.step}"
                                oninput="updateParam('${control.id}', this.value)">
                         <span class="slider-value" id="${control.id}_value">${control.value}</span>
+                        <input type="checkbox" class="param-checkbox" id="${control.id}_check" checked>
                     </div>
                 `;
                 
@@ -856,12 +865,7 @@
             // Arredondar para evitar decimais longos (max 2 casas)
             const roundedValue = Math.round(parseFloat(value) * 100) / 100;
             currentParams[paramId] = roundedValue;
-            
-            // Atualizar displays (podem estar duplicados no cabeçalho e no painel)
-            const valueDisplays = document.querySelectorAll(`#${paramId}_value`);
-            valueDisplays.forEach(display => {
-                display.textContent = roundedValue;
-            });
+            document.getElementById(`${paramId}_value`).textContent = roundedValue;
             
             // Atualizar qualidade se ainda não processou (mostra só original)
             if (originalPages.length > 0) {
@@ -1334,69 +1338,6 @@
             document.getElementById('saveConfigBtn').disabled = false;
         }
 
-        // Função para verificar se um parâmetro está travado
-        function isParameterLocked(paramId) {
-            const lockCheckbox = document.getElementById(`${paramId}_lock`);
-            return lockCheckbox && lockCheckbox.checked;
-        }
-
-        // Função para obter parâmetros que podem variar (não travados)
-        function getVariableParameters() {
-            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
-            return allParams.filter(param => !isParameterLocked(param));
-        }
-
-        // Função para obter configuração base (valores atuais dos parâmetros travados)
-        function getLockedConfiguration() {
-            const config = {};
-            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
-            
-            allParams.forEach(param => {
-                if (isParameterLocked(param)) {
-                    config[param] = currentParams[param];
-                }
-            });
-            
-            return config;
-        }
-
-        // Função para atualizar visual dos checkboxes
-        function updateLockVisual(paramId) {
-            const checkbox = document.getElementById(`${paramId}_lock`);
-            const lockIcon = checkbox ? checkbox.nextElementSibling : null;
-            
-            if (checkbox && lockIcon) {
-                if (checkbox.checked) {
-                    lockIcon.style.color = '#f39c12';
-                    lockIcon.textContent = '🔒';
-                } else {
-                    lockIcon.style.color = '#bdc3c7';
-                    lockIcon.textContent = '🔓';
-                }
-            }
-        }
-
-        // Inicializar checkboxes ao carregar
-        function initializeLockSystem() {
-            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
-            
-            allParams.forEach(param => {
-                const checkbox = document.getElementById(`${param}_lock`);
-                if (checkbox) {
-                    // Adicionar event listener para mudanças
-                    checkbox.addEventListener('change', () => {
-                        updateLockVisual(param);
-                        log(`🔒 ${param.toUpperCase()}: ${checkbox.checked ? 'TRAVADO' : 'LIVRE'}`);
-                    });
-                    
-                    // Atualizar visual inicial
-                    updateLockVisual(param);
-                }
-            });
-            
-            log('🔒 Sistema de travamento inicializado - Scale travado por padrão');
-        }
-
         // Função para formatar configuração de forma organizada
         function formatConfiguration(config, prefix = '') {
             const parts = [];
@@ -1809,17 +1750,13 @@
                     const roundedValue = Math.round(value * 100) / 100;
                     currentParams[paramId] = roundedValue;
                     
-                    // Atualizar sliders (podem estar no cabeçalho)
-                    const sliders = document.querySelectorAll(`#${paramId}`);
-                    sliders.forEach(slider => {
-                        slider.value = roundedValue;
-                    });
+                    const slider = document.getElementById(paramId);
+                    const valueDisplay = document.getElementById(`${paramId}_value`);
                     
-                    // Atualizar displays de valores (podem estar duplicados)
-                    const valueDisplays = document.querySelectorAll(`#${paramId}_value`);
-                    valueDisplays.forEach(display => {
-                        display.textContent = roundedValue;
-                    });
+                    if (slider && valueDisplay) {
+                        slider.value = roundedValue;
+                        valueDisplay.textContent = roundedValue;
+                    }
                 });
                 
                 // Mostrar configuração aplicada nos logs
