@@ -605,7 +605,7 @@
                 </button>
                 <button class="btn btn-secondary" onclick="resetParams()">↺</button>
                 <button class="btn btn-auto" id="autoSearchBtn" onclick="startAutoSearch()" disabled>
-                    🔍 BUSCA AUTO
+                    🤖 AUTO COMPLETO
                 </button>
                 <button class="btn btn-success" id="saveConfigBtn" onclick="saveConfig()" disabled>💾</button>
             </div>
@@ -702,6 +702,9 @@
         <button class="btn btn-secondary" onclick="cancelAutoSearch()" style="margin-top: 15px;">
             ❌ Cancelar
         </button>
+        <div style="margin-top: 10px; font-size: 0.8rem; color: #95a5a6;">
+            ⚡ Processamento automático ao final
+        </div>
     </div>
 
     <!-- LOG AREA -->
@@ -1079,7 +1082,7 @@
         }
 
         async function applyProcessing() {
-            if (isProcessing || isAutoSearching || originalPages.length === 0) return;
+            if (isProcessing || originalPages.length === 0) return;
 
             isProcessing = true;
             document.getElementById('applyBtn').disabled = true;
@@ -1280,10 +1283,11 @@
                 await searchBestConfiguration(config);
                 
                 if (!autoSearchCancelled && bestConfiguration) {
-                    // Aplicar melhor configuração encontrada
-                    document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração encontrada...';
+                    // Aplicar melhor configuração encontrada E PROCESSAR AUTOMATICAMENTE
+                    document.getElementById('searchStatus').textContent = 'Aplicando e processando melhor configuração...';
                     await applyBestConfiguration();
                     log(`✅ Busca 2 etapas concluída! Melhor score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                    log(`🎉 Processamento automático finalizado!`);
                 } else if (autoSearchCancelled) {
                     log('❌ Busca automática cancelada pelo usuário');
                 } else {
@@ -1294,9 +1298,11 @@
                 alert('Erro durante a busca automática.');
             }
             
-            // Esconder modal e reabilitar controles
+            // Esconder modal ANTES de processar
             document.getElementById('autoSearchProgress').style.display = 'none';
             isAutoSearching = false;
+            
+            // Reabilitar controles
             document.getElementById('applyBtn').disabled = false;
             document.getElementById('autoSearchBtn').disabled = false;
             document.getElementById('saveConfigBtn').disabled = false;
@@ -1687,7 +1693,7 @@
             autoSearchCancelled = true;
             log('🛑 Cancelando busca automática...');
             
-            // Se encontrou alguma configuração melhor, aplicar nos controles
+            // Se encontrou alguma configuração melhor, aplicar E PROCESSAR automaticamente
             if (bestConfiguration) {
                 log(`🎯 Aplicando melhor configuração encontrada: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
                 
@@ -1713,12 +1719,28 @@
                     .join(', ');
                     
                 log(`⚙️ Controles atualizados: ${configStr}`);
-                log(`💡 Clique em "APLICAR" para processar com esta configuração`);
+                log(`🚀 Iniciando processamento automático com melhor configuração...`);
                 
-                // Habilitar botão aplicar
-                document.getElementById('applyBtn').disabled = false;
+                // Fechar modal PRIMEIRO
+                document.getElementById('autoSearchProgress').style.display = 'none';
+                isAutoSearching = false;
+                
+                // **PROCESSAR AUTOMATICAMENTE** mesmo no cancelamento
+                setTimeout(async () => {
+                    if (!isProcessing) {
+                        await applyProcessing();
+                        log(`🎉 Processamento automático finalizado (após cancelamento)!`);
+                    }
+                }, 100); // Delay menor já que o modal já fechou
+                
             } else {
                 log('⚠️ Nenhuma melhoria foi encontrada antes do cancelamento');
+                // Fechar modal e só habilitar botão aplicar se não encontrou nada
+                document.getElementById('autoSearchProgress').style.display = 'none';
+                isAutoSearching = false;
+                document.getElementById('applyBtn').disabled = false;
+                document.getElementById('autoSearchBtn').disabled = false;
+                document.getElementById('saveConfigBtn').disabled = false;
             }
         }
 
