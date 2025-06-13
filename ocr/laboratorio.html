@@ -1358,15 +1358,15 @@
         // Função para atualizar visual dos checkboxes
         function updateLockVisual(paramId) {
             const checkbox = document.getElementById(`${paramId}_lock`);
-            const lockIcon = checkbox.nextElementSibling;
+            const label = document.querySelector(`label[for="${paramId}_lock"]`);
             
-            if (checkbox && lockIcon) {
+            if (checkbox && label) {
                 if (checkbox.checked) {
-                    lockIcon.style.color = '#f39c12'; // Laranja quando travado
-                    lockIcon.textContent = '🔒';
+                    label.style.color = '#f39c12';
+                    label.textContent = `🔒 Travar ${paramId.charAt(0).toUpperCase() + paramId.slice(1)}`;
                 } else {
-                    lockIcon.style.color = '#bdc3c7'; // Cinza quando livre
-                    lockIcon.textContent = '🔓';
+                    label.style.color = '#bdc3c7';
+                    label.textContent = `🔓 Travar ${paramId.charAt(0).toUpperCase() + paramId.slice(1)}`;
                 }
             }
         }
