@@ -1234,14 +1234,34 @@
             const docType = document.getElementById('docType').value;
             const config = DOC_TYPES[docType];
             
-            // Calcular total de combinações
-            totalCombinations = 1;
+            // Calcular total de combinações com valores OTIMIZADOS
+            const optimizedCounts = {
+                scale: 1, // Fixo em 2
+                contrast: 9, // 0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0
+                brightness: 11, // -100 a 100 de 20 em 20
+                blur: 0,
+                denoise: 0
+            };
+            
+            // Contar blur e denoise (mantém originais)
             config.controls.forEach(control => {
-                const steps = Math.round((control.max - control.min) / control.step) + 1;
-                totalCombinations *= steps;
+                if (control.id === 'blur') {
+                    optimizedCounts.blur = Math.round((control.max - control.min) / control.step) + 1;
+                }
+                if (control.id === 'denoise') {
+                    optimizedCounts.denoise = Math.round((control.max - control.min) / control.step) + 1;
+                }
             });
             
-            document.getElementById('searchStatus').textContent = `Calculando ${totalCombinations.toLocaleString()} combinações...`;
+            totalCombinations = 1;
+            config.controls.forEach(control => {
+                const count = optimizedCounts[control.id];
+                if (count > 0) {
+                    totalCombinations *= count;
+                }
+            });
+            
+            document.getElementById('searchStatus').textContent = `Calculando ${totalCombinations.toLocaleString()} combinações otimizadas...`;
             
             try {
                 await searchBestConfiguration(config);
@@ -1272,8 +1292,45 @@
             const controls = config.controls;
             let bestScore = 0;
             
-            // Função recursiva para testar todas as combinações
-            async function testCombinations(controlIndex, currentConfig) {
+            // CONFIGURAÇÃO OTIMIZADA PARA BUSCA RÁPIDA
+            const optimizedRanges = {
+                scale: [2.0], // FIXO EM 2
+                contrast: [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], // 9 valores principais
+                brightness: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100], // 11 valores (20 em 20)
+                blur: [], // Será preenchido baseado no tipo
+                denoise: [] // Será preenchido baseado no tipo
+            };
+            
+            // Preencher blur e denoise com valores originais (se existirem)
+            controls.forEach(control => {
+                if (control.id === 'blur') {
+                    optimizedRanges.blur = [];
+                    for (let value = control.min; value <= control.max; value += control.step) {
+                        optimizedRanges.blur.push(value);
+                    }
+                }
+                if (control.id === 'denoise') {
+                    optimizedRanges.denoise = [];
+                    for (let value = control.min; value <= control.max; value += control.step) {
+                        optimizedRanges.denoise.push(value);
+                    }
+                }
+            });
+            
+            // Recalcular total de combinações com valores otimizados
+            totalCombinations = 1;
+            controls.forEach(control => {
+                const range = optimizedRanges[control.id];
+                if (range && range.length > 0) {
+                    totalCombinations *= range.length;
+                }
+            });
+            
+            log(`🚀 Busca otimizada: ${totalCombinations.toLocaleString()} combinações (muito mais rápido!)`);
+            document.getElementById('searchStatus').textContent = `Testando ${totalCombinations.toLocaleString()} combinações otimizadas...`;
+            
+            // Função recursiva para testar todas as combinações OTIMIZADAS
+            async function testOptimizedCombinations(controlIndex, currentConfig) {
                 if (autoSearchCancelled) return;
                 
                 if (controlIndex >= controls.length) {
@@ -1307,25 +1364,33 @@
                     return;
                 }
                 
-                // Iterar sobre todos os valores possíveis para o controle atual
+                // Iterar sobre os valores OTIMIZADOS para o controle atual
                 const control = controls[controlIndex];
-                for (let value = control.min; value <= control.max; value += control.step) {
+                const values = optimizedRanges[control.id];
+                
+                if (!values || values.length === 0) {
+                    // Se não tem valores otimizados, pular este controle
+                    await testOptimizedCombinations(controlIndex + 1, currentConfig);
+                    return;
+                }
+                
+                for (const value of values) {
                     if (autoSearchCancelled) return;
                     
                     const newConfig = { ...currentConfig };
-                    newConfig[control.id] = parseFloat(value.toFixed(2)); // Evitar problemas de precisão float
+                    newConfig[control.id] = value;
                     
-                    await testCombinations(controlIndex + 1, newConfig);
+                    await testOptimizedCombinations(controlIndex + 1, newConfig);
                     
-                    // Pequena pausa para não travar a interface
-                    if (currentCombination % 50 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 10));
+                    // Pausa menor já que são menos combinações
+                    if (currentCombination % 20 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 5));
                     }
                 }
             }
             
-            // Iniciar busca
-            await testCombinations(0, {});
+            // Iniciar busca otimizada
+            await testOptimizedCombinations(0, {});
         }
 
         async function testConfiguration(params) {
