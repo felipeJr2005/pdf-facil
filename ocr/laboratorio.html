@@ -1412,7 +1412,7 @@
             log('💾 Configuração salva com sucesso!');
         }
 
-        // Análise de qualidade RECALIBRADA - MAIS GENEROSA PARA DOCUMENTOS LIMPOS
+        // Análise de qualidade NORMALIZADA PARA DIFERENTES RESOLUÇÕES
         function analyzePageQuality(canvas) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1426,6 +1426,7 @@
             let midTonePixels = 0;
             let textPixels = 0;
             let backgroundPixels = 0;
+            let contrastSamples = 0; // Para normalizar o contraste
             
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
@@ -1436,14 +1437,14 @@
                 sumBrightness += brightness;
                 
                 // Classificação mais generosa para documentos limpos
-                if (brightness < 40) darkPixels++; // Texto muito escuro
-                else if (brightness < 140) textPixels++; // Texto normal - FAIXA EXPANDIDA
-                else if (brightness < 220) midTonePixels++; // Tons médios
-                else backgroundPixels++; // Fundo claro
+                if (brightness < 40) darkPixels++;
+                else if (brightness < 140) textPixels++;
+                else if (brightness < 220) midTonePixels++;
+                else backgroundPixels++;
                 
-                if (brightness > 250) lightPixels++; // Muito claro
+                if (brightness > 250) lightPixels++;
                 
-                // Detecção de bordas mais sensível
+                // Detecção de bordas - AMOSTRAGEM para normalizar por resolução
                 if (i > canvas.width * 4) {
                     const prevR = data[i - canvas.width * 4];
                     const prevG = data[i - canvas.width * 4 + 1];
@@ -1452,74 +1453,90 @@
                     
                     const edgeStrength = Math.abs(brightness - prevBrightness);
                     sumContrast += edgeStrength;
+                    contrastSamples++;
                     
-                    if (edgeStrength > 20) { // Limiar mais baixo para detectar mais bordas
+                    if (edgeStrength > 20) {
                         edgePixels++;
                     }
                 }
             }
             
             const totalPixels = data.length / 4;
+            
+            // VALORES NORMALIZADOS (independentes da resolução)
             const avgBrightness = sumBrightness / totalPixels;
-            const avgContrast = sumContrast / totalPixels;
-            const sharpnessRatio = edgePixels / totalPixels;
-            const textRatio = (darkPixels + textPixels) / totalPixels;
-            const backgroundRatio = backgroundPixels / totalPixels;
-            const dynamicRange = Math.abs(darkPixels - lightPixels) / totalPixels;
+            const avgContrast = contrastSamples > 0 ? sumContrast / contrastSamples : 0; // NORMALIZADO
+            const sharpnessRatio = edgePixels / totalPixels; // Já é proporção
+            const textRatio = (darkPixels + textPixels) / totalPixels; // Já é proporção
+            const backgroundRatio = backgroundPixels / totalPixels; // Já é proporção
+            const dynamicRange = Math.abs(darkPixels - lightPixels) / totalPixels; // Já é proporção
+            
+            // AJUSTE ADICIONAL: Bonificar resoluções maiores (melhor para OCR)
+            const resolutionBonus = Math.min(0.1, Math.log10(totalPixels / 1000000) * 0.05); // Max 10% bonus
             
             // SCORE BASE MAIS ALTO para começar com pontuação decente
-            let qualityScore = 0.3; // Base 30% em vez de 0%
+            let qualityScore = 0.3 + resolutionBonus; // Base 30% + bônus resolução
             
-            // 1. CONTRASTE LOCAL (25% do score) - Mais generoso
+            // 1. CONTRASTE LOCAL (25% do score) - Normalizado
             if (avgContrast > 20) qualityScore += 0.25;
             else if (avgContrast > 12) qualityScore += 0.20;
             else if (avgContrast > 6) qualityScore += 0.15;
-            else if (avgContrast > 3) qualityScore += 0.10; // Ainda dá pontos para contraste baixo
+            else if (avgContrast > 3) qualityScore += 0.10;
             else qualityScore += 0.05;
             
-            // 2. NITIDEZ/BORDAS (25% do score) - Mais generoso
+            // 2. NITIDEZ/BORDAS (25% do score) - Já normalizado por ser proporção
             if (sharpnessRatio > 0.015) qualityScore += 0.25;
             else if (sharpnessRatio > 0.008) qualityScore += 0.18;
-            else if (sharpnessRatio > 0.004) qualityScore += 0.12; // Mais generoso
-            else if (sharpnessRatio > 0.002) qualityScore += 0.08; // Ainda dá pontos
+            else if (sharpnessRatio > 0.004) qualityScore += 0.12;
+            else if (sharpnessRatio > 0.002) qualityScore += 0.08;
             else qualityScore += 0.03;
             
-            // 3. DISTRIBUIÇÃO DE BRILHO (20% do score) - Faixa mais ampla
-            if (avgBrightness > 120 && avgBrightness < 200) qualityScore += 0.20; // Ideal para documentos
-            else if (avgBrightness > 100 && avgBrightness < 220) qualityScore += 0.16; // Muito bom
-            else if (avgBrightness > 80 && avgBrightness < 240) qualityScore += 0.12; // Bom
-            else if (avgBrightness > 60 && avgBrightness < 250) qualityScore += 0.08; // Aceitável
-            else qualityScore += 0.04; // Ainda dá pontos básicos
+            // 3. DISTRIBUIÇÃO DE BRILHO (20% do score) - Já normalizado
+            if (avgBrightness > 120 && avgBrightness < 200) qualityScore += 0.20;
+            else if (avgBrightness > 100 && avgBrightness < 220) qualityScore += 0.16;
+            else if (avgBrightness > 80 && avgBrightness < 240) qualityScore += 0.12;
+            else if (avgBrightness > 60 && avgBrightness < 250) qualityScore += 0.08;
+            else qualityScore += 0.04;
             
-            // 4. PROPORÇÃO TEXTO/FUNDO (15% do score) - Mais flexível
-            if (textRatio > 0.08 && textRatio < 0.50) qualityScore += 0.15; // Ideal
-            else if (textRatio > 0.04 && textRatio < 0.60) qualityScore += 0.12; // Bom
-            else if (textRatio > 0.02 && textRatio < 0.70) qualityScore += 0.08; // Aceitável
-            else qualityScore += 0.04; // Mínimo
+            // 4. PROPORÇÃO TEXTO/FUNDO (15% do score) - Já normalizado
+            if (textRatio > 0.08 && textRatio < 0.50) qualityScore += 0.15;
+            else if (textRatio > 0.04 && textRatio < 0.60) qualityScore += 0.12;
+            else if (textRatio > 0.02 && textRatio < 0.70) qualityScore += 0.08;
+            else qualityScore += 0.04;
             
-            // 5. RANGE DINÂMICO (15% do score) - Mais generoso
+            // 5. RANGE DINÂMICO (15% do score) - Já normalizado
             if (dynamicRange > 0.25) qualityScore += 0.15;
             else if (dynamicRange > 0.15) qualityScore += 0.12;
             else if (dynamicRange > 0.08) qualityScore += 0.08;
-            else qualityScore += 0.05; // Sempre dá pontos básicos
+            else qualityScore += 0.05;
             
-            // BÔNUS para documentos bem estruturados (como o seu exemplo)
+            // BÔNUS para documentos bem estruturados
             if (backgroundRatio > 0.4 && textRatio > 0.1) {
-                qualityScore += 0.10; // Bônus para documentos com boa estrutura texto/fundo
+                qualityScore += 0.10;
+            }
+            
+            // BÔNUS ESPECIAL para alta resolução com bom contraste
+            if (totalPixels > 2000000 && avgContrast > 15) { // Imagens grandes com bom contraste
+                qualityScore += 0.08;
             }
             
             // PENALIZAÇÕES reduzidas - só para casos extremos
-            if (avgBrightness < 15 || avgBrightness > 245) qualityScore -= 0.08; // Menos penalização
-            if (sharpnessRatio < 0.001) qualityScore -= 0.06; // Menos penalização
-            if (avgContrast < 2) qualityScore -= 0.08; // Menos penalização
-            if (textRatio < 0.01) qualityScore -= 0.05; // Menos penalização
+            if (avgBrightness < 15 || avgBrightness > 245) qualityScore -= 0.08;
+            if (sharpnessRatio < 0.001) qualityScore -= 0.06;
+            if (avgContrast < 2) qualityScore -= 0.08;
+            if (textRatio < 0.01) qualityScore -= 0.05;
             
             // BÔNUS adicional para qualidade excepcional
             if (avgContrast > 25 && sharpnessRatio > 0.020 && textRatio > 0.15) {
-                qualityScore += 0.08; // Bônus para documentos perfeitos
+                qualityScore += 0.08;
             }
             
-            // Escala final mais realista - documentos normais ficam 40-80%
+            // DEBUG: Log para entender os scores
+            if (totalPixels > 1500000) { // Log apenas para resoluções altas
+                console.log(`Debug Quality - Resolução: ${canvas.width}x${canvas.height}, Contraste: ${avgContrast.toFixed(1)}, Sharpness: ${(sharpnessRatio*100).toFixed(2)}%, Score: ${(qualityScore*100).toFixed(1)}%`);
+            }
+            
+            // Escala final mais realista
             return Math.min(1.0, Math.max(0.15, qualityScore));
         }
 
