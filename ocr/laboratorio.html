@@ -663,22 +663,22 @@
         let isProcessing = false;
         let currentPageIndex = 0;
 
-        // Configurações por tipo de documento - INCLUINDO ESCALA 1.0
+        // Configurações por tipo de documento - FAIXAS EXPANDIDAS PARA VALORES NEGATIVOS
         const DOC_TYPES = {
             texto_limpo: {
                 name: "Texto Limpo",
                 controls: [
                     { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 1.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.2, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 5, step: 5 }
+                    { id: 'contrast', label: 'Contraste', min: 0.5, max: 2.0, value: 1.0, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -50, max: 50, value: 0, step: 5 }
                 ]
             },
             escaneado: {
                 name: "Escaneado",
                 controls: [
                     { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 2.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.0, value: 1.4, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 50, value: 10, step: 5 },
+                    { id: 'contrast', label: 'Contraste', min: 0.3, max: 2.5, value: 1.1, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -60, max: 60, value: 0, step: 5 },
                     { id: 'blur', label: 'Blur', min: 1, max: 9, value: 3, step: 2 }
                 ]
             },
@@ -686,17 +686,17 @@
                 name: "Foto Celular",
                 controls: [
                     { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 2.5, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 2.5, value: 1.6, step: 0.05 },
-                    { id: 'brightness', label: 'Brilho', min: -30, max: 60, value: 15, step: 5 },
+                    { id: 'contrast', label: 'Contraste', min: 0.2, max: 3.0, value: 1.2, step: 0.05 },
+                    { id: 'brightness', label: 'Brilho', min: -80, max: 80, value: 0, step: 5 },
                     { id: 'blur', label: 'Blur', min: 1, max: 9, value: 3, step: 2 }
                 ]
             },
             degradado: {
                 name: "Degradado",
                 controls: [
-                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 3.0, step: 0.1 },
-                    { id: 'contrast', label: 'Contraste', min: 1.2, max: 3.0, value: 1.8, step: 0.1 },
-                    { id: 'brightness', label: 'Brilho', min: -20, max: 80, value: 20, step: 5 },
+                    { id: 'scale', label: 'Scale', min: 1.0, max: 4, value: 2.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 0.1, max: 4.0, value: 1.3, step: 0.1 },
+                    { id: 'brightness', label: 'Brilho', min: -100, max: 100, value: 0, step: 5 },
                     { id: 'blur', label: 'Blur', min: 3, max: 9, value: 5, step: 2 },
                     { id: 'denoise', label: 'Denoise', min: 5, max: 15, value: 8, step: 1 }
                 ]
@@ -763,8 +763,12 @@
             currentParams[paramId] = parseFloat(value);
             document.getElementById(`${paramId}_value`).textContent = value;
             
-            if (originalPages.length > 0 && !isProcessing) {
-                document.getElementById('applyBtn').disabled = false;
+            // Atualizar qualidade se ainda não processou (mostra só original)
+            if (originalPages.length > 0) {
+                updateQualityDisplay();
+                if (!isProcessing) {
+                    document.getElementById('applyBtn').disabled = false;
+                }
             }
         }
 
@@ -842,6 +846,7 @@
                 setupPageNavigation();
                 showViewer();
                 displayCurrentPage();
+                updateQualityDisplay(); // Mostrar qualidade original
                 document.getElementById('applyBtn').disabled = false;
                 
                 log(`✅ ${totalPages} páginas carregadas com sucesso`);
@@ -1009,7 +1014,7 @@
         }
 
         async function processPageWithParams(originalPage, index) {
-            log(`📄 Processando página ${originalPage.pageNum} com parâmetros customizados...`);
+            log(`📄 Processando página ${originalPage.pageNum} (Scale:${currentParams.scale}, Contraste:${currentParams.contrast}, Brilho:${currentParams.brightness})...`);
             
             try {
                 // PROCESSAMENTO PERSONALIZADO
@@ -1024,59 +1029,116 @@
                     imageUrl: processedCanvas.toDataURL('image/jpeg', 0.95)
                 });
 
-                log(`✅ Página ${originalPage.pageNum} processada (Qualidade: ${(quality * 100).toFixed(1)}%)`);
+                log(`✅ Página ${originalPage.pageNum} processada - Qualidade: ${(quality * 100).toFixed(1)}%`);
 
             } catch (error) {
                 log(`❌ Erro na página ${originalPage.pageNum}: ${error.message}`);
             }
         }
 
-        // PROCESSAMENTO EXTREMO PARA VISUALIZAÇÃO CLARA DAS MUDANÇAS
+        // PROCESSAMENTO CALIBRADO - Aplicação fiel dos parâmetros
         function applyExtremeProcessing(canvas, params) {
-            const scale = Math.max(1.0, params.scale || 1.0); // Garantir que scale nunca seja menor que 1
-            const contrast = params.contrast || 1.2;
-            const brightness = params.brightness || 5;
+            const scale = Math.max(1.0, params.scale || 1.0);
+            const contrast = Math.max(0.1, params.contrast || 1.0); // Permitir contraste muito baixo
+            const brightness = params.brightness || 0;
             
             const processedCanvas = document.createElement('canvas');
             processedCanvas.width = canvas.width * scale;
             processedCanvas.height = canvas.height * scale;
             const ctx = processedCanvas.getContext('2d');
             
-            // APLICAR FILTROS EXTREMOS PARA VISUALIZAÇÃO
-            ctx.filter = `contrast(${contrast * 100}%) brightness(${100 + brightness}%) saturate(130%)`;
+            // Configurar qualidade de renderização
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             
-            // Desenhar imagem original (ampliada se scale > 1)
+            // APLICAR TRANSFORMAÇÕES PRECISAS
+            // Brilho é aplicado como offset (-100 a +100 vira -25% a +25% na fórmula CSS)
+            const brightnessPercent = 100 + (brightness * 0.4); // Conversão mais suave
+            
+            // Contraste direto (0.1 = 10%, 4.0 = 400%)
+            const contrastPercent = contrast * 100;
+            
+            // Aplicar filtros com valores calibrados
+            ctx.filter = `contrast(${contrastPercent}%) brightness(${brightnessPercent}%)`;
+            
+            // Desenhar imagem (com ou sem escala)
             ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 
                                    0, 0, processedCanvas.width, processedCanvas.height);
             
-            // ADICIONAR EFEITO VISUAL SUTIL PARA DEMONSTRAR PROCESSAMENTO
-            if (scale > 1.0 || contrast > 1.1 || Math.abs(brightness) > 2) {
-                ctx.filter = 'none';
-                ctx.globalCompositeOperation = 'overlay';
-                ctx.fillStyle = `rgba(52, 152, 219, ${0.05})`;
-                ctx.fillRect(0, 0, processedCanvas.width, processedCanvas.height);
+            // Log dos parâmetros aplicados para debug
+            if (scale !== 1.0 || contrast !== 1.0 || brightness !== 0) {
+                console.log(`Aplicado: Scale=${scale}x, Contraste=${contrastPercent}%, Brilho=${brightnessPercent}%`);
             }
             
             return processedCanvas;
         }
 
         function updateQualityDisplay() {
-            if (processedPages.length === 0 || originalPages.length === 0) return;
+            if (processedPages.length === 0 || originalPages.length === 0) {
+                // Mostrar apenas qualidade original se não processou ainda
+                const avgQualityOriginal = originalPages.reduce((sum, page) => sum + page.quality, 0) / originalPages.length;
+                document.getElementById('qualityOriginal').textContent = `Original: ${(avgQualityOriginal * 100).toFixed(1)}%`;
+                document.getElementById('qualityProcessed').textContent = `Processado: -`;
+                document.getElementById('qualityImprovement').textContent = `Aguardando...`;
+                return;
+            }
 
-            const avgQualityProcessed = processedPages.reduce((sum, page) => sum + page.quality, 0) / processedPages.length;
-            const avgQualityOriginal = originalPages.reduce((sum, page) => sum + page.quality, 0) / originalPages.length;
+            // Calcular médias ponderadas (páginas com mais texto têm mais peso)
+            let totalWeightOriginal = 0;
+            let totalWeightProcessed = 0;
+            let weightedSumOriginal = 0;
+            let weightedSumProcessed = 0;
             
-            const improvement = ((avgQualityProcessed - avgQualityOriginal) / avgQualityOriginal * 100);
+            originalPages.forEach(page => {
+                // Peso baseado na qualidade base (páginas com mais texto/conteúdo têm mais peso)
+                const weight = Math.max(0.5, page.quality * 2); // Peso mínimo 0.5, máximo ~2
+                weightedSumOriginal += page.quality * weight;
+                totalWeightOriginal += weight;
+            });
+            
+            processedPages.forEach(page => {
+                const weight = Math.max(0.5, page.quality * 2);
+                weightedSumProcessed += page.quality * weight;
+                totalWeightProcessed += weight;
+            });
+            
+            const avgQualityOriginal = weightedSumOriginal / totalWeightOriginal;
+            const avgQualityProcessed = weightedSumProcessed / totalWeightProcessed;
+            
+            // Cálculo de melhoria mais sensível
+            const absoluteImprovement = avgQualityProcessed - avgQualityOriginal;
+            const relativeImprovement = (absoluteImprovement / avgQualityOriginal) * 100;
             
             // Atualizar display detalhado
             document.getElementById('qualityOriginal').textContent = `Original: ${(avgQualityOriginal * 100).toFixed(1)}%`;
             document.getElementById('qualityProcessed').textContent = `Processado: ${(avgQualityProcessed * 100).toFixed(1)}%`;
             
             const improvementElement = document.getElementById('qualityImprovement');
-            improvementElement.textContent = `${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%`;
-            improvementElement.style.color = improvement > 0 ? '#27ae60' : '#e74c3c';
+            
+            // Mostrar melhoria absoluta se for pequena, relativa se for maior
+            if (Math.abs(absoluteImprovement) > 0.1) {
+                // Melhoria significativa - usar percentual relativo
+                improvementElement.textContent = `${relativeImprovement > 0 ? '+' : ''}${relativeImprovement.toFixed(1)}%`;
+            } else {
+                // Melhoria sutil - usar pontos absolutos
+                improvementElement.textContent = `${absoluteImprovement > 0 ? '+' : ''}${(absoluteImprovement * 100).toFixed(1)}pts`;
+            }
+            
+            // Cor baseada na melhoria
+            if (absoluteImprovement > 0.02) { // Melhoria significativa
+                improvementElement.style.color = '#27ae60';
+            } else if (absoluteImprovement > 0.005) { // Melhoria pequena
+                improvementElement.style.color = '#3498db';
+            } else if (absoluteImprovement > -0.005) { // Neutro
+                improvementElement.style.color = '#95a5a6';
+            } else if (absoluteImprovement > -0.02) { // Piora pequena
+                improvementElement.style.color = '#f39c12';
+            } else { // Piora significativa
+                improvementElement.style.color = '#e74c3c';
+            }
+            
+            // Log detalhado para debug
+            log(`📊 Qualidade: ${(avgQualityOriginal * 100).toFixed(1)}% → ${(avgQualityProcessed * 100).toFixed(1)}% (${absoluteImprovement > 0 ? '+' : ''}${(absoluteImprovement * 100).toFixed(2)}pts)`);
         }
 
         function resetParams() {
@@ -1106,17 +1168,20 @@
             log('💾 Configuração salva com sucesso!');
         }
 
-        // Análise de qualidade (copiada do código original)
+        // Análise de qualidade RECALIBRADA para melhor detecção de ganhos
         function analyzePageQuality(canvas) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             
             let sumBrightness = 0;
+            let sumContrast = 0;
             let edgePixels = 0;
             let darkPixels = 0;
             let lightPixels = 0;
-            let totalTextPixels = 0;
+            let midTonePixels = 0;
+            let textPixels = 0;
+            let backgroundPixels = 0;
             
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
@@ -1126,17 +1191,25 @@
                 
                 sumBrightness += brightness;
                 
-                if (brightness < 85) darkPixels++;
-                if (brightness > 170) lightPixels++;
-                if (brightness < 128) totalTextPixels++;
+                // Classificação mais precisa de pixels
+                if (brightness < 60) darkPixels++; // Texto muito escuro
+                else if (brightness < 120) textPixels++; // Texto normal
+                else if (brightness < 200) midTonePixels++; // Tons médios
+                else backgroundPixels++; // Fundo claro
                 
+                if (brightness > 240) lightPixels++; // Muito claro
+                
+                // Detecção de bordas melhorada
                 if (i > canvas.width * 4) {
                     const prevR = data[i - canvas.width * 4];
                     const prevG = data[i - canvas.width * 4 + 1];
                     const prevB = data[i - canvas.width * 4 + 2];
                     const prevBrightness = (prevR + prevG + prevB) / 3;
                     
-                    if (Math.abs(brightness - prevBrightness) > 25) {
+                    const edgeStrength = Math.abs(brightness - prevBrightness);
+                    sumContrast += edgeStrength;
+                    
+                    if (edgeStrength > 30) { // Bordas mais definidas
                         edgePixels++;
                     }
                 }
@@ -1144,24 +1217,54 @@
             
             const totalPixels = data.length / 4;
             const avgBrightness = sumBrightness / totalPixels;
+            const avgContrast = sumContrast / totalPixels;
             const sharpnessRatio = edgePixels / totalPixels;
-            const contrastRatio = Math.abs(darkPixels - lightPixels) / totalPixels;
-            const textDensity = totalTextPixels / totalPixels;
+            const textRatio = (darkPixels + textPixels) / totalPixels;
+            const backgroundRatio = backgroundPixels / totalPixels;
+            const dynamicRange = Math.abs(darkPixels - lightPixels) / totalPixels;
             
-            let qualityScore = 0.3;
+            // SCORE RECALIBRADO com pesos mais precisos para OCR
+            let qualityScore = 0;
             
-            if (avgBrightness > 60 && avgBrightness < 180) qualityScore += 0.2;
-            if (sharpnessRatio > 0.015) qualityScore += 0.25;
-            else if (sharpnessRatio > 0.008) qualityScore += 0.1;
-            if (contrastRatio > 0.3) qualityScore += 0.15;
-            else if (contrastRatio > 0.15) qualityScore += 0.05;
-            if (textDensity > 0.15) qualityScore += 0.15;
-            else if (textDensity > 0.05) qualityScore += 0.1;
-            else qualityScore -= 0.2;
+            // 1. CONTRASTE LOCAL (30% do score) - Mais importante para OCR
+            if (avgContrast > 25) qualityScore += 0.30;
+            else if (avgContrast > 15) qualityScore += 0.20;
+            else if (avgContrast > 8) qualityScore += 0.10;
+            else qualityScore += 0.05; // Contraste muito baixo
             
-            if (avgBrightness < 30 || avgBrightness > 220) qualityScore -= 0.2;
+            // 2. NITIDEZ/BORDAS (25% do score) - Importante para definição do texto
+            if (sharpnessRatio > 0.020) qualityScore += 0.25;
+            else if (sharpnessRatio > 0.012) qualityScore += 0.18;
+            else if (sharpnessRatio > 0.006) qualityScore += 0.10;
+            else qualityScore += 0.03; // Muito desfocado
             
-            return Math.min(0.95, Math.max(0.15, qualityScore));
+            // 3. DISTRIBUIÇÃO DE BRILHO (20% do score) - Bom para leitura
+            if (avgBrightness > 80 && avgBrightness < 160) qualityScore += 0.20; // Ideal
+            else if (avgBrightness > 60 && avgBrightness < 180) qualityScore += 0.15; // Bom
+            else if (avgBrightness > 40 && avgBrightness < 200) qualityScore += 0.10; // Aceitável
+            else qualityScore += 0.02; // Muito escuro ou claro
+            
+            // 4. PROPORÇÃO TEXTO/FUNDO (15% do score)
+            if (textRatio > 0.10 && textRatio < 0.40) qualityScore += 0.15; // Ideal
+            else if (textRatio > 0.05 && textRatio < 0.50) qualityScore += 0.10; // Bom
+            else qualityScore += 0.03; // Muito pouco ou muito texto
+            
+            // 5. RANGE DINÂMICO (10% do score) - Diferenciação
+            if (dynamicRange > 0.3) qualityScore += 0.10;
+            else if (dynamicRange > 0.15) qualityScore += 0.06;
+            else qualityScore += 0.02;
+            
+            // PENALIZAÇÕES para problemas graves
+            if (avgBrightness < 20 || avgBrightness > 235) qualityScore -= 0.15; // Extremos
+            if (sharpnessRatio < 0.003) qualityScore -= 0.10; // Muito desfocado
+            if (avgContrast < 5) qualityScore -= 0.12; // Sem contraste
+            if (textRatio < 0.02) qualityScore -= 0.08; // Sem texto detectado
+            
+            // BÔNUS para qualidade excepcional
+            if (avgContrast > 35 && sharpnessRatio > 0.025) qualityScore += 0.05;
+            
+            // Escala final mais ampla para detectar diferenças sutis
+            return Math.min(1.0, Math.max(0.05, qualityScore));
         }
 
         function log(message) {
