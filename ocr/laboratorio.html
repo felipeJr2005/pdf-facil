@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFFacil - Laboratório OpenCV Full Screen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        /* LABORATÓRIO - FIXO NO TOPO */
+        .lab-panel {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-bottom: 3px solid #3498db;
+            padding: 15px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .lab-content {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 20px;
+            align-items: center;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .lab-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+        }
+        
+        .lab-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            min-width: 60px;
+        }
+        
+        .control-group select {
+            padding: 5px 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #2c3e50;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .slider {
+            width: 80px;
+            height: 4px;
+            background: #555;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .slider-value {
+            min-width: 35px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .lab-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .quality-display {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #27ae60;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        /* ÁREA PRINCIPAL */
+        .main-content {
+            margin-top: 80px;
+            height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* UPLOAD AREA */
+        .upload-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 60px;
+            background: rgba(52, 152, 219, 0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            max-width: 600px;
+        }
+        
+        .upload-area:hover {
+            background: rgba(52, 152, 219, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.2);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        /* LOADING */
+        .loading {
+            flex: 1;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* VISUALIZAÇÃO PRINCIPAL */
+        .viewer-section {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* NAVEGAÇÃO DE PÁGINAS */
+        .page-navigation {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .page-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .page-counter {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .page-selector {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .page-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #555;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .page-dot.active {
+            background: #3498db;
+            transform: scale(1.2);
+        }
+        
+        .nav-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            background: #555;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* IMAGE COMPARISON CONTAINER */
+        .comparison-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* IMAGE COMPARISON SLIDER */
+        .image-compare {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            background: #000;
+            user-select: none;
+        }
+        
+        .compare-image {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 200px);
+            object-fit: contain;
+        }
+        
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        .overlay-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .compare-slider {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3498db;
+            cursor: ew-resize;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: ew-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .slider-handle::after {
+            content: '⟷';
+        }
+        
+        /* LABELS */
+        .image-labels {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            padding: 0 20px;
+            z-index: 5;
+        }
+        
+        .image-label {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        /* STATUS E INFO */
+        .status-bar {
+            background: rgba(0,0,0,0.9);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #333;
+            font-size: 0.9rem;
+        }
+        
+        .status-info {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .log-area {
+            background: #1a1a1a;
+            color: #ccc;
+            padding: 10px;
+            height: 120px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            border-top: 1px solid #333;
+        }
+        
+        /* PLACEHOLDER STATE */
+        .placeholder-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            color: #777;
+        }
+        
+        .placeholder-icon {
+            font-size: 4rem;
+            opacity: 0.5;
+        }
+        
+        /* RESPONSIVO */
+        @media (max-width: 1200px) {
+            .lab-content {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .lab-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .slider {
+                width: 60px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .lab-panel {
+                position: relative;
+                padding: 10px;
+            }
+            
+            .main-content {
+                margin-top: 0;
+                height: auto;
+            }
+            
+            .lab-content {
+                gap: 8px;
+            }
+            
+            .lab-controls {
+                gap: 8px;
+            }
+            
+            .control-group label {
+                min-width: 40px;
+                font-size: 0.8rem;
+            }
+            
+            .slider {
+                width: 50px;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- LABORATÓRIO DE CONTROLES -->
+    <div class="lab-panel">
+        <div class="lab-content">
+            <div class="lab-title">🔬 LABORATÓRIO</div>
+            
+            <div class="lab-controls">
+                <!-- TIPO DE DOCUMENTO -->
+                <div class="control-group">
+                    <label for="docType">Tipo:</label>
+                    <select id="docType" onchange="changeDocumentType()">
+                        <option value="texto_limpo">📄 Texto Limpo</option>
+                        <option value="escaneado">🖨️ Escaneado</option>
+                        <option value="foto_celular">📱 Foto Celular</option>
+                        <option value="degradado">📜 Degradado</option>
+                    </select>
+                </div>
+
+                <!-- CONTROLES DINÂMICOS -->
+                <div id="dynamicControls">
+                    <!-- Controles serão inseridos aqui dinamicamente -->
+                </div>
+            </div>
+
+            <div class="lab-actions">
+                <button class="btn btn-primary" id="applyBtn" onclick="applyProcessing()" disabled>
+                    🔄 APLICAR
+                </button>
+                <button class="btn btn-secondary" onclick="resetParams()">↺</button>
+                <button class="btn btn-success" id="saveConfigBtn" onclick="saveConfig()" disabled>💾</button>
+            </div>
+
+            <div class="quality-display" id="qualityDisplay">-</div>
+        </div>
+    </div>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="main-content">
+        <!-- UPLOAD -->
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📎</div>
+                <h2>Selecione PDF para Calibração</h2>
+                <p style="margin: 15px 0; opacity: 0.8;">Primeiras 8 páginas • Comparação em tela cheia</p>
+                <input type="file" id="fileInput" accept=".pdf" onchange="handleFileSelect(event)" />
+                <button class="btn btn-primary" style="margin-top: 15px;">Selecionar PDF</button>
+            </div>
+        </div>
+
+        <!-- LOADING -->
+        <div class="loading" id="loadingArea">
+            <div class="spinner"></div>
+            <h3 id="loadingText">Carregando PDF...</h3>
+        </div>
+
+        <!-- VISUALIZAÇÃO PRINCIPAL -->
+        <div class="viewer-section" id="viewerSection">
+            <!-- NAVEGAÇÃO DE PÁGINAS -->
+            <div class="page-navigation">
+                <div class="page-info">
+                    <span class="page-counter" id="pageCounter">Página 1 de 8</span>
+                    <div class="page-selector" id="pageSelector">
+                        <!-- Dots serão inseridos dinamicamente -->
+                    </div>
+                </div>
+                <div class="nav-controls">
+                    <button class="nav-btn" id="prevBtn" onclick="previousPage()" disabled>← Anterior</button>
+                    <button class="nav-btn" id="nextBtn" onclick="nextPage()">Próximo →</button>
+                </div>
+            </div>
+
+            <!-- CONTAINER DE COMPARAÇÃO -->
+            <div class="comparison-container">
+                <div class="image-compare" id="imageCompare">
+                    <!-- Original image (background) -->
+                    <img id="originalImage" class="compare-image" alt="Original">
+                    
+                    <!-- Processed image overlay -->
+                    <div class="image-overlay" id="imageOverlay">
+                        <img id="processedImage" class="overlay-image" alt="Processado">
+                    </div>
+                    
+                    <!-- Slider -->
+                    <div class="compare-slider" id="compareSlider">
+                        <div class="slider-handle"></div>
+                    </div>
+                    
+                    <!-- Labels -->
+                    <div class="image-labels">
+                        <div class="image-label">Original</div>
+                        <div class="image-label">Processado</div>
+                    </div>
+                </div>
+                
+                <!-- Placeholder quando não há processamento -->
+                <div class="placeholder-state" id="placeholderState">
+                    <div class="placeholder-icon">⚡</div>
+                    <h3>Clique em "APLICAR" para processar</h3>
+                    <p>Configure os parâmetros acima e aplique o processamento</p>
+                </div>
+            </div>
+
+            <!-- STATUS BAR -->
+            <div class="status-bar">
+                <div class="status-info">
+                    <span id="imageResolution">-</span>
+                    <span id="processingTime">-</span>
+                    <span id="qualityScore">-</span>
+                </div>
+                <div>
+                    <span id="systemStatus">Aguardando processamento...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOG AREA -->
+    <div class="log-area" id="logArea">
+        <div id="logContent"></div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configurações globais
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Variáveis do laboratório
+        let pdfDocument = null;
+        let originalPages = [];
+        let processedPages = [];
+        let currentParams = {};
+        let openCVReady = false;
+        let isProcessing = false;
+        let currentPageIndex = 0;
+        let isDragging = false;
+
+        // Configurações por tipo de documento
+        const DOC_TYPES = {
+            texto_limpo: {
+                name: "Texto Limpo",
+                controls: [
+                    { id: 'scale', label: 'Scale', min: 1.5, max: 4, value: 2.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 1.3, value: 1.05, step: 0.01 },
+                    { id: 'brightness', label: 'Brilho', min: 0, max: 10, value: 3, step: 1 }
+                ]
+            },
+            escaneado: {
+                name: "Escaneado",
+                controls: [
+                    { id: 'scale', label: 'Scale', min: 2, max: 4, value: 2.5, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 1.4, value: 1.1, step: 0.01 },
+                    { id: 'brightness', label: 'Brilho', min: 0, max: 10, value: 3, step: 1 },
+                    { id: 'blur', label: 'Blur', min: 1, max: 9, value: 3, step: 2 }
+                ]
+            },
+            foto_celular: {
+                name: "Foto Celular",
+                controls: [
+                    { id: 'scale', label: 'Scale', min: 2, max: 4, value: 3.0, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.0, max: 1.5, value: 1.2, step: 0.01 },
+                    { id: 'brightness', label: 'Brilho', min: -5, max: 15, value: 5, step: 1 },
+                    { id: 'blur', label: 'Blur', min: 1, max: 7, value: 3, step: 2 }
+                ]
+            },
+            degradado: {
+                name: "Degradado",
+                controls: [
+                    { id: 'scale', label: 'Scale', min: 2.5, max: 4, value: 3.5, step: 0.1 },
+                    { id: 'contrast', label: 'Contraste', min: 1.1, max: 1.6, value: 1.3, step: 0.01 },
+                    { id: 'brightness', label: 'Brilho', min: 0, max: 15, value: 5, step: 1 },
+                    { id: 'blur', label: 'Blur', min: 3, max: 9, value: 5, step: 2 },
+                    { id: 'denoise', label: 'Denoise', min: 1, max: 10, value: 5, step: 1 }
+                ]
+            }
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 PDFFacil Laboratório Full Screen inicializado');
+            initializeOpenCV();
+            changeDocumentType();
+            setupDragDrop();
+            setupImageComparisonSlider();
+        });
+
+        function initializeOpenCV() {
+            log('📦 Carregando OpenCV via CDN...');
+            
+            const checkOpenCV = () => {
+                if (typeof cv !== 'undefined') {
+                    cv['onRuntimeInitialized'] = () => {
+                        openCVReady = true;
+                        log('✅ OpenCV UNIVERSAL SEGURO carregado e pronto!');
+                        document.getElementById('systemStatus').textContent = 'OpenCV pronto - Aguardando PDF...';
+                    };
+                } else {
+                    setTimeout(checkOpenCV, 100);
+                }
+            };
+            checkOpenCV();
+        }
+
+        function changeDocumentType() {
+            const docType = document.getElementById('docType').value;
+            const config = DOC_TYPES[docType];
+            const controlsContainer = document.getElementById('dynamicControls');
+            
+            controlsContainer.innerHTML = '';
+            currentParams = {};
+            
+            config.controls.forEach(control => {
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'control-group';
+                
+                controlDiv.innerHTML = `
+                    <label>${control.label}:</label>
+                    <div class="slider-container">
+                        <input type="range" class="slider" 
+                               id="${control.id}" 
+                               min="${control.min}" 
+                               max="${control.max}" 
+                               value="${control.value}" 
+                               step="${control.step}"
+                               oninput="updateParam('${control.id}', this.value)">
+                        <span class="slider-value" id="${control.id}_value">${control.value}</span>
+                    </div>
+                `;
+                
+                controlsContainer.appendChild(controlDiv);
+                currentParams[control.id] = control.value;
+            });
+
+            log(`🔧 Tipo alterado para: ${config.name}`);
+            
+            if (originalPages.length > 0 && !isProcessing) {
+                document.getElementById('applyBtn').disabled = false;
+            }
+        }
+
+        function updateParam(paramId, value) {
+            currentParams[paramId] = parseFloat(value);
+            document.getElementById(`${paramId}_value`).textContent = value;
+            
+            if (originalPages.length > 0 && !isProcessing) {
+                document.getElementById('applyBtn').disabled = false;
+            }
+        }
+
+        function setupDragDrop() {
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type === 'application/pdf') {
+                    handleFileSelect({ target: { files: [files[0]] } });
+                }
+            });
+        }
+
+        function setupImageComparisonSlider() {
+            const slider = document.getElementById('compareSlider');
+            const overlay = document.getElementById('imageOverlay');
+            let isSliding = false;
+
+            function updateSliderPosition(x, containerRect) {
+                if (!containerRect) containerRect = document.getElementById('imageCompare').getBoundingClientRect();
+                
+                const percentage = Math.max(0, Math.min(100, ((x - containerRect.left) / containerRect.width) * 100));
+                
+                slider.style.left = percentage + '%';
+                overlay.style.width = percentage + '%';
+            }
+
+            // Mouse events
+            slider.addEventListener('mousedown', (e) => {
+                isSliding = true;
+                document.body.style.cursor = 'ew-resize';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isSliding) {
+                    updateSliderPosition(e.clientX);
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isSliding) {
+                    isSliding = false;
+                    document.body.style.cursor = '';
+                }
+            });
+
+            // Touch events for mobile
+            slider.addEventListener('touchstart', (e) => {
+                isSliding = true;
+                e.preventDefault();
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (isSliding && e.touches.length > 0) {
+                    updateSliderPosition(e.touches[0].clientX);
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('touchend', () => {
+                isSliding = false;
+            });
+
+            // Click on comparison area
+            document.getElementById('imageCompare').addEventListener('click', (e) => {
+                if (e.target !== slider && !slider.contains(e.target)) {
+                    updateSliderPosition(e.clientX);
+                }
+            });
+        }
+
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                alert('Por favor, selecione um arquivo PDF válido.');
+                return;
+            }
+
+            log(`📄 PDF selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            
+            showLoading();
+            
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                await loadPDF(new Uint8Array(this.result));
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+
+        function showLoading() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('loadingArea').style.display = 'flex';
+            document.getElementById('viewerSection').style.display = 'none';
+        }
+
+        function showViewer() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('loadingArea').style.display = 'none';
+            document.getElementById('viewerSection').style.display = 'flex';
+        }
+
+        async function loadPDF(pdfData) {
+            try {
+                pdfDocument = await pdfjsLib.getDocument(pdfData).promise;
+                const totalPages = Math.min(pdfDocument.numPages, 8);
+                
+                log(`📊 PDF carregado: ${totalPages} páginas para análise`);
+                document.getElementById('systemStatus').textContent = `PDF carregado - ${totalPages} páginas`;
+                
+                originalPages = [];
+                currentPageIndex = 0;
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    document.getElementById('loadingText').textContent = `Carregando página ${i}/${totalPages}...`;
+                    await loadOriginalPage(i);
+                }
+                
+                setupPageNavigation();
+                showViewer();
+                displayCurrentPage();
+                document.getElementById('applyBtn').disabled = false;
+                
+                log(`✅ ${totalPages} páginas carregadas com sucesso`);
+                
+            } catch (error) {
+                log(`❌ Erro ao carregar PDF: ${error.message}`);
+                alert('Erro ao carregar o PDF. Verifique se o arquivo não está corrompido.');
+                document.getElementById('loadingArea').style.display = 'none';
+                document.getElementById('uploadSection').style.display = 'flex';
+            }
+        }
+
+        async function loadOriginalPage(pageNum) {
+            try {
+                const page = await pdfDocument.getPage(pageNum);
+                const scale = 2; // Scale para boa qualidade
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                const quality = analyzePageQuality(canvas);
+
+                originalPages.push({
+                    pageNum,
+                    canvas,
+                    quality,
+                    imageUrl: canvas.toDataURL('image/jpeg', 0.95)
+                });
+
+            } catch (error) {
+                log(`❌ Erro na página ${pageNum}: ${error.message}`);
+            }
+        }
+
+        function setupPageNavigation() {
+            const pageSelector = document.getElementById('pageSelector');
+            pageSelector.innerHTML = '';
+            
+            for (let i = 0; i < originalPages.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'page-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.onclick = () => goToPage(i);
+                pageSelector.appendChild(dot);
+            }
+        }
+
+        function displayCurrentPage() {
+            if (originalPages.length === 0) return;
+            
+            const currentPage = originalPages[currentPageIndex];
+            const originalImg = document.getElementById('originalImage');
+            const processedImg = document.getElementById('processedImage');
+            
+            // Atualizar imagem original
+            originalImg.src = currentPage.imageUrl;
+            
+            // Verificar se há página processada correspondente
+            const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
+            if (processedPage) {
+                processedImg.src = processedPage.imageUrl;
+                document.getElementById('placeholderState').style.display = 'none';
+                document.getElementById('imageCompare').style.display = 'block';
+            } else {
+                document.getElementById('placeholderState').style.display = 'flex';
+                document.getElementById('imageCompare').style.display = 'none';
+            }
+            
+            // Atualizar navegação
+            updateNavigation();
+            updatePageInfo();
+        }
+
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPageIndex === originalPages.length - 1;
+            
+            // Atualizar dots
+            document.querySelectorAll('.page-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentPageIndex);
+            });
+        }
+
+        function updatePageInfo() {
+            const current = currentPageIndex + 1;
+            const total = originalPages.length;
+            document.getElementById('pageCounter').textContent = `Página ${current} de ${total}`;
+            
+            if (originalPages[currentPageIndex]) {
+                const page = originalPages[currentPageIndex];
+                document.getElementById('imageResolution').textContent = `${page.canvas.width}×${page.canvas.height}`;
+                
+                const processedPage = processedPages.find(p => p.pageNum === page.pageNum);
+                if (processedPage) {
+                    document.getElementById('qualityScore').textContent = `Qualidade: ${(processedPage.quality * 100).toFixed(1)}%`;
+                } else {
+                    document.getElementById('qualityScore').textContent = `Qualidade: ${(page.quality * 100).toFixed(1)}%`;
+                }
+            }
+        }
+
+        function previousPage() {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                displayCurrentPage();
+            }
+        }
+
+        function nextPage() {
+            if (currentPageIndex < originalPages.length - 1) {
+                currentPageIndex++;
+                displayCurrentPage();
+            }
+        }
+
+        function goToPage(index) {
+            if (index >= 0 && index < originalPages.length) {
+                currentPageIndex = index;
+                displayCurrentPage();
+            }
+        }
+
+        async function applyProcessing() {
+            if (isProcessing || originalPages.length === 0) return;
+
+            isProcessing = true;
+            document.getElementById('applyBtn').disabled = true;
+            document.getElementById('applyBtn').textContent = '⏳ Processando...';
+
+            log('🔄 Iniciando processamento com parâmetros personalizados...');
+            console.log('Parâmetros atuais:', currentParams);
+
+            const startTime = Date.now();
+            processedPages = [];
+            
+            try {
+                for (let i = 0; i < originalPages.length; i++) {
+                    document.getElementById('systemStatus').textContent = `Processando página ${i + 1}/${originalPages.length}...`;
+                    await processPageWithParams(originalPages[i], i);
+                }
+
+                const processingTime = Date.now() - startTime;
+                document.getElementById('processingTime').textContent = `Processamento: ${processingTime}ms`;
+                
+                updateQualityDisplay();
+                displayCurrentPage(); // Atualizar visualização atual
+                document.getElementById('saveConfigBtn').disabled = false;
+                
+                log(`✅ Processamento concluído em ${processingTime}ms!`);
+
+            } catch (error) {
+                log(`❌ Erro durante processamento: ${error.message}`);
+                alert('Erro durante o processamento.');
+            }
+
+            isProcessing = false;
+            document.getElementById('applyBtn').disabled = false;
+            document.getElementById('applyBtn').textContent = '🔄 APLICAR';
+            document.getElementById('systemStatus').textContent = 'Processamento concluído - Use slider para comparar';
+        }
+
+        async function processPageWithParams(originalPage, index) {
+            log(`📄 Processando página ${originalPage.pageNum} com parâmetros customizados...`);
+            
+            try {
+                const processedCanvas = await realProcessing(originalPage.canvas, currentParams);
+                const quality = analyzePageQuality(processedCanvas);
+
+                processedPages.push({
+                    pageNum: originalPage.pageNum,
+                    canvas: processedCanvas,
+                    quality,
+                    params: { ...currentParams },
+                    imageUrl: processedCanvas.toDataURL('image/jpeg', 0.95)
+                });
+
+                log(`✅ Página ${originalPage.pageNum} processada (Qualidade: ${(quality * 100).toFixed(1)}%)`);
+
+            } catch (error) {
+                log(`❌ Erro na página ${originalPage.pageNum}: ${error.message}`);
+            }
+        }
+
+        // Processamento OpenCV REAL - Adaptado do seu código
+        async function realProcessing(canvas, params) {
+            return applyUniversalSafeOptimizations(canvas, 0.8, 1, params);
+        }
+
+        // Suas funções OpenCV adaptadas para parâmetros dinâmicos
+        function applyUniversalSafeOptimizations(canvas, qualityScore, pageNum, params = {}) {
+            if (!openCVReady || typeof cv === 'undefined') {
+                log(`⚠️ Página ${pageNum}: OpenCV indisponível - aplicando otimizações básicas`);
+                return applyBasicSafeOptimizations(canvas, params);
+            }
+            
+            try {
+                log(`🔧 Página ${pageNum}: Aplicando otimizações com parâmetros personalizados`);
+                
+                const src = cv.imread(canvas);
+                const gray = new cv.Mat();
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                
+                // PARÂMETROS DINÂMICOS
+                const scale = params.scale || 2.0;
+                const contrast = params.contrast || 1.05;
+                const brightness = params.brightness || 3;
+                const blur = params.blur || 0;
+                const denoise = params.denoise || 0;
+                
+                let processed = gray.clone();
+                
+                // TÉCNICA 1: UPSCALING com parâmetro dinâmico
+                const upscaled = new cv.Mat();
+                cv.resize(processed, upscaled, new cv.Size(0, 0), scale, scale, cv.INTER_CUBIC);
+                processed.delete();
+                processed = upscaled;
+                log(`📈 Página ${pageNum}: Upscaling ${scale}x aplicado`);
+                
+                // TÉCNICA 2: MEDIAN BLUR (se configurado)
+                if (blur > 0) {
+                    const blurred = new cv.Mat();
+                    cv.medianBlur(processed, blurred, blur);
+                    processed.delete();
+                    processed = blurred;
+                    log(`🔧 Página ${pageNum}: Median Blur ${blur} aplicado`);
+                }
+                
+                // TÉCNICA 3: DENOISING (se configurado)
+                if (denoise > 0) {
+                    const denoised = new cv.Mat();
+                    cv.fastNlMeansDenoising(processed, denoised, denoise, 7, 21);
+                    processed.delete();
+                    processed = denoised;
+                    log(`🧹 Página ${pageNum}: Denoising ${denoise} aplicado`);
+                }
+                
+                // TÉCNICA 4: AJUSTES DE CONTRASTE E BRILHO
+                const adjusted = new cv.Mat();
+                processed.convertTo(adjusted, -1, contrast, brightness);
+                log(`🎨 Página ${pageNum}: Contraste ${contrast}, Brilho +${brightness} aplicados`);
+                
+                // CRIAR CANVAS FINAL
+                const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = canvas.width * scale;
+                processedCanvas.height = canvas.height * scale;
+                cv.imshow(processedCanvas, adjusted);
+                
+                // LIMPEZA DE MEMÓRIA
+                src.delete();
+                gray.delete();
+                processed.delete();
+                adjusted.delete();
+                
+                log(`✅ Página ${pageNum}: Processamento completo - ${processedCanvas.width}x${processedCanvas.height}`);
+                return processedCanvas;
+                
+            } catch (error) {
+                log(`❌ Página ${pageNum}: Erro OpenCV: ${error.message}`);
+                return applyBasicSafeOptimizations(canvas, params);
+            }
+        }
+
+        function applyBasicSafeOptimizations(canvas, params = {}) {
+            const scale = params.scale || 2.0;
+            const contrast = params.contrast || 1.05;
+            const brightness = params.brightness || 3;
+            
+            // Fallback: criar versão ampliada mesmo sem OpenCV
+            const processedCanvas = document.createElement('canvas');
+            processedCanvas.width = canvas.width * scale;
+            processedCanvas.height = canvas.height * scale;
+            const ctx = processedCanvas.getContext('2d');
+            
+            // Aplicar ajustes seguros + upscaling via CSS
+            ctx.filter = `contrast(${contrast * 100}%) brightness(${100 + brightness}%)`;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Desenhar imagem original ampliada
+            ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 
+                                   0, 0, processedCanvas.width, processedCanvas.height);
+            
+            return processedCanvas;
+        }
+
+        function updateQualityDisplay() {
+            if (processedPages.length === 0) return;
+
+            const avgQuality = processedPages.reduce((sum, page) => sum + page.quality, 0) / processedPages.length;
+            const originalAvgQuality = originalPages.reduce((sum, page) => sum + page.quality, 0) / originalPages.length;
+            
+            const improvement = ((avgQuality - originalAvgQuality) / originalAvgQuality * 100);
+            const qualityDisplay = document.getElementById('qualityDisplay');
+            
+            qualityDisplay.innerHTML = `
+                ${(avgQuality * 100).toFixed(1)}%
+                <br><small style="font-size: 0.7rem; ${improvement > 0 ? 'color: #27ae60' : 'color: #e74c3c'}">
+                    ${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%
+                </small>
+            `;
+        }
+
+        function resetParams() {
+            changeDocumentType();
+            log('↺ Parâmetros resetados para padrão');
+        }
+
+        function saveConfig() {
+            const docType = document.getElementById('docType').value;
+            const config = {
+                type: docType,
+                params: currentParams,
+                results: {
+                    avgQuality: processedPages.reduce((sum, page) => sum + page.quality, 0) / processedPages.length,
+                    pages: processedPages.length
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pdffacil_config_${docType}_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            log('💾 Configuração salva com sucesso!');
+        }
+
+        // Análise de qualidade (copiada do código original)
+        function analyzePageQuality(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            let sumBrightness = 0;
+            let edgePixels = 0;
+            let darkPixels = 0;
+            let lightPixels = 0;
+            let totalTextPixels = 0;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const brightness = (r + g + b) / 3;
+                
+                sumBrightness += brightness;
+                
+                if (brightness < 85) darkPixels++;
+                if (brightness > 170) lightPixels++;
+                if (brightness < 128) totalTextPixels++;
+                
+                if (i > canvas.width * 4) {
+                    const prevR = data[i - canvas.width * 4];
+                    const prevG = data[i - canvas.width * 4 + 1];
+                    const prevB = data[i - canvas.width * 4 + 2];
+                    const prevBrightness = (prevR + prevG + prevB) / 3;
+                    
+                    if (Math.abs(brightness - prevBrightness) > 25) {
+                        edgePixels++;
+                    }
+                }
+            }
+            
+            const totalPixels = data.length / 4;
+            const avgBrightness = sumBrightness / totalPixels;
+            const sharpnessRatio = edgePixels / totalPixels;
+            const contrastRatio = Math.abs(darkPixels - lightPixels) / totalPixels;
+            const textDensity = totalTextPixels / totalPixels;
+            
+            let qualityScore = 0.3;
+            
+            if (avgBrightness > 60 && avgBrightness < 180) qualityScore += 0.2;
+            if (sharpnessRatio > 0.015) qualityScore += 0.25;
+            else if (sharpnessRatio > 0.008) qualityScore += 0.1;
+            if (contrastRatio > 0.3) qualityScore += 0.15;
+            else if (contrastRatio > 0.15) qualityScore += 0.05;
+            if (textDensity > 0.15) qualityScore += 0.15;
+            else if (textDensity > 0.05) qualityScore += 0.1;
+            else qualityScore -= 0.2;
+            
+            if (avgBrightness < 30 || avgBrightness > 220) qualityScore -= 0.2;
+            
+            return Math.min(0.95, Math.max(0.15, qualityScore));
+        }
+
+        function log(message) {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(message);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (originalPages.length === 0) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    previousPage();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    nextPage();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (!isProcessing) {
+                        applyProcessing();
+                    }
+                    break;
+            }
+        });
+    </script>
+
+    <!-- OpenCV via CDN -->
+    <script>
+        console.log('📦 Iniciando carregamento OpenCV via CDN...');
+        window.openCVReady = false;
+
+        function onOpenCVReady() {
+            window.openCVReady = true;
+            console.log('🔥 OpenCV CDN carregado e VALIDADO!');
+            console.log('✅ Algoritmos avançados disponíveis');
+        }
+    </script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" 
+            onload="cv.onRuntimeInitialized = onOpenCVReady;" 
+            onerror="console.log('❌ Erro ao carregar OpenCV CDN')">
+    </script>
+</body>
+</html>
