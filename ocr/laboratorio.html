@@ -1273,6 +1273,7 @@
                 
                 if (!autoSearchCancelled && bestConfiguration) {
                     // Aplicar melhor configuração encontrada
+                    document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração encontrada...';
                     await applyBestConfiguration();
                     log(`✅ Busca 2 etapas concluída! Melhor score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
                 } else if (autoSearchCancelled) {
@@ -1309,6 +1310,8 @@
             bestScore = stage1Result.avgQuality;
             
             log(`✅ ETAPA 1 concluída! Melhor: ${(bestScore * 100).toFixed(1)}%`);
+            document.getElementById('bestConfig').textContent = 
+                `✅ ETAPA 1 OK: Scale:${stage1Result.params.scale}, Contraste:${stage1Result.params.contrast}, Brilho:${stage1Result.params.brightness}`;
             
             // ETAPA 2: AJUSTE FINO
             log('🔍 ETAPA 2: Ajuste fino ±2 steps...');
@@ -1320,8 +1323,12 @@
                 bestConfiguration = stage2Result;
                 bestScore = stage2Result.avgQuality;
                 log(`🎯 ETAPA 2: Melhoria encontrada! ${(bestScore * 100).toFixed(1)}%`);
+                document.getElementById('bestConfig').textContent = 
+                    `🎯 FINAL: Scale:${stage2Result.params.scale}, Contraste:${stage2Result.params.contrast}, Brilho:${stage2Result.params.brightness}`;
             } else {
                 log('📊 ETAPA 2: Nenhuma melhoria adicional encontrada');
+                document.getElementById('bestConfig').textContent = 
+                    `✅ FINAL: Scale:${stage1Result.params.scale}, Contraste:${stage1Result.params.contrast}, Brilho:${stage1Result.params.brightness}`;
             }
         }
 
@@ -1374,10 +1381,19 @@
                     // Testar esta combinação
                     currentCombination++;
                     
-                    // Atualizar progresso
+                    // Atualizar progresso E configuração atual
                     const progress = ((currentCombination / totalCombinations) * 100).toFixed(1);
                     document.getElementById('searchProgress').textContent = 
                         `ETAPA 1: ${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
+                    
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA
+                    document.getElementById('bestConfig').textContent = 
+                        `Testando: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness || 0}`;
+                    
+                    // PAUSA para atualizar interface
+                    if (currentCombination % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 5));
+                    }
                     
                     // Processar páginas com esta configuração
                     const testResults = await testConfiguration(currentConfig);
@@ -1386,10 +1402,13 @@
                         bestScore = testResults.avgQuality;
                         bestConfig = { ...currentConfig };
                         
-                        // Atualizar display do melhor encontrado
+                        // Atualizar display do MELHOR encontrado
                         document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
                         document.getElementById('bestConfig').textContent = 
-                            `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                            `🎯 MELHOR: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                        
+                        // Pausa extra quando encontra melhoria
+                        await new Promise(resolve => setTimeout(resolve, 20));
                     }
                     
                     return;
@@ -1412,11 +1431,6 @@
                     newConfig[control.id] = value;
                     
                     await testOptimizedCombinations(controlIndex + 1, newConfig);
-                    
-                    // Pausa menor já que são menos combinações
-                    if (currentCombination % 20 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 5));
-                    }
                 }
             }
             
@@ -1503,10 +1517,17 @@
                     // Testar esta combinação
                     fineTuneCombination++;
                     
-                    // Atualizar progresso
+                    // Atualizar progresso E configuração atual sendo testada
                     const progress = ((fineTuneCombination / totalFinetuneCombinations) * 100).toFixed(1);
                     document.getElementById('searchProgress').textContent = 
                         `ETAPA 2: ${fineTuneCombination} de ${totalFinetuneCombinations} (${progress}%)`;
+                    
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA
+                    document.getElementById('bestConfig').textContent = 
+                        `Testando: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness || 0}`;
+                    
+                    // PAUSA OBRIGATÓRIA para atualizar interface
+                    await new Promise(resolve => setTimeout(resolve, 10));
                     
                     // Processar páginas com esta configuração
                     const testResults = await testConfiguration(currentConfig);
@@ -1515,12 +1536,15 @@
                         bestScore = testResults.avgQuality;
                         bestConfig = { ...currentConfig };
                         
-                        // Atualizar display do melhor encontrado
+                        // Atualizar display do MELHOR encontrado
                         document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
                         document.getElementById('bestConfig').textContent = 
-                            `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                            `🎯 MELHOR: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
                         
                         log(`🎯 ETAPA 2: Nova melhoria! ${(bestScore * 100).toFixed(1)}% - ${JSON.stringify(currentConfig)}`);
+                        
+                        // Pausa extra quando encontra melhoria para dar tempo de ver
+                        await new Promise(resolve => setTimeout(resolve, 50));
                     }
                     
                     return;
@@ -1543,11 +1567,6 @@
                     newConfig[control.id] = value;
                     
                     await testFineTuneCombinations(controlIndex + 1, newConfig);
-                    
-                    // Pausa para não travar a interface
-                    if (fineTuneCombination % 10 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 3));
-                    }
                 }
             }
             
@@ -1616,6 +1635,7 @@
                 }
             });
             
+            // Mostrar que está aplicando
             document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração...';
             
             // Processar todas as páginas com a melhor configuração
