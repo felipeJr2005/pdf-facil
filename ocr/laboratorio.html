@@ -175,6 +175,12 @@
             font-size: 0.9rem;
             margin-top: 15px;
             color: #bdc3c7;
+            text-align: left;
+        }
+        
+        .search-stats > div:first-child {
+            font-weight: bold;
+            color: #27ae60;
         }
         
         .btn:disabled {
@@ -690,8 +696,8 @@
         <p id="searchStatus">Iniciando busca...</p>
         <div id="searchProgress">-</div>
         <div class="search-stats">
-            <div>Melhor encontrado: <span id="bestScore">-</span></div>
-            <div>Configuração: <span id="bestConfig">-</span></div>
+            <div style="margin-bottom: 8px;">Melhor encontrado: <span id="bestScore">-</span></div>
+            <div style="font-size: 0.85rem; color: #bdc3c7; line-height: 1.3;" id="bestConfig">-</div>
         </div>
         <button class="btn btn-secondary" onclick="cancelAutoSearch()" style="margin-top: 15px;">
             ❌ Cancelar
@@ -823,8 +829,10 @@
         }
 
         function updateParam(paramId, value) {
-            currentParams[paramId] = parseFloat(value);
-            document.getElementById(`${paramId}_value`).textContent = value;
+            // Arredondar para evitar decimais longos (max 2 casas)
+            const roundedValue = Math.round(parseFloat(value) * 100) / 100;
+            currentParams[paramId] = roundedValue;
+            document.getElementById(`${paramId}_value`).textContent = roundedValue;
             
             // Atualizar qualidade se ainda não processou (mostra só original)
             if (originalPages.length > 0) {
@@ -1294,6 +1302,31 @@
             document.getElementById('saveConfigBtn').disabled = false;
         }
 
+        // Função para formatar configuração de forma organizada
+        function formatConfiguration(config, prefix = '') {
+            const parts = [];
+            if (prefix) parts.push(prefix);
+            
+            // Arredondar valores para evitar decimais longos
+            if (config.scale !== undefined) {
+                parts.push(`Scale:${Math.round(config.scale * 10) / 10}`);
+            }
+            if (config.contrast !== undefined) {
+                parts.push(`Contraste:${Math.round(config.contrast * 10) / 10}`);
+            }
+            if (config.brightness !== undefined) {
+                parts.push(`Brilho:${Math.round(config.brightness)}`);
+            }
+            if (config.blur !== undefined) {
+                parts.push(`Blur:${Math.round(config.blur)}`);
+            }
+            if (config.denoise !== undefined) {
+                parts.push(`Denoise:${Math.round(config.denoise)}`);
+            }
+            
+            return parts.join(' | ');
+        }
+
         async function searchBestConfiguration(config) {
             const controls = config.controls;
             let bestScore = 0;
@@ -1310,8 +1343,8 @@
             bestScore = stage1Result.avgQuality;
             
             log(`✅ ETAPA 1 concluída! Melhor: ${(bestScore * 100).toFixed(1)}%`);
-            document.getElementById('bestConfig').textContent = 
-                `✅ ETAPA 1 OK: Scale:${stage1Result.params.scale}, Contraste:${stage1Result.params.contrast}, Brilho:${stage1Result.params.brightness}`;
+            const stage1ConfigText = formatConfiguration(stage1Result.params, '✅ ETAPA 1');
+            document.getElementById('bestConfig').textContent = stage1ConfigText;
             
             // ETAPA 2: AJUSTE FINO
             log('🔍 ETAPA 2: Ajuste fino ±2 steps...');
@@ -1319,16 +1352,16 @@
             
             const stage2Result = await performStage2FineTuning(config, stage1Result);
             
-            if (stage2Result && stage2Result.avgQuality > bestScore) {
+            if (stage2Result && stage2Result.avgQuality >= bestScore) {
                 bestConfiguration = stage2Result;
                 bestScore = stage2Result.avgQuality;
-                log(`🎯 ETAPA 2: Melhoria encontrada! ${(bestScore * 100).toFixed(1)}%`);
-                document.getElementById('bestConfig').textContent = 
-                    `🎯 FINAL: Scale:${stage2Result.params.scale}, Contraste:${stage2Result.params.contrast}, Brilho:${stage2Result.params.brightness}`;
+                log(`🎯 ETAPA 2: Resultado final! ${(bestScore * 100).toFixed(1)}%`);
+                const finalConfigText = formatConfiguration(stage2Result.params, '🎯 FINAL ETAPA 2');
+                document.getElementById('bestConfig').textContent = finalConfigText;
             } else {
-                log('📊 ETAPA 2: Nenhuma melhoria adicional encontrada');
-                document.getElementById('bestConfig').textContent = 
-                    `✅ FINAL: Scale:${stage1Result.params.scale}, Contraste:${stage1Result.params.contrast}, Brilho:${stage1Result.params.brightness}`;
+                log('📊 ETAPA 2: Manteve resultado da ETAPA 1');
+                const finalConfigText = formatConfiguration(stage1Result.params, '✅ FINAL ETAPA 1');
+                document.getElementById('bestConfig').textContent = finalConfigText;
             }
         }
 
@@ -1386,9 +1419,9 @@
                     document.getElementById('searchProgress').textContent = 
                         `ETAPA 1: ${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
                     
-                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA
-                    document.getElementById('bestConfig').textContent = 
-                        `Testando: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness || 0}`;
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA DE FORMA ORGANIZADA
+                    const configText = `Testando: Scale:${currentConfig.scale || '-'} | Contraste:${currentConfig.contrast || '-'} | Brilho:${currentConfig.brightness || 0}`;
+                    document.getElementById('bestConfig').textContent = configText;
                     
                     // PAUSA para atualizar interface
                     if (currentCombination % 5 === 0) {
@@ -1481,8 +1514,8 @@
                     
                     // Verificar se está dentro dos limites
                     if (testValue >= min && testValue <= max) {
-                        // Arredondar para evitar problemas de precisão float
-                        const roundedValue = Math.round(testValue / step) * step;
+                        // ARREDONDAR para evitar problemas de precisão float
+                        const roundedValue = Math.round(testValue * 100) / 100; // 2 casas decimais max
                         if (roundedValue >= min && roundedValue <= max) {
                             values.push(roundedValue);
                         }
@@ -1522,9 +1555,9 @@
                     document.getElementById('searchProgress').textContent = 
                         `ETAPA 2: ${fineTuneCombination} de ${totalFinetuneCombinations} (${progress}%)`;
                     
-                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA
-                    document.getElementById('bestConfig').textContent = 
-                        `Testando: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness || 0}`;
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA DE FORMA ORGANIZADA
+                    const configText = formatConfiguration(currentConfig, 'Testando');
+                    document.getElementById('bestConfig').textContent = configText;
                     
                     // PAUSA OBRIGATÓRIA para atualizar interface
                     await new Promise(resolve => setTimeout(resolve, 10));
@@ -1532,16 +1565,24 @@
                     // Processar páginas com esta configuração
                     const testResults = await testConfiguration(currentConfig);
                     
-                    if (testResults && testResults.avgQuality > bestScore) {
+                    // SEMPRE SUBSTITUIR na ETAPA 2, mesmo se igual (para mostrar que veio da etapa 2)
+                    if (testResults && testResults.avgQuality >= bestScore) {
+                        const wasImprovement = testResults.avgQuality > bestScore;
                         bestScore = testResults.avgQuality;
                         bestConfig = { ...currentConfig };
                         
                         // Atualizar display do MELHOR encontrado
                         document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
-                        document.getElementById('bestConfig').textContent = 
-                            `🎯 MELHOR: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
                         
-                        log(`🎯 ETAPA 2: Nova melhoria! ${(bestScore * 100).toFixed(1)}% - ${JSON.stringify(currentConfig)}`);
+                        // Mostrar de forma organizada
+                        const bestConfigText = formatConfiguration(currentConfig, '🎯 ETAPA 2');
+                        document.getElementById('bestConfig').textContent = bestConfigText;
+                        
+                        if (wasImprovement) {
+                            log(`🎯 ETAPA 2: Nova melhoria! ${(bestScore * 100).toFixed(1)}% - ${JSON.stringify(currentConfig)}`);
+                        } else {
+                            log(`✅ ETAPA 2: Confirmou melhor resultado ${(bestScore * 100).toFixed(1)}%`);
+                        }
                         
                         // Pausa extra quando encontra melhoria para dar tempo de ver
                         await new Promise(resolve => setTimeout(resolve, 50));
@@ -1653,20 +1694,22 @@
                 // Aplicar parâmetros nos controles do laboratório
                 Object.keys(bestConfiguration.params).forEach(paramId => {
                     const value = bestConfiguration.params[paramId];
-                    currentParams[paramId] = value;
+                    // Arredondar para evitar decimais longos
+                    const roundedValue = Math.round(value * 100) / 100;
+                    currentParams[paramId] = roundedValue;
                     
                     const slider = document.getElementById(paramId);
                     const valueDisplay = document.getElementById(`${paramId}_value`);
                     
                     if (slider && valueDisplay) {
-                        slider.value = value;
-                        valueDisplay.textContent = value;
+                        slider.value = roundedValue;
+                        valueDisplay.textContent = roundedValue;
                     }
                 });
                 
                 // Mostrar configuração aplicada nos logs
                 const configStr = Object.keys(bestConfiguration.params)
-                    .map(key => `${key}=${bestConfiguration.params[key]}`)
+                    .map(key => `${key}=${Math.round(bestConfiguration.params[key] * 100) / 100}`)
                     .join(', ');
                     
                 log(`⚙️ Controles atualizados: ${configStr}`);
