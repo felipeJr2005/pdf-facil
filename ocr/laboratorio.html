@@ -645,7 +645,7 @@
                 <div class="nav-controls">
                     <button class="nav-btn" id="prevBtn" onclick="previousPage()" disabled>← Anterior</button>
                     <button class="nav-btn" id="nextBtn" onclick="nextPage()">Próximo →</button>
-                    <button class="nav-btn" onclick="reiniciar()" style="background: #e74c3c;">🔄 Novo PDF</button>
+                    <button class="nav-btn" id="newPdfBtn" onclick="loadNewPDF()" style="background: #e67e22;">📁 Novo PDF</button>
                 </div>
             </div>
 
@@ -686,7 +686,7 @@
     <!-- MODAL DE PROGRESSO DA BUSCA AUTOMÁTICA -->
     <div class="auto-search-progress" id="autoSearchProgress">
         <div class="search-spinner"></div>
-        <h3>🔍 Busca Automática</h3>
+        <h3>🔍 Busca Automática (2 Etapas)</h3>
         <p id="searchStatus">Iniciando busca...</p>
         <div id="searchProgress">-</div>
         <div class="search-stats">
@@ -1039,6 +1039,37 @@
             }
         }
 
+        function loadNewPDF() {
+            // Resetar estado completamente
+            pdfDocument = null;
+            originalPages = [];
+            processedPages = [];
+            currentPageIndex = 0;
+            currentParams = {};
+            
+            // Resetar interface
+            document.getElementById('fileInput').value = '';
+            document.getElementById('systemStatus').textContent = 'Aguardando novo PDF...';
+            document.getElementById('qualityOriginal').textContent = 'Original: -';
+            document.getElementById('qualityProcessed').textContent = 'Processado: -';
+            document.getElementById('qualityImprovement').textContent = '-';
+            
+            // Desabilitar botões
+            document.getElementById('applyBtn').disabled = true;
+            document.getElementById('autoSearchBtn').disabled = true;
+            document.getElementById('saveConfigBtn').disabled = true;
+            
+            // Voltar para tela de upload
+            document.getElementById('uploadSection').style.display = 'flex';
+            document.getElementById('loadingArea').style.display = 'none';
+            document.getElementById('viewerSection').style.display = 'none';
+            
+            // Resetar parâmetros para padrão do tipo
+            changeDocumentType();
+            
+            log('📁 Interface resetada - Aguardando novo PDF...');
+        }
+
         async function applyProcessing() {
             if (isProcessing || isAutoSearching || originalPages.length === 0) return;
 
@@ -1208,40 +1239,6 @@
             log(`📊 Qualidade: ${(avgQualityOriginal * 100).toFixed(1)}% → ${(avgQualityProcessed * 100).toFixed(1)}% (${absoluteImprovement > 0 ? '+' : ''}${(absoluteImprovement * 100).toFixed(2)}pts)`);
         }
 
-        function reiniciar() {
-            pdfDocument = null;
-            processedPages = [];
-            originalPages = [];
-            currentPageIndex = 0;
-            isProcessing = false;
-            isAutoSearching = false;
-            autoSearchCancelled = false;
-            bestConfiguration = null;
-            
-            stats = { totalPages: 0, processedPages: 0, startTime: null, universalOptimized: 0 };
-            
-            document.getElementById('fileInput').value = '';
-            document.getElementById('processBtn').disabled = true;
-            document.getElementById('applyBtn').disabled = true;
-            document.getElementById('autoSearchBtn').disabled = true;
-            document.getElementById('saveConfigBtn').disabled = true;
-            
-            // Mostrar área de upload novamente
-            document.getElementById('uploadSection').style.display = 'flex';
-            document.getElementById('loadingArea').style.display = 'none';
-            document.getElementById('viewerSection').style.display = 'none';
-            document.getElementById('autoSearchProgress').style.display = 'none';
-            
-            // Limpar displays
-            document.getElementById('logContent').innerHTML = '';
-            document.getElementById('qualityOriginal').textContent = 'Original: -';
-            document.getElementById('qualityProcessed').textContent = 'Processado: -';
-            document.getElementById('qualityImprovement').textContent = '-';
-            document.getElementById('systemStatus').textContent = 'Sistema reiniciado - Aguardando PDF...';
-            
-            log('🔄 Sistema reiniciado - Selecione novo PDF');
-        }
-
         function resetParams() {
             changeDocumentType();
             log('↺ Parâmetros resetados para padrão');
@@ -1269,55 +1266,19 @@
             const docType = document.getElementById('docType').value;
             const config = DOC_TYPES[docType];
             
-            // Calcular total de combinações com valores OTIMIZADOS
-            const optimizedCounts = {
-                scale: 1, // Fixo em 2
-                contrast: 9, // 0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0
-                brightness: 11, // -100 a 100 de 20 em 20
-                blur: 0,
-                denoise: 0
-            };
-            
-            // Contar blur e denoise (mantém originais)
-            config.controls.forEach(control => {
-                if (control.id === 'blur') {
-                    optimizedCounts.blur = Math.round((control.max - control.min) / control.step) + 1;
-                }
-                if (control.id === 'denoise') {
-                    optimizedCounts.denoise = Math.round((control.max - control.min) / control.step) + 1;
-                }
-            });
-            
-            totalCombinations = 1;
-            config.controls.forEach(control => {
-                const count = optimizedCounts[control.id];
-                if (count > 0) {
-                    totalCombinations *= count;
-                }
-            });
-            
-            document.getElementById('searchStatus').textContent = `Calculando ${totalCombinations.toLocaleString()} combinações otimizadas...`;
+            document.getElementById('searchStatus').textContent = `Preparando busca em 2 etapas...`;
             
             try {
-                // ETAPA 1: BUSCA PRINCIPAL
                 await searchBestConfiguration(config);
-                
-                // ETAPA 2: AJUSTE FINO (se encontrou uma configuração)
-                if (!autoSearchCancelled && bestConfiguration) {
-                    log(`🎯 Etapa 1 concluída! Melhor: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
-                    log(`🔬 Iniciando Etapa 2: Ajuste Fino...`);
-                    
-                    await fineTuneConfiguration(config, bestConfiguration);
-                }
                 
                 if (!autoSearchCancelled && bestConfiguration) {
                     // Aplicar melhor configuração encontrada
                     await applyBestConfiguration();
-                    log(`✅ Busca concluída! Melhor score final: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                    log(`✅ Busca 2 etapas concluída! Melhor score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
                 } else if (autoSearchCancelled) {
                     log('❌ Busca automática cancelada pelo usuário');
                 } else {
-                    log('⚠️ Nenhuma melhoria encontrada');
+                    log('⚠️ Nenhuma melhoria encontrada nas 2 etapas');
                 }
             } catch (error) {
                 log(`❌ Erro na busca automática: ${error.message}`);
@@ -1335,6 +1296,39 @@
         async function searchBestConfiguration(config) {
             const controls = config.controls;
             let bestScore = 0;
+            
+            // ETAPA 1: BUSCA PRINCIPAL OTIMIZADA
+            log('🚀 ETAPA 1: Busca principal otimizada...');
+            document.getElementById('searchStatus').textContent = 'ETAPA 1: Busca principal...';
+            
+            const stage1Result = await performStage1Search(config);
+            
+            if (!stage1Result || autoSearchCancelled) return;
+            
+            bestConfiguration = stage1Result;
+            bestScore = stage1Result.avgQuality;
+            
+            log(`✅ ETAPA 1 concluída! Melhor: ${(bestScore * 100).toFixed(1)}%`);
+            
+            // ETAPA 2: AJUSTE FINO
+            log('🔍 ETAPA 2: Ajuste fino ±2 steps...');
+            document.getElementById('searchStatus').textContent = 'ETAPA 2: Ajuste fino...';
+            
+            const stage2Result = await performStage2FineTuning(config, stage1Result);
+            
+            if (stage2Result && stage2Result.avgQuality > bestScore) {
+                bestConfiguration = stage2Result;
+                bestScore = stage2Result.avgQuality;
+                log(`🎯 ETAPA 2: Melhoria encontrada! ${(bestScore * 100).toFixed(1)}%`);
+            } else {
+                log('📊 ETAPA 2: Nenhuma melhoria adicional encontrada');
+            }
+        }
+
+        async function performStage1Search(config) {
+            const controls = config.controls;
+            let bestScore = 0;
+            let bestConfig = null;
             
             // CONFIGURAÇÃO OTIMIZADA PARA BUSCA RÁPIDA
             const optimizedRanges = {
@@ -1371,7 +1365,6 @@
             });
             
             log(`🚀 Busca otimizada: ${totalCombinations.toLocaleString()} combinações (muito mais rápido!)`);
-            document.getElementById('searchStatus').textContent = `Testando ${totalCombinations.toLocaleString()} combinações otimizadas...`;
             
             // Função recursiva para testar todas as combinações OTIMIZADAS
             async function testOptimizedCombinations(controlIndex, currentConfig) {
@@ -1384,25 +1377,19 @@
                     // Atualizar progresso
                     const progress = ((currentCombination / totalCombinations) * 100).toFixed(1);
                     document.getElementById('searchProgress').textContent = 
-                        `${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
+                        `ETAPA 1: ${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
                     
                     // Processar páginas com esta configuração
                     const testResults = await testConfiguration(currentConfig);
                     
                     if (testResults && testResults.avgQuality > bestScore) {
                         bestScore = testResults.avgQuality;
-                        bestConfiguration = {
-                            params: { ...currentConfig },
-                            avgQuality: testResults.avgQuality,
-                            pages: testResults.pages
-                        };
+                        bestConfig = { ...currentConfig };
                         
                         // Atualizar display do melhor encontrado
                         document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
                         document.getElementById('bestConfig').textContent = 
                             `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
-                        
-                        log(`🎯 Nova melhor configuração: ${(bestScore * 100).toFixed(1)}% - Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`);
                     }
                     
                     return;
@@ -1435,6 +1422,147 @@
             
             // Iniciar busca otimizada
             await testOptimizedCombinations(0, {});
+            
+            if (bestConfig) {
+                return {
+                    params: bestConfig,
+                    avgQuality: bestScore,
+                    pages: Math.min(3, originalPages.length)
+                };
+            }
+            
+            return null;
+        }
+
+        async function performStage2FineTuning(config, stage1Result) {
+            const controls = config.controls;
+            const baseParams = stage1Result.params;
+            let bestScore = stage1Result.avgQuality;
+            let bestConfig = null;
+            
+            // Preparar ranges de ajuste fino para cada parâmetro
+            const finetuneRanges = {};
+            let totalFinetuneCombinations = 1;
+            
+            controls.forEach(control => {
+                const paramId = control.id;
+                const baseValue = baseParams[paramId];
+                
+                if (paramId === 'scale') {
+                    // Scale continua fixo
+                    finetuneRanges[paramId] = [baseValue];
+                    return;
+                }
+                
+                if (baseValue === undefined) return;
+                
+                const step = control.step;
+                const min = control.min;
+                const max = control.max;
+                const values = [];
+                
+                // Calcular ±2 steps ao redor do valor base
+                for (let i = -2; i <= 2; i++) {
+                    const testValue = baseValue + (i * step);
+                    
+                    // Verificar se está dentro dos limites
+                    if (testValue >= min && testValue <= max) {
+                        // Arredondar para evitar problemas de precisão float
+                        const roundedValue = Math.round(testValue / step) * step;
+                        if (roundedValue >= min && roundedValue <= max) {
+                            values.push(roundedValue);
+                        }
+                    }
+                }
+                
+                // Remover duplicatas e ordenar
+                finetuneRanges[paramId] = [...new Set(values)].sort((a, b) => a - b);
+                
+                if (finetuneRanges[paramId].length > 0) {
+                    totalFinetuneCombinations *= finetuneRanges[paramId].length;
+                }
+                
+                log(`🔍 ${paramId}: Base=${baseValue}, Ajuste Fino=[${finetuneRanges[paramId].join(', ')}]`);
+            });
+            
+            if (totalFinetuneCombinations <= 1) {
+                log('⚠️ ETAPA 2: Nenhum ajuste fino possível (já nos limites)');
+                return null;
+            }
+            
+            log(`🎯 ETAPA 2: Testando ${totalFinetuneCombinations} combinações de ajuste fino`);
+            
+            // Resetar contador para etapa 2
+            let fineTuneCombination = 0;
+            
+            // Função recursiva para testar combinações de ajuste fino
+            async function testFineTuneCombinations(controlIndex, currentConfig) {
+                if (autoSearchCancelled) return;
+                
+                if (controlIndex >= controls.length) {
+                    // Testar esta combinação
+                    fineTuneCombination++;
+                    
+                    // Atualizar progresso
+                    const progress = ((fineTuneCombination / totalFinetuneCombinations) * 100).toFixed(1);
+                    document.getElementById('searchProgress').textContent = 
+                        `ETAPA 2: ${fineTuneCombination} de ${totalFinetuneCombinations} (${progress}%)`;
+                    
+                    // Processar páginas com esta configuração
+                    const testResults = await testConfiguration(currentConfig);
+                    
+                    if (testResults && testResults.avgQuality > bestScore) {
+                        bestScore = testResults.avgQuality;
+                        bestConfig = { ...currentConfig };
+                        
+                        // Atualizar display do melhor encontrado
+                        document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
+                        document.getElementById('bestConfig').textContent = 
+                            `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                        
+                        log(`🎯 ETAPA 2: Nova melhoria! ${(bestScore * 100).toFixed(1)}% - ${JSON.stringify(currentConfig)}`);
+                    }
+                    
+                    return;
+                }
+                
+                // Iterar sobre os valores de ajuste fino para o controle atual
+                const control = controls[controlIndex];
+                const values = finetuneRanges[control.id];
+                
+                if (!values || values.length === 0) {
+                    // Se não tem valores de ajuste fino, pular este controle
+                    await testFineTuneCombinations(controlIndex + 1, currentConfig);
+                    return;
+                }
+                
+                for (const value of values) {
+                    if (autoSearchCancelled) return;
+                    
+                    const newConfig = { ...currentConfig };
+                    newConfig[control.id] = value;
+                    
+                    await testFineTuneCombinations(controlIndex + 1, newConfig);
+                    
+                    // Pausa para não travar a interface
+                    if (fineTuneCombination % 10 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 3));
+                    }
+                }
+            }
+            
+            // Iniciar ajuste fino
+            await testFineTuneCombinations(0, {});
+            
+            if (bestConfig && bestScore > stage1Result.avgQuality) {
+                return {
+                    params: bestConfig,
+                    avgQuality: bestScore,
+                    pages: Math.min(3, originalPages.length)
+                };
+            }
+            
+            return null;
         }
 
         async function testConfiguration(params) {
@@ -1471,128 +1599,27 @@
             }
         }
 
-        async function fineTuneConfiguration(config, baseConfiguration) {
-            if (autoSearchCancelled) return;
+        async function applyBestConfiguration() {
+            if (!bestConfiguration) return;
             
-            log(`🔬 Ajuste Fino iniciado baseado em: Scale:${baseConfiguration.params.scale}, Contraste:${baseConfiguration.params.contrast}, Brilho:${baseConfiguration.params.brightness}`);
-            
-            const controls = config.controls;
-            let bestScore = baseConfiguration.avgQuality;
-            let bestFineTuned = { ...baseConfiguration };
-            
-            // Resetar contador para ajuste fino
-            const savedCombination = currentCombination;
-            currentCombination = 0;
-            
-            // Calcular combinações do ajuste fino
-            let fineTuneCombinations = 1;
-            controls.forEach(control => {
-                if (control.id === 'scale') return; // Scale continua fixo
+            // Aplicar parâmetros na interface
+            Object.keys(bestConfiguration.params).forEach(paramId => {
+                const value = bestConfiguration.params[paramId];
+                currentParams[paramId] = value;
                 
-                // ±2 steps = 5 valores máximo por parâmetro
-                fineTuneCombinations *= 5;
-            });
-            
-            document.getElementById('searchStatus').textContent = `Etapa 2: Ajuste Fino (${fineTuneCombinations} testes)`;
-            
-            // Função para gerar valores de ajuste fino
-            function getFineTuneValues(control, baseValue) {
-                const values = [];
-                const step = control.step;
+                const slider = document.getElementById(paramId);
+                const valueDisplay = document.getElementById(`${paramId}_value`);
                 
-                // Gerar ±2 steps ao redor do valor base
-                for (let i = -2; i <= 2; i++) {
-                    const value = baseValue + (i * step);
-                    // Só incluir se estiver dentro dos limites
-                    if (value >= control.min && value <= control.max) {
-                        values.push(parseFloat(value.toFixed(2)));
-                    }
-                }
-                
-                return values;
-            }
-            
-            // Gerar todas as combinações de ajuste fino
-            const fineTuneRanges = {};
-            controls.forEach(control => {
-                if (control.id === 'scale') {
-                    fineTuneRanges[control.id] = [baseConfiguration.params.scale]; // Fixo
-                } else {
-                    const baseValue = baseConfiguration.params[control.id];
-                    fineTuneRanges[control.id] = getFineTuneValues(control, baseValue);
-                    
-                    log(`🔧 ${control.label}: Testando ${fineTuneRanges[control.id].join(', ')} (base: ${baseValue})`);
+                if (slider && valueDisplay) {
+                    slider.value = value;
+                    valueDisplay.textContent = value;
                 }
             });
             
-            // Função recursiva para testar ajuste fino
-            async function testFineTuneCombinations(controlIndex, currentConfig) {
-                if (autoSearchCancelled) return;
-                
-                if (controlIndex >= controls.length) {
-                    // Testar esta combinação de ajuste fino
-                    currentCombination++;
-                    
-                    // Atualizar progresso
-                    const progress = ((currentCombination / fineTuneCombinations) * 100).toFixed(1);
-                    document.getElementById('searchProgress').textContent = 
-                        `Ajuste Fino: ${currentCombination} de ${fineTuneCombinations} (${progress}%)`;
-                    
-                    // Processar páginas com esta configuração refinada
-                    const testResults = await testConfiguration(currentConfig);
-                    
-                    if (testResults && testResults.avgQuality > bestScore) {
-                        bestScore = testResults.avgQuality;
-                        bestFineTuned = {
-                            params: { ...currentConfig },
-                            avgQuality: testResults.avgQuality,
-                            pages: testResults.pages
-                        };
-                        
-                        // Atualizar display do melhor encontrado
-                        document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
-                        document.getElementById('bestConfig').textContent = 
-                            `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
-                        
-                        log(`🎯 Ajuste Fino - Nova melhor: ${(bestScore * 100).toFixed(1)}% - Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`);
-                    }
-                    
-                    return;
-                }
-                
-                // Iterar sobre os valores de ajuste fino para o controle atual
-                const control = controls[controlIndex];
-                const values = fineTuneRanges[control.id];
-                
-                for (const value of values) {
-                    if (autoSearchCancelled) return;
-                    
-                    const newConfig = { ...currentConfig };
-                    newConfig[control.id] = value;
-                    
-                    await testFineTuneCombinations(controlIndex + 1, newConfig);
-                    
-                    // Pausa pequena
-                    if (currentCombination % 10 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 5));
-                    }
-                }
-            }
+            document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração...';
             
-            // Iniciar ajuste fino
-            await testFineTuneCombinations(0, {});
-            
-            // Atualizar melhor configuração se o ajuste fino encontrou algo melhor
-            if (bestFineTuned.avgQuality > baseConfiguration.avgQuality) {
-                bestConfiguration = bestFineTuned;
-                const improvement = ((bestFineTuned.avgQuality - baseConfiguration.avgQuality) * 100).toFixed(2);
-                log(`✨ Ajuste Fino melhorou em +${improvement}pts! Novo score: ${(bestFineTuned.avgQuality * 100).toFixed(1)}%`);
-            } else {
-                log(`📊 Ajuste Fino concluído. Configuração base já era ótima.`);
-            }
-            
-            // Restaurar contador
-            currentCombination = savedCombination;
+            // Processar todas as páginas com a melhor configuração
+            await applyProcessing();
         }
 
         function cancelAutoSearch() {
