@@ -100,10 +100,12 @@
         }
         
         .slider-value {
-            min-width: 35px;
+            min-width: 45px;
+            width: 45px;
             text-align: center;
             font-weight: bold;
             font-size: 0.8rem;
+            display: inline-block;
         }
         
         .param-checkbox {
@@ -834,6 +836,9 @@
                 const controlDiv = document.createElement('div');
                 controlDiv.className = 'control-group';
                 
+                // Apenas Scale marcado por padrão, demais desmarcados
+                const isChecked = control.id === 'scale' ? 'checked' : '';
+                
                 controlDiv.innerHTML = `
                     <label>${control.label}:</label>
                     <div class="slider-container">
@@ -845,7 +850,7 @@
                                step="${control.step}"
                                oninput="updateParam('${control.id}', this.value)">
                         <span class="slider-value" id="${control.id}_value">${control.value}</span>
-                        <input type="checkbox" class="param-checkbox" id="${control.id}_check" checked>
+                        <input type="checkbox" class="param-checkbox" id="${control.id}_check" ${isChecked}>
                     </div>
                 `;
                 
@@ -1424,7 +1429,7 @@
             
             // CONFIGURAÇÃO OTIMIZADA PARA BUSCA RÁPIDA
             const optimizedRanges = {
-                scale: [2.0], // FIXO EM 2
+                scale: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], // RANGE COMPLETO (antes era fixo em 2)
                 contrast: [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], // 9 valores principais
                 brightness: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100], // 11 valores (20 em 20)
                 blur: [], // Será preenchido baseado no tipo
@@ -1447,7 +1452,21 @@
                 }
             });
             
-            // Recalcular total de combinações com valores otimizados
+            // VERIFICAR CHECKBOXES - Se marcado, usar valor fixo do slider
+            controls.forEach(control => {
+                const checkbox = document.getElementById(`${control.id}_check`);
+                if (checkbox && checkbox.checked) {
+                    // Checkbox marcado = usar valor fixo atual do slider
+                    const slider = document.getElementById(control.id);
+                    if (slider) {
+                        const currentValue = parseFloat(slider.value);
+                        optimizedRanges[control.id] = [currentValue]; // Array com apenas 1 valor
+                        log(`🔒 ${control.id} travado em: ${currentValue} (checkbox marcado)`);
+                    }
+                }
+            });
+            
+            // Recalcular total de combinações com valores otimizados + checkboxes
             totalCombinations = 1;
             controls.forEach(control => {
                 const range = optimizedRanges[control.id];
@@ -1456,7 +1475,7 @@
                 }
             });
             
-            log(`🚀 Busca otimizada: ${totalCombinations.toLocaleString()} combinações (muito mais rápido!)`);
+            log(`🚀 Busca otimizada: ${totalCombinations.toLocaleString()} combinações (com checkboxes aplicados)`);
             
             // Função recursiva para testar todas as combinações OTIMIZADAS
             async function testOptimizedCombinations(controlIndex, currentConfig) {
@@ -1547,10 +1566,16 @@
                 const paramId = control.id;
                 const baseValue = baseParams[paramId];
                 
-                if (paramId === 'scale') {
-                    // Scale continua fixo
-                    finetuneRanges[paramId] = [baseValue];
-                    return;
+                // VERIFICAR CHECKBOX - Se marcado, usar valor fixo (não fazer ajuste fino)
+                const checkbox = document.getElementById(`${paramId}_check`);
+                if (checkbox && checkbox.checked) {
+                    const slider = document.getElementById(paramId);
+                    if (slider) {
+                        const currentValue = parseFloat(slider.value);
+                        finetuneRanges[paramId] = [currentValue]; // Valor fixo
+                        log(`🔒 ETAPA 2: ${paramId} mantém valor fixo: ${currentValue} (checkbox marcado)`);
+                        return; // Pula o ajuste fino para este parâmetro
+                    }
                 }
                 
                 if (baseValue === undefined) return;
@@ -1560,7 +1585,7 @@
                 const max = control.max;
                 const values = [];
                 
-                // Calcular ±2 steps ao redor do valor base
+                // Calcular ±2 steps ao redor do valor base (apenas se checkbox desmarcado)
                 for (let i = -2; i <= 2; i++) {
                     const testValue = baseValue + (i * step);
                     
@@ -1585,7 +1610,7 @@
             });
             
             if (totalFinetuneCombinations <= 1) {
-                log('⚠️ ETAPA 2: Nenhum ajuste fino possível (já nos limites)');
+                log('⚠️ ETAPA 2: Nenhum ajuste fino possível (parâmetros travados ou já nos limites)');
                 return null;
             }
             
