@@ -856,7 +856,12 @@
             // Arredondar para evitar decimais longos (max 2 casas)
             const roundedValue = Math.round(parseFloat(value) * 100) / 100;
             currentParams[paramId] = roundedValue;
-            document.getElementById(`${paramId}_value`).textContent = roundedValue;
+            
+            // Atualizar displays (podem estar duplicados no cabeçalho e no painel)
+            const valueDisplays = document.querySelectorAll(`#${paramId}_value`);
+            valueDisplays.forEach(display => {
+                display.textContent = roundedValue;
+            });
             
             // Atualizar qualidade se ainda não processou (mostra só original)
             if (originalPages.length > 0) {
@@ -1358,15 +1363,15 @@
         // Função para atualizar visual dos checkboxes
         function updateLockVisual(paramId) {
             const checkbox = document.getElementById(`${paramId}_lock`);
-            const label = document.querySelector(`label[for="${paramId}_lock"]`);
+            const lockIcon = checkbox ? checkbox.nextElementSibling : null;
             
-            if (checkbox && label) {
+            if (checkbox && lockIcon) {
                 if (checkbox.checked) {
-                    label.style.color = '#f39c12';
-                    label.textContent = `🔒 Travar ${paramId.charAt(0).toUpperCase() + paramId.slice(1)}`;
+                    lockIcon.style.color = '#f39c12';
+                    lockIcon.textContent = '🔒';
                 } else {
-                    label.style.color = '#bdc3c7';
-                    label.textContent = `🔓 Travar ${paramId.charAt(0).toUpperCase() + paramId.slice(1)}`;
+                    lockIcon.style.color = '#bdc3c7';
+                    lockIcon.textContent = '🔓';
                 }
             }
         }
@@ -1804,13 +1809,17 @@
                     const roundedValue = Math.round(value * 100) / 100;
                     currentParams[paramId] = roundedValue;
                     
-                    const slider = document.getElementById(paramId);
-                    const valueDisplay = document.getElementById(`${paramId}_value`);
-                    
-                    if (slider && valueDisplay) {
+                    // Atualizar sliders (podem estar no cabeçalho)
+                    const sliders = document.querySelectorAll(`#${paramId}`);
+                    sliders.forEach(slider => {
                         slider.value = roundedValue;
-                        valueDisplay.textContent = roundedValue;
-                    }
+                    });
+                    
+                    // Atualizar displays de valores (podem estar duplicados)
+                    const valueDisplays = document.querySelectorAll(`#${paramId}_value`);
+                    valueDisplays.forEach(display => {
+                        display.textContent = roundedValue;
+                    });
                 });
                 
                 // Mostrar configuração aplicada nos logs
