@@ -136,9 +136,45 @@
             color: white;
         }
         
-        .btn-success {
-            background: #27ae60;
+        .btn-auto {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
             color: white;
+        }
+        
+        .btn-auto:hover:not(:disabled) {
+            background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+        }
+        
+        /* PROGRESSO DE BUSCA AUTOMÁTICA */
+        .auto-search-progress {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 2000;
+            display: none;
+            min-width: 300px;
+        }
+        
+        .search-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid #9b59b6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        .search-stats {
+            font-size: 0.9rem;
+            margin-top: 15px;
+            color: #bdc3c7;
         }
         
         .btn:disabled {
@@ -562,6 +598,9 @@
                     🔄 APLICAR
                 </button>
                 <button class="btn btn-secondary" onclick="resetParams()">↺</button>
+                <button class="btn btn-auto" id="autoSearchBtn" onclick="startAutoSearch()" disabled>
+                    🔍 BUSCA AUTO
+                </button>
                 <button class="btn btn-success" id="saveConfigBtn" onclick="saveConfig()" disabled>💾</button>
             </div>
 
@@ -643,6 +682,21 @@
         </div>
     </div>
 
+    <!-- MODAL DE PROGRESSO DA BUSCA AUTOMÁTICA -->
+    <div class="auto-search-progress" id="autoSearchProgress">
+        <div class="search-spinner"></div>
+        <h3>🔍 Busca Automática</h3>
+        <p id="searchStatus">Iniciando busca...</p>
+        <div id="searchProgress">-</div>
+        <div class="search-stats">
+            <div>Melhor encontrado: <span id="bestScore">-</span></div>
+            <div>Configuração: <span id="bestConfig">-</span></div>
+        </div>
+        <button class="btn btn-secondary" onclick="cancelAutoSearch()" style="margin-top: 15px;">
+            ❌ Cancelar
+        </button>
+    </div>
+
     <!-- LOG AREA -->
     <div class="log-area" id="logArea">
         <div id="logContent"></div>
@@ -662,6 +716,13 @@
         let openCVReady = false;
         let isProcessing = false;
         let currentPageIndex = 0;
+        
+        // Variáveis da busca automática
+        let isAutoSearching = false;
+        let autoSearchCancelled = false;
+        let bestConfiguration = null;
+        let totalCombinations = 0;
+        let currentCombination = 0;
 
         // Configurações por tipo de documento - STEP CONTRASTE CORRIGIDO
         const DOC_TYPES = {
@@ -754,8 +815,9 @@
 
             log(`🔧 Tipo alterado para: ${config.name}`);
             
-            if (originalPages.length > 0 && !isProcessing) {
+            if (originalPages.length > 0 && !isProcessing && !isAutoSearching) {
                 document.getElementById('applyBtn').disabled = false;
+                document.getElementById('autoSearchBtn').disabled = false;
             }
         }
 
@@ -766,8 +828,9 @@
             // Atualizar qualidade se ainda não processou (mostra só original)
             if (originalPages.length > 0) {
                 updateQualityDisplay();
-                if (!isProcessing) {
+                if (!isProcessing && !isAutoSearching) {
                     document.getElementById('applyBtn').disabled = false;
+                    document.getElementById('autoSearchBtn').disabled = false;
                 }
             }
         }
@@ -848,6 +911,7 @@
                 displayCurrentPage();
                 updateQualityDisplay(); // Mostrar qualidade original
                 document.getElementById('applyBtn').disabled = false;
+                document.getElementById('autoSearchBtn').disabled = false; // Habilitar busca automática
                 
                 log(`✅ ${totalPages} páginas carregadas com sucesso`);
                 
@@ -975,10 +1039,11 @@
         }
 
         async function applyProcessing() {
-            if (isProcessing || originalPages.length === 0) return;
+            if (isProcessing || isAutoSearching || originalPages.length === 0) return;
 
             isProcessing = true;
             document.getElementById('applyBtn').disabled = true;
+            document.getElementById('autoSearchBtn').disabled = true;
             document.getElementById('applyBtn').textContent = '⏳ Processando...';
 
             log('🔄 Iniciando processamento com parâmetros personalizados...');
@@ -1009,6 +1074,7 @@
 
             isProcessing = false;
             document.getElementById('applyBtn').disabled = false;
+            document.getElementById('autoSearchBtn').disabled = false;
             document.getElementById('applyBtn').textContent = '🔄 APLICAR';
             document.getElementById('systemStatus').textContent = 'Processamento concluído - Compare lado a lado';
         }
@@ -1144,6 +1210,184 @@
         function resetParams() {
             changeDocumentType();
             log('↺ Parâmetros resetados para padrão');
+        }
+
+        async function startAutoSearch() {
+            if (isAutoSearching || originalPages.length === 0) return;
+
+            log('🔍 Iniciando busca automática pelos melhores parâmetros...');
+            
+            isAutoSearching = true;
+            autoSearchCancelled = false;
+            bestConfiguration = null;
+            currentCombination = 0;
+            
+            // Desabilitar controles
+            document.getElementById('applyBtn').disabled = true;
+            document.getElementById('autoSearchBtn').disabled = true;
+            document.getElementById('saveConfigBtn').disabled = true;
+            
+            // Mostrar modal de progresso
+            document.getElementById('autoSearchProgress').style.display = 'block';
+            
+            // Obter configurações do tipo atual
+            const docType = document.getElementById('docType').value;
+            const config = DOC_TYPES[docType];
+            
+            // Calcular total de combinações
+            totalCombinations = 1;
+            config.controls.forEach(control => {
+                const steps = Math.round((control.max - control.min) / control.step) + 1;
+                totalCombinations *= steps;
+            });
+            
+            document.getElementById('searchStatus').textContent = `Calculando ${totalCombinations.toLocaleString()} combinações...`;
+            
+            try {
+                await searchBestConfiguration(config);
+                
+                if (!autoSearchCancelled && bestConfiguration) {
+                    // Aplicar melhor configuração encontrada
+                    await applyBestConfiguration();
+                    log(`✅ Busca concluída! Melhor score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                } else if (autoSearchCancelled) {
+                    log('❌ Busca automática cancelada pelo usuário');
+                } else {
+                    log('⚠️ Nenhuma melhoria encontrada');
+                }
+            } catch (error) {
+                log(`❌ Erro na busca automática: ${error.message}`);
+                alert('Erro durante a busca automática.');
+            }
+            
+            // Esconder modal e reabilitar controles
+            document.getElementById('autoSearchProgress').style.display = 'none';
+            isAutoSearching = false;
+            document.getElementById('applyBtn').disabled = false;
+            document.getElementById('autoSearchBtn').disabled = false;
+            document.getElementById('saveConfigBtn').disabled = false;
+        }
+
+        async function searchBestConfiguration(config) {
+            const controls = config.controls;
+            let bestScore = 0;
+            
+            // Função recursiva para testar todas as combinações
+            async function testCombinations(controlIndex, currentConfig) {
+                if (autoSearchCancelled) return;
+                
+                if (controlIndex >= controls.length) {
+                    // Testar esta combinação
+                    currentCombination++;
+                    
+                    // Atualizar progresso
+                    const progress = ((currentCombination / totalCombinations) * 100).toFixed(1);
+                    document.getElementById('searchProgress').textContent = 
+                        `${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
+                    
+                    // Processar páginas com esta configuração
+                    const testResults = await testConfiguration(currentConfig);
+                    
+                    if (testResults && testResults.avgQuality > bestScore) {
+                        bestScore = testResults.avgQuality;
+                        bestConfiguration = {
+                            params: { ...currentConfig },
+                            avgQuality: testResults.avgQuality,
+                            pages: testResults.pages
+                        };
+                        
+                        // Atualizar display do melhor encontrado
+                        document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
+                        document.getElementById('bestConfig').textContent = 
+                            `Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                        
+                        log(`🎯 Nova melhor configuração: ${(bestScore * 100).toFixed(1)}% - Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`);
+                    }
+                    
+                    return;
+                }
+                
+                // Iterar sobre todos os valores possíveis para o controle atual
+                const control = controls[controlIndex];
+                for (let value = control.min; value <= control.max; value += control.step) {
+                    if (autoSearchCancelled) return;
+                    
+                    const newConfig = { ...currentConfig };
+                    newConfig[control.id] = parseFloat(value.toFixed(2)); // Evitar problemas de precisão float
+                    
+                    await testCombinations(controlIndex + 1, newConfig);
+                    
+                    // Pequena pausa para não travar a interface
+                    if (currentCombination % 50 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                }
+            }
+            
+            // Iniciar busca
+            await testCombinations(0, {});
+        }
+
+        async function testConfiguration(params) {
+            try {
+                let totalQuality = 0;
+                let totalWeight = 0;
+                let processedCount = 0;
+                
+                // Testar apenas as primeiras 3 páginas para acelerar (representativo)
+                const pagesToTest = Math.min(3, originalPages.length);
+                
+                for (let i = 0; i < pagesToTest; i++) {
+                    const page = originalPages[i];
+                    const processedCanvas = applyExtremeProcessing(page.canvas, params);
+                    const quality = analyzePageQuality(processedCanvas);
+                    
+                    // Peso baseado na qualidade original (páginas com mais conteúdo têm mais peso)
+                    const weight = Math.max(0.5, page.quality * 2);
+                    totalQuality += quality * weight;
+                    totalWeight += weight;
+                    processedCount++;
+                }
+                
+                if (processedCount === 0) return null;
+                
+                return {
+                    avgQuality: totalQuality / totalWeight,
+                    pages: processedCount
+                };
+                
+            } catch (error) {
+                console.error('Erro ao testar configuração:', error);
+                return null;
+            }
+        }
+
+        async function applyBestConfiguration() {
+            if (!bestConfiguration) return;
+            
+            // Aplicar parâmetros na interface
+            Object.keys(bestConfiguration.params).forEach(paramId => {
+                const value = bestConfiguration.params[paramId];
+                currentParams[paramId] = value;
+                
+                const slider = document.getElementById(paramId);
+                const valueDisplay = document.getElementById(`${paramId}_value`);
+                
+                if (slider && valueDisplay) {
+                    slider.value = value;
+                    valueDisplay.textContent = value;
+                }
+            });
+            
+            document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração...';
+            
+            // Processar todas as páginas com a melhor configuração
+            await applyProcessing();
+        }
+
+        function cancelAutoSearch() {
+            autoSearchCancelled = true;
+            log('🛑 Cancelando busca automática...');
         }
 
         function saveConfig() {
