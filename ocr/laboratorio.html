@@ -1329,6 +1329,32 @@
             document.getElementById('saveConfigBtn').disabled = false;
         }
 
+        // Função para verificar se um parâmetro está travado
+        function isParameterLocked(paramId) {
+            const lockCheckbox = document.getElementById(`${paramId}_lock`);
+            return lockCheckbox && lockCheckbox.checked;
+        }
+
+        // Função para obter parâmetros que podem variar (não travados)
+        function getVariableParameters() {
+            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
+            return allParams.filter(param => !isParameterLocked(param));
+        }
+
+        // Função para obter configuração base (valores atuais dos parâmetros travados)
+        function getLockedConfiguration() {
+            const config = {};
+            const allParams = ['scale', 'contrast', 'brightness', 'blur', 'denoise'];
+            
+            allParams.forEach(param => {
+                if (isParameterLocked(param)) {
+                    config[param] = currentParams[param];
+                }
+            });
+            
+            return config;
+        }
+
         // Função para formatar configuração de forma organizada
         function formatConfiguration(config, prefix = '') {
             const parts = [];
