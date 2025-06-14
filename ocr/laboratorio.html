@@ -1849,6 +1849,37 @@
         }
 
         
+
+function downloadImages() {
+    if (processedPages.length === 0) {
+        alert('Nenhuma imagem processada para download. Clique em "APLICAR" primeiro.');
+        return;
+    }
+
+    log('📥 Iniciando download das imagens processadas...');
+    
+    // Download apenas das páginas processadas
+    processedPages.forEach((page, index) => {
+        const link = document.createElement('a');
+        link.href = page.imageUrl;
+        link.download = `pdffacil_processado_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => {}, index * 100);
+    });
+
+    log(`✅ Download concluído: ${processedPages.length} imagens processadas`);
+}
+
+
+
+
+
+
+
+
        // MÉTRICAS CIENTÍFICAS VALIDADAS - BRISQUE + SSIM + PSNR
         function analyzePageQuality(canvas) {
             const ctx = canvas.getContext('2d');
