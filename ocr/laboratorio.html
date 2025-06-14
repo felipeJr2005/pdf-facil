@@ -1837,11 +1837,8 @@
             log('💾 Configuração salva com sucesso!');
         }
 
-        // Análise de qualidade NORMALIZADA PARA DIFERENTES RESOLUÇÕES
-       
         
-
-         // MÉTRICAS CIENTÍFICAS VALIDADAS - BRISQUE + SSIM + PSNR
+       // MÉTRICAS CIENTÍFICAS VALIDADAS - BRISQUE + SSIM + PSNR
         function analyzePageQuality(canvas) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1872,10 +1869,8 @@
             
             return Math.min(1.0, Math.max(0.1, finalScore));
         }
-
         
-        
-       // BRISQUE-LITE: Natural Scene Statistics (baseado em paper científico)
+        // BRISQUE-LITE: Natural Scene Statistics (baseado em paper científico)
         function calculateBRISQUELite(grayscale, width, height) {
             // MSCN - Mean Subtracted Contrast Normalization (core do BRISQUE)
             const mscn = new Array(width * height);
@@ -1919,10 +1914,8 @@
             const gaussianness = 1 / (1 + kurtosis + skewness);
             return Math.min(1.0, gaussianness * 1.5); // Normalizar para 0-1
         }
-
-
-
-         // SSIM-LITE: Structural Similarity Index (baseado em paper de Wang et al.)
+        
+        // SSIM-LITE: Structural Similarity Index (baseado em paper de Wang et al.)
         function calculateSSIMLite(grayscale, width, height) {
             // Dividir imagem em blocos 8x8 para análise local
             const blockSize = 8;
@@ -1969,9 +1962,8 @@
             
             return blockCount > 0 ? totalSSIM / blockCount : 0.5;
         }
-
         
-       // PSNR-LITE: Peak Signal-to-Noise Ratio (métrica clássica ainda dominante)
+        // PSNR-LITE: Peak Signal-to-Noise Ratio (métrica clássica ainda dominante)
         function calculatePSNRLite(grayscale, width, height) {
             // Simular imagem "ideal" baseada em suavização
             const ideal = new Array(grayscale.length);
@@ -2017,9 +2009,10 @@
             const normalizedPSNR = Math.min(1.0, Math.max(0.0, (psnr - 20) / 20));
             
             return normalizedPSNR;
-        } 
+        }
         
 
+       
         function log(message) {
             const logContent = document.getElementById('logContent');
             const timestamp = new Date().toLocaleTimeString();
