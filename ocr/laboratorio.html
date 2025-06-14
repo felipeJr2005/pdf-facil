@@ -4,18 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDFFacil - Laboratório OpenCV Full Screen</title>
-    <!-- 
-    ✅ VERSÃO TOTALMENTE CORRIGIDA - Auto Melhoramento 100% FUNCIONANDO
-    🔧 Correções implementadas:
-    - testConfiguration() usando applyExtremeProcessing() REAL
-    - performStage1Search() com loops diretos (sem recursão complexa)
-    - performStage2FineTuning() com loops diretos (sem recursão complexa)  
-    - Funções recursivas internas removidas
-    - Logs detalhados para debug completo
-    - Métricas científicas REAIS unificadas em todo sistema
-    - Verificações de erro robustas
-    - Sistema de busca 2 etapas totalmente funcional
-    -->
     <style>
         * {
             margin: 0;
@@ -820,78 +808,9 @@
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             log('🚀 PDFFacil Laboratório Full Screen inicializado');
-            log('🔬 Sistema unificado: Métricas científicas REAIS (Contraste Michelson + Variância Laplaciano + Uniformidade)');
-            
-            // Verificar se PDF.js está carregado
-            if (typeof pdfjsLib === 'undefined') {
-                log('❌ PDF.js não carregado - recarregue a página');
-                alert('Erro: PDF.js não foi carregado. Recarregue a página.');
-                return;
-            }
-            
-            log('✅ PDF.js detectado e configurado');
-            
-            // Verificar se startAutoSearch está disponível
-            setTimeout(() => {
-                if (typeof startAutoSearch === 'function') {
-                    log('✅ Função startAutoSearch disponível');
-                    
-                    // Testar se o botão existe e tem o onclick
-                    const autoBtn = document.getElementById('autoSearchBtn');
-                    if (autoBtn) {
-                        log('✅ Botão autoSearchBtn encontrado');
-                        log(`🔧 Onclick do botão: ${autoBtn.getAttribute('onclick')}`);
-                        
-                        // Configurar teste de clique para verificar
-                        autoBtn.addEventListener('click', function() {
-                            log('🔥 CLIQUE DETECTADO no botão AUTO COMPLETO');
-                        });
-                        
-                    } else {
-                        log('❌ Botão autoSearchBtn NÃO encontrado');
-                    }
-                } else {
-                    log('❌ Função startAutoSearch NÃO disponível');
-                }
-                
-                log('🔧 COMANDOS DISPONÍVEIS no console:');
-                log('   debugSystem() - estado completo');
-                log('   testAutoSearch() - forçar busca');
-                log('   forceAutoSearch() - bypass verificações');
-            }, 200);
-            
             initializeOpenCV();
             changeDocumentType();
             setupDragDrop();
-            
-            // Configurar listeners adicionais para os botões (backup do onclick)
-            setTimeout(() => {
-                const autoBtn = document.getElementById('autoSearchBtn');
-                if (autoBtn) {
-                    autoBtn.addEventListener('click', function() {
-                        log('🔥 Botão AUTO clicado via addEventListener');
-                        if (!autoBtn.disabled) {
-                            startAutoSearch();
-                        } else {
-                            log('⚠️ Botão AUTO está desabilitado');
-                        }
-                    });
-                    log('✅ Listener adicional configurado para botão AUTO');
-                }
-                
-                const applyBtn = document.getElementById('applyBtn');
-                if (applyBtn) {
-                    applyBtn.addEventListener('click', function() {
-                        log('🔥 Botão APLICAR clicado via addEventListener');
-                        if (!applyBtn.disabled) {
-                            applyProcessing();
-                        } else {
-                            log('⚠️ Botão APLICAR está desabilitado');
-                        }
-                    });
-                    log('✅ Listener adicional configurado para botão APLICAR');
-                }
-            }, 100);
         });
 
         function initializeOpenCV() {
@@ -941,13 +860,9 @@
 
             log(`🔧 Tipo alterado para: ${config.name}`);
             
-            // Verificar se pode habilitar botões
             if (originalPages.length > 0 && !isProcessing && !isAutoSearching) {
                 document.getElementById('applyBtn').disabled = false;
                 document.getElementById('autoSearchBtn').disabled = false;
-                log('✅ Botões habilitados - Pronto para processar');
-            } else {
-                log(`⚠️ Botões não habilitados - Páginas: ${originalPages.length}, Processando: ${isProcessing}, Buscando: ${isAutoSearching}`);
             }
         }
 
@@ -992,52 +907,22 @@
 
         async function handleFileSelect(event) {
             const file = event.target.files[0];
-            if (!file) {
-                log('❌ Nenhum arquivo selecionado');
-                return;
-            }
+            if (!file) return;
 
             if (file.type !== 'application/pdf') {
                 alert('Por favor, selecione um arquivo PDF válido.');
-                log('❌ Arquivo não é PDF');
                 return;
             }
 
             log(`📄 PDF selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             
-            try {
-                showLoading();
-                
-                const fileReader = new FileReader();
-                fileReader.onload = async function() {
-                    try {
-                        log('📄 Arquivo lido, iniciando processamento PDF...');
-                        await loadPDF(new Uint8Array(this.result));
-                    } catch (error) {
-                        log(`❌ Erro ao processar PDF: ${error.message}`);
-                        console.error('Erro no processamento:', error);
-                        alert('Erro ao processar o PDF.');
-                        document.getElementById('loadingArea').style.display = 'none';
-                        document.getElementById('uploadSection').style.display = 'flex';
-                    }
-                };
-                
-                fileReader.onerror = function() {
-                    log('❌ Erro ao ler arquivo');
-                    alert('Erro ao ler o arquivo.');
-                    document.getElementById('loadingArea').style.display = 'none';
-                    document.getElementById('uploadSection').style.display = 'flex';
-                };
-                
-                fileReader.readAsArrayBuffer(file);
-                
-            } catch (error) {
-                log(`❌ Erro geral: ${error.message}`);
-                console.error('Erro geral:', error);
-                alert('Erro ao processar o arquivo.');
-                document.getElementById('loadingArea').style.display = 'none';
-                document.getElementById('uploadSection').style.display = 'flex';
-            }
+            showLoading();
+            
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                await loadPDF(new Uint8Array(this.result));
+            };
+            fileReader.readAsArrayBuffer(file);
         }
 
         function showLoading() {
@@ -1054,15 +939,7 @@
 
         async function loadPDF(pdfData) {
             try {
-                log('📄 Iniciando carregamento do PDF...');
-                
-                // Timeout para evitar travamento
-                const pdfPromise = pdfjsLib.getDocument(pdfData).promise;
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout no carregamento do PDF')), 30000)
-                );
-                
-                pdfDocument = await Promise.race([pdfPromise, timeoutPromise]);
+                pdfDocument = await pdfjsLib.getDocument(pdfData).promise;
                 const totalPages = Math.min(pdfDocument.numPages, 8);
                 
                 log(`📊 PDF carregado: ${totalPages} páginas para análise`);
@@ -1073,81 +950,21 @@
                 
                 for (let i = 1; i <= totalPages; i++) {
                     document.getElementById('loadingText').textContent = `Carregando página ${i}/${totalPages}...`;
-                    
-                    // Timeout por página também
-                    try {
-                        await Promise.race([
-                            loadOriginalPage(i),
-                            new Promise((_, reject) => 
-                                setTimeout(() => reject(new Error(`Timeout na página ${i}`)), 10000)
-                            )
-                        ]);
-                        log(`✅ Página ${i}/${totalPages} carregada`);
-                    } catch (pageError) {
-                        log(`⚠️ Erro na página ${i}: ${pageError.message} - Continuando...`);
-                    }
+                    await loadOriginalPage(i);
                 }
-                
-                if (originalPages.length === 0) {
-                    throw new Error('Nenhuma página foi carregada com sucesso');
-                }
-                
-                log(`✅ ${originalPages.length}/${totalPages} páginas carregadas`);
                 
                 setupPageNavigation();
                 showViewer();
                 displayCurrentPage();
                 updateQualityDisplay(); // Mostrar qualidade original
+                document.getElementById('applyBtn').disabled = false;
+                document.getElementById('autoSearchBtn').disabled = false; // Habilitar busca automática
                 
-                // Habilitar botões com logs
-                const applyBtn = document.getElementById('applyBtn');
-                const autoBtn = document.getElementById('autoSearchBtn');
-                
-                if (applyBtn) {
-                    applyBtn.disabled = false;
-                    log('✅ Botão APLICAR habilitado');
-                } else {
-                    log('❌ Botão APLICAR não encontrado');
-                }
-                
-                if (autoBtn) {
-                    autoBtn.disabled = false;
-                    log('✅ Botão AUTO COMPLETO habilitado');
-                } else {
-                    log('❌ Botão AUTO COMPLETO não encontrado');
-                }
-                
-                log(`✅ Interface pronta! ${originalPages.length} páginas disponíveis`);
-                log(`🎯 Estado final: Processar=${!applyBtn?.disabled}, AutoBusca=${!autoBtn?.disabled}`);
-                
-                // Testar disponibilidade da busca automática
-                setTimeout(() => {
-                    const available = testAutoSearchAvailability();
-                    if (available) {
-                        log('🎉 === BUSCA AUTOMÁTICA PRONTA E CORRIGIDA ===');
-                        log('🔧 Sistema usando loops diretos (sem recursão complexa)');
-                        log('🔬 Métricas científicas reais em todas as funções');
-                        log('✅ testConfiguration() corrigida');
-                        log('✅ performStage1Search() corrigida');  
-                        log('✅ performStage2FineTuning() corrigida');
-                        log('🚀 Pronto para uso!');
-                    } else {
-                        log('⚠️ Problema detectado - use debugSystem() para investigar');
-                    }
-                }, 500);
+                log(`✅ ${totalPages} páginas carregadas com sucesso`);
                 
             } catch (error) {
                 log(`❌ Erro ao carregar PDF: ${error.message}`);
-                console.error('Erro detalhado:', error);
-                
-                let errorMsg = 'Erro ao carregar o PDF.';
-                if (error.message.includes('Timeout')) {
-                    errorMsg = 'Timeout no carregamento. O PDF pode estar muito grande ou corrompido.';
-                } else if (error.message.includes('Invalid PDF')) {
-                    errorMsg = 'Arquivo PDF inválido ou corrompido.';
-                }
-                
-                alert(errorMsg);
+                alert('Erro ao carregar o PDF. Verifique se o arquivo não está corrompido.');
                 document.getElementById('loadingArea').style.display = 'none';
                 document.getElementById('uploadSection').style.display = 'flex';
             }
@@ -1155,7 +972,6 @@
 
         async function loadOriginalPage(pageNum) {
             try {
-                log(`📄 Carregando página ${pageNum}...`);
                 const page = await pdfDocument.getPage(pageNum);
                 const scale = 2;
                 const viewport = page.getViewport({ scale });
@@ -1165,31 +981,22 @@
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
-                log(`📄 Renderizando página ${pageNum} (${canvas.width}x${canvas.height})...`);
                 await page.render({
                     canvasContext: context,
                     viewport: viewport
                 }).promise;
 
-                log(`🔬 Analisando qualidade da página ${pageNum}...`);
-                // USAR ANÁLISE REAL - converter canvas para imageData
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const quality = analyzeImageQuality(imageData);
-
-                const imageUrl = canvas.toDataURL('image/jpeg', 0.95);
-                log(`✅ Página ${pageNum} processada - Qualidade: ${(quality * 100).toFixed(1)}%`);
+                const quality = analyzePageQuality(canvas);
 
                 originalPages.push({
                     pageNum,
                     canvas,
                     quality,
-                    imageUrl: imageUrl
+                    imageUrl: canvas.toDataURL('image/jpeg', 0.95)
                 });
 
             } catch (error) {
                 log(`❌ Erro na página ${pageNum}: ${error.message}`);
-                console.error(`Erro detalhado página ${pageNum}:`, error);
-                // Não interromper o carregamento por uma página com erro
             }
         }
 
@@ -1207,48 +1014,27 @@
         }
 
         function displayCurrentPage() {
-            if (originalPages.length === 0) {
-                log('⚠️ Nenhuma página carregada para exibir');
-                return;
+            if (originalPages.length === 0) return;
+            
+            const currentPage = originalPages[currentPageIndex];
+            const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
+            
+            // Sempre mostrar imagem original
+            document.getElementById('originalPanel').src = currentPage.imageUrl;
+            
+            if (!processedPage) {
+                // Mostrar placeholder no painel processado
+                document.getElementById('placeholderState').style.display = 'flex';
+                document.getElementById('processedPanel').style.display = 'none';
+            } else {
+                // Mostrar imagem processada
+                document.getElementById('placeholderState').style.display = 'none';
+                document.getElementById('processedPanel').style.display = 'block';
+                document.getElementById('processedPanel').src = processedPage.imageUrl;
             }
             
-            try {
-                const currentPage = originalPages[currentPageIndex];
-                const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
-                
-                // Sempre mostrar imagem original
-                const originalImg = document.getElementById('originalPanel');
-                if (originalImg && currentPage.imageUrl) {
-                    originalImg.src = currentPage.imageUrl;
-                    originalImg.style.display = 'block';
-                    log(`📷 Exibindo página original ${currentPage.pageNum}`);
-                }
-                
-                if (!processedPage) {
-                    // Mostrar placeholder no painel processado
-                    const placeholder = document.getElementById('placeholderState');
-                    const processedImg = document.getElementById('processedPanel');
-                    if (placeholder) placeholder.style.display = 'flex';
-                    if (processedImg) processedImg.style.display = 'none';
-                } else {
-                    // Mostrar imagem processada
-                    const placeholder = document.getElementById('placeholderState');
-                    const processedImg = document.getElementById('processedPanel');
-                    if (placeholder) placeholder.style.display = 'none';
-                    if (processedImg) {
-                        processedImg.style.display = 'block';
-                        processedImg.src = processedPage.imageUrl;
-                        log(`📷 Exibindo página processada ${processedPage.pageNum}`);
-                    }
-                }
-                
-                updateNavigation();
-                updatePageInfo();
-                
-            } catch (error) {
-                log(`❌ Erro ao exibir página: ${error.message}`);
-                console.error('Erro na exibição:', error);
-            }
+            updateNavigation();
+            updatePageInfo();
         }
 
         function updateNavigation() {
@@ -1377,11 +1163,7 @@
             try {
                 // PROCESSAMENTO PERSONALIZADO
                 const processedCanvas = applyExtremeProcessing(originalPage.canvas, currentParams);
-                
-                // USAR ANÁLISE REAL - converter canvas para imageData
-                const ctx = processedCanvas.getContext('2d');
-                const imageData = ctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
-                const quality = analyzeImageQuality(imageData);
+                const quality = analyzePageQuality(processedCanvas);
 
                 processedPages.push({
                     pageNum: originalPage.pageNum,
@@ -1509,26 +1291,9 @@
         }
 
         async function startAutoSearch() {
-            log('🎯 === INÍCIO BUSCA AUTOMÁTICA ===');
-            log('🔍 Verificando pré-requisitos...');
-            
-            if (isAutoSearching) {
-                log('⚠️ Busca já em andamento - cancelando nova tentativa');
-                return;
-            }
-            
-            if (originalPages.length === 0) {
-                log('❌ Erro: Nenhuma página carregada para busca automática');
-                alert('Carregue um PDF primeiro antes de usar a busca automática.');
-                return;
-            }
+            if (isAutoSearching || originalPages.length === 0) return;
 
-            log(`📊 ✅ ${originalPages.length} páginas carregadas`);
-            log(`🔧 ✅ Função testConfiguration disponível: ${typeof testConfiguration === 'function'}`);
-            log(`🔧 ✅ Função applyExtremeProcessing disponível: ${typeof applyExtremeProcessing === 'function'}`);
-            log(`🔧 ✅ Função analyzeImageQuality disponível: ${typeof analyzeImageQuality === 'function'}`);
-            
-            log('🚀 INICIANDO busca automática 2 etapas...');
+            log('🔍 Iniciando busca automática pelos melhores parâmetros...');
             
             isAutoSearching = true;
             autoSearchCancelled = false;
@@ -1536,65 +1301,46 @@
             currentCombination = 0;
             
             // Desabilitar controles
-            const applyBtn = document.getElementById('applyBtn');
-            const autoBtn = document.getElementById('autoSearchBtn');
-            const saveBtn = document.getElementById('saveConfigBtn');
-            
-            if (applyBtn) { applyBtn.disabled = true; log('🔒 Botão APLICAR desabilitado'); }
-            if (autoBtn) { autoBtn.disabled = true; log('🔒 Botão AUTO desabilitado'); }
-            if (saveBtn) { saveBtn.disabled = true; log('🔒 Botão SALVAR desabilitado'); }
+            document.getElementById('applyBtn').disabled = true;
+            document.getElementById('autoSearchBtn').disabled = true;
+            document.getElementById('saveConfigBtn').disabled = true;
             
             // Mostrar modal de progresso
-            const modal = document.getElementById('autoSearchProgress');
-            if (modal) {
-                modal.style.display = 'block';
-                log('✅ Modal de progresso exibido');
-            } else {
-                log('❌ Modal de progresso não encontrado');
-            }
+            document.getElementById('autoSearchProgress').style.display = 'block';
             
             // Obter configurações do tipo atual
             const docType = document.getElementById('docType').value;
             const config = DOC_TYPES[docType];
             
-            log(`🔧 Usando configuração do tipo: ${docType} (${config.controls.length} controles)`);
             document.getElementById('searchStatus').textContent = `Preparando busca em 2 etapas...`;
             
             try {
-                log('🚀 Chamando searchBestConfiguration...');
                 await searchBestConfiguration(config);
                 
                 if (!autoSearchCancelled && bestConfiguration) {
-                    log('✅ Melhor configuração encontrada - aplicando...');
+                    // Aplicar melhor configuração encontrada E PROCESSAR AUTOMATICAMENTE
                     document.getElementById('searchStatus').textContent = 'Aplicando e processando melhor configuração...';
                     await applyBestConfiguration();
-                    log(`🎉 SUCESSO! Score final: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                    log(`✅ Busca 2 etapas concluída! Melhor score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+                    log(`🎉 Processamento automático finalizado!`);
                 } else if (autoSearchCancelled) {
                     log('❌ Busca automática cancelada pelo usuário');
                 } else {
                     log('⚠️ Nenhuma melhoria encontrada nas 2 etapas');
                 }
             } catch (error) {
-                log(`❌ ERRO na busca automática: ${error.message}`);
-                console.error('Stack completo do erro:', error);
-                alert('Erro durante a busca automática: ' + error.message);
+                log(`❌ Erro na busca automática: ${error.message}`);
+                alert('Erro durante a busca automática.');
             }
             
-            // Limpar interface
-            if (modal) {
-                modal.style.display = 'none';
-                log('✅ Modal de progresso ocultado');
-            }
-            
+            // Esconder modal ANTES de processar
+            document.getElementById('autoSearchProgress').style.display = 'none';
             isAutoSearching = false;
-            log('✅ Flag isAutoSearching resetada');
             
             // Reabilitar controles
-            if (applyBtn) { applyBtn.disabled = false; log('🔓 Botão APLICAR reabilitado'); }
-            if (autoBtn) { autoBtn.disabled = false; log('🔓 Botão AUTO reabilitado'); }
-            if (saveBtn) { saveBtn.disabled = false; log('🔓 Botão SALVAR reabilitado'); }
-            
-            log('🎯 === FIM BUSCA AUTOMÁTICA ===');
+            document.getElementById('applyBtn').disabled = false;
+            document.getElementById('autoSearchBtn').disabled = false;
+            document.getElementById('saveConfigBtn').disabled = false;
         }
 
         // Função para formatar configuração de forma organizada
@@ -1623,71 +1369,56 @@
         }
 
         async function searchBestConfiguration(config) {
-            log('🔍 === INÍCIO searchBestConfiguration ===');
-            
             const controls = config.controls;
             let bestScore = 0;
             
             // ETAPA 1: BUSCA PRINCIPAL OTIMIZADA
-            log('🚀 Iniciando ETAPA 1: Busca principal otimizada...');
+            log('🚀 ETAPA 1: Busca principal otimizada...');
             document.getElementById('searchStatus').textContent = 'ETAPA 1: Busca principal...';
             
-            try {
-                const stage1Result = await performStage1Search(config);
+            const stage1Result = await performStage1Search(config);
+            
+            if (!stage1Result || autoSearchCancelled) return;
+            
+            bestConfiguration = stage1Result;
+            bestScore = stage1Result.avgQuality;
+            
+            log(`✅ ETAPA 1 concluída! Melhor: ${(bestScore * 100).toFixed(1)}%`);
+            
+            // MOSTRAR RESULTADO DA ETAPA 1 NO MODAL
+            const stage1ConfigText = formatConfiguration(stage1Result.params, '');
+            document.getElementById('stage1Config').textContent = stage1ConfigText;
+            document.getElementById('stage1Score').textContent = `Score: ${(bestScore * 100).toFixed(1)}%`;
+            document.getElementById('stage1Result').style.display = 'block';
+            
+            // Atualizar também o resultado geral
+            const stage1ConfigTextGeneral = formatConfiguration(stage1Result.params, '✅ ETAPA 1');
+            document.getElementById('bestConfig').textContent = stage1ConfigTextGeneral;
+            
+            // Pausa para o usuário ver o resultado da ETAPA 1
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // ETAPA 2: AJUSTE FINO
+            log('🔍 ETAPA 2: Ajuste fino ±2 steps...');
+            document.getElementById('searchStatus').textContent = 'ETAPA 2: Ajuste fino baseado na ETAPA 1...';
+            
+            const stage2Result = await performStage2FineTuning(config, stage1Result);
+            
+            if (stage2Result && stage2Result.avgQuality >= bestScore) {
+                bestConfiguration = stage2Result;
+                bestScore = stage2Result.avgQuality;
+                log(`🎯 ETAPA 2: Resultado final! ${(bestScore * 100).toFixed(1)}%`);
+                const finalConfigText = formatConfiguration(stage2Result.params, '🎯 FINAL ETAPA 2');
+                document.getElementById('bestConfig').textContent = finalConfigText;
                 
-                if (!stage1Result || autoSearchCancelled) {
-                    log('❌ ETAPA 1 falhou ou foi cancelada');
-                    return;
-                }
+                // Atualizar score global
+                document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
+            } else {
+                log('📊 ETAPA 2: Manteve resultado da ETAPA 1');
+                const finalConfigText = formatConfiguration(stage1Result.params, '✅ FINAL = ETAPA 1');
+                document.getElementById('bestConfig').textContent = finalConfigText;
                 
-                bestConfiguration = stage1Result;
-                bestScore = stage1Result.avgQuality;
-                
-                log(`✅ ETAPA 1 concluída! Melhor: ${(bestScore * 100).toFixed(1)}%`);
-                log(`🔧 Melhor config ETAPA 1: ${JSON.stringify(stage1Result.params)}`);
-                
-                // MOSTRAR RESULTADO DA ETAPA 1 NO MODAL
-                const stage1ConfigText = formatConfiguration(stage1Result.params, '');
-                document.getElementById('stage1Config').textContent = stage1ConfigText;
-                document.getElementById('stage1Score').textContent = `Score: ${(bestScore * 100).toFixed(1)}%`;
-                document.getElementById('stage1Result').style.display = 'block';
-                
-                // Atualizar também o resultado geral
-                const stage1ConfigTextGeneral = formatConfiguration(stage1Result.params, '✅ ETAPA 1');
-                document.getElementById('bestConfig').textContent = stage1ConfigTextGeneral;
-                
-                // Pausa para o usuário ver o resultado da ETAPA 1
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // ETAPA 2: AJUSTE FINO
-                log('🔍 Iniciando ETAPA 2: Ajuste fino ±2 steps...');
-                document.getElementById('searchStatus').textContent = 'ETAPA 2: Ajuste fino baseado na ETAPA 1...';
-                
-                const stage2Result = await performStage2FineTuning(config, stage1Result);
-                
-                if (stage2Result && stage2Result.avgQuality >= bestScore) {
-                    bestConfiguration = stage2Result;
-                    bestScore = stage2Result.avgQuality;
-                    log(`🎯 ETAPA 2: Resultado final! ${(bestScore * 100).toFixed(1)}%`);
-                    log(`🔧 Melhor config FINAL: ${JSON.stringify(stage2Result.params)}`);
-                    
-                    const finalConfigText = formatConfiguration(stage2Result.params, '🎯 FINAL ETAPA 2');
-                    document.getElementById('bestConfig').textContent = finalConfigText;
-                    
-                    // Atualizar score global
-                    document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
-                } else {
-                    log('📊 ETAPA 2: Manteve resultado da ETAPA 1');
-                    const finalConfigText = formatConfiguration(stage1Result.params, '✅ FINAL = ETAPA 1');
-                    document.getElementById('bestConfig').textContent = finalConfigText;
-                }
-                
-                log('🔍 === FIM searchBestConfiguration ===');
-                
-            } catch (error) {
-                log(`❌ ERRO em searchBestConfiguration: ${error.message}`);
-                console.error('Erro em searchBestConfiguration:', error);
-                throw error;
+                // Score já estava correto da ETAPA 1
             }
         }
 
@@ -1698,14 +1429,14 @@
             
             // CONFIGURAÇÃO OTIMIZADA PARA BUSCA RÁPIDA
             const optimizedRanges = {
-                scale: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0],
-                contrast: [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0],
-                brightness: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100],
-                blur: [],
-                denoise: []
+                scale: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], // RANGE COMPLETO (antes era fixo em 2)
+                contrast: [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], // 9 valores principais
+                brightness: [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100], // 11 valores (20 em 20)
+                blur: [], // Será preenchido baseado no tipo
+                denoise: [] // Será preenchido baseado no tipo
             };
             
-            // Preencher blur e denoise
+            // Preencher blur e denoise com valores originais (se existirem)
             controls.forEach(control => {
                 if (control.id === 'blur') {
                     optimizedRanges.blur = [];
@@ -1721,20 +1452,21 @@
                 }
             });
             
-            // VERIFICAR CHECKBOXES
+            // VERIFICAR CHECKBOXES - Se marcado, usar valor fixo do slider
             controls.forEach(control => {
                 const checkbox = document.getElementById(`${control.id}_check`);
                 if (checkbox && checkbox.checked) {
+                    // Checkbox marcado = usar valor fixo atual do slider
                     const slider = document.getElementById(control.id);
                     if (slider) {
                         const currentValue = parseFloat(slider.value);
-                        optimizedRanges[control.id] = [currentValue];
-                        log(`🔒 ${control.id} travado em: ${currentValue}`);
+                        optimizedRanges[control.id] = [currentValue]; // Array com apenas 1 valor
+                        log(`🔒 ${control.id} travado em: ${currentValue} (checkbox marcado)`);
                     }
                 }
             });
             
-            // Calcular total de combinações
+            // Recalcular total de combinações com valores otimizados + checkboxes
             totalCombinations = 1;
             controls.forEach(control => {
                 const range = optimizedRanges[control.id];
@@ -1743,73 +1475,71 @@
                 }
             });
             
-            log(`🚀 ETAPA 1: ${totalCombinations.toLocaleString()} combinações`);
+            log(`🚀 Busca otimizada: ${totalCombinations.toLocaleString()} combinações (com checkboxes aplicados)`);
             
-            // VERIFICAR SE TEM COMBINAÇÕES PARA TESTAR
-            if (totalCombinations === 0) {
-                log('❌ ETAPA 1: Nenhuma combinação para testar');
-                return null;
-            }
-            
-            // TESTE TODAS AS COMBINAÇÕES
-            for (const scaleVal of (optimizedRanges.scale || [1.0])) {
-                if (autoSearchCancelled) break;
+            // Função recursiva para testar todas as combinações OTIMIZADAS
+            async function testOptimizedCombinations(controlIndex, currentConfig) {
+                if (autoSearchCancelled) return;
                 
-                for (const contrastVal of (optimizedRanges.contrast || [1.0])) {
-                    if (autoSearchCancelled) break;
+                if (controlIndex >= controls.length) {
+                    // Testar esta combinação
+                    currentCombination++;
                     
-                    for (const brightnessVal of (optimizedRanges.brightness || [0])) {
-                        if (autoSearchCancelled) break;
-                        
-                        for (const blurVal of (optimizedRanges.blur.length > 0 ? optimizedRanges.blur : [undefined])) {
-                            if (autoSearchCancelled) break;
-                            
-                            for (const denoiseVal of (optimizedRanges.denoise.length > 0 ? optimizedRanges.denoise : [undefined])) {
-                                if (autoSearchCancelled) break;
-                                
-                                // Criar configuração de teste
-                                const testConfig = {
-                                    scale: scaleVal,
-                                    contrast: contrastVal,
-                                    brightness: brightnessVal
-                                };
-                                
-                                if (blurVal !== undefined) testConfig.blur = blurVal;
-                                if (denoiseVal !== undefined) testConfig.denoise = denoiseVal;
-                                
-                                currentCombination++;
-                                
-                                // Atualizar progresso
-                                const progress = ((currentCombination / totalCombinations) * 100).toFixed(1);
-                                document.getElementById('searchProgress').textContent = 
-                                    `ETAPA 1: ${currentCombination} de ${totalCombinations} (${progress}%)`;
-                                
-                                document.getElementById('bestConfig').textContent = 
-                                    `Testando: Scale:${scaleVal} | Contraste:${contrastVal} | Brilho:${brightnessVal}`;
-                                
-                                // Pausa para interface
-                                if (currentCombination % 5 === 0) {
-                                    await new Promise(resolve => setTimeout(resolve, 5));
-                                }
-                                
-                                // TESTAR ESTA CONFIGURAÇÃO
-                                const testResults = await testConfiguration(testConfig);
-                                
-                                if (testResults && testResults.avgQuality > bestScore) {
-                                    bestScore = testResults.avgQuality;
-                                    bestConfig = { ...testConfig };
-                                    
-                                    document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
-                                    document.getElementById('bestConfig').textContent = 
-                                        `🎯 MELHOR: Scale:${scaleVal}, Contraste:${contrastVal}, Brilho:${brightnessVal}`;
-                                    
-                                    await new Promise(resolve => setTimeout(resolve, 20));
-                                }
-                            }
-                        }
+                    // Atualizar progresso E configuração atual
+                    const progress = ((currentCombination / totalCombinations) * 100).toFixed(1);
+                    document.getElementById('searchProgress').textContent = 
+                        `ETAPA 1: ${currentCombination.toLocaleString()} de ${totalCombinations.toLocaleString()} (${progress}%)`;
+                    
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA DE FORMA ORGANIZADA
+                    const configText = `Testando: Scale:${currentConfig.scale || '-'} | Contraste:${currentConfig.contrast || '-'} | Brilho:${currentConfig.brightness || 0}`;
+                    document.getElementById('bestConfig').textContent = configText;
+                    
+                    // PAUSA para atualizar interface
+                    if (currentCombination % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 5));
                     }
+                    
+                    // Processar páginas com esta configuração
+                    const testResults = await testConfiguration(currentConfig);
+                    
+                    if (testResults && testResults.avgQuality > bestScore) {
+                        bestScore = testResults.avgQuality;
+                        bestConfig = { ...currentConfig };
+                        
+                        // Atualizar display do MELHOR encontrado
+                        document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
+                        document.getElementById('bestConfig').textContent = 
+                            `🎯 MELHOR: Scale:${currentConfig.scale}, Contraste:${currentConfig.contrast}, Brilho:${currentConfig.brightness}`;
+                        
+                        // Pausa extra quando encontra melhoria
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                    }
+                    
+                    return;
+                }
+                
+                // Iterar sobre os valores OTIMIZADOS para o controle atual
+                const control = controls[controlIndex];
+                const values = optimizedRanges[control.id];
+                
+                if (!values || values.length === 0) {
+                    // Se não tem valores otimizados, pular este controle
+                    await testOptimizedCombinations(controlIndex + 1, currentConfig);
+                    return;
+                }
+                
+                for (const value of values) {
+                    if (autoSearchCancelled) return;
+                    
+                    const newConfig = { ...currentConfig };
+                    newConfig[control.id] = value;
+                    
+                    await testOptimizedCombinations(controlIndex + 1, newConfig);
                 }
             }
+            
+            // Iniciar busca otimizada
+            await testOptimizedCombinations(0, {});
             
             if (bestConfig) {
                 return {
@@ -1828,22 +1558,23 @@
             let bestScore = stage1Result.avgQuality;
             let bestConfig = null;
             
-            // Preparar ranges de ajuste fino
+            // Preparar ranges de ajuste fino para cada parâmetro
             const finetuneRanges = {};
+            let totalFinetuneCombinations = 1;
             
             controls.forEach(control => {
                 const paramId = control.id;
                 const baseValue = baseParams[paramId];
                 
-                // VERIFICAR CHECKBOX - Se marcado, usar valor fixo
+                // VERIFICAR CHECKBOX - Se marcado, usar valor fixo (não fazer ajuste fino)
                 const checkbox = document.getElementById(`${paramId}_check`);
                 if (checkbox && checkbox.checked) {
                     const slider = document.getElementById(paramId);
                     if (slider) {
                         const currentValue = parseFloat(slider.value);
-                        finetuneRanges[paramId] = [currentValue];
-                        log(`🔒 ETAPA 2: ${paramId} fixo: ${currentValue}`);
-                        return;
+                        finetuneRanges[paramId] = [currentValue]; // Valor fixo
+                        log(`🔒 ETAPA 2: ${paramId} mantém valor fixo: ${currentValue} (checkbox marcado)`);
+                        return; // Pula o ajuste fino para este parâmetro
                     }
                 }
                 
@@ -1854,107 +1585,111 @@
                 const max = control.max;
                 const values = [];
                 
-                // ±2 steps ao redor do valor base
+                // Calcular ±2 steps ao redor do valor base (apenas se checkbox desmarcado)
                 for (let i = -2; i <= 2; i++) {
                     const testValue = baseValue + (i * step);
+                    
+                    // Verificar se está dentro dos limites
                     if (testValue >= min && testValue <= max) {
-                        const roundedValue = Math.round(testValue * 100) / 100;
+                        // ARREDONDAR para evitar problemas de precisão float
+                        const roundedValue = Math.round(testValue * 100) / 100; // 2 casas decimais max
                         if (roundedValue >= min && roundedValue <= max) {
                             values.push(roundedValue);
                         }
                     }
                 }
                 
+                // Remover duplicatas e ordenar
                 finetuneRanges[paramId] = [...new Set(values)].sort((a, b) => a - b);
-                log(`🔍 ${paramId}: Base=${baseValue}, Ajuste=[${finetuneRanges[paramId].join(', ')}]`);
-            });
-            
-            // Contar combinações
-            let totalFinetuneCombinations = 1;
-            Object.values(finetuneRanges).forEach(range => {
-                if (range && range.length > 0) {
-                    totalFinetuneCombinations *= range.length;
+                
+                if (finetuneRanges[paramId].length > 0) {
+                    totalFinetuneCombinations *= finetuneRanges[paramId].length;
                 }
+                
+                log(`🔍 ${paramId}: Base=${baseValue}, Ajuste Fino=[${finetuneRanges[paramId].join(', ')}]`);
             });
             
             if (totalFinetuneCombinations <= 1) {
-                log('⚠️ ETAPA 2: Nenhum ajuste fino possível');
+                log('⚠️ ETAPA 2: Nenhum ajuste fino possível (parâmetros travados ou já nos limites)');
                 return null;
             }
             
-            log(`🎯 ETAPA 2: ${totalFinetuneCombinations} combinações`);
+            log(`🎯 ETAPA 2: Testando ${totalFinetuneCombinations} combinações de ajuste fino`);
             
-            // VERIFICAR SE TEM COMBINAÇÕES PARA TESTAR
-            if (totalFinetuneCombinations === 0) {
-                log('❌ ETAPA 2: Nenhuma combinação para testar');
-                return null;
-            }
-            
+            // Resetar contador para etapa 2
             let fineTuneCombination = 0;
             
-            // TESTE TODAS AS COMBINAÇÕES DE AJUSTE FINO
-            for (const scaleVal of (finetuneRanges.scale || [baseParams.scale || 1.0])) {
-                if (autoSearchCancelled) break;
+            // Função recursiva para testar combinações de ajuste fino
+            async function testFineTuneCombinations(controlIndex, currentConfig) {
+                if (autoSearchCancelled) return;
                 
-                for (const contrastVal of (finetuneRanges.contrast || [baseParams.contrast || 1.0])) {
-                    if (autoSearchCancelled) break;
+                if (controlIndex >= controls.length) {
+                    // Testar esta combinação
+                    fineTuneCombination++;
                     
-                    for (const brightnessVal of (finetuneRanges.brightness || [baseParams.brightness || 0])) {
-                        if (autoSearchCancelled) break;
+                    // Atualizar progresso E configuração atual sendo testada
+                    const progress = ((fineTuneCombination / totalFinetuneCombinations) * 100).toFixed(1);
+                    document.getElementById('searchProgress').textContent = 
+                        `ETAPA 2: ${fineTuneCombination} de ${totalFinetuneCombinations} (${progress}%)`;
+                    
+                    // MOSTRAR CONFIGURAÇÃO ATUAL SENDO TESTADA DE FORMA ORGANIZADA
+                    const configText = formatConfiguration(currentConfig, 'Testando');
+                    document.getElementById('bestConfig').textContent = configText;
+                    
+                    // PAUSA OBRIGATÓRIA para atualizar interface
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                    
+                    // Processar páginas com esta configuração
+                    const testResults = await testConfiguration(currentConfig);
+                    
+                    // SEMPRE SUBSTITUIR na ETAPA 2, mesmo se igual (para mostrar que veio da etapa 2)
+                    if (testResults && testResults.avgQuality >= bestScore) {
+                        const wasImprovement = testResults.avgQuality > bestScore;
+                        bestScore = testResults.avgQuality;
+                        bestConfig = { ...currentConfig };
                         
-                        for (const blurVal of (finetuneRanges.blur || [baseParams.blur])) {
-                            if (autoSearchCancelled) break;
-                            
-                            for (const denoiseVal of (finetuneRanges.denoise || [baseParams.denoise])) {
-                                if (autoSearchCancelled) break;
-                                
-                                // Criar configuração de teste
-                                const testConfig = {
-                                    scale: scaleVal,
-                                    contrast: contrastVal,
-                                    brightness: brightnessVal
-                                };
-                                
-                                if (blurVal !== undefined) testConfig.blur = blurVal;
-                                if (denoiseVal !== undefined) testConfig.denoise = denoiseVal;
-                                
-                                fineTuneCombination++;
-                                
-                                // Atualizar progresso
-                                const progress = ((fineTuneCombination / totalFinetuneCombinations) * 100).toFixed(1);
-                                document.getElementById('searchProgress').textContent = 
-                                    `ETAPA 2: ${fineTuneCombination} de ${totalFinetuneCombinations} (${progress}%)`;
-                                
-                                const configText = formatConfiguration(testConfig, 'Testando');
-                                document.getElementById('bestConfig').textContent = configText;
-                                
-                                // Pausa para interface
-                                await new Promise(resolve => setTimeout(resolve, 10));
-                                
-                                // TESTAR ESTA CONFIGURAÇÃO
-                                const testResults = await testConfiguration(testConfig);
-                                
-                                if (testResults && testResults.avgQuality >= bestScore) {
-                                    const wasImprovement = testResults.avgQuality > bestScore;
-                                    bestScore = testResults.avgQuality;
-                                    bestConfig = { ...testConfig };
-                                    
-                                    document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
-                                    
-                                    const bestConfigText = formatConfiguration(testConfig, '🎯 ETAPA 2');
-                                    document.getElementById('bestConfig').textContent = bestConfigText;
-                                    
-                                    if (wasImprovement) {
-                                        log(`🎯 ETAPA 2: Melhoria! ${(bestScore * 100).toFixed(1)}%`);
-                                    }
-                                    
-                                    await new Promise(resolve => setTimeout(resolve, 50));
-                                }
-                            }
+                        // Atualizar display do MELHOR encontrado
+                        document.getElementById('bestScore').textContent = `${(bestScore * 100).toFixed(1)}%`;
+                        
+                        // Mostrar de forma organizada
+                        const bestConfigText = formatConfiguration(currentConfig, '🎯 ETAPA 2');
+                        document.getElementById('bestConfig').textContent = bestConfigText;
+                        
+                        if (wasImprovement) {
+                            log(`🎯 ETAPA 2: Nova melhoria! ${(bestScore * 100).toFixed(1)}% - ${JSON.stringify(currentConfig)}`);
+                        } else {
+                            log(`✅ ETAPA 2: Confirmou melhor resultado ${(bestScore * 100).toFixed(1)}%`);
                         }
+                        
+                        // Pausa extra quando encontra melhoria para dar tempo de ver
+                        await new Promise(resolve => setTimeout(resolve, 50));
                     }
+                    
+                    return;
+                }
+                
+                // Iterar sobre os valores de ajuste fino para o controle atual
+                const control = controls[controlIndex];
+                const values = finetuneRanges[control.id];
+                
+                if (!values || values.length === 0) {
+                    // Se não tem valores de ajuste fino, pular este controle
+                    await testFineTuneCombinations(controlIndex + 1, currentConfig);
+                    return;
+                }
+                
+                for (const value of values) {
+                    if (autoSearchCancelled) return;
+                    
+                    const newConfig = { ...currentConfig };
+                    newConfig[control.id] = value;
+                    
+                    await testFineTuneCombinations(controlIndex + 1, newConfig);
                 }
             }
+            
+            // Iniciar ajuste fino
+            await testFineTuneCombinations(0, {});
             
             if (bestConfig && bestScore > stage1Result.avgQuality) {
                 return {
@@ -2002,14 +1737,7 @@
         }
 
         async function applyBestConfiguration() {
-            if (!bestConfiguration) {
-                log('⚠️ Nenhuma configuração encontrada para aplicar');
-                return;
-            }
-            
-            log(`🎯 === APLICANDO MELHOR CONFIGURAÇÃO ===`);
-            log(`🔧 Parâmetros: ${JSON.stringify(bestConfiguration.params)}`);
-            log(`📊 Score: ${(bestConfiguration.avgQuality * 100).toFixed(1)}%`);
+            if (!bestConfiguration) return;
             
             // Aplicar parâmetros na interface
             Object.keys(bestConfiguration.params).forEach(paramId => {
@@ -2022,9 +1750,6 @@
                 if (slider && valueDisplay) {
                     slider.value = value;
                     valueDisplay.textContent = value;
-                    log(`✅ ${paramId} = ${value}`);
-                } else {
-                    log(`⚠️ Controle ${paramId} não encontrado na interface`);
                 }
             });
             
@@ -2032,17 +1757,7 @@
             document.getElementById('searchStatus').textContent = 'Aplicando melhor configuração...';
             
             // Processar todas as páginas com a melhor configuração
-            log('🔄 Iniciando processamento automático com melhor configuração...');
-            
-            try {
-                await applyProcessing();
-                log('✅ Processamento automático concluído com sucesso!');
-                log(`🎯 === CONFIGURAÇÃO APLICADA COM SUCESSO ===`);
-            } catch (error) {
-                log(`❌ Erro no processamento automático: ${error.message}`);
-                console.error('Erro no processamento automático:', error);
-                throw error;
-            }
+            await applyProcessing();
         }
 
         function cancelAutoSearch() {
@@ -2122,82 +1837,132 @@
             log('💾 Configuração salva com sucesso!');
         }
 
-        // FUNÇÃO DE ANÁLISE REAL DE QUALIDADE DE IMAGEM
-        function analyzeImageQuality(imageData) {
-            try {
-                const data = imageData.data;
-                const width = imageData.width;
-                const height = imageData.height;
+        // Análise de qualidade NORMALIZADA PARA DIFERENTES RESOLUÇÕES
+        function analyzePageQuality(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            let sumBrightness = 0;
+            let sumContrast = 0;
+            let edgePixels = 0;
+            let darkPixels = 0;
+            let lightPixels = 0;
+            let midTonePixels = 0;
+            let textPixels = 0;
+            let backgroundPixels = 0;
+            let contrastSamples = 0; // Para normalizar o contraste
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const brightness = (r + g + b) / 3;
                 
-                if (!data || data.length === 0) {
-                    log('⚠️ ImageData vazio, usando qualidade padrão');
-                    return 0.7; // Qualidade padrão
-                }
+                sumBrightness += brightness;
                 
-                // Converter para grayscale para análise
-                const grayscale = [];
-                for (let i = 0; i < data.length; i += 4) {
-                    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-                    grayscale.push(gray);
-                }
+                // Classificação mais generosa para documentos limpos
+                if (brightness < 40) darkPixels++;
+                else if (brightness < 140) textPixels++;
+                else if (brightness < 220) midTonePixels++;
+                else backgroundPixels++;
                 
-                if (grayscale.length === 0) {
-                    log('⚠️ Grayscale vazio, usando qualidade padrão');
-                    return 0.7;
-                }
+                if (brightness > 250) lightPixels++;
                 
-                // 1. CONTRASTE REAL (Michelson contrast)
-                const minVal = Math.min(...grayscale);
-                const maxVal = Math.max(...grayscale);
-                const contrast = (maxVal - minVal) / (maxVal + minVal + 1); // +1 evita divisão por zero
-                
-                // 2. NITIDEZ (Variância do Laplaciano) - versão otimizada
-                let laplacianSum = 0;
-                let count = 0;
-                const sampleStep = Math.max(1, Math.floor(width / 100)); // Amostragem para acelerar
-                
-                for (let y = sampleStep; y < height - sampleStep; y += sampleStep) {
-                    for (let x = sampleStep; x < width - sampleStep; x += sampleStep) {
-                        const center = grayscale[y * width + x];
-                        const top = grayscale[(y - sampleStep) * width + x];
-                        const bottom = grayscale[(y + sampleStep) * width + x];
-                        const left = grayscale[y * width + (x - sampleStep)];
-                        const right = grayscale[y * width + (x + sampleStep)];
-                        
-                        // Operador Laplaciano simplificado
-                        const laplacian = Math.abs(-4 * center + top + bottom + left + right);
-                        laplacianSum += laplacian;
-                        count++;
+                // Detecção de bordas - AMOSTRAGEM para normalizar por resolução
+                if (i > canvas.width * 4) {
+                    const prevR = data[i - canvas.width * 4];
+                    const prevG = data[i - canvas.width * 4 + 1];
+                    const prevB = data[i - canvas.width * 4 + 2];
+                    const prevBrightness = (prevR + prevG + prevB) / 3;
+                    
+                    const edgeStrength = Math.abs(brightness - prevBrightness);
+                    sumContrast += edgeStrength;
+                    contrastSamples++;
+                    
+                    if (edgeStrength > 20) {
+                        edgePixels++;
                     }
                 }
-                
-                const sharpness = count > 0 ? Math.min(1.0, (laplacianSum / count) / 50) : 0.5;
-                
-                // 3. UNIFORMIDADE (simplificada)
-                const mean = grayscale.reduce((a, b) => a + b, 0) / grayscale.length;
-                let variance = 0;
-                const sampleSize = Math.min(10000, grayscale.length); // Limitar amostra
-                for (let i = 0; i < sampleSize; i += Math.floor(grayscale.length / sampleSize)) {
-                    variance += Math.pow(grayscale[i] - mean, 2);
-                }
-                const stdDev = Math.sqrt(variance / sampleSize);
-                const uniformity = Math.max(0, 1 - (stdDev / 128));
-                
-                // 4. SCORE FINAL COMBINADO
-                const finalScore = (contrast * 0.4) + (sharpness * 0.4) + (uniformity * 0.2);
-                
-                // Log apenas se for muito diferente do esperado
-                if (finalScore < 0.3 || finalScore > 0.95) {
-                    log(`🔬 Análise: C=${(contrast*100).toFixed(1)}% N=${(sharpness*100).toFixed(1)}% U=${(uniformity*100).toFixed(1)}% → ${(finalScore*100).toFixed(1)}%`);
-                }
-                
-                return Math.min(1.0, Math.max(0.1, finalScore));
-                
-            } catch (error) {
-                log(`❌ Erro na análise de qualidade: ${error.message}`);
-                console.error('Erro na análise:', error);
-                return 0.7; // Qualidade padrão em caso de erro
             }
+            
+            const totalPixels = data.length / 4;
+            
+            // VALORES NORMALIZADOS (independentes da resolução)
+            const avgBrightness = sumBrightness / totalPixels;
+            const avgContrast = contrastSamples > 0 ? sumContrast / contrastSamples : 0; // NORMALIZADO
+            const sharpnessRatio = edgePixels / totalPixels; // Já é proporção
+            const textRatio = (darkPixels + textPixels) / totalPixels; // Já é proporção
+            const backgroundRatio = backgroundPixels / totalPixels; // Já é proporção
+            const dynamicRange = Math.abs(darkPixels - lightPixels) / totalPixels; // Já é proporção
+            
+            // AJUSTE ADICIONAL: Bonificar resoluções maiores (melhor para OCR)
+            const resolutionBonus = Math.min(0.1, Math.log10(totalPixels / 1000000) * 0.05); // Max 10% bonus
+            
+            // SCORE BASE MAIS ALTO para começar com pontuação decente
+            let qualityScore = 0.3 + resolutionBonus; // Base 30% + bônus resolução
+            
+            // 1. CONTRASTE LOCAL (25% do score) - Normalizado
+            if (avgContrast > 20) qualityScore += 0.25;
+            else if (avgContrast > 12) qualityScore += 0.20;
+            else if (avgContrast > 6) qualityScore += 0.15;
+            else if (avgContrast > 3) qualityScore += 0.10;
+            else qualityScore += 0.05;
+            
+            // 2. NITIDEZ/BORDAS (25% do score) - Já normalizado por ser proporção
+            if (sharpnessRatio > 0.015) qualityScore += 0.25;
+            else if (sharpnessRatio > 0.008) qualityScore += 0.18;
+            else if (sharpnessRatio > 0.004) qualityScore += 0.12;
+            else if (sharpnessRatio > 0.002) qualityScore += 0.08;
+            else qualityScore += 0.03;
+            
+            // 3. DISTRIBUIÇÃO DE BRILHO (20% do score) - Já normalizado
+            if (avgBrightness > 120 && avgBrightness < 200) qualityScore += 0.20;
+            else if (avgBrightness > 100 && avgBrightness < 220) qualityScore += 0.16;
+            else if (avgBrightness > 80 && avgBrightness < 240) qualityScore += 0.12;
+            else if (avgBrightness > 60 && avgBrightness < 250) qualityScore += 0.08;
+            else qualityScore += 0.04;
+            
+            // 4. PROPORÇÃO TEXTO/FUNDO (15% do score) - Já normalizado
+            if (textRatio > 0.08 && textRatio < 0.50) qualityScore += 0.15;
+            else if (textRatio > 0.04 && textRatio < 0.60) qualityScore += 0.12;
+            else if (textRatio > 0.02 && textRatio < 0.70) qualityScore += 0.08;
+            else qualityScore += 0.04;
+            
+            // 5. RANGE DINÂMICO (15% do score) - Já normalizado
+            if (dynamicRange > 0.25) qualityScore += 0.15;
+            else if (dynamicRange > 0.15) qualityScore += 0.12;
+            else if (dynamicRange > 0.08) qualityScore += 0.08;
+            else qualityScore += 0.05;
+            
+            // BÔNUS para documentos bem estruturados
+            if (backgroundRatio > 0.4 && textRatio > 0.1) {
+                qualityScore += 0.10;
+            }
+            
+            // BÔNUS ESPECIAL para alta resolução com bom contraste
+            if (totalPixels > 2000000 && avgContrast > 15) { // Imagens grandes com bom contraste
+                qualityScore += 0.08;
+            }
+            
+            // PENALIZAÇÕES reduzidas - só para casos extremos
+            if (avgBrightness < 15 || avgBrightness > 245) qualityScore -= 0.08;
+            if (sharpnessRatio < 0.001) qualityScore -= 0.06;
+            if (avgContrast < 2) qualityScore -= 0.08;
+            if (textRatio < 0.01) qualityScore -= 0.05;
+            
+            // BÔNUS adicional para qualidade excepcional
+            if (avgContrast > 25 && sharpnessRatio > 0.020 && textRatio > 0.15) {
+                qualityScore += 0.08;
+            }
+            
+            // DEBUG: Log para entender os scores
+            if (totalPixels > 1500000) { // Log apenas para resoluções altas
+                console.log(`Debug Quality - Resolução: ${canvas.width}x${canvas.height}, Contraste: ${avgContrast.toFixed(1)}, Sharpness: ${(sharpnessRatio*100).toFixed(2)}%, Score: ${(qualityScore*100).toFixed(1)}%`);
+            }
+            
+            // Escala final mais realista
+            return Math.min(1.0, Math.max(0.15, qualityScore));
         }
 
         function log(message) {
@@ -2205,144 +1970,10 @@
             const timestamp = new Date().toLocaleTimeString();
             const entry = document.createElement('div');
             entry.textContent = `[${timestamp}] ${message}`;
-            
-            if (logContent) {
-                logContent.appendChild(entry);
-                logContent.scrollTop = logContent.scrollHeight;
-            }
-            
-            console.log(`[${timestamp}] ${message}`);
-            
-            // Debug adicional para carregamento
-            if (message.includes('❌') || message.includes('Erro')) {
-                console.error('ERRO DETECTADO:', message);
-            }
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(message);
         }
-
-        // Função para testar se a busca automática está funcionando
-        function testAutoSearchAvailability() {
-            log('🧪 TESTE: Verificando disponibilidade da busca automática...');
-            
-            // Verificar função startAutoSearch
-            if (typeof startAutoSearch === 'function') {
-                log('✅ startAutoSearch disponível');
-            } else {
-                log('❌ startAutoSearch NÃO disponível');
-                return false;
-            }
-            
-            // Verificar função testConfiguration
-            if (typeof testConfiguration === 'function') {
-                log('✅ testConfiguration disponível');
-            } else {
-                log('❌ testConfiguration NÃO disponível');
-                return false;
-            }
-            
-            // Verificar função performStage1Search
-            if (typeof performStage1Search === 'function') {
-                log('✅ performStage1Search disponível');
-            } else {
-                log('❌ performStage1Search NÃO disponível');
-                return false;
-            }
-            
-            // Verificar função performStage2FineTuning
-            if (typeof performStage2FineTuning === 'function') {
-                log('✅ performStage2FineTuning disponível');
-            } else {
-                log('❌ performStage2FineTuning NÃO disponível');
-                return false;
-            }
-            
-            // Verificar função applyExtremeProcessing
-            if (typeof applyExtremeProcessing === 'function') {
-                log('✅ applyExtremeProcessing disponível');
-            } else {
-                log('❌ applyExtremeProcessing NÃO disponível');
-                return false;
-            }
-            
-            // Verificar função analyzeImageQuality
-            if (typeof analyzeImageQuality === 'function') {
-                log('✅ analyzeImageQuality disponível');
-            } else {
-                log('❌ analyzeImageQuality NÃO disponível');
-                return false;
-            }
-            
-            // Verificar botão
-            const autoBtn = document.getElementById('autoSearchBtn');
-            if (autoBtn) {
-                log('✅ Botão autoSearchBtn encontrado');
-                log(`🔧 Estado do botão: disabled=${autoBtn.disabled}`);
-                log(`🔧 Onclick: ${autoBtn.getAttribute('onclick')}`);
-                
-                // Testar se pode ser clicado
-                if (!autoBtn.disabled && originalPages.length > 0) {
-                    log('✅ Botão PODE ser usado (habilitado + páginas carregadas)');
-                    return true;
-                } else {
-                    log(`❌ Botão NÃO pode ser usado: disabled=${autoBtn.disabled}, páginas=${originalPages.length}`);
-                    return false;
-                }
-            } else {
-                log('❌ Botão autoSearchBtn NÃO encontrado');
-                return false;
-            }
-        }
-
-        // Função para forçar busca automática (bypass de verificações)
-        function forceAutoSearch() {
-            log('🚀 FORÇANDO busca automática...');
-            if (originalPages.length === 0) {
-                log('❌ Impossível: nenhuma página carregada');
-                return;
-            }
-            
-            try {
-                startAutoSearch();
-                log('✅ Função chamada com sucesso');
-            } catch (error) {
-                log(`❌ Erro ao chamar função: ${error.message}`);
-                console.error('Erro ao forçar busca:', error);
-            }
-        }
-
-        // Função de debug para monitorar estado
-        function debugSystemState() {
-            console.log('=== DEBUG SISTEMA ===');
-            console.log('PDF Document:', pdfDocument);
-            console.log('Original Pages:', originalPages.length);
-            console.log('Processed Pages:', processedPages.length);
-            console.log('Current Page Index:', currentPageIndex);
-            console.log('Is Processing:', isProcessing);
-            console.log('Is Auto Searching:', isAutoSearching);
-            console.log('OpenCV Ready:', openCVReady);
-            
-            // Estado dos botões
-            const applyBtn = document.getElementById('applyBtn');
-            const autoBtn = document.getElementById('autoSearchBtn');
-            console.log('Botão APLICAR - Elemento:', !!applyBtn, 'Disabled:', applyBtn?.disabled);
-            console.log('Botão AUTO - Elemento:', !!autoBtn, 'Disabled:', autoBtn?.disabled);
-            
-            // Testar disponibilidade
-            const available = testAutoSearchAvailability();
-            console.log('Busca automática disponível:', available);
-            
-            console.log('===================');
-        }
-
-        // Função para testar busca automática manualmente
-        function testAutoSearch() {
-            console.log('🧪 TESTE MANUAL: Iniciando busca automática...');
-            forceAutoSearch();
-        }
-
-        // Disponibilizar debug globalmente para teste manual
-        window.debugSystem = debugSystemState;
-        window.testAutoSearch = testAutoSearch;
-        window.forceAutoSearch = forceAutoSearch;
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
