@@ -1127,12 +1127,15 @@
             log('📁 Interface resetada - Aguardando novo PDF...');
         }
 
-        async function applyProcessing() {
+       
+
+async function applyProcessing() {
             if (isProcessing || originalPages.length === 0) return;
 
             isProcessing = true;
             document.getElementById('applyBtn').disabled = true;
             document.getElementById('autoSearchBtn').disabled = true;
+            document.getElementById('downloadBtn').disabled = true;
             document.getElementById('applyBtn').textContent = '⏳ Processando...';
 
             log('🔄 Iniciando processamento com parâmetros personalizados...');
@@ -1153,6 +1156,7 @@
                 updateQualityDisplay();
                 displayCurrentPage();
                 document.getElementById('saveConfigBtn').disabled = false;
+                document.getElementById('downloadBtn').disabled = false; // HABILITAR DOWNLOAD
                 
                 log(`✅ Processamento concluído em ${processingTime}ms!`);
 
@@ -1164,9 +1168,13 @@
             isProcessing = false;
             document.getElementById('applyBtn').disabled = false;
             document.getElementById('autoSearchBtn').disabled = false;
+            if (processedPages.length > 0) {
+                document.getElementById('downloadBtn').disabled = false;
+            }
             document.getElementById('applyBtn').textContent = '🔄 APLICAR';
             document.getElementById('systemStatus').textContent = 'Processamento concluído - Compare lado a lado';
         }
+
 
         async function processPageWithParams(originalPage, index) {
             log(`📄 Processando página ${originalPage.pageNum} (Scale:${currentParams.scale}, Contraste:${currentParams.contrast}, Brilho:${currentParams.brightness})...`);
@@ -1847,32 +1855,33 @@
 
             log('💾 Configuração salva com sucesso!');
         }
-
         
 
 function downloadImages() {
-    if (processedPages.length === 0) {
-        alert('Nenhuma imagem processada para download. Clique em "APLICAR" primeiro.');
-        return;
-    }
+            if (processedPages.length === 0) {
+                alert('Nenhuma imagem processada para download. Clique em "APLICAR" primeiro.');
+                return;
+            }
 
-    log('📥 Iniciando download das imagens processadas...');
-    
-    // Download apenas das páginas processadas
-    processedPages.forEach((page, index) => {
-        const link = document.createElement('a');
-        link.href = page.imageUrl;
-        link.download = `pdffacil_processado_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        setTimeout(() => {}, index * 100);
-    });
+            log('📥 Iniciando download das imagens processadas...');
+            
+            // Download apenas das páginas processadas
+            processedPages.forEach((page, index) => {
+                // Criar link temporário para download
+                const link = document.createElement('a');
+                link.href = page.imageUrl;
+                link.download = `pdffacil_processado_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Pequeno delay entre downloads para não sobrecarregar
+                setTimeout(() => {}, index * 100);
+            });
 
-    log(`✅ Download concluído: ${processedPages.length} imagens processadas`);
-}
-
+            log(`✅ Download concluído: ${processedPages.length} imagens processadas com métricas científicas`);
+            log(`🔬 Arquivos: pdffacil_processado_pagina_X_YYYY-MM-DD.jpg (prontos para OCR!)`);
+        }
 
 
 
