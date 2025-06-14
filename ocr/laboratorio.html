@@ -160,6 +160,10 @@
     color: white;
 }
 
+.btn-download:hover:not(:disabled) {
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+}
+
 
         /* PROGRESSO DE BUSCA AUTOMÁTICA */
         .auto-search-progress {
@@ -1845,9 +1849,7 @@
         }
 
         
-       
-        
-// MÉTRICAS CIENTÍFICAS VALIDADAS - BRISQUE + SSIM + PSNR
+       // MÉTRICAS CIENTÍFICAS VALIDADAS - BRISQUE + SSIM + PSNR
         function analyzePageQuality(canvas) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -2019,12 +2021,6 @@
             
             return normalizedPSNR;
         }
-
-
-
-
-
-
 
        
         function log(message) {
