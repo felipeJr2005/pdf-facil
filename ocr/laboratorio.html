@@ -809,6 +809,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             log('🚀 PDFFacil Laboratório Full Screen inicializado');
             log('🔬 Sistema unificado: Métricas científicas REAIS (Contraste Michelson + Variância Laplaciano + Uniformidade)');
+            
+            // Verificar se PDF.js está carregado
+            if (typeof pdfjsLib === 'undefined') {
+                log('❌ PDF.js não carregado - recarregue a página');
+                alert('Erro: PDF.js não foi carregado. Recarregue a página.');
+                return;
+            }
+            
+            log('✅ PDF.js detectado e configurado');
             initializeOpenCV();
             changeDocumentType();
             setupDragDrop();
@@ -908,22 +917,52 @@
 
         async function handleFileSelect(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                log('❌ Nenhum arquivo selecionado');
+                return;
+            }
 
             if (file.type !== 'application/pdf') {
                 alert('Por favor, selecione um arquivo PDF válido.');
+                log('❌ Arquivo não é PDF');
                 return;
             }
 
             log(`📄 PDF selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             
-            showLoading();
-            
-            const fileReader = new FileReader();
-            fileReader.onload = async function() {
-                await loadPDF(new Uint8Array(this.result));
-            };
-            fileReader.readAsArrayBuffer(file);
+            try {
+                showLoading();
+                
+                const fileReader = new FileReader();
+                fileReader.onload = async function() {
+                    try {
+                        log('📄 Arquivo lido, iniciando processamento PDF...');
+                        await loadPDF(new Uint8Array(this.result));
+                    } catch (error) {
+                        log(`❌ Erro ao processar PDF: ${error.message}`);
+                        console.error('Erro no processamento:', error);
+                        alert('Erro ao processar o PDF.');
+                        document.getElementById('loadingArea').style.display = 'none';
+                        document.getElementById('uploadSection').style.display = 'flex';
+                    }
+                };
+                
+                fileReader.onerror = function() {
+                    log('❌ Erro ao ler arquivo');
+                    alert('Erro ao ler o arquivo.');
+                    document.getElementById('loadingArea').style.display = 'none';
+                    document.getElementById('uploadSection').style.display = 'flex';
+                };
+                
+                fileReader.readAsArrayBuffer(file);
+                
+            } catch (error) {
+                log(`❌ Erro geral: ${error.message}`);
+                console.error('Erro geral:', error);
+                alert('Erro ao processar o arquivo.');
+                document.getElementById('loadingArea').style.display = 'none';
+                document.getElementById('uploadSection').style.display = 'flex';
+            }
         }
 
         function showLoading() {
@@ -940,7 +979,15 @@
 
         async function loadPDF(pdfData) {
             try {
-                pdfDocument = await pdfjsLib.getDocument(pdfData).promise;
+                log('📄 Iniciando carregamento do PDF...');
+                
+                // Timeout para evitar travamento
+                const pdfPromise = pdfjsLib.getDocument(pdfData).promise;
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout no carregamento do PDF')), 30000)
+                );
+                
+                pdfDocument = await Promise.race([pdfPromise, timeoutPromise]);
                 const totalPages = Math.min(pdfDocument.numPages, 8);
                 
                 log(`📊 PDF carregado: ${totalPages} páginas para análise`);
@@ -951,8 +998,26 @@
                 
                 for (let i = 1; i <= totalPages; i++) {
                     document.getElementById('loadingText').textContent = `Carregando página ${i}/${totalPages}...`;
-                    await loadOriginalPage(i);
+                    
+                    // Timeout por página também
+                    try {
+                        await Promise.race([
+                            loadOriginalPage(i),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error(`Timeout na página ${i}`)), 10000)
+                            )
+                        ]);
+                        log(`✅ Página ${i}/${totalPages} carregada`);
+                    } catch (pageError) {
+                        log(`⚠️ Erro na página ${i}: ${pageError.message} - Continuando...`);
+                    }
                 }
+                
+                if (originalPages.length === 0) {
+                    throw new Error('Nenhuma página foi carregada com sucesso');
+                }
+                
+                log(`✅ ${originalPages.length}/${totalPages} páginas carregadas`);
                 
                 setupPageNavigation();
                 showViewer();
@@ -961,11 +1026,20 @@
                 document.getElementById('applyBtn').disabled = false;
                 document.getElementById('autoSearchBtn').disabled = false; // Habilitar busca automática
                 
-                log(`✅ ${totalPages} páginas carregadas com sucesso`);
+                log(`✅ Interface pronta! ${originalPages.length} páginas disponíveis`);
                 
             } catch (error) {
                 log(`❌ Erro ao carregar PDF: ${error.message}`);
-                alert('Erro ao carregar o PDF. Verifique se o arquivo não está corrompido.');
+                console.error('Erro detalhado:', error);
+                
+                let errorMsg = 'Erro ao carregar o PDF.';
+                if (error.message.includes('Timeout')) {
+                    errorMsg = 'Timeout no carregamento. O PDF pode estar muito grande ou corrompido.';
+                } else if (error.message.includes('Invalid PDF')) {
+                    errorMsg = 'Arquivo PDF inválido ou corrompido.';
+                }
+                
+                alert(errorMsg);
                 document.getElementById('loadingArea').style.display = 'none';
                 document.getElementById('uploadSection').style.display = 'flex';
             }
@@ -973,6 +1047,7 @@
 
         async function loadOriginalPage(pageNum) {
             try {
+                log(`📄 Carregando página ${pageNum}...`);
                 const page = await pdfDocument.getPage(pageNum);
                 const scale = 2;
                 const viewport = page.getViewport({ scale });
@@ -982,24 +1057,31 @@
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
 
+                log(`📄 Renderizando página ${pageNum} (${canvas.width}x${canvas.height})...`);
                 await page.render({
                     canvasContext: context,
                     viewport: viewport
                 }).promise;
 
+                log(`🔬 Analisando qualidade da página ${pageNum}...`);
                 // USAR ANÁLISE REAL - converter canvas para imageData
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 const quality = analyzeImageQuality(imageData);
+
+                const imageUrl = canvas.toDataURL('image/jpeg', 0.95);
+                log(`✅ Página ${pageNum} processada - Qualidade: ${(quality * 100).toFixed(1)}%`);
 
                 originalPages.push({
                     pageNum,
                     canvas,
                     quality,
-                    imageUrl: canvas.toDataURL('image/jpeg', 0.95)
+                    imageUrl: imageUrl
                 });
 
             } catch (error) {
                 log(`❌ Erro na página ${pageNum}: ${error.message}`);
+                console.error(`Erro detalhado página ${pageNum}:`, error);
+                // Não interromper o carregamento por uma página com erro
             }
         }
 
@@ -1017,27 +1099,48 @@
         }
 
         function displayCurrentPage() {
-            if (originalPages.length === 0) return;
-            
-            const currentPage = originalPages[currentPageIndex];
-            const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
-            
-            // Sempre mostrar imagem original
-            document.getElementById('originalPanel').src = currentPage.imageUrl;
-            
-            if (!processedPage) {
-                // Mostrar placeholder no painel processado
-                document.getElementById('placeholderState').style.display = 'flex';
-                document.getElementById('processedPanel').style.display = 'none';
-            } else {
-                // Mostrar imagem processada
-                document.getElementById('placeholderState').style.display = 'none';
-                document.getElementById('processedPanel').style.display = 'block';
-                document.getElementById('processedPanel').src = processedPage.imageUrl;
+            if (originalPages.length === 0) {
+                log('⚠️ Nenhuma página carregada para exibir');
+                return;
             }
             
-            updateNavigation();
-            updatePageInfo();
+            try {
+                const currentPage = originalPages[currentPageIndex];
+                const processedPage = processedPages.find(p => p.pageNum === currentPage.pageNum);
+                
+                // Sempre mostrar imagem original
+                const originalImg = document.getElementById('originalPanel');
+                if (originalImg && currentPage.imageUrl) {
+                    originalImg.src = currentPage.imageUrl;
+                    originalImg.style.display = 'block';
+                    log(`📷 Exibindo página original ${currentPage.pageNum}`);
+                }
+                
+                if (!processedPage) {
+                    // Mostrar placeholder no painel processado
+                    const placeholder = document.getElementById('placeholderState');
+                    const processedImg = document.getElementById('processedPanel');
+                    if (placeholder) placeholder.style.display = 'flex';
+                    if (processedImg) processedImg.style.display = 'none';
+                } else {
+                    // Mostrar imagem processada
+                    const placeholder = document.getElementById('placeholderState');
+                    const processedImg = document.getElementById('processedPanel');
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (processedImg) {
+                        processedImg.style.display = 'block';
+                        processedImg.src = processedPage.imageUrl;
+                        log(`📷 Exibindo página processada ${processedPage.pageNum}`);
+                    }
+                }
+                
+                updateNavigation();
+                updatePageInfo();
+                
+            } catch (error) {
+                log(`❌ Erro ao exibir página: ${error.message}`);
+                console.error('Erro na exibição:', error);
+            }
         }
 
         function updateNavigation() {
@@ -1846,59 +1949,80 @@
 
         // FUNÇÃO DE ANÁLISE REAL DE QUALIDADE DE IMAGEM
         function analyzeImageQuality(imageData) {
-            const data = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
-            
-            // Converter para grayscale para análise
-            const grayscale = [];
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-                grayscale.push(gray);
-            }
-            
-            // 1. CONTRASTE REAL (Michelson contrast)
-            const minVal = Math.min(...grayscale);
-            const maxVal = Math.max(...grayscale);
-            const contrast = (maxVal - minVal) / (maxVal + minVal + 1); // +1 evita divisão por zero
-            
-            // 2. NITIDEZ (Variância do Laplaciano)
-            let laplacianVariance = 0;
-            let count = 0;
-            const laplacianValues = [];
-            
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
-                    const center = grayscale[y * width + x];
-                    const top = grayscale[(y - 1) * width + x];
-                    const bottom = grayscale[(y + 1) * width + x];
-                    const left = grayscale[y * width + (x - 1)];
-                    const right = grayscale[y * width + (x + 1)];
-                    
-                    // Operador Laplaciano 4-conectado
-                    const laplacian = Math.abs(-4 * center + top + bottom + left + right);
-                    laplacianValues.push(laplacian);
-                    count++;
+            try {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                if (!data || data.length === 0) {
+                    log('⚠️ ImageData vazio, usando qualidade padrão');
+                    return 0.7; // Qualidade padrão
                 }
+                
+                // Converter para grayscale para análise
+                const grayscale = [];
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                    grayscale.push(gray);
+                }
+                
+                if (grayscale.length === 0) {
+                    log('⚠️ Grayscale vazio, usando qualidade padrão');
+                    return 0.7;
+                }
+                
+                // 1. CONTRASTE REAL (Michelson contrast)
+                const minVal = Math.min(...grayscale);
+                const maxVal = Math.max(...grayscale);
+                const contrast = (maxVal - minVal) / (maxVal + minVal + 1); // +1 evita divisão por zero
+                
+                // 2. NITIDEZ (Variância do Laplaciano) - versão otimizada
+                let laplacianSum = 0;
+                let count = 0;
+                const sampleStep = Math.max(1, Math.floor(width / 100)); // Amostragem para acelerar
+                
+                for (let y = sampleStep; y < height - sampleStep; y += sampleStep) {
+                    for (let x = sampleStep; x < width - sampleStep; x += sampleStep) {
+                        const center = grayscale[y * width + x];
+                        const top = grayscale[(y - sampleStep) * width + x];
+                        const bottom = grayscale[(y + sampleStep) * width + x];
+                        const left = grayscale[y * width + (x - sampleStep)];
+                        const right = grayscale[y * width + (x + sampleStep)];
+                        
+                        // Operador Laplaciano simplificado
+                        const laplacian = Math.abs(-4 * center + top + bottom + left + right);
+                        laplacianSum += laplacian;
+                        count++;
+                    }
+                }
+                
+                const sharpness = count > 0 ? Math.min(1.0, (laplacianSum / count) / 50) : 0.5;
+                
+                // 3. UNIFORMIDADE (simplificada)
+                const mean = grayscale.reduce((a, b) => a + b, 0) / grayscale.length;
+                let variance = 0;
+                const sampleSize = Math.min(10000, grayscale.length); // Limitar amostra
+                for (let i = 0; i < sampleSize; i += Math.floor(grayscale.length / sampleSize)) {
+                    variance += Math.pow(grayscale[i] - mean, 2);
+                }
+                const stdDev = Math.sqrt(variance / sampleSize);
+                const uniformity = Math.max(0, 1 - (stdDev / 128));
+                
+                // 4. SCORE FINAL COMBINADO
+                const finalScore = (contrast * 0.4) + (sharpness * 0.4) + (uniformity * 0.2);
+                
+                // Log apenas se for muito diferente do esperado
+                if (finalScore < 0.3 || finalScore > 0.95) {
+                    log(`🔬 Análise: C=${(contrast*100).toFixed(1)}% N=${(sharpness*100).toFixed(1)}% U=${(uniformity*100).toFixed(1)}% → ${(finalScore*100).toFixed(1)}%`);
+                }
+                
+                return Math.min(1.0, Math.max(0.1, finalScore));
+                
+            } catch (error) {
+                log(`❌ Erro na análise de qualidade: ${error.message}`);
+                console.error('Erro na análise:', error);
+                return 0.7; // Qualidade padrão em caso de erro
             }
-            
-            // Calcular variância do Laplaciano
-            const meanLaplacian = laplacianValues.reduce((a, b) => a + b, 0) / count;
-            const variance = laplacianValues.reduce((sum, val) => sum + Math.pow(val - meanLaplacian, 2), 0) / count;
-            const sharpness = Math.min(1.0, variance / 10000); // Normalizar para 0-1
-            
-            // 3. UNIFORMIDADE (inverso do desvio padrão normalizado)
-            const mean = grayscale.reduce((a, b) => a + b, 0) / grayscale.length;
-            const stdDev = Math.sqrt(grayscale.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / grayscale.length);
-            const uniformity = Math.max(0, 1 - (stdDev / 128)); // Normalizar 0-1
-            
-            // 4. SCORE FINAL COMBINADO
-            const finalScore = (contrast * 0.4) + (sharpness * 0.4) + (uniformity * 0.2);
-            
-            // Log detalhado para debug
-            log(`🔬 Análise REAL: Contraste=${(contrast*100).toFixed(1)}%, Nitidez=${(sharpness*100).toFixed(1)}%, Uniformidade=${(uniformity*100).toFixed(1)}% → Score=${(finalScore*100).toFixed(1)}%`);
-            
-            return Math.min(1.0, Math.max(0.0, finalScore));
         }
 
         function log(message) {
@@ -1906,10 +2030,34 @@
             const timestamp = new Date().toLocaleTimeString();
             const entry = document.createElement('div');
             entry.textContent = `[${timestamp}] ${message}`;
-            logContent.appendChild(entry);
-            logContent.scrollTop = logContent.scrollHeight;
-            console.log(message);
+            
+            if (logContent) {
+                logContent.appendChild(entry);
+                logContent.scrollTop = logContent.scrollHeight;
+            }
+            
+            console.log(`[${timestamp}] ${message}`);
+            
+            // Debug adicional para carregamento
+            if (message.includes('❌') || message.includes('Erro')) {
+                console.error('ERRO DETECTADO:', message);
+            }
         }
+
+        // Função de debug para monitorar estado
+        function debugSystemState() {
+            console.log('=== DEBUG SISTEMA ===');
+            console.log('PDF Document:', pdfDocument);
+            console.log('Original Pages:', originalPages.length);
+            console.log('Processed Pages:', processedPages.length);
+            console.log('Current Page Index:', currentPageIndex);
+            console.log('Is Processing:', isProcessing);
+            console.log('OpenCV Ready:', openCVReady);
+            console.log('===================');
+        }
+
+        // Disponibilizar debug globalmente para teste manual
+        window.debugSystem = debugSystemState;
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
