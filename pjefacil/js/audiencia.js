@@ -1,6 +1,7 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
  * Versão com IDs fixos e grupos separados para Text Blaze + Validação DeepSeek
+ * TESTE A: Ajustado para contenteditable (igual guia.js)
  */
 
 // Contadores para IDs previsíveis
@@ -13,7 +14,7 @@ let contadorPolicial = 0;
 
 // Função de inicialização do módulo
 export function initialize(container) {
-  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze');
+  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze - TESTE A: contenteditable');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -104,7 +105,8 @@ export function initialize(container) {
       if (confirm('Tem certeza que deseja limpar as observações do MP?')) {
         const campoObservacoes = container.querySelector('#observacoes-mp');
         if (campoObservacoes) {
-          campoObservacoes.value = '';
+          // MUDANÇA: .textContent ao invés de .value
+          campoObservacoes.textContent = '';
           mostrarMensagem(container, 'Observações do MP limpas', 'info');
         }
       }
@@ -117,7 +119,7 @@ export function initialize(container) {
   // Adicionar classe ao contentor principal para o estilo específico da função
   container.closest('.main-content').classList.add('audiencia-mode');
   
-  console.log('Módulo de Audiência pronto para uso');
+  console.log('Módulo de Audiência pronto para uso - TESTE A: contenteditable');
 }
 
 // Função para criar linha de assistente de acusação
@@ -650,12 +652,12 @@ function limparFormulario(container) {
       }
     });
     
-    // Limpar as observações
+    // Limpar as observações - MUDANÇA: .textContent ao invés de .value
     const observacoesMp = container.querySelector('#observacoes-mp');
     const observacoesDefesa = container.querySelector('#observacoes-defesa');
     
-    if (observacoesMp) observacoesMp.value = '';
-    if (observacoesDefesa) observacoesDefesa.value = '';
+    if (observacoesMp) observacoesMp.textContent = ''; // MUDANÇA AQUI
+    if (observacoesDefesa) observacoesDefesa.value = ''; // DEFESA continua textarea
     
     // Limpar todos os checkboxes
     container.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
@@ -686,10 +688,12 @@ function limparFormulario(container) {
 
 // ============================================
 // 📍 FUNÇÕES AUXILIARES DEEPSEEK - VALIDAÇÃO
+// TESTE A: Ajustado para contenteditable
 // ============================================
 
 /**
  * Função de validação - pergunta que dia é hoje ao DeepSeek
+ * MUDANÇA: usa .textContent ao invés de .value
  */
 async function validarDeepSeekAudiencia(container) {
   const botao = container.querySelector('#atualizarDadosMP');
@@ -708,23 +712,27 @@ async function validarDeepSeekAudiencia(container) {
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Testando...';
     botao.disabled = true;
     
+    console.log('TESTE A: Iniciando validação DeepSeek - contenteditable');
+    
     // Fazer requisição para DeepSeek
     const resposta = await chamarDeepSeekAudiencia("Que dia é hoje? Responda de forma simples e clara.");
     
-    // Colocar resposta no campo de observações
-    campoObservacoes.value = `TESTE DEEPSEEK - ${new Date().toLocaleString()}\n\nResposta: ${resposta}`;
+    console.log('TESTE A: Resposta recebida:', resposta);
+    
+    // MUDANÇA PRINCIPAL: .textContent ao invés de .value
+    campoObservacoes.textContent = `TESTE DEEPSEEK - TESTE A: contenteditable - ${new Date().toLocaleString()}\n\nResposta: ${resposta}`;
     
     // Mostrar mensagem de sucesso
-    mostrarMensagem(container, '✅ DeepSeek funcionando! Teste concluído com sucesso.', 'success');
+    mostrarMensagem(container, '✅ TESTE A: DeepSeek funcionando com contenteditable!', 'success');
     
   } catch (error) {
-    console.error('Erro no teste DeepSeek:', error);
+    console.error('TESTE A: Erro no teste DeepSeek:', error);
     
-    // Colocar erro no campo
-    campoObservacoes.value = `ERRO NO TESTE DEEPSEEK - ${new Date().toLocaleString()}\n\nErro: ${error.message}`;
+    // MUDANÇA: .textContent ao invés de .value
+    campoObservacoes.textContent = `ERRO NO TESTE DEEPSEEK - TESTE A: contenteditable - ${new Date().toLocaleString()}\n\nErro: ${error.message}`;
     
     // Mostrar mensagem de erro
-    mostrarMensagem(container, `❌ Erro no teste: ${error.message}`, 'error');
+    mostrarMensagem(container, `❌ TESTE A: Erro: ${error.message}`, 'error');
     
   } finally {
     // Restaurar botão original
@@ -738,6 +746,8 @@ async function validarDeepSeekAudiencia(container) {
  */
 async function chamarDeepSeekAudiencia(pergunta) {
   try {
+    console.log('TESTE A: Chamando API DeepSeek...');
+    
     // Chave da API DeepSeek (mesma do guia.js)
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
@@ -765,6 +775,8 @@ async function chamarDeepSeekAudiencia(pergunta) {
       })
     });
     
+    console.log('TESTE A: Response status:', response.status);
+    
     // Verificar resposta
     if (!response.ok) {
       const errorData = await response.json();
@@ -774,11 +786,13 @@ async function chamarDeepSeekAudiencia(pergunta) {
     // Extrair o resultado
     const data = await response.json();
     
+    console.log('TESTE A: Dados recebidos:', data);
+    
     // Retornar o texto da resposta
     return data.choices[0].message.content;
     
   } catch (error) {
-    console.error("Erro na API DeepSeek:", error);
+    console.error("TESTE A: Erro na API DeepSeek:", error);
     throw new Error(`Falha ao processar: ${error.message}`);
   }
 }
@@ -851,7 +865,7 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js');
+  console.log('Limpando recursos do módulo audiencia.js - TESTE A: contenteditable');
   
   // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
