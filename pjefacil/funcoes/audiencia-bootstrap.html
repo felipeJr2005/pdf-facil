@@ -132,17 +132,3 @@
     </div>
   </div>
 </div>
-
-<!-- CSS adicional para o placeholder do contenteditable -->
-<style>
-.editable-content:empty::before {
-  content: attr(data-placeholder);
-  color: var(--bs-secondary-color);
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.editable-content:focus::before {
-  opacity: 0.4;
-}
-</style>

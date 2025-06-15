@@ -1,7 +1,6 @@
 /**
  * Módulo para Audiência - Integrado ao tema do dashboard
- * Versão com IDs fixos e grupos separados para Text Blaze + Validação DeepSeek
- * TESTE A: Ajustado para contenteditable (igual guia.js)
+ * Versão com IDs fixos e grupos separados para Text Blaze + DeepSeek COMPLETO
  */
 
 // Contadores para IDs previsíveis
@@ -14,7 +13,7 @@ let contadorPolicial = 0;
 
 // Função de inicialização do módulo
 export function initialize(container) {
-  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze - TESTE A: contenteditable');
+  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -90,11 +89,11 @@ export function initialize(container) {
     });
   }
 
-  // Event listener para botão "Atualizar" - TESTE DE VALIDAÇÃO DEEPSEEK
+  // Event listener para botão "Atualizar" - PROCESSAMENTO DEEPSEEK COMPLETO
   const atualizarDadosMPBtn = container.querySelector('#atualizarDadosMP');
   if (atualizarDadosMPBtn) {
     atualizarDadosMPBtn.addEventListener('click', function() {
-      validarDeepSeekAudiencia(container);
+      processarDenunciaComDeepSeek(container);
     });
   }
 
@@ -105,7 +104,6 @@ export function initialize(container) {
       if (confirm('Tem certeza que deseja limpar as observações do MP?')) {
         const campoObservacoes = container.querySelector('#observacoes-mp');
         if (campoObservacoes) {
-          // MUDANÇA: .textContent ao invés de .value
           campoObservacoes.textContent = '';
           mostrarMensagem(container, 'Observações do MP limpas', 'info');
         }
@@ -119,8 +117,360 @@ export function initialize(container) {
   // Adicionar classe ao contentor principal para o estilo específico da função
   container.closest('.main-content').classList.add('audiencia-mode');
   
-  console.log('Módulo de Audiência pronto para uso - TESTE A: contenteditable');
+  console.log('Módulo de Audiência pronto para uso');
 }
+
+// ============================================
+// 📍 FUNÇÃO PRINCIPAL DEEPSEEK - PROCESSAMENTO DE DENÚNCIA
+// ============================================
+
+/**
+ * Função principal para processar denúncia com DeepSeek
+ */
+async function processarDenunciaComDeepSeek(container) {
+  const botao = container.querySelector('#atualizarDadosMP');
+  const campoObservacoes = container.querySelector('#observacoes-mp');
+  
+  if (!botao || !campoObservacoes) {
+    console.error('Elementos não encontrados');
+    return;
+  }
+  
+  // Verificar se há texto para processar
+  const textoOriginal = campoObservacoes.textContent.trim();
+  if (!textoOriginal) {
+    mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
+    return;
+  }
+  
+  // Salvar estado original do botão
+  const textoOriginalBtn = botao.innerHTML;
+  
+  try {
+    // Indicador de processamento no botão
+    botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
+    botao.disabled = true;
+    
+    console.log('Iniciando processamento de denúncia com DeepSeek');
+    
+    // Chamar API DeepSeek para processar o texto
+    const dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
+    
+    console.log('Dados estruturados recebidos:', dadosEstruturados);
+    
+    // Distribuir os dados nos campos (apenas campos vazios)
+    const camposPreenchidos = distribuirDadosNosCampos(container, dadosEstruturados);
+    
+    // Criar relatório para as observações
+    const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos);
+    
+    // Colocar relatório nas observações
+    campoObservacoes.textContent = relatorio;
+    
+    // Mostrar mensagem de sucesso
+    mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos.`, 'success');
+    
+  } catch (error) {
+    console.error('Erro no processamento DeepSeek:', error);
+    
+    // Colocar erro nas observações
+    campoObservacoes.textContent = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
+    
+    // Mostrar mensagem de erro
+    mostrarMensagem(container, `❌ Erro no processamento: ${error.message}`, 'error');
+    
+  } finally {
+    // Restaurar botão original
+    botao.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Atualizar';
+    botao.disabled = false;
+  }
+}
+
+/**
+ * Função para chamar a API DeepSeek
+ */
+async function chamarDeepSeekAPI(textoCompleto) {
+  try {
+    console.log('Chamando API DeepSeek...');
+    
+    // Chave da API DeepSeek
+    const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
+    
+    // Prompt especializado para extração de dados de denúncia
+    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
+
+INSTRUÇÕES:
+1. Identifique TODOS os réus, vítimas, testemunhas normais e testemunhas policiais
+2. Para cada pessoa, extraia nome completo e endereço (se disponível)
+3. Para testemunhas policiais, identifique o tipo (PM, PC, PF, PRF) e matrícula
+4. Para pessoas sem qualificação completa, liste na seção "naoQualificados"
+5. Retorne APENAS o JSON válido, sem texto adicional
+
+FORMATO EXATO (respeite a estrutura):
+{
+  "reus": [
+    {
+      "nome": "NOME COMPLETO",
+      "filiacao": "Nome da mãe (se disponível)",
+      "endereco": "Endereço completo (se disponível)"
+    }
+  ],
+  "vitimas": [
+    {
+      "nome": "NOME COMPLETO",
+      "endereco": "Endereço (se disponível)"
+    }
+  ],
+  "testemunhasNormais": [
+    {
+      "nome": "NOME COMPLETO",
+      "endereco": "Endereço (se disponível)"
+    }
+  ],
+  "testemunhasPoliciais": [
+    {
+      "nome": "NOME COMPLETO",
+      "tipo": "PM|PC|PF|PRF",
+      "matricula": "Número da matrícula (se disponível)"
+    }
+  ],
+  "estatisticas": {
+    "totalMencionados": 0,
+    "totalQualificados": 0,
+    "naoQualificados": ["Nome das pessoas sem qualificação completa"]
+  }
+}
+
+TEXTO DA DENÚNCIA:
+${textoCompleto}`;
+    
+    // Fazer a requisição para a API
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.0,
+        max_tokens: 2000
+      })
+    });
+    
+    console.log('Response status:', response.status);
+    
+    // Verificar resposta
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API`);
+    }
+    
+    // Extrair o resultado
+    const data = await response.json();
+    const resposta = data.choices[0].message.content;
+    
+    console.log('Resposta bruta da API:', resposta);
+    
+    // CORREÇÃO DO PARSE JSON - REMOVER MARKDOWN
+    let jsonString = resposta.trim();
+    
+    // Remover markdown code blocks se existirem
+    if (jsonString.startsWith('```json')) {
+      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonString.startsWith('```')) {
+      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('JSON limpo:', jsonString);
+    
+    // Fazer o parse do JSON limpo
+    const dados = JSON.parse(jsonString);
+    
+    console.log('Dados parseados:', dados);
+    return dados;
+    
+  } catch (error) {
+    console.error("Erro na API DeepSeek:", error);
+    throw new Error(`Falha ao processar texto: ${error.message}`);
+  }
+}
+
+/**
+ * Distribuir dados estruturados nos campos do formulário
+ */
+function distribuirDadosNosCampos(container, dados) {
+  let camposPreenchidos = 0;
+  
+  try {
+    // Processar réus
+    if (dados.reus && dados.reus.length > 0) {
+      dados.reus.forEach(reu => {
+        if (reu.nome && reu.nome.trim() !== '') {
+          addReu(container);
+          const ultimoReu = container.querySelector('#reus-container').lastElementChild;
+          if (ultimoReu) {
+            const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = reu.nome;
+              camposPreenchidos++;
+            }
+            if (enderecoInput && !enderecoInput.value && reu.endereco) {
+              enderecoInput.value = reu.endereco;
+              camposPreenchidos++;
+            }
+          }
+        }
+      });
+    }
+    
+    // Processar vítimas
+    if (dados.vitimas && dados.vitimas.length > 0) {
+      dados.vitimas.forEach(vitima => {
+        if (vitima.nome && vitima.nome.trim() !== '') {
+          addVitima(container);
+          const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
+          if (ultimaVitima) {
+            const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = vitima.nome;
+              camposPreenchidos++;
+            }
+            if (enderecoInput && !enderecoInput.value && vitima.endereco) {
+              enderecoInput.value = vitima.endereco;
+              camposPreenchidos++;
+            }
+          }
+        }
+      });
+    }
+    
+    // Processar testemunhas normais (MP)
+    if (dados.testemunhasNormais && dados.testemunhasNormais.length > 0) {
+      dados.testemunhasNormais.forEach(testemunha => {
+        if (testemunha.nome && testemunha.nome.trim() !== '') {
+          addTestemunha(container, 'mp');
+          const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
+          if (ultimaTestemunha) {
+            const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = testemunha.nome;
+              camposPreenchidos++;
+            }
+            if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
+              enderecoInput.value = testemunha.endereco;
+              camposPreenchidos++;
+            }
+          }
+        }
+      });
+    }
+    
+    // Processar testemunhas policiais
+    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
+      dados.testemunhasPoliciais.forEach(policial => {
+        if (policial.nome && policial.nome.trim() !== '') {
+          addPolicial(container);
+          const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
+          if (ultimoPolicial) {
+            const tipoSelect = ultimoPolicial.querySelector('select');
+            const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
+            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
+            
+            if (tipoSelect && policial.tipo) {
+              const tipoLower = policial.tipo.toLowerCase();
+              if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
+                tipoSelect.value = tipoLower;
+                camposPreenchidos++;
+              }
+            }
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = policial.nome;
+              camposPreenchidos++;
+            }
+            if (matriculaInput && !matriculaInput.value && policial.matricula) {
+              matriculaInput.value = policial.matricula;
+              camposPreenchidos++;
+            }
+          }
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('Erro ao distribuir dados:', error);
+  }
+  
+  return camposPreenchidos;
+}
+
+/**
+ * Criar relatório do processamento
+ */
+function criarRelatorioProcessamento(dados, camposPreenchidos) {
+  const timestamp = new Date().toLocaleString();
+  
+  let relatorio = `PROCESSAMENTO AUTOMÁTICO - ${timestamp}\n\n`;
+  
+  // Estatísticas
+  if (dados.estatisticas) {
+    relatorio += `📊 ESTATÍSTICAS:\n`;
+    relatorio += `• ${dados.estatisticas.totalMencionados || 0} pessoas mencionadas\n`;
+    relatorio += `• ${dados.estatisticas.totalQualificados || 0} qualificadas\n`;
+    relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
+  }
+  
+  // Detalhamento por categoria
+  const categorias = [
+    { key: 'reus', nome: 'RÉUS', dados: dados.reus },
+    { key: 'vitimas', nome: 'VÍTIMAS', dados: dados.vitimas },
+    { key: 'testemunhasNormais', nome: 'TESTEMUNHAS ACUSAÇÃO', dados: dados.testemunhasNormais },
+    { key: 'testemunhasPoliciais', nome: 'TESTEMUNHAS POLICIAIS', dados: dados.testemunhasPoliciais }
+  ];
+  
+  categorias.forEach(categoria => {
+    if (categoria.dados && categoria.dados.length > 0) {
+      relatorio += `${categoria.nome} (${categoria.dados.length}):\n`;
+      categoria.dados.forEach((item, index) => {
+        relatorio += `${index + 1}. ${item.nome}`;
+        if (item.tipo) relatorio += ` - ${item.tipo.toUpperCase()}`;
+        if (item.matricula) relatorio += ` (${item.matricula})`;
+        relatorio += '\n';
+      });
+      relatorio += '\n';
+    }
+  });
+  
+  // Não qualificados
+  if (dados.estatisticas && dados.estatisticas.naoQualificados && dados.estatisticas.naoQualificados.length > 0) {
+    relatorio += `⚠️ NÃO QUALIFICADOS (${dados.estatisticas.naoQualificados.length}):\n`;
+    dados.estatisticas.naoQualificados.forEach((nome, index) => {
+      relatorio += `${index + 1}. ${nome}\n`;
+    });
+  }
+  
+  return relatorio;
+}
+
+// ============================================
+// 📍 FUNÇÕES DE CRIAÇÃO DE ELEMENTOS (ORIGINAIS)
+// ============================================
 
 // Função para criar linha de assistente de acusação
 function criarLinhaAssistenteAcusacao() {
@@ -427,6 +777,10 @@ function addReu(container) {
   }
 }
 
+// ============================================
+// 📍 FUNÇÕES AUXILIARES
+// ============================================
+
 // Registrar event listeners para botões de remover
 function setupRemoveButtons(container) {
   container.querySelectorAll('.remove-btn').forEach(button => {
@@ -652,12 +1006,12 @@ function limparFormulario(container) {
       }
     });
     
-    // Limpar as observações - MUDANÇA: .textContent ao invés de .value
+    // Limpar as observações
     const observacoesMp = container.querySelector('#observacoes-mp');
     const observacoesDefesa = container.querySelector('#observacoes-defesa');
     
-    if (observacoesMp) observacoesMp.textContent = ''; // MUDANÇA AQUI
-    if (observacoesDefesa) observacoesDefesa.value = ''; // DEFESA continua textarea
+    if (observacoesMp) observacoesMp.textContent = '';
+    if (observacoesDefesa) observacoesDefesa.value = '';
     
     // Limpar todos os checkboxes
     container.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
@@ -683,117 +1037,6 @@ function limparFormulario(container) {
       // Mostrar uma mensagem de sucesso
       mostrarMensagem(container, 'Formulário limpo com sucesso!', 'success');
     }, 500);
-  }
-}
-
-// ============================================
-// 📍 FUNÇÕES AUXILIARES DEEPSEEK - VALIDAÇÃO
-// TESTE A: Ajustado para contenteditable
-// ============================================
-
-/**
- * Função de validação - pergunta que dia é hoje ao DeepSeek
- * MUDANÇA: usa .textContent ao invés de .value
- */
-async function validarDeepSeekAudiencia(container) {
-  const botao = container.querySelector('#atualizarDadosMP');
-  const campoObservacoes = container.querySelector('#observacoes-mp');
-  
-  if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados');
-    return;
-  }
-  
-  // Salvar estado original do botão
-  const textoOriginalBtn = botao.innerHTML;
-  
-  try {
-    // Indicador de processamento no botão
-    botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Testando...';
-    botao.disabled = true;
-    
-    console.log('TESTE A: Iniciando validação DeepSeek - contenteditable');
-    
-    // Fazer requisição para DeepSeek
-    const resposta = await chamarDeepSeekAudiencia("Que dia é hoje? Responda de forma simples e clara.");
-    
-    console.log('TESTE A: Resposta recebida:', resposta);
-    
-    // MUDANÇA PRINCIPAL: .textContent ao invés de .value
-    campoObservacoes.textContent = `TESTE DEEPSEEK - TESTE A: contenteditable - ${new Date().toLocaleString()}\n\nResposta: ${resposta}`;
-    
-    // Mostrar mensagem de sucesso
-    mostrarMensagem(container, '✅ TESTE A: DeepSeek funcionando com contenteditable!', 'success');
-    
-  } catch (error) {
-    console.error('TESTE A: Erro no teste DeepSeek:', error);
-    
-    // MUDANÇA: .textContent ao invés de .value
-    campoObservacoes.textContent = `ERRO NO TESTE DEEPSEEK - TESTE A: contenteditable - ${new Date().toLocaleString()}\n\nErro: ${error.message}`;
-    
-    // Mostrar mensagem de erro
-    mostrarMensagem(container, `❌ TESTE A: Erro: ${error.message}`, 'error');
-    
-  } finally {
-    // Restaurar botão original
-    botao.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Atualizar';
-    botao.disabled = false;
-  }
-}
-
-/**
- * Função para chamar a API DeepSeek (baseada no guia.js)
- */
-async function chamarDeepSeekAudiencia(pergunta) {
-  try {
-    console.log('TESTE A: Chamando API DeepSeek...');
-    
-    // Chave da API DeepSeek (mesma do guia.js)
-    const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
-    
-    // Fazer a requisição para a API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system", 
-            content: "Você é um assistente prestativo que responde perguntas de forma simples e direta."
-          },
-          {
-            role: "user",
-            content: pergunta
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 200
-      })
-    });
-    
-    console.log('TESTE A: Response status:', response.status);
-    
-    // Verificar resposta
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API`);
-    }
-    
-    // Extrair o resultado
-    const data = await response.json();
-    
-    console.log('TESTE A: Dados recebidos:', data);
-    
-    // Retornar o texto da resposta
-    return data.choices[0].message.content;
-    
-  } catch (error) {
-    console.error("TESTE A: Erro na API DeepSeek:", error);
-    throw new Error(`Falha ao processar: ${error.message}`);
   }
 }
 
@@ -865,7 +1108,7 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js - TESTE A: contenteditable');
+  console.log('Limpando recursos do módulo audiencia.js');
   
   // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
