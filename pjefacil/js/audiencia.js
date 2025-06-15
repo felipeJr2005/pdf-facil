@@ -104,7 +104,12 @@ export function initialize(container) {
       if (confirm('Tem certeza que deseja limpar as observações do MP?')) {
         const campoObservacoes = container.querySelector('#observacoes-mp');
         if (campoObservacoes) {
-          campoObservacoes.textContent = '';
+          // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
+          if (campoObservacoes.tagName === 'TEXTAREA') {
+            campoObservacoes.value = '';
+          } else {
+            campoObservacoes.textContent = '';
+          }
           mostrarMensagem(container, 'Observações do MP limpas', 'info');
         }
       }
@@ -137,7 +142,8 @@ async function processarDenunciaComDeepSeek(container) {
   }
   
   // Verificar se há texto para processar
-  const textoOriginal = campoObservacoes.textContent.trim();
+  // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
+  const textoOriginal = (campoObservacoes.value || campoObservacoes.textContent || '').trim();
   if (!textoOriginal) {
     mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
     return;
@@ -165,7 +171,12 @@ async function processarDenunciaComDeepSeek(container) {
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos);
     
     // Colocar relatório nas observações
-    campoObservacoes.textContent = relatorio;
+    // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
+    if (campoObservacoes.tagName === 'TEXTAREA') {
+      campoObservacoes.value = relatorio;
+    } else {
+      campoObservacoes.textContent = relatorio;
+    }
     
     // Mostrar mensagem de sucesso
     mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos.`, 'success');
@@ -174,7 +185,13 @@ async function processarDenunciaComDeepSeek(container) {
     console.error('Erro no processamento DeepSeek:', error);
     
     // Colocar erro nas observações
-    campoObservacoes.textContent = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
+    // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
+    const mensagemErro = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
+    if (campoObservacoes.tagName === 'TEXTAREA') {
+      campoObservacoes.value = mensagemErro;
+    } else {
+      campoObservacoes.textContent = mensagemErro;
+    }
     
     // Mostrar mensagem de erro
     mostrarMensagem(container, `❌ Erro no processamento: ${error.message}`, 'error');
