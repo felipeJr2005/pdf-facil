@@ -179,7 +179,7 @@ async function processarDenunciaComDeepSeek(container) {
       campoObservacoes.value = relatorio;
     } else {
       // Para contenteditable, usar textContent mantém formatação visual
-      campoObservacoes.textContent = relatorio;
+      campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
     }
     
     // Mostrar mensagem de sucesso
@@ -220,7 +220,7 @@ async function chamarDeepSeekAPI(textoCompleto) {
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
 INSTRUÇÕES CRÍTICAS:
-1. Para RÉUS: formato completo "NOME COMPLETO, Alcunha 'APELIDO', filho(a) de NOME_MÃE e NOME_PAI, nascido em DD/MM/AAAA"
+1. Para RÉUS: formato completo "NOME COMPLETO, Alcunha 'APELIDO', CPF não informado/CPF_NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
 2. Para VÍTIMAS: formato "NOME COMPLETO, filho(a) de NOME_MÃE (se disponível), nascido em DD/MM/AAAA (se disponível)"
 3. Para TESTEMUNHAS GERAIS: mesmo formato dos réus/vítimas
 4. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
