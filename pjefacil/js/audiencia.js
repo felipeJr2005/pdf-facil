@@ -221,45 +221,59 @@ async function chamarDeepSeekAPI(textoCompleto) {
     // Prompt especializado para extração de dados de denúncia
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
-INSTRUÇÕES:
-1. Identifique TODOS os réus, vítimas, testemunhas normais e testemunhas policiais
-2. Para cada pessoa, extraia nome completo e endereço (se disponível)
-3. Para testemunhas policiais, identifique o tipo (PM, PC, PF, PRF) e matrícula
-4. Para pessoas sem qualificação completa, liste na seção "naoQualificados"
-5. Retorne APENAS o JSON válido, sem texto adicional
+INSTRUÇÕES IMPORTANTES:
+1. Para RÉUS, VÍTIMAS e TESTEMUNHAS GERAIS, use o formato: "Nome, Alcunha (se houver), filho de (mãe), nascido em (data)" 
+2. Para TESTEMUNHAS POLICIAIS, use: "Nome / MATRÍCULA (se houver)"
+3. Pessoas SEM QUALIFICAÇÃO COMPLETA vão para "OUTROS"
+4. Em "observacoesImportantes" inclua informações relevantes (ex: "réu atualmente preso em...")
+
+EXEMPLOS DE FORMATAÇÃO:
+- Réu: "LEOMAR CARLOS DA SILVA, Alcunha 'Mamãe', filho de Maria de Lourdes da Silva, nascido em 08/08/1987"
+- Policial: "ANTÔNIO JOSÉ DO NASCIMENTO / 221485-7"
+- Outros: "GABRIELE LEITE DA SILVA (adolescente, sem qualificação completa)"
 
 FORMATO EXATO (respeite a estrutura):
 {
   "reus": [
     {
-      "nome": "NOME COMPLETO",
-      "filiacao": "Nome da mãe (se disponível)",
-      "endereco": "Endereço completo (se disponível)"
+      "nomeCompleto": "Nome, Alcunha, filiação, nascimento",
+      "endereco": "Endereço completo incluindo situação atual"
     }
   ],
   "vitimas": [
     {
-      "nome": "NOME COMPLETO",
+      "nomeCompleto": "Nome, Alcunha, filiação, nascimento", 
       "endereco": "Endereço (se disponível)"
     }
   ],
-  "testemunhasNormais": [
+  "testemunhasGerais": [
     {
-      "nome": "NOME COMPLETO",
+      "nomeCompleto": "Nome, Alcunha, filiação, nascimento",
       "endereco": "Endereço (se disponível)"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "nome": "NOME COMPLETO",
+      "nomeCompleto": "Nome / MATRÍCULA",
       "tipo": "PM|PC|PF|PRF",
-      "matricula": "Número da matrícula (se disponível)"
+      "lotacao": "Local de trabalho (se disponível)"
     }
+  ],
+  "testemunhasDefesa": [],
+  "procuradorRequerido": [],
+  "outros": [
+    {
+      "nome": "Nome da pessoa sem qualificação",
+      "motivo": "Razão pela qual está em outros (ex: adolescente, sem qualificação completa)"
+    }
+  ],
+  "observacoesImportantes": [
+    "Informações relevantes que não se encaixam nas categorias acima"
   ],
   "estatisticas": {
     "totalMencionados": 0,
     "totalQualificados": 0,
-    "naoQualificados": ["Nome das pessoas sem qualificação completa"]
+    "naoQualificados": 0
   }
 }
 
@@ -338,7 +352,7 @@ function distribuirDadosNosCampos(container, dados) {
     // Processar réus
     if (dados.reus && dados.reus.length > 0) {
       dados.reus.forEach(reu => {
-        if (reu.nome && reu.nome.trim() !== '') {
+        if (reu.nomeCompleto && reu.nomeCompleto.trim() !== '') {
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
           if (ultimoReu) {
@@ -346,7 +360,7 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = reu.nome;
+              nomeInput.value = reu.nomeCompleto;
               camposPreenchidos++;
             }
             if (enderecoInput && !enderecoInput.value && reu.endereco) {
@@ -361,7 +375,7 @@ function distribuirDadosNosCampos(container, dados) {
     // Processar vítimas
     if (dados.vitimas && dados.vitimas.length > 0) {
       dados.vitimas.forEach(vitima => {
-        if (vitima.nome && vitima.nome.trim() !== '') {
+        if (vitima.nomeCompleto && vitima.nomeCompleto.trim() !== '') {
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
           if (ultimaVitima) {
@@ -369,7 +383,7 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = vitima.nome;
+              nomeInput.value = vitima.nomeCompleto;
               camposPreenchidos++;
             }
             if (enderecoInput && !enderecoInput.value && vitima.endereco) {
@@ -381,10 +395,10 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas normais (MP)
-    if (dados.testemunhasNormais && dados.testemunhasNormais.length > 0) {
-      dados.testemunhasNormais.forEach(testemunha => {
-        if (testemunha.nome && testemunha.nome.trim() !== '') {
+    // Processar testemunhas gerais (MP)
+    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
+      dados.testemunhasGerais.forEach(testemunha => {
+        if (testemunha.nomeCompleto && testemunha.nomeCompleto.trim() !== '') {
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
           if (ultimaTestemunha) {
@@ -392,7 +406,7 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = testemunha.nome;
+              nomeInput.value = testemunha.nomeCompleto;
               camposPreenchidos++;
             }
             if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
@@ -407,7 +421,7 @@ function distribuirDadosNosCampos(container, dados) {
     // Processar testemunhas policiais
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
       dados.testemunhasPoliciais.forEach(policial => {
-        if (policial.nome && policial.nome.trim() !== '') {
+        if (policial.nomeCompleto && policial.nomeCompleto.trim() !== '') {
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
           if (ultimoPolicial) {
@@ -423,11 +437,7 @@ function distribuirDadosNosCampos(container, dados) {
               }
             }
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = policial.nome;
-              camposPreenchidos++;
-            }
-            if (matriculaInput && !matriculaInput.value && policial.matricula) {
-              matriculaInput.value = policial.matricula;
+              nomeInput.value = policial.nomeCompleto;
               camposPreenchidos++;
             }
           }
