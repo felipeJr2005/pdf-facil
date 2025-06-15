@@ -130,7 +130,7 @@ export function initialize(container) {
 // ============================================
 
 /**
- * Função principal para processar denúncia com DeepSeek
+ * Função principal para processar denúncia com DeepSeek - VERSÃO CORRIGIDA
  */
 async function processarDenunciaComDeepSeek(container) {
   const botao = container.querySelector('#atualizarDadosMP');
@@ -147,7 +147,6 @@ async function processarDenunciaComDeepSeek(container) {
   }
   
   // Verificar se há texto para processar
-  // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
   const textoOriginal = (campoObservacoes.value || campoObservacoes.textContent || '').trim();
   if (!textoOriginal) {
     mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
@@ -175,11 +174,11 @@ async function processarDenunciaComDeepSeek(container) {
     // Criar relatório para as observações
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos);
     
-    // Colocar relatório nas observações
-    // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
+    // Colocar relatório nas observações - CORREÇÃO: usar textContent para texto puro
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = relatorio;
     } else {
+      // Para contenteditable, usar textContent mantém formatação visual
       campoObservacoes.textContent = relatorio;
     }
     
@@ -190,7 +189,6 @@ async function processarDenunciaComDeepSeek(container) {
     console.error('Erro no processamento DeepSeek:', error);
     
     // Colocar erro nas observações
-    // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
     const mensagemErro = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = mensagemErro;
@@ -209,7 +207,7 @@ async function processarDenunciaComDeepSeek(container) {
 }
 
 /**
- * Função para chamar a API DeepSeek
+ * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM PROMPT MELHORADO
  */
 async function chamarDeepSeekAPI(textoCompleto) {
   try {
@@ -218,57 +216,63 @@ async function chamarDeepSeekAPI(textoCompleto) {
     // Chave da API DeepSeek
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
-    // Prompt especializado para extração de dados de denúncia
+    // Prompt especializado CORRIGIDO para extração de dados de denúncia
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
-INSTRUÇÕES IMPORTANTES:
-1. Para RÉUS, VÍTIMAS e TESTEMUNHAS GERAIS, use o formato: "Nome, Alcunha (se houver), filho de (mãe), nascido em (data)" 
-2. Para TESTEMUNHAS POLICIAIS, use: "Nome / MATRÍCULA (se houver)"
-3. Pessoas SEM QUALIFICAÇÃO COMPLETA vão para "OUTROS"
-4. Em "observacoesImportantes" inclua informações relevantes (ex: "réu atualmente preso em...")
+INSTRUÇÕES CRÍTICAS:
+1. Para RÉUS: formato completo "NOME COMPLETO, Alcunha 'APELIDO', filho(a) de NOME_MÃE e NOME_PAI, nascido em DD/MM/AAAA"
+2. Para VÍTIMAS: formato "NOME COMPLETO, filho(a) de NOME_MÃE (se disponível), nascido em DD/MM/AAAA (se disponível)"
+3. Para TESTEMUNHAS GERAIS: mesmo formato dos réus/vítimas
+4. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
+5. ENDEREÇOS: incluir endereço completo sempre que disponível
+6. SITUAÇÃO PRISIONAL: incluir informações sobre prisão atual se mencionado
 
-EXEMPLOS DE FORMATAÇÃO:
-- Réu: "LEOMAR CARLOS DA SILVA, Alcunha 'Mamãe', filho de Maria de Lourdes da Silva, nascido em 08/08/1987"
-- Policial: "ANTÔNIO JOSÉ DO NASCIMENTO / 221485-7"
-- Outros: "GABRIELE LEITE DA SILVA (adolescente, sem qualificação completa)"
+EXEMPLO RÉUS:
+"JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', filho de Luciene Menezes da Silva e Joselito da Silva Gomes, nascido em 08/01/1994"
 
-FORMATO EXATO (respeite a estrutura):
+EXEMPLO VÍTIMAS:
+"EMERSON DIEGO ALVES BEZERRA"
+
+EXEMPLO POLICIAIS:
+"Jonantas de Lira Lima / 51.801 PM/PE"
+
+FORMATO EXATO DE SAÍDA:
 {
   "reus": [
     {
-      "nomeCompleto": "Nome, Alcunha, filiação, nascimento",
-      "endereco": "Endereço completo incluindo situação atual"
+      "nomeCompleto": "Nome completo com filiação, nascimento e alcunha",
+      "endereco": "Endereço residencial completo + situação prisional atual (se houver)"
     }
   ],
   "vitimas": [
     {
-      "nomeCompleto": "Nome, Alcunha, filiação, nascimento", 
-      "endereco": "Endereço (se disponível)"
+      "nomeCompleto": "Nome completo com filiação e nascimento (se disponível)", 
+      "endereco": "Endereço completo (buscar no rol de testemunhas se não estiver no corpo)"
     }
   ],
   "testemunhasGerais": [
     {
-      "nomeCompleto": "Nome, Alcunha, filiação, nascimento",
+      "nomeCompleto": "Nome completo com filiação e nascimento",
       "endereco": "Endereço (se disponível)"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "nomeCompleto": "Nome / MATRÍCULA",
+      "nomeCompleto": "Nome completo / MATRÍCULA",
       "tipo": "PM|PC|PF|PRF",
-      "lotacao": "Local de trabalho (se disponível)"
+      "lotacao": "Local de trabalho (ex: 4º BPM)"
     }
   ],
   "testemunhasDefesa": [],
   "procuradorRequerido": [],
   "outros": [
     {
-      "nome": "Nome da pessoa sem qualificação",
-      "motivo": "Razão pela qual está em outros (ex: adolescente, sem qualificação completa)"
+      "nome": "Pessoa sem qualificação completa",
+      "motivo": "Razão pela qual está em outros"
     }
   ],
   "observacoesImportantes": [
-    "Informações relevantes que não se encaixam nas categorias acima"
+    "Situação prisional, histórico criminal, detalhes relevantes"
   ],
   "estatisticas": {
     "totalMencionados": 0,
@@ -318,7 +322,7 @@ ${textoCompleto}`;
     
     console.log('Resposta bruta da API:', resposta);
     
-    // CORREÇÃO DO PARSE JSON - REMOVER MARKDOWN
+    // Limpar JSON removendo markdown
     let jsonString = resposta.trim();
     
     // Remover markdown code blocks se existirem
@@ -343,7 +347,7 @@ ${textoCompleto}`;
 }
 
 /**
- * Distribuir dados estruturados nos campos do formulário
+ * Distribuir dados estruturados nos campos do formulário - VERSÃO MELHORADA
  */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
@@ -453,7 +457,7 @@ function distribuirDadosNosCampos(container, dados) {
 }
 
 /**
- * Criar relatório do processamento
+ * Criar relatório do processamento - VERSÃO CORRIGIDA COM FORMATAÇÃO
  */
 function criarRelatorioProcessamento(dados, camposPreenchidos) {
   const timestamp = new Date().toLocaleString();
@@ -468,32 +472,70 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
   }
   
-  // Detalhamento por categoria
-  const categorias = [
-    { key: 'reus', nome: 'RÉUS', dados: dados.reus },
-    { key: 'vitimas', nome: 'VÍTIMAS', dados: dados.vitimas },
-    { key: 'testemunhasNormais', nome: 'TESTEMUNHAS ACUSAÇÃO', dados: dados.testemunhasNormais },
-    { key: 'testemunhasPoliciais', nome: 'TESTEMUNHAS POLICIAIS', dados: dados.testemunhasPoliciais }
-  ];
+  // RÉUS - FORMATO CORRIGIDO
+  if (dados.reus && dados.reus.length > 0) {
+    relatorio += `RÉUS (${dados.reus.length}):\n`;
+    dados.reus.forEach((reu, index) => {
+      relatorio += `${index + 1}. ${reu.nomeCompleto}\n`;
+      if (reu.endereco && reu.endereco.trim() !== '') {
+        relatorio += `   Endereço: ${reu.endereco}\n`;
+      }
+    });
+    relatorio += '\n';
+  }
   
-  categorias.forEach(categoria => {
-    if (categoria.dados && categoria.dados.length > 0) {
-      relatorio += `${categoria.nome} (${categoria.dados.length}):\n`;
-      categoria.dados.forEach((item, index) => {
-        relatorio += `${index + 1}. ${item.nome}`;
-        if (item.tipo) relatorio += ` - ${item.tipo.toUpperCase()}`;
-        if (item.matricula) relatorio += ` (${item.matricula})`;
-        relatorio += '\n';
-      });
+  // VÍTIMAS - FORMATO CORRIGIDO
+  if (dados.vitimas && dados.vitimas.length > 0) {
+    relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
+    dados.vitimas.forEach((vitima, index) => {
+      relatorio += `${index + 1}. ${vitima.nomeCompleto}\n`;
+      if (vitima.endereco && vitima.endereco.trim() !== '') {
+        relatorio += `   Endereço: ${vitima.endereco}\n`;
+      }
+    });
+    relatorio += '\n';
+  }
+  
+  // TESTEMUNHAS GERAIS - FORMATO CORRIGIDO
+  if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
+    relatorio += `TESTEMUNHAS ACUSAÇÃO (${dados.testemunhasGerais.length}):\n`;
+    dados.testemunhasGerais.forEach((testemunha, index) => {
+      relatorio += `${index + 1}. ${testemunha.nomeCompleto}\n`;
+      if (testemunha.endereco && testemunha.endereco.trim() !== '') {
+        relatorio += `   Endereço: ${testemunha.endereco}\n`;
+      }
+    });
+    relatorio += '\n';
+  }
+  
+  // TESTEMUNHAS POLICIAIS - FORMATO CORRIGIDO
+  if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
+    relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
+    dados.testemunhasPoliciais.forEach((policial, index) => {
+      relatorio += `${index + 1}. ${policial.nomeCompleto}`;
+      if (policial.tipo) relatorio += ` - ${policial.tipo.toUpperCase()}`;
+      if (policial.lotacao) relatorio += ` (${policial.lotacao})`;
       relatorio += '\n';
-    }
-  });
+    });
+    relatorio += '\n';
+  }
   
-  // Não qualificados
-  if (dados.estatisticas && dados.estatisticas.naoQualificados && dados.estatisticas.naoQualificados.length > 0) {
-    relatorio += `⚠️ NÃO QUALIFICADOS (${dados.estatisticas.naoQualificados.length}):\n`;
-    dados.estatisticas.naoQualificados.forEach((nome, index) => {
-      relatorio += `${index + 1}. ${nome}\n`;
+  // OBSERVAÇÕES IMPORTANTES
+  if (dados.observacoesImportantes && dados.observacoesImportantes.length > 0) {
+    relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
+    dados.observacoesImportantes.forEach((obs, index) => {
+      relatorio += `• ${obs}\n`;
+    });
+    relatorio += '\n';
+  }
+  
+  // OUTROS (não qualificados)
+  if (dados.outros && dados.outros.length > 0) {
+    relatorio += `⚠️ NÃO QUALIFICADOS (${dados.outros.length}):\n`;
+    dados.outros.forEach((pessoa, index) => {
+      relatorio += `${index + 1}. ${pessoa.nome}`;
+      if (pessoa.motivo) relatorio += ` (${pessoa.motivo})`;
+      relatorio += '\n';
     });
   }
   
