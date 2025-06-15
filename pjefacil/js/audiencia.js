@@ -137,7 +137,12 @@ async function processarDenunciaComDeepSeek(container) {
   const campoObservacoes = container.querySelector('#observacoes-mp');
   
   if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados');
+    console.error('Elementos não encontrados:', {
+      botao: !!botao, 
+      campoObservacoes: !!campoObservacoes,
+      container: container
+    });
+    mostrarMensagem(container, 'Erro: Elementos necessários não encontrados', 'error');
     return;
   }
   
