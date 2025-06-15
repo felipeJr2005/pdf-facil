@@ -970,7 +970,8 @@
                 updateQualityDisplay(); // Mostrar qualidade original
                 document.getElementById('applyBtn').disabled = false;
                 document.getElementById('autoSearchBtn').disabled = false; // Habilitar busca automática
-                
+                document.getElementById('downloadBtn').disabled = false; // Habilitar download das originais
+
                 log(`✅ ${totalPages} páginas carregadas com sucesso`);
                 
             } catch (error) {
@@ -1857,31 +1858,56 @@ async function applyProcessing() {
         }
         
 
-function downloadImages() {
-            if (processedPages.length === 0) {
-                alert('Nenhuma imagem processada para download. Clique em "APLICAR" primeiro.');
+
+        function downloadImages() {
+            if (originalPages.length === 0) {
+                alert('Nenhuma página carregada para download.');
                 return;
             }
 
-            log('📥 Iniciando download das imagens processadas...');
+            log('📥 Iniciando download das imagens (originais + processadas)...');
             
-            // Download apenas das páginas processadas
-            processedPages.forEach((page, index) => {
-                // Criar link temporário para download
+            // 1. DOWNLOAD DAS ORIGINAIS (sempre disponíveis)
+            originalPages.forEach((page, index) => {
                 const link = document.createElement('a');
                 link.href = page.imageUrl;
-                link.download = `pdffacil_processado_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
+                link.download = `pdffacil_ORIGINAL_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 
-                // Pequeno delay entre downloads para não sobrecarregar
-                setTimeout(() => {}, index * 100);
+                setTimeout(() => {}, index * 150);
             });
 
-            log(`✅ Download concluído: ${processedPages.length} imagens processadas com métricas científicas`);
-            log(`🔬 Arquivos: pdffacil_processado_pagina_X_YYYY-MM-DD.jpg (prontos para OCR!)`);
+            // 2. DOWNLOAD DAS PROCESSADAS (se existirem)
+            if (processedPages.length > 0) {
+                processedPages.forEach((page, index) => {
+                    const link = document.createElement('a');
+                    link.href = page.imageUrl;
+                    link.download = `pdffacil_PROCESSADO_pagina_${page.pageNum}_${new Date().toISOString().slice(0, 10)}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    setTimeout(() => {}, (originalPages.length + index) * 150);
+                });
+                
+                log(`✅ Download concluído: ${originalPages.length} originais + ${processedPages.length} processadas`);
+            } else {
+                log(`✅ Download concluído: ${originalPages.length} imagens originais (processe para obter versões melhoradas)`);
+            }
+
+            log(`📁 Arquivos: pdffacil_ORIGINAL_pagina_X e pdffacil_PROCESSADO_pagina_X`);
         }
+
+
+
+
+
+
+
+
+
 
 
 
