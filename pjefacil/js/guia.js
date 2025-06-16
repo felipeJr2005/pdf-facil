@@ -672,50 +672,213 @@ async function concatenarCampos(container) {
 
 
 // Função para limpar campos do editor
+// Função para limpar TODOS os campos do editor e formulário
 function limparCamposEditor(container) {
-    const confirmacao = confirm('Tem certeza que deseja limpar todos os campos do editor?');
-    if (confirmacao) {
-        // Limpar os campos de texto simples
-        const camposTexto = ['numeroInquerito', 'recebimentoDenuncia'];
-        camposTexto.forEach(campo => {
-            const elemento = container.querySelector(`#${campo}`);
-            if (elemento) {
-                elemento.value = '';
-            }
-        });
-        
-        // Limpar os campos editáveis
-        const camposEditaveis = ['denuncia', 'sentenca', 'acordao', 'transitoJulgado'];
-        camposEditaveis.forEach(campo => {
-            const elemento = container.querySelector(`#${campo}`);
-            if (elemento) {
-                elemento.textContent = '';
-                
-                // Atualizar contagem
-                const contadorElement = container.querySelector(`#${campo}Count`);
-                if (contadorElement) {
-                    contadorElement.textContent = '0 caracteres';
-                    contadorElement.classList.remove('limit-exceeded');
-                }
-            }
-        });
-        
-        // Limpar o campo de resumo (que pode conter HTML)
-        const resumoElement = container.querySelector('#resumo');
-        if (resumoElement) {
-            resumoElement.innerHTML = '';
+    const confirmacao = confirm('Tem certeza que deseja limpar todos os campos? Esta ação não pode ser desfeita.');
+    if (!confirmacao) return;
+    
+    // ===== LIMPAR CAMPOS DE TEXTO SIMPLES =====
+    const camposTexto = [
+        'numeroInquerito', 'recebimentoDenuncia', 'dataSentenca',
+        'numeroProcesso', 'dataExpedicao', 'uf', 'municipio', 'localCustodia',
+        'mandadoPrisao', 'orgaoJudiciario', 'numeroRecurso', 'orgaoJudiciarioRecurso',
+        'camaraJulgadora', 'artigo', 'complemento', 'anos', 'meses', 'dias',
+        'dataInfracao', 'dataRecebimentoDenuncia', 'dataPublicacaoPronuncia',
+        'dataPublicacaoSentenca', 'dataPublicacaoAcordao', 'dataTransitoDefesa',
+        'dataTransitoAcusacao', 'dataTransitoAssistente', 'dataTransitoReu',
+        'dataDecisaoRecurso', 'dataTransitoRecurso', 'dataDelito',
+        'dataPrisao', 'dataSoltura'
+    ];
+    
+    camposTexto.forEach(campo => {
+        const elemento = container.querySelector(`#${campo}`);
+        if (elemento) {
+            elemento.value = '';
+            elemento.classList.remove('campo-preenchido-auto', 'invalid');
+        }
+    });
+    
+    // ===== LIMPAR CAMPOS EDITÁVEIS (contenteditable) =====
+    const camposEditaveis = ['denuncia', 'sentenca', 'acordao', 'transitoJulgado'];
+    camposEditaveis.forEach(campo => {
+        const elemento = container.querySelector(`#${campo}`);
+        if (elemento) {
+            elemento.textContent = '';
+            elemento.innerHTML = '';
             
-            // Atualizar contagem
-            const contadorElement = container.querySelector('#resumoCount');
+            // Atualizar contagem de caracteres
+            const contadorElement = container.querySelector(`#${campo}Count`);
             if (contadorElement) {
                 contadorElement.textContent = '0 caracteres';
                 contadorElement.classList.remove('limit-exceeded');
             }
         }
+    });
+    
+    // ===== LIMPAR CAMPO DE RESUMO (que pode conter HTML) =====
+    const resumoElement = container.querySelector('#resumo');
+    if (resumoElement) {
+        resumoElement.innerHTML = '';
+        resumoElement.textContent = '';
         
-        // Mostrar mensagem de sucesso
-        mostrarMensagem(container, 'success', 'Campos limpos com sucesso!');
+        // Atualizar contagem de caracteres
+        const contadorElement = container.querySelector('#resumoCount');
+        if (contadorElement) {
+            contadorElement.textContent = '0 caracteres';
+            contadorElement.classList.remove('limit-exceeded');
+        }
     }
+    
+    // ===== LIMPAR TODOS OS CHECKBOXES =====
+    const checkboxes = [
+        'expedicaoExcepcional', 'crimeTentado', 'violenciaDomestica',
+        'resultadoMorte', 'violenciaGraveAmeaca', 'reincidenteComum',
+        'reincidenteEspecifico', 'comandoOrganizacao'
+    ];
+    
+    checkboxes.forEach(checkboxId => {
+        const checkbox = container.querySelector(`#${checkboxId}`);
+        if (checkbox) {
+            checkbox.checked = false;
+            checkbox.classList.remove('campo-preenchido-auto');
+        }
+    });
+    
+    // ===== RESETAR TODOS OS SELECTS PARA VALORES PADRÃO =====
+    
+    // Tipo de Peça - valor padrão: recolhimento
+    const tipoPeca = container.querySelector('#tipoPeca');
+    if (tipoPeca) {
+        tipoPeca.value = 'recolhimento';
+        tipoPeca.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Regime Prisional - valor padrão: semiaberto
+    const regimePrisional = container.querySelector('#regimePrisional');
+    if (regimePrisional) {
+        regimePrisional.value = 'semiaberto';
+        regimePrisional.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Tipo de Processo Criminal - limpar seleção
+    const tipoProcessoCriminal = container.querySelector('#tipoProcessoCriminal');
+    if (tipoProcessoCriminal) {
+        tipoProcessoCriminal.value = '';
+        tipoProcessoCriminal.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Tipo da Pena - valor padrão: apelacao
+    const tipoPena = container.querySelector('#tipoPena');
+    if (tipoPena) {
+        tipoPena.value = 'originaria';
+        tipoPena.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Recorrentes do Recurso - valor padrão: reu
+    const recorrentesRecurso = container.querySelector('#recorrentesRecurso');
+    if (recorrentesRecurso) {
+        recorrentesRecurso.value = 'reu';
+        recorrentesRecurso.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Lei - limpar seleção
+    const lei = container.querySelector('#lei');
+    if (lei) {
+        lei.value = '';
+        lei.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Fração Progressão - limpar seleção
+    const fracaoProgressao = container.querySelector('#fracaoProgressao');
+    if (fracaoProgressao) {
+        fracaoProgressao.value = '';
+        fracaoProgressao.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Fração Livramento - limpar seleção
+    const fracaoLivramento = container.querySelector('#fracaoLivramento');
+    if (fracaoLivramento) {
+        fracaoLivramento.value = '';
+        fracaoLivramento.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Motivo Prisão - limpar seleção
+    const motivoPrisao = container.querySelector('#motivoPrisao');
+    if (motivoPrisao) {
+        motivoPrisao.value = '';
+        motivoPrisao.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Motivo Soltura - limpar seleção
+    const motivoSoltura = container.querySelector('#motivoSoltura');
+    if (motivoSoltura) {
+        motivoSoltura.value = '';
+        motivoSoltura.classList.remove('campo-preenchido-auto');
+    }
+    
+    // ===== RESETAR RADIO BUTTONS PARA VALORES PADRÃO =====
+    
+    // Tipo de Guia - padrão: definitiva
+    const guiaDefinitiva = container.querySelector('#guiaDefinitiva');
+    const guiaProvisoria = container.querySelector('#guiaProvisoria');
+    if (guiaDefinitiva && guiaProvisoria) {
+        guiaDefinitiva.checked = true;
+        guiaProvisoria.checked = false;
+        guiaDefinitiva.classList.remove('campo-preenchido-auto');
+        guiaProvisoria.classList.remove('campo-preenchido-auto');
+    }
+    
+    // Revisão Criminal - padrão: não
+    const revisaoSim = container.querySelector('#revisaoSim');
+    const revisaoNao = container.querySelector('#revisaoNao');
+    if (revisaoSim && revisaoNao) {
+        revisaoSim.checked = false;
+        revisaoNao.checked = true;
+        revisaoSim.classList.remove('campo-preenchido-auto');
+        revisaoNao.classList.remove('campo-preenchido-auto');
+    }
+    
+    // ===== RESTAURAR CAMPOS COM VALORES FIXOS =====
+    
+    // Data de Expedição - manter valor padrão
+    const dataExpedicao = container.querySelector('#dataExpedicao');
+    if (dataExpedicao) {
+        dataExpedicao.value = '15/04/2025 14:10';
+        dataExpedicao.classList.remove('campo-preenchido-auto');
+    }
+    
+    // UF - manter valor padrão
+    const uf = container.querySelector('#uf');
+    if (uf) {
+        uf.value = 'Pernambuco';
+        uf.classList.remove('campo-preenchido-auto');
+    }
+    
+    // ===== LIMPAR QUALQUER CAMPO RESTANTE =====
+    // Esta seção garante que não deixemos nada para trás
+    
+    // Limpar todos os inputs que possam ter sido esquecidos
+    container.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => {
+        // Não limpar campos com valores fixos já restaurados
+        if (input.id !== 'dataExpedicao' && input.id !== 'uf') {
+            input.value = '';
+        }
+        input.classList.remove('campo-preenchido-auto', 'invalid');
+    });
+    
+    // Limpar todos os textareas se houver
+    container.querySelectorAll('textarea').forEach(textarea => {
+        textarea.value = '';
+        textarea.classList.remove('campo-preenchido-auto', 'invalid');
+    });
+    
+    // ===== LIMPAR RASCUNHO DO LOCALSTORAGE =====
+    localStorage.removeItem('guiaRascunho');
+    
+    // ===== MOSTRAR MENSAGEM DE SUCESSO =====
+    mostrarMensagem(container, 'success', 'Todos os campos foram limpos com sucesso! Pronto para uma nova carta guia.');
+    
+    console.log('Limpeza completa realizada - todos os campos resetados');
 }
 
 // Função para preencher o formulário automaticamente a partir do resumo
