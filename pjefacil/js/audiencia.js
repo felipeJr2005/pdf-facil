@@ -207,57 +207,56 @@ async function processarDenunciaComDeepSeek(container) {
 }
 
 /**
- * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA API JÁ MONTADA
+ * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA PARA AUDIÊNCIA
+ * Aplicando as mesmas melhorias do guia.js
  */
 async function chamarDeepSeekAPI(textoCompleto) {
   try {
-    console.log('Chamando API DeepSeek...');
+    console.log('Chamando API DeepSeek para audiência...');
     
     // Chave da API DeepSeek
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
-    // Prompt CORRIGIDO para API retornar qualificação JÁ MONTADA
-    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
+    // Prompt CORRIGIDO - eliminando "não informado" e separando policiais
+    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON para audiência criminal.
 
-INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO JÁ MONTADA:
+INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO LIMPA:
 
-1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
-   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF não informado/CPF_NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
-   
-2. Para VÍTIMAS: mesmo formato, mas pode ter menos informações
-   
-3. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
+1. NUNCA use "não informado" - se não encontrar uma informação, simplesmente OMITA esse campo
+2. Para policiais, separe NOME da MATRÍCULA/RG - não misture no mesmo campo
+3. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA APENAS com dados reais
+4. Para VÍTIMAS: mesmo formato, mas pode ter menos informações
+5. Para TESTEMUNHAS POLICIAIS: separar nome e matrícula claramente
 
-4. Se alguma informação não existir, use "não informado" ou omita
-
-EXEMPLO DE EXTRAÇÃO:
-Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', brasileiro, solteiro, natural de Timbaúba/PE, nascido aos 08/01/1994, CPF não informado, portador do RG nº 12.291.800, filho de Luciene Menezes da Silva e Joselito da Silva Gomes"
-
-Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', CPF não informado, filho de Luciene Menezes da Silva, nascido em 08/01/1994"
+FORMATO DE QUALIFICAÇÃO CORRETA:
+- COM dados: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-10, filho de Maria Silva, nascido em 08/01/1994"
+- SEM dados vazios: "JOANDERSON DA SILVA GOMES, CPF 123.456.789-10, filho de Maria Silva"
+- Policial: separar "ALAN DA COSTA NOGUEIRA" de "56060 PM/PE"
 
 FORMATO DE SAÍDA OBRIGATÓRIO:
 {
   "reus": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS",
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO APENAS COM DADOS REAIS (sem 'não informado')",
       "endereco": "Endereço completo + situação prisional atual"
     }
   ],
   "vitimas": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO (mesmo formato dos réus)", 
-      "endereco": "Endereço (buscar no rol de testemunhas)"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO APENAS COM DADOS REAIS", 
+      "endereco": "Endereço se disponível"
     }
   ],
   "testemunhasGerais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO",
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO APENAS COM DADOS REAIS",
       "endereco": "Endereço se disponível"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
+      "qualificacaoCompleta": "APENAS O NOME COMPLETO (sem matrícula)",
+      "matricula": "APENAS A MATRÍCULA/RG (ex: 56060 PM/PE)",
       "tipo": "PM|PC|PF|PRF",
       "lotacao": "Local de trabalho (ex: 4º BPM)"
     }
@@ -280,10 +279,25 @@ FORMATO DE SAÍDA OBRIGATÓRIO:
   }
 }
 
+EXEMPLOS DE SAÍDA CORRETA:
+
+❌ ERRADO:
+"qualificacaoCompleta": "JOÃO SILVA, conhecido como 'não informado', CPF não informado, filho de não informado"
+
+✅ CORRETO:
+"qualificacaoCompleta": "JOÃO SILVA"
+
+❌ ERRADO:
+"qualificacaoCompleta": "ALAN DA COSTA NOGUEIRA / 56060 PM/PE"
+
+✅ CORRETO:
+"qualificacaoCompleta": "ALAN DA COSTA NOGUEIRA",
+"matricula": "56060 PM/PE"
+
 TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
     
-    // Fazer a requisição para a API
+    // Fazer a requisição para a API com parâmetros otimizados
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -295,15 +309,15 @@ ${textoCompleto}`;
         messages: [
           {
             role: "system",
-            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais para audiências criminais. Monte qualificações limpas omitindo campos vazios. Separe sempre nome de matrícula para policiais. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.0,
-        max_tokens: 2000
+        temperature: 0.1, // Melhorada de 0.0 para 0.1 (mais consistente na formatação)
+        max_tokens: 2500  // Aumentado de 2000 para 2500 (mais espaço para relatórios)
       })
     });
     
@@ -317,7 +331,7 @@ ${textoCompleto}`;
     
     // Extrair o resultado
     const data = await response.json();
-    const resposta = data.choices[0].message.content;
+    let resposta = data.choices[0].message.content;
     
     console.log('Resposta bruta da API:', resposta);
     
@@ -336,8 +350,11 @@ ${textoCompleto}`;
     // Fazer o parse do JSON limpo
     const dados = JSON.parse(jsonString);
     
-    console.log('Dados parseados:', dados);
-    return dados;
+    // Pós-processamento para garantir limpeza adicional
+    const dadosLimpos = limparDadosAudiencia(dados);
+    
+    console.log('Dados limpos:', dadosLimpos);
+    return dadosLimpos;
     
   } catch (error) {
     console.error("Erro na API DeepSeek:", error);
@@ -345,14 +362,84 @@ ${textoCompleto}`;
   }
 }
 
+
+
 /**
- * Distribuir dados estruturados nos campos - CORRIGIDO PARA QUALIFICAÇÃO COMPLETA
+ * Função auxiliar para limpeza final dos dados da audiência
+ */
+function limparDadosAudiencia(dados) {
+  if (!dados) return dados;
+  
+  // Função para limpar qualificação individual
+  function limparQualificacao(qualificacao) {
+    if (!qualificacao) return qualificacao;
+    
+    return qualificacao
+      // Remover vírgulas seguidas de "conhecido como 'não informado'"
+      .replace(/,\s*conhecido como\s*['"]não informado['"]?/gi, '')
+      // Remover vírgulas seguidas de "CPF não informado"  
+      .replace(/,\s*CPF\s*não informado/gi, '')
+      // Remover vírgulas seguidas de "filho de não informado"
+      .replace(/,\s*filho de\s*não informado/gi, '')
+      // Remover vírgulas seguidas de "nascido em não informado"
+      .replace(/,\s*nascido em\s*não informado/gi, '')
+      // Limpar vírgulas duplas que podem ter sobrado
+      .replace(/,\s*,/g, ',')
+      // Limpar vírgulas no final de frases
+      .replace(/,\s*$/gm, '')
+      // Limpar espaços extras
+      .trim();
+  }
+  
+  // Limpar cada categoria
+  if (dados.reus) {
+    dados.reus = dados.reus.map(reu => ({
+      ...reu,
+      qualificacaoCompleta: limparQualificacao(reu.qualificacaoCompleta)
+    }));
+  }
+  
+  if (dados.vitimas) {
+    dados.vitimas = dados.vitimas.map(vitima => ({
+      ...vitima,
+      qualificacaoCompleta: limparQualificacao(vitima.qualificacaoCompleta)
+    }));
+  }
+  
+  if (dados.testemunhasGerais) {
+    dados.testemunhasGerais = dados.testemunhasGerais.map(testemunha => ({
+      ...testemunha,
+      qualificacaoCompleta: limparQualificacao(testemunha.qualificacaoCompleta)
+    }));
+  }
+  
+  if (dados.testemunhasPoliciais) {
+    dados.testemunhasPoliciais = dados.testemunhasPoliciais.map(policial => ({
+      ...policial,
+      qualificacaoCompleta: limparQualificacao(policial.qualificacaoCompleta)
+    }));
+  }
+  
+  console.log('Dados pós-processados para audiência:', dados);
+  return dados;
+}
+
+
+
+
+
+
+
+
+
+/**
+ * Distribuir dados estruturados nos campos - CORRIGIDA PARA AUDIÊNCIA
  */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
   
   try {
-    // Processar réus - USANDO qualificacaoCompleta
+    // Processar réus - USANDO qualificacaoCompleta LIMPA
     if (dados.reus && dados.reus.length > 0) {
       dados.reus.forEach(reu => {
         if (reu.qualificacaoCompleta && reu.qualificacaoCompleta.trim() !== '') {
@@ -363,10 +450,9 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO PRINCIPAL: usar qualificacaoCompleta em vez de nomeCompleto
               nomeInput.value = reu.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('Réu preenchido:', reu.qualificacaoCompleta);
+              console.log('Réu preenchido (audiência):', reu.qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && reu.endereco) {
               enderecoInput.value = reu.endereco;
@@ -377,7 +463,7 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar vítimas - USANDO qualificacaoCompleta
+    // Processar vítimas - USANDO qualificacaoCompleta LIMPA
     if (dados.vitimas && dados.vitimas.length > 0) {
       dados.vitimas.forEach(vitima => {
         if (vitima.qualificacaoCompleta && vitima.qualificacaoCompleta.trim() !== '') {
@@ -388,10 +474,9 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
               nomeInput.value = vitima.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('Vítima preenchida:', vitima.qualificacaoCompleta);
+              console.log('Vítima preenchida (audiência):', vitima.qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && vitima.endereco) {
               enderecoInput.value = vitima.endereco;
@@ -402,7 +487,7 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas gerais (MP) - USANDO qualificacaoCompleta
+    // Processar testemunhas gerais (MP) - USANDO qualificacaoCompleta LIMPA
     if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
       dados.testemunhasGerais.forEach(testemunha => {
         if (testemunha.qualificacaoCompleta && testemunha.qualificacaoCompleta.trim() !== '') {
@@ -413,10 +498,9 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
               nomeInput.value = testemunha.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('Testemunha MP preenchida:', testemunha.qualificacaoCompleta);
+              console.log('Testemunha MP preenchida (audiência):', testemunha.qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
               enderecoInput.value = testemunha.endereco;
@@ -427,7 +511,7 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas policiais - USANDO qualificacaoCompleta
+    // Processar testemunhas policiais - CORRIGIDO: separar nome de matrícula
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
       dados.testemunhasPoliciais.forEach(policial => {
         if (policial.qualificacaoCompleta && policial.qualificacaoCompleta.trim() !== '') {
@@ -438,6 +522,7 @@ function distribuirDadosNosCampos(container, dados) {
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
             const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
             
+            // Preencher tipo se disponível
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
               if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
@@ -445,11 +530,19 @@ function distribuirDadosNosCampos(container, dados) {
                 camposPreenchidos++;
               }
             }
+            
+            // CORREÇÃO PRINCIPAL: usar apenas qualificacaoCompleta (nome) no campo nome
             if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
               nomeInput.value = policial.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('Policial preenchido:', policial.qualificacaoCompleta);
+              console.log('Policial nome preenchido (audiência):', policial.qualificacaoCompleta);
+            }
+            
+            // NOVA FUNCIONALIDADE: usar campo matricula separado se disponível
+            if (matriculaInput && !matriculaInput.value && policial.matricula) {
+              matriculaInput.value = policial.matricula;
+              camposPreenchidos++;
+              console.log('Policial matrícula preenchida (audiência):', policial.matricula);
             }
           }
         }
@@ -457,7 +550,7 @@ function distribuirDadosNosCampos(container, dados) {
     }
     
   } catch (error) {
-    console.error('Erro ao distribuir dados:', error);
+    console.error('Erro ao distribuir dados na audiência:', error);
   }
   
   return camposPreenchidos;

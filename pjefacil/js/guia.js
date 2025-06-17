@@ -203,7 +203,7 @@ Tipo de Processo Criminal: [Ordinário/Sumário/Sumaríssimo]`;
         const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
         
         // Configuração do temperatura (0.0 para máxima precisão)
-        const temperatura = 0.0;
+        const temperatura = 0.1;
         
         // Fazer a requisição para a API
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -225,7 +225,7 @@ Tipo de Processo Criminal: [Ordinário/Sumário/Sumaríssimo]`;
                     }
                 ],
                 temperature: temperatura,
-                max_tokens: 2000
+                max_tokens: 2500
             })
         });
         
