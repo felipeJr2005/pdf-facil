@@ -128,78 +128,82 @@ function atualizarContagemCaracteres(elemento, container) {
     }
 }
 
-// Função para processar a sentença - VERSÃO CORRIGIDA
+// Função para processar a sentença
 async function processarSentenca(textoSentenca) {
-    // Prompt corrigido para melhor formatação
-    const prompt = `Você é um assistente jurídico especializado em extrair dados de sentenças criminais e organizar informações de pessoas envolvidas.
+    // Prompt predefinido para extração
+    const prompt = `Extraia os seguintes campos da informação processual abaixo (se não encontrar preencha com "----------------------"):        
+Sistema de Extração de Dados Jurídicos Automatizado
+Você é um assistente jurídico especializado em análise de sentenças criminais. Sua tarefa é extrair informações estruturadas de documentos judiciais com precisão absoluta, seguindo rigorosamente as especificações abaixo:
 
-INSTRUÇÕES IMPORTANTES:
-1. NUNCA use "não informado" - se não encontrar uma informação, simplesmente OMITA esse campo
-2. Para policiais, separe NOME da MATRÍCULA/RG - não misture no mesmo campo
-3. Organize as informações de forma limpa e concisa
-4. Use apenas dados que realmente existem no texto
+Instruções Gerais:
+1. Analise minuciosamente o texto da sentença fornecido
+2. Extraia apenas as informações solicitadas, sem interpretações ou comentários
+3. Mantenha o formato exato de saída especificado
+4. Para campos não encontrados, utilize: "----------------------"
 
-FORMATO DE SAÍDA DESEJADO:
+Regras de Extração:
+1. Nomes:
+   - Identifique todos os réus (procure por: "Réu", "Sentenciado", "Autor do Fato", "Acusado")
+   - Para cada réu, crie uma seção separada com todos os campos
+2. Formatação de Dados:
+   - Datas: sempre no formato dd/mm/aaaa
+   - Naturalidade: "Cidade - UF" (ex: "São Paulo - SP")
+   - "Conhecido Como": sempre entre aspas (ex: Conhecido Como: "Xuxa")
+   - Nomes de pais/mãe: minúsculas com iniciais maiúsculas
+3. Identificação Processual:
+   - Número dos Autos: formato NNNNNN-NN.NNNN.8.17.NNNN
+   - Inquérito: apenas números, sem prefixos
+   - Infração Imputada: somente artigos que definam crimes (ignorar artigos processuais)
+4. Análise de Resultado:
+   - Classifique a sentença como: "Absolvição", "Condenação" ou "Extinção da Punibilidade"
+   - Para penas: especificar "Anos/Meses/Dias" ou "Não há Pena"
 
-PROCESSAMENTO AUTOMÁTICO - [data/hora atual]
-
-📊 ESTATÍSTICAS:
-• [número] pessoas mencionadas
-• [número] qualificadas  
-• [número] campos preenchidos automaticamente
-
-RÉUS ([número]):
-[Para cada réu, incluir apenas campos que tenham informação real:]
-1. [NOME COMPLETO][, CPF [número] se houver][, conhecido como "[apelido]" se houver][, filho de [nome da mãe] se houver][, nascido em [data] se houver]
-Endereço: [endereço se houver][, situação prisional atual [status] se houver]
-
-VÍTIMAS ([número]):
-[Para cada vítima, mesmo formato dos réus - só campos com informação]
-1. [NOME COMPLETO][campos opcionais apenas se existirem]
-
-TESTEMUNHAS POLICIAIS ([número]):
-[Para policiais, separar nome de matrícula:]
-1. [NOME COMPLETO] / [MATRÍCULA ou RG] - [POSTO/FUNÇÃO] ([UNIDADE])
-
-OUTRAS PESSOAS ([número]):
-[Se houver outras pessoas relevantes]
-1. [NOME COMPLETO][campos opcionais]
-
-OBSERVAÇÕES:
-- Se não houver CPF, NÃO escreva "CPF não informado"  
-- Se não houver conhecido como, NÃO escreva "conhecido como 'não informado'"
-- Se não houver filiação, NÃO escreva "filho de não informado"
-- Se não houver nascimento, NÃO escreva "nascido em não informado"
-- Para policiais, separe SEMPRE nome da matrícula em linha diferente ou com formatação clara
-
-EXEMPLO DE SAÍDA CORRETA:
-
-RÉUS (1):
-1. STEEVY WILLIAMS GOIS DE ARAUJO, CPF 108.614.814-29, filho de Suely Cordeiro Gois, nascido em 25/01/1994
-Endereço: Rua Sebastião de Freitas Lima, nº 64, São Cristóvão, Arcoverde/PE
-
-VÍTIMAS (2):  
-1. Valdecir Oliveira de Andrade
-Endereço: Rua Sebastião de Freitas Lima, nº 30, São Cristóvão, Arcoverde/PE
-
-2. Eduarda Lais Barbosa de Lima
-Endereço: Rua Sebastião de Freitas Lima, nº 30, São Cristóvão, Arcoverde/PE
-
-TESTEMUNHAS POLICIAIS (2):
-1. Alan da Costa Nogueira
-   Matrícula: 56060 PM/PE - PM (3º BPM – Arcoverde/PE)
-
-2. José Alberes de Oliveira Silva  
-   Matrícula: 50512 PM/PE - PM (3º BPM – Arcoverde/PE)
-
-Agora processe o texto abaixo seguindo rigorosamente essas instruções:`;
+Campos de Extração (SIGA ESTA ORDEM, SEM USAR ASTERISCOS):
+Órgão Judiciário: [preencher]
+Número dos Autos: [preencher]
+Inquérito: [preencher]
+Nome: [preencher]
+CPF: [preencher]
+Conhecido Como: [preencher]
+Nome da Mãe: [preencher]
+Nome do Pai: [preencher]
+Data de Nascimento: [preencher]
+Naturalidade: [preencher]
+Escolaridade: [preencher]
+RG: [preencher]
+Estado Civil: [preencher]
+Profissão: [preencher]
+Infração Imputada: [preencher]
+Data da Infração: [preencher]
+Data da Denúncia: [preencher]
+Data do Recebimento da Denúncia: [preencher]
+Data da Sentença: [preencher]
+Data do Transito MP: [preencher]
+Data do Transito Defesa: [preencher]
+Data do Transito Réu: [preencher]
+Data da Trânsito em Julgado do Processo: [preencher]
+Pena: [preencher]
+Regime: [preencher]
+Endereço: [preencher]
+Nacionalidade: [preencher]
+Sexo: [preencher]
+Título Eleitoral: [preencher]
+Sentença: [Absolvição/Condenação/Extinção da Punibilidade]
+Ofício a Expedir: [preencher]
+Data da Prisão: [preencher]
+Data da Soltura: [preencher]
+Tipo de Guia: [preencher]
+Data da Decisão do Recurso: [preencher]
+Câmara Julgadora do Recurso: [preencher]
+Data do Transito do Recurso: [preencher]
+Tipo de Processo Criminal: [Ordinário/Sumário/Sumaríssimo]`;
 
     try {
         // Chave da API DeepSeek
         const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
         
-        // Configuração do temperatura (0.1 para mais consistência na formatação)
-        const temperatura = 0.1;
+        // Configuração do temperatura (0.0 para máxima precisão)
+        const temperatura = 0.0;
         
         // Fazer a requisição para a API
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -213,7 +217,7 @@ Agora processe o texto abaixo seguindo rigorosamente essas instruções:`;
                 messages: [
                     {
                         role: "system",
-                        content: "Você é um assistente jurídico especializado em extrair e organizar dados de sentenças judiciais de forma limpa e concisa, omitindo campos vazios."
+                        content: "Você é um assistente jurídico especializado em extrair dados de sentenças judiciais."
                     },
                     {
                         role: "user",
@@ -221,7 +225,7 @@ Agora processe o texto abaixo seguindo rigorosamente essas instruções:`;
                     }
                 ],
                 temperature: temperatura,
-                max_tokens: 2500
+                max_tokens: 2000
             })
         });
         
@@ -233,45 +237,13 @@ Agora processe o texto abaixo seguindo rigorosamente essas instruções:`;
         
         // Extrair o resultado
         const data = await response.json();
-        let resultado = data.choices[0].message.content;
         
-        // Pós-processamento para garantir limpeza adicional
-        resultado = limparResultadoFinal(resultado);
-        
-        return resultado;
+        // Retornar o texto resumido
+        return data.choices[0].message.content;
     } catch (error) {
         console.error("Erro na API DeepSeek:", error);
         throw new Error(`Falha ao processar o texto: ${error.message}`);
     }
-}
-
-// Função auxiliar para limpeza final do resultado
-function limparResultadoFinal(texto) {
-    if (!texto) return texto;
-    
-    // Remover frases com "não informado"
-    let textoLimpo = texto
-        // Remover vírgulas seguidas de "conhecido como 'não informado'"
-        .replace(/,\s*conhecido como\s*['"]não informado['"]?/gi, '')
-        // Remover vírgulas seguidas de "CPF não informado"  
-        .replace(/,\s*CPF\s*não informado/gi, '')
-        // Remover vírgulas seguidas de "filho de não informado"
-        .replace(/,\s*filho de\s*não informado/gi, '')
-        // Remover vírgulas seguidas de "nascido em não informado"
-        .replace(/,\s*nascido em\s*não informado/gi, '')
-        // Remover linhas que contenham apenas "não informado"
-        .replace(/^.*não informado.*$/gmi, '')
-        // Limpar vírgulas duplas que podem ter sobrado
-        .replace(/,\s*,/g, ',')
-        // Limpar vírgulas no final de frases
-        .replace(/,\s*$/gm, '')
-        // Limpar linhas vazias excessivas
-        .replace(/\n{3,}/g, '\n\n')
-        // Limpar espaços no início e fim
-        .trim();
-    
-    console.log('Resultado pós-processado:', textoLimpo);
-    return textoLimpo;
 }
 
 // Função para configurar botões de expandir/retrair
