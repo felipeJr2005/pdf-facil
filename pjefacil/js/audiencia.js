@@ -174,11 +174,11 @@ async function processarDenunciaComDeepSeek(container) {
     // Criar relatório para as observações
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos);
     
-    // Colocar relatório nas observações - CORREÇÃO: usar textContent para texto puro
+    // CORREÇÃO: Colocar relatório nas observações com quebras de linha
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = relatorio;
     } else {
-      // Para contenteditable, usar textContent mantém formatação visual
+      // Para contenteditable, usar innerHTML com <br> para quebras de linha
       campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
     }
     
@@ -193,7 +193,7 @@ async function processarDenunciaComDeepSeek(container) {
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = mensagemErro;
     } else {
-      campoObservacoes.textContent = mensagemErro;
+      campoObservacoes.innerHTML = mensagemErro.replace(/\n/g, '<br>');
     }
     
     // Mostrar mensagem de erro
@@ -207,7 +207,7 @@ async function processarDenunciaComDeepSeek(container) {
 }
 
 /**
- * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM PROMPT MELHORADO
+ * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA API JÁ MONTADA
  */
 async function chamarDeepSeekAPI(textoCompleto) {
   try {
@@ -216,50 +216,48 @@ async function chamarDeepSeekAPI(textoCompleto) {
     // Chave da API DeepSeek
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
-    // Prompt especializado CORRIGIDO para extração de dados de denúncia
+    // Prompt CORRIGIDO para API retornar qualificação JÁ MONTADA
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
-INSTRUÇÕES CRÍTICAS:
-1. Para RÉU:"Extraia do texto: nome completo, alcunha, CPF, nome da mãe, data nascimento.
-Monte no formato: 'NOME COMPLETO, conhecido como 'ALCUNHA', CPF xxx, filho de MÃE, nascido em DATA' Se não encontrar algum dado, use ''"
-2. Para VÍTIMAS: formato "NOME COMPLETO, filho(a) de NOME_MÃE (se disponível), nascido em DD/MM/AAAA (se disponível)"
-3. Para TESTEMUNHAS GERAIS: mesmo formato dos réus/vítimas
-4. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
-5. ENDEREÇOS: incluir endereço completo sempre que disponível
-6. SITUAÇÃO PRISIONAL: incluir informações sobre prisão atual se mencionado
+INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO JÁ MONTADA:
 
-EXEMPLO RÉUS:
-"JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', filho de Luciene Menezes da Silva e Joselito da Silva Gomes, nascido em 08/01/1994"
+1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
+   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF não informado/CPF_NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
+   
+2. Para VÍTIMAS: mesmo formato, mas pode ter menos informações
+   
+3. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
 
-EXEMPLO VÍTIMAS:
-"EMERSON DIEGO ALVES BEZERRA"
+4. Se alguma informação não existir, use "não informado" ou omita
 
-EXEMPLO POLICIAIS:
-"Jonantas de Lira Lima / 51.801 PM/PE"
+EXEMPLO DE EXTRAÇÃO:
+Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', brasileiro, solteiro, natural de Timbaúba/PE, nascido aos 08/01/1994, CPF não informado, portador do RG nº 12.291.800, filho de Luciene Menezes da Silva e Joselito da Silva Gomes"
 
-FORMATO EXATO DE SAÍDA:
+Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', CPF não informado, filho de Luciene Menezes da Silva, nascido em 08/01/1994"
+
+FORMATO DE SAÍDA OBRIGATÓRIO:
 {
   "reus": [
     {
-      "nomeCompleto": "Nome completo com filiação, nascimento e alcunha",
-      "endereco": "Endereço residencial completo + situação prisional atual (se houver)"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS",
+      "endereco": "Endereço completo + situação prisional atual"
     }
   ],
   "vitimas": [
     {
-      "nomeCompleto": "Nome completo com filiação e nascimento (se disponível)", 
-      "endereco": "Endereço completo (buscar no rol de testemunhas se não estiver no corpo)"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO (mesmo formato dos réus)", 
+      "endereco": "Endereço (buscar no rol de testemunhas)"
     }
   ],
   "testemunhasGerais": [
     {
-      "nomeCompleto": "Nome completo com filiação e nascimento",
-      "endereco": "Endereço (se disponível)"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO",
+      "endereco": "Endereço se disponível"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "nomeCompleto": "Nome completo / MATRÍCULA",
+      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
       "tipo": "PM|PC|PF|PRF",
       "lotacao": "Local de trabalho (ex: 4º BPM)"
     }
@@ -297,7 +295,7 @@ ${textoCompleto}`;
         messages: [
           {
             role: "system",
-            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
           },
           {
             role: "user",
@@ -348,16 +346,16 @@ ${textoCompleto}`;
 }
 
 /**
- * Distribuir dados estruturados nos campos do formulário - VERSÃO MELHORADA
+ * Distribuir dados estruturados nos campos - CORRIGIDO PARA MONTAR QUALIFICAÇÃO
  */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
   
   try {
-    // Processar réus
+    // Processar réus - MONTANDO qualificação a partir dos campos separados
     if (dados.reus && dados.reus.length > 0) {
       dados.reus.forEach(reu => {
-        if (reu.nomeCompleto && reu.nomeCompleto.trim() !== '') {
+        if (reu.nome && reu.nome.trim() !== '') {
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
           if (ultimoReu) {
@@ -365,8 +363,20 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = reu.nomeCompleto;
+              // CORREÇÃO: MONTAR qualificação completa no JavaScript
+              let qualificacaoCompleta = reu.nome;
+              
+              // Adicionar filiação se existir
+              if (reu.filiacao && reu.filiacao.trim() !== '') {
+                qualificacaoCompleta += `, filho de ${reu.filiacao}`;
+              }
+              
+              // Adicionar outras informações que podem estar no texto original
+              // (nascimento, CPF, RG, etc. - extrair do texto se disponível)
+              
+              nomeInput.value = qualificacaoCompleta;
               camposPreenchidos++;
+              console.log('Réu preenchido:', qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && reu.endereco) {
               enderecoInput.value = reu.endereco;
@@ -377,10 +387,10 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar vítimas
+    // Processar vítimas - MONTANDO qualificação
     if (dados.vitimas && dados.vitimas.length > 0) {
       dados.vitimas.forEach(vitima => {
-        if (vitima.nomeCompleto && vitima.nomeCompleto.trim() !== '') {
+        if (vitima.nome && vitima.nome.trim() !== '') {
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
           if (ultimaVitima) {
@@ -388,8 +398,15 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = vitima.nomeCompleto;
+              // MONTAR qualificação completa
+              let qualificacaoCompleta = vitima.nome;
+              if (vitima.filiacao && vitima.filiacao.trim() !== '') {
+                qualificacaoCompleta += `, filho de ${vitima.filiacao}`;
+              }
+              
+              nomeInput.value = qualificacaoCompleta;
               camposPreenchidos++;
+              console.log('Vítima preenchida:', qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && vitima.endereco) {
               enderecoInput.value = vitima.endereco;
@@ -400,10 +417,11 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas gerais (MP)
-    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-      dados.testemunhasGerais.forEach(testemunha => {
-        if (testemunha.nomeCompleto && testemunha.nomeCompleto.trim() !== '') {
+    // CORREÇÃO: Processar testemunhasNormais (API retorna assim em vez de testemunhasGerais)
+    const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
+    if (testemunhasGerais && testemunhasGerais.length > 0) {
+      testemunhasGerais.forEach(testemunha => {
+        if (testemunha.nome && testemunha.nome.trim() !== '') {
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
           if (ultimaTestemunha) {
@@ -411,8 +429,15 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = testemunha.nomeCompleto;
+              // MONTAR qualificação completa
+              let qualificacaoCompleta = testemunha.nome;
+              if (testemunha.filiacao && testemunha.filiacao.trim() !== '') {
+                qualificacaoCompleta += `, filho de ${testemunha.filiacao}`;
+              }
+              
+              nomeInput.value = qualificacaoCompleta;
               camposPreenchidos++;
+              console.log('Testemunha MP preenchida:', qualificacaoCompleta);
             }
             if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
               enderecoInput.value = testemunha.endereco;
@@ -423,10 +448,10 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas policiais
+    // Processar testemunhas policiais - USANDO nome + matrícula
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
       dados.testemunhasPoliciais.forEach(policial => {
-        if (policial.nomeCompleto && policial.nomeCompleto.trim() !== '') {
+        if (policial.nome && policial.nome.trim() !== '') {
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
           if (ultimoPolicial) {
@@ -442,8 +467,15 @@ function distribuirDadosNosCampos(container, dados) {
               }
             }
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = policial.nomeCompleto;
+              // MONTAR nome com matrícula se existir
+              let nomeCompleto = policial.nome;
+              if (policial.matricula && policial.matricula.trim() !== '') {
+                nomeCompleto += ` / ${policial.matricula}`;
+              }
+              
+              nomeInput.value = nomeCompleto;
               camposPreenchidos++;
+              console.log('Policial preenchido:', nomeCompleto);
             }
           }
         }
@@ -458,7 +490,7 @@ function distribuirDadosNosCampos(container, dados) {
 }
 
 /**
- * Criar relatório do processamento - VERSÃO CORRIGIDA COM FORMATAÇÃO
+ * Criar relatório do processamento - CORRIGIDO PARA USAR CAMPOS CORRETOS
  */
 function criarRelatorioProcessamento(dados, camposPreenchidos) {
   const timestamp = new Date().toLocaleString();
@@ -473,11 +505,14 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
   }
   
-  // RÉUS - FORMATO CORRIGIDO
+  // RÉUS - USANDO nome + filiação
   if (dados.reus && dados.reus.length > 0) {
     relatorio += `RÉUS (${dados.reus.length}):\n`;
     dados.reus.forEach((reu, index) => {
-      relatorio += `${index + 1}. ${reu.nomeCompleto}\n`;
+      let qualificacao = reu.nome;
+      if (reu.filiacao) qualificacao += `, filho de ${reu.filiacao}`;
+      
+      relatorio += `${index + 1}. ${qualificacao}\n`;
       if (reu.endereco && reu.endereco.trim() !== '') {
         relatorio += `   Endereço: ${reu.endereco}\n`;
       }
@@ -485,11 +520,14 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // VÍTIMAS - FORMATO CORRIGIDO
+  // VÍTIMAS - USANDO nome + filiação
   if (dados.vitimas && dados.vitimas.length > 0) {
     relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
     dados.vitimas.forEach((vitima, index) => {
-      relatorio += `${index + 1}. ${vitima.nomeCompleto}\n`;
+      let qualificacao = vitima.nome;
+      if (vitima.filiacao) qualificacao += `, filho de ${vitima.filiacao}`;
+      
+      relatorio += `${index + 1}. ${qualificacao}\n`;
       if (vitima.endereco && vitima.endereco.trim() !== '') {
         relatorio += `   Endereço: ${vitima.endereco}\n`;
       }
@@ -497,11 +535,15 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS GERAIS - FORMATO CORRIGIDO
-  if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-    relatorio += `TESTEMUNHAS ACUSAÇÃO (${dados.testemunhasGerais.length}):\n`;
-    dados.testemunhasGerais.forEach((testemunha, index) => {
-      relatorio += `${index + 1}. ${testemunha.nomeCompleto}\n`;
+  // TESTEMUNHAS GERAIS - CORREÇÃO para testemunhasNormais
+  const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
+  if (testemunhasGerais && testemunhasGerais.length > 0) {
+    relatorio += `TESTEMUNHAS ACUSAÇÃO (${testemunhasGerais.length}):\n`;
+    testemunhasGerais.forEach((testemunha, index) => {
+      let qualificacao = testemunha.nome;
+      if (testemunha.filiacao) qualificacao += `, filho de ${testemunha.filiacao}`;
+      
+      relatorio += `${index + 1}. ${qualificacao}\n`;
       if (testemunha.endereco && testemunha.endereco.trim() !== '') {
         relatorio += `   Endereço: ${testemunha.endereco}\n`;
       }
@@ -509,23 +551,14 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS POLICIAIS - FORMATO CORRIGIDO
+  // TESTEMUNHAS POLICIAIS - USANDO nome + tipo + matrícula
   if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
     relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
     dados.testemunhasPoliciais.forEach((policial, index) => {
-      relatorio += `${index + 1}. ${policial.nomeCompleto}`;
-      if (policial.tipo) relatorio += ` - ${policial.tipo.toUpperCase()}`;
-      if (policial.lotacao) relatorio += ` (${policial.lotacao})`;
-      relatorio += '\n';
-    });
-    relatorio += '\n';
-  }
-  
-  // OBSERVAÇÕES IMPORTANTES
-  if (dados.observacoesImportantes && dados.observacoesImportantes.length > 0) {
-    relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
-    dados.observacoesImportantes.forEach((obs, index) => {
-      relatorio += `• ${obs}\n`;
+      let linha = `${index + 1}. ${policial.nome}`;
+      if (policial.matricula) linha += ` / ${policial.matricula}`;
+      if (policial.tipo) linha += ` - ${policial.tipo.toUpperCase()}`;
+      relatorio += linha + '\n';
     });
     relatorio += '\n';
   }
