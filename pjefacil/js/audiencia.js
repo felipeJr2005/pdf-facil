@@ -345,175 +345,98 @@ ${textoCompleto}`;
   }
 }
 
-
-
 /**
- * Distribuir dados estruturados nos campos - VERSÃO COM DEBUG INTENSO
+ * Distribuir dados estruturados nos campos - CORRIGIDO PARA QUALIFICAÇÃO COMPLETA
  */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
   
-  // Função auxiliar para limpar qualificação - SIMPLIFICADA COM DEBUG
-  function limparQualificacao(qualificacao) {
-    console.log('🔍 ENTRADA limparQualificacao:', qualificacao);
-    
-    if (!qualificacao || qualificacao.trim() === '') {
-      console.log('❌ Qualificação vazia ou null');
-      return '';
-    }
-    
-    // Limpeza MUITO MAIS SIMPLES
-    let qualificacaoLimpa = qualificacao
-      .replace(/, conhecido como 'não informado'/g, '')
-      .replace(/, conhecida como 'não informado'/g, '')
-      .trim();
-    
-    console.log('✅ SAÍDA limparQualificacao:', qualificacaoLimpa);
-    return qualificacaoLimpa;
-  }
-  
   try {
-    console.log('🎯 INÍCIO distribuirDadosNosCampos - dados recebidos:', dados);
-    
-    // Processar réus - USANDO qualificacaoCompleta da API
+    // Processar réus - USANDO qualificacaoCompleta
     if (dados.reus && dados.reus.length > 0) {
-      console.log('👤 Processando réus:', dados.reus.length);
-      
-      dados.reus.forEach((reu, index) => {
-        console.log(`🔍 Réu ${index + 1}:`, reu);
-        console.log(`🔍 reu.qualificacaoCompleta:`, reu.qualificacaoCompleta);
-        
-        const qualificacaoLimpa = limparQualificacao(reu.qualificacaoCompleta);
-        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
-        console.log(`📏 Tamanho da qualificação:`, qualificacaoLimpa ? qualificacaoLimpa.length : 'VAZIO');
-        
-        // CONDIÇÃO MAIS SIMPLES
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
-          console.log('✅ Qualificação VÁLIDA - adicionando réu');
+      dados.reus.forEach(reu => {
+        if (reu.qualificacaoCompleta && reu.qualificacaoCompleta.trim() !== '') {
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
-          
           if (ultimoReu) {
             const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              // CORREÇÃO PRINCIPAL: usar qualificacaoCompleta em vez de nomeCompleto
+              nomeInput.value = reu.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('✅ Réu preenchido:', qualificacaoLimpa);
-            } else {
-              console.log('❌ Campo nome não encontrado ou já preenchido');
+              console.log('Réu preenchido:', reu.qualificacaoCompleta);
             }
-            
-            if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && reu.endereco) {
               enderecoInput.value = reu.endereco;
               camposPreenchidos++;
-              console.log('✅ Endereço do réu preenchido:', reu.endereco);
             }
-          } else {
-            console.log('❌ Último réu não encontrado no DOM');
           }
-        } else {
-          console.log('❌ Qualificação INVÁLIDA - não adicionando réu');
         }
       });
-    } else {
-      console.log('❌ Nenhum réu encontrado nos dados');
     }
     
-    // Processar vítimas - USANDO qualificacaoCompleta da API
+    // Processar vítimas - USANDO qualificacaoCompleta
     if (dados.vitimas && dados.vitimas.length > 0) {
-      console.log('👥 Processando vítimas:', dados.vitimas.length);
-      
-      dados.vitimas.forEach((vitima, index) => {
-        console.log(`🔍 Vítima ${index + 1}:`, vitima);
-        console.log(`🔍 vitima.qualificacaoCompleta:`, vitima.qualificacaoCompleta);
-        
-        const qualificacaoLimpa = limparQualificacao(vitima.qualificacaoCompleta);
-        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
-          console.log('✅ Qualificação VÁLIDA - adicionando vítima');
+      dados.vitimas.forEach(vitima => {
+        if (vitima.qualificacaoCompleta && vitima.qualificacaoCompleta.trim() !== '') {
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
-          
           if (ultimaVitima) {
             const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              // CORREÇÃO: usar qualificacaoCompleta
+              nomeInput.value = vitima.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('✅ Vítima preenchida:', qualificacaoLimpa);
+              console.log('Vítima preenchida:', vitima.qualificacaoCompleta);
             }
-            
-            if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && vitima.endereco) {
               enderecoInput.value = vitima.endereco;
               camposPreenchidos++;
-              console.log('✅ Endereço da vítima preenchido:', vitima.endereco);
             }
           }
-        } else {
-          console.log('❌ Qualificação da vítima INVÁLIDA');
         }
       });
     }
     
-    // Processar testemunhas gerais - USANDO qualificacaoCompleta da API
-    const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
-    if (testemunhasGerais && testemunhasGerais.length > 0) {
-      console.log('👔 Processando testemunhas gerais:', testemunhasGerais.length);
-      
-      testemunhasGerais.forEach((testemunha, index) => {
-        console.log(`🔍 Testemunha ${index + 1}:`, testemunha);
-        console.log(`🔍 testemunha.qualificacaoCompleta:`, testemunha.qualificacaoCompleta);
-        
-        const qualificacaoLimpa = limparQualificacao(testemunha.qualificacaoCompleta);
-        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
-          console.log('✅ Qualificação VÁLIDA - adicionando testemunha');
+    // Processar testemunhas gerais (MP) - USANDO qualificacaoCompleta
+    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
+      dados.testemunhasGerais.forEach(testemunha => {
+        if (testemunha.qualificacaoCompleta && testemunha.qualificacaoCompleta.trim() !== '') {
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
-          
           if (ultimaTestemunha) {
             const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              // CORREÇÃO: usar qualificacaoCompleta
+              nomeInput.value = testemunha.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('✅ Testemunha MP preenchida:', qualificacaoLimpa);
+              console.log('Testemunha MP preenchida:', testemunha.qualificacaoCompleta);
             }
-            
-            if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
               enderecoInput.value = testemunha.endereco;
               camposPreenchidos++;
-              console.log('✅ Endereço da testemunha preenchido:', testemunha.endereco);
             }
           }
-        } else {
-          console.log('❌ Qualificação da testemunha INVÁLIDA');
         }
       });
     }
     
-    // Processar testemunhas policiais - USANDO qualificacaoCompleta da API
+    // Processar testemunhas policiais - USANDO qualificacaoCompleta
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      console.log('👮 Processando testemunhas policiais:', dados.testemunhasPoliciais.length);
-      
-      dados.testemunhasPoliciais.forEach((policial, index) => {
-        console.log(`🔍 Policial ${index + 1}:`, policial);
-        
-        const qualificacaoLimpa = limparQualificacao(policial.qualificacaoCompleta);
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
+      dados.testemunhasPoliciais.forEach(policial => {
+        if (policial.qualificacaoCompleta && policial.qualificacaoCompleta.trim() !== '') {
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-          
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
+            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
             
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
@@ -522,29 +445,26 @@ function distribuirDadosNosCampos(container, dados) {
                 camposPreenchidos++;
               }
             }
-            
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              // CORREÇÃO: usar qualificacaoCompleta
+              nomeInput.value = policial.qualificacaoCompleta;
               camposPreenchidos++;
-              console.log('✅ Policial preenchido:', qualificacaoLimpa);
+              console.log('Policial preenchido:', policial.qualificacaoCompleta);
             }
           }
         }
       });
     }
     
-    console.log(`🎯 FIM distribuirDadosNosCampos - campos preenchidos: ${camposPreenchidos}`);
-    
   } catch (error) {
-    console.error('💥 Erro ao distribuir dados:', error);
+    console.error('Erro ao distribuir dados:', error);
   }
   
   return camposPreenchidos;
 }
 
-
 /**
- * Criar relatório do processamento - CORRIGIDO PARA USAR qualificacaoCompleta
+ * Criar relatório do processamento - CORRIGIDO COM QUEBRAS DE LINHA
  */
 function criarRelatorioProcessamento(dados, camposPreenchidos) {
   const timestamp = new Date().toLocaleString();
@@ -559,11 +479,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
   }
   
-  // RÉUS - USANDO qualificacaoCompleta da API
+  // RÉUS - USANDO qualificacaoCompleta
   if (dados.reus && dados.reus.length > 0) {
     relatorio += `RÉUS (${dados.reus.length}):\n`;
     dados.reus.forEach((reu, index) => {
-      relatorio += `${index + 1}. ${reu.qualificacaoCompleta || 'Qualificação não informada'}\n`;
+      relatorio += `${index + 1}. ${reu.qualificacaoCompleta}\n`;
       if (reu.endereco && reu.endereco.trim() !== '') {
         relatorio += `   Endereço: ${reu.endereco}\n`;
       }
@@ -571,11 +491,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // VÍTIMAS - USANDO qualificacaoCompleta da API
+  // VÍTIMAS - USANDO qualificacaoCompleta
   if (dados.vitimas && dados.vitimas.length > 0) {
     relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
     dados.vitimas.forEach((vitima, index) => {
-      relatorio += `${index + 1}. ${vitima.qualificacaoCompleta || 'Qualificação não informada'}\n`;
+      relatorio += `${index + 1}. ${vitima.qualificacaoCompleta}\n`;
       if (vitima.endereco && vitima.endereco.trim() !== '') {
         relatorio += `   Endereço: ${vitima.endereco}\n`;
       }
@@ -583,12 +503,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS GERAIS - USANDO qualificacaoCompleta da API
-  const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
-  if (testemunhasGerais && testemunhasGerais.length > 0) {
-    relatorio += `TESTEMUNHAS ACUSAÇÃO (${testemunhasGerais.length}):\n`;
-    testemunhasGerais.forEach((testemunha, index) => {
-      relatorio += `${index + 1}. ${testemunha.qualificacaoCompleta || 'Qualificação não informada'}\n`;
+  // TESTEMUNHAS GERAIS - USANDO qualificacaoCompleta
+  if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
+    relatorio += `TESTEMUNHAS ACUSAÇÃO (${dados.testemunhasGerais.length}):\n`;
+    dados.testemunhasGerais.forEach((testemunha, index) => {
+      relatorio += `${index + 1}. ${testemunha.qualificacaoCompleta}\n`;
       if (testemunha.endereco && testemunha.endereco.trim() !== '') {
         relatorio += `   Endereço: ${testemunha.endereco}\n`;
       }
@@ -596,13 +515,23 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta da API
+  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta
   if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
     relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
     dados.testemunhasPoliciais.forEach((policial, index) => {
-      let linha = `${index + 1}. ${policial.qualificacaoCompleta || 'Qualificação não informada'}`;
-      if (policial.tipo) linha += ` - ${policial.tipo.toUpperCase()}`;
-      relatorio += linha + '\n';
+      relatorio += `${index + 1}. ${policial.qualificacaoCompleta}`;
+      if (policial.tipo) relatorio += ` - ${policial.tipo.toUpperCase()}`;
+      if (policial.lotacao) relatorio += ` (${policial.lotacao})`;
+      relatorio += '\n';
+    });
+    relatorio += '\n';
+  }
+  
+  // OBSERVAÇÕES IMPORTANTES
+  if (dados.observacoesImportantes && dados.observacoesImportantes.length > 0) {
+    relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
+    dados.observacoesImportantes.forEach((obs, index) => {
+      relatorio += `• ${obs}\n`;
     });
     relatorio += '\n';
   }
