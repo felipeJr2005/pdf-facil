@@ -345,43 +345,54 @@ ${textoCompleto}`;
   }
 }
 
+
+
 /**
- * Distribuir dados estruturados nos campos - CORRIGIDO PARA MONTAR QUALIFICAÇÃO
- */
-/**
- * Distribuir dados estruturados nos campos - CORRIGIDO PARA USAR qualificacaoCompleta
+ * Distribuir dados estruturados nos campos - VERSÃO COM DEBUG INTENSO
  */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
   
-  // Função auxiliar para limpar qualificação
+  // Função auxiliar para limpar qualificação - SIMPLIFICADA COM DEBUG
   function limparQualificacao(qualificacao) {
-    if (!qualificacao || qualificacao.trim() === '') return '';
+    console.log('🔍 ENTRADA limparQualificacao:', qualificacao);
     
-    // Remover "não informado" da qualificação
+    if (!qualificacao || qualificacao.trim() === '') {
+      console.log('❌ Qualificação vazia ou null');
+      return '';
+    }
+    
+    // Limpeza MUITO MAIS SIMPLES
     let qualificacaoLimpa = qualificacao
       .replace(/, conhecido como 'não informado'/g, '')
       .replace(/, conhecida como 'não informado'/g, '')
-      .replace(/, CPF não informado/g, '')
-      .replace(/, filho de não informado/g, '')
-      .replace(/, nascido em não informado/g, '')
-      .replace(/não informado/g, '')
-      .replace(/,\s*,/g, ',') // Remove vírgulas duplas
-      .replace(/,\s*$/g, '') // Remove vírgula no final
       .trim();
     
+    console.log('✅ SAÍDA limparQualificacao:', qualificacaoLimpa);
     return qualificacaoLimpa;
   }
   
   try {
+    console.log('🎯 INÍCIO distribuirDadosNosCampos - dados recebidos:', dados);
+    
     // Processar réus - USANDO qualificacaoCompleta da API
     if (dados.reus && dados.reus.length > 0) {
-      dados.reus.forEach(reu => {
-        const qualificacaoLimpa = limparQualificacao(reu.qualificacaoCompleta);
+      console.log('👤 Processando réus:', dados.reus.length);
+      
+      dados.reus.forEach((reu, index) => {
+        console.log(`🔍 Réu ${index + 1}:`, reu);
+        console.log(`🔍 reu.qualificacaoCompleta:`, reu.qualificacaoCompleta);
         
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
+        const qualificacaoLimpa = limparQualificacao(reu.qualificacaoCompleta);
+        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
+        console.log(`📏 Tamanho da qualificação:`, qualificacaoLimpa ? qualificacaoLimpa.length : 'VAZIO');
+        
+        // CONDIÇÃO MAIS SIMPLES
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
+          console.log('✅ Qualificação VÁLIDA - adicionando réu');
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
+          
           if (ultimoReu) {
             const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
@@ -389,25 +400,43 @@ function distribuirDadosNosCampos(container, dados) {
             if (nomeInput && !nomeInput.value) {
               nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Réu preenchido:', qualificacaoLimpa);
+              console.log('✅ Réu preenchido:', qualificacaoLimpa);
+            } else {
+              console.log('❌ Campo nome não encontrado ou já preenchido');
             }
+            
             if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
               enderecoInput.value = reu.endereco;
               camposPreenchidos++;
+              console.log('✅ Endereço do réu preenchido:', reu.endereco);
             }
+          } else {
+            console.log('❌ Último réu não encontrado no DOM');
           }
+        } else {
+          console.log('❌ Qualificação INVÁLIDA - não adicionando réu');
         }
       });
+    } else {
+      console.log('❌ Nenhum réu encontrado nos dados');
     }
     
     // Processar vítimas - USANDO qualificacaoCompleta da API
     if (dados.vitimas && dados.vitimas.length > 0) {
-      dados.vitimas.forEach(vitima => {
-        const qualificacaoLimpa = limparQualificacao(vitima.qualificacaoCompleta);
+      console.log('👥 Processando vítimas:', dados.vitimas.length);
+      
+      dados.vitimas.forEach((vitima, index) => {
+        console.log(`🔍 Vítima ${index + 1}:`, vitima);
+        console.log(`🔍 vitima.qualificacaoCompleta:`, vitima.qualificacaoCompleta);
         
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
+        const qualificacaoLimpa = limparQualificacao(vitima.qualificacaoCompleta);
+        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
+          console.log('✅ Qualificação VÁLIDA - adicionando vítima');
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
+          
           if (ultimaVitima) {
             const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
@@ -415,13 +444,17 @@ function distribuirDadosNosCampos(container, dados) {
             if (nomeInput && !nomeInput.value) {
               nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Vítima preenchida:', qualificacaoLimpa);
+              console.log('✅ Vítima preenchida:', qualificacaoLimpa);
             }
+            
             if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
               enderecoInput.value = vitima.endereco;
               camposPreenchidos++;
+              console.log('✅ Endereço da vítima preenchido:', vitima.endereco);
             }
           }
+        } else {
+          console.log('❌ Qualificação da vítima INVÁLIDA');
         }
       });
     }
@@ -429,12 +462,20 @@ function distribuirDadosNosCampos(container, dados) {
     // Processar testemunhas gerais - USANDO qualificacaoCompleta da API
     const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
     if (testemunhasGerais && testemunhasGerais.length > 0) {
-      testemunhasGerais.forEach(testemunha => {
-        const qualificacaoLimpa = limparQualificacao(testemunha.qualificacaoCompleta);
+      console.log('👔 Processando testemunhas gerais:', testemunhasGerais.length);
+      
+      testemunhasGerais.forEach((testemunha, index) => {
+        console.log(`🔍 Testemunha ${index + 1}:`, testemunha);
+        console.log(`🔍 testemunha.qualificacaoCompleta:`, testemunha.qualificacaoCompleta);
         
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
+        const qualificacaoLimpa = limparQualificacao(testemunha.qualificacaoCompleta);
+        console.log(`🧹 Qualificação limpa:`, qualificacaoLimpa);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
+          console.log('✅ Qualificação VÁLIDA - adicionando testemunha');
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
+          
           if (ultimaTestemunha) {
             const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
@@ -442,25 +483,34 @@ function distribuirDadosNosCampos(container, dados) {
             if (nomeInput && !nomeInput.value) {
               nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Testemunha MP preenchida:', qualificacaoLimpa);
+              console.log('✅ Testemunha MP preenchida:', qualificacaoLimpa);
             }
+            
             if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
               enderecoInput.value = testemunha.endereco;
               camposPreenchidos++;
+              console.log('✅ Endereço da testemunha preenchido:', testemunha.endereco);
             }
           }
+        } else {
+          console.log('❌ Qualificação da testemunha INVÁLIDA');
         }
       });
     }
     
     // Processar testemunhas policiais - USANDO qualificacaoCompleta da API
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      dados.testemunhasPoliciais.forEach(policial => {
+      console.log('👮 Processando testemunhas policiais:', dados.testemunhasPoliciais.length);
+      
+      dados.testemunhasPoliciais.forEach((policial, index) => {
+        console.log(`🔍 Policial ${index + 1}:`, policial);
+        
         const qualificacaoLimpa = limparQualificacao(policial.qualificacaoCompleta);
         
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 3) {
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
+          
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
@@ -472,25 +522,25 @@ function distribuirDadosNosCampos(container, dados) {
                 camposPreenchidos++;
               }
             }
+            
             if (nomeInput && !nomeInput.value) {
               nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Policial preenchido:', qualificacaoLimpa);
+              console.log('✅ Policial preenchido:', qualificacaoLimpa);
             }
           }
         }
       });
     }
     
+    console.log(`🎯 FIM distribuirDadosNosCampos - campos preenchidos: ${camposPreenchidos}`);
+    
   } catch (error) {
-    console.error('Erro ao distribuir dados:', error);
+    console.error('💥 Erro ao distribuir dados:', error);
   }
   
   return camposPreenchidos;
 }
-/**
- * Criar relatório do processamento - CORRIGIDO PARA USAR CAMPOS CORRETOS
- */
 
 
 /**
