@@ -345,6 +345,229 @@ ${textoCompleto}`;
   }
 }
 
+
+
+/**
+ * Função para limpar qualificação de forma inteligente
+ * Remove "não informado" mas mantém informações úteis
+ */
+function limparQualificacaoInteligente(qualificacaoCompleta) {
+  if (!qualificacaoCompleta || qualificacaoCompleta.trim() === '') {
+    return '';
+  }
+  
+  console.log('🔍 ENTRADA:', qualificacaoCompleta);
+  
+  // PASSO 1: Remover padrões específicos com "não informado"
+  let qualificacaoLimpa = qualificacaoCompleta
+    // Remover vírgula + espaço + "conhecido como 'não informado'"
+    .replace(/,\s*conhecido como ['"]não informado['"]?/gi, '')
+    .replace(/,\s*conhecida como ['"]não informado['"]?/gi, '')
+    
+    // Remover vírgula + espaço + "CPF não informado"
+    .replace(/,\s*CPF não informado/gi, '')
+    
+    // Remover vírgula + espaço + "filho de não informado"
+    .replace(/,\s*filho de não informado/gi, '')
+    
+    // Remover vírgula + espaço + "nascido em não informado"
+    .replace(/,\s*nascido em não informado/gi, '')
+    
+    // PASSO 2: Limpar vírgulas duplicadas e órfãs
+    .replace(/,\s*,/g, ',')        // Remove vírgulas duplas
+    .replace(/,\s*$/g, '')         // Remove vírgula no final
+    .replace(/^\s*,/g, '')         // Remove vírgula no início
+    .trim();
+  
+  console.log('🧹 LIMPEZA:', qualificacaoLimpa);
+  
+  // PASSO 3: Validar se sobrou conteúdo útil
+  // Se sobrou só o nome ou informação útil, retorna
+  if (qualificacaoLimpa.length > 2 && !qualificacaoLimpa.includes('não informado')) {
+    console.log('✅ APROVADO:', qualificacaoLimpa);
+    return qualificacaoLimpa;
+  }
+  
+  // PASSO 4: Se ainda tem "não informado" ou muito curto, extrai só o nome
+  const nomeBase = extrairNomeBase(qualificacaoCompleta);
+  console.log('📝 NOME BASE:', nomeBase);
+  
+  return nomeBase;
+}
+
+/**
+ * Extrai apenas o nome base da qualificação
+ */
+function extrairNomeBase(qualificacaoCompleta) {
+  if (!qualificacaoCompleta) return '';
+  
+  // Pega até a primeira vírgula (que geralmente é o nome completo)
+  const partes = qualificacaoCompleta.split(',');
+  const nomeBase = partes[0].trim();
+  
+  // Verifica se o nome tem pelo menos 3 caracteres e não é "não informado"
+  if (nomeBase.length > 2 && !nomeBase.toLowerCase().includes('não informado')) {
+    return nomeBase;
+  }
+  
+  return '';
+}
+
+/**
+ * FUNÇÃO PRINCIPAL - Distribuir dados com limpeza inteligente
+ */
+function distribuirDadosNosCampos(container, dados) {
+  let camposPreenchidos = 0;
+  
+  try {
+    console.log('🎯 PROCESSANDO dados:', dados);
+    
+    // Processar réus com limpeza inteligente
+    if (dados.reus && dados.reus.length > 0) {
+      console.log('👤 Processando réus:', dados.reus.length);
+      
+      dados.reus.forEach((reu, index) => {
+        console.log(`🔍 Réu ${index + 1} original:`, reu.qualificacaoCompleta);
+        
+        const qualificacaoLimpa = limparQualificacaoInteligente(reu.qualificacaoCompleta);
+        
+        // Só adiciona se a qualificação limpa tem conteúdo útil
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+          addReu(container);
+          const ultimoReu = container.querySelector('#reus-container').lastElementChild;
+          
+          if (ultimoReu) {
+            const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
+              camposPreenchidos++;
+              console.log('✅ Réu preenchido:', qualificacaoLimpa);
+            }
+            
+            if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
+              enderecoInput.value = reu.endereco;
+              camposPreenchidos++;
+            }
+          }
+        } else {
+          console.log('❌ Réu rejeitado - qualificação insuficiente:', qualificacaoLimpa);
+        }
+      });
+    }
+    
+    // Processar vítimas com limpeza inteligente
+    if (dados.vitimas && dados.vitimas.length > 0) {
+      console.log('👥 Processando vítimas:', dados.vitimas.length);
+      
+      dados.vitimas.forEach((vitima, index) => {
+        console.log(`🔍 Vítima ${index + 1} original:`, vitima.qualificacaoCompleta);
+        
+        const qualificacaoLimpa = limparQualificacaoInteligente(vitima.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+          addVitima(container);
+          const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
+          
+          if (ultimaVitima) {
+            const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
+              camposPreenchidos++;
+              console.log('✅ Vítima preenchida:', qualificacaoLimpa);
+            }
+            
+            if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
+              enderecoInput.value = vitima.endereco;
+              camposPreenchidos++;
+            }
+          }
+        } else {
+          console.log('❌ Vítima rejeitada - qualificação insuficiente:', qualificacaoLimpa);
+        }
+      });
+    }
+    
+    // Processar testemunhas gerais com limpeza inteligente
+    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
+      console.log('👔 Processando testemunhas gerais:', dados.testemunhasGerais.length);
+      
+      dados.testemunhasGerais.forEach((testemunha, index) => {
+        console.log(`🔍 Testemunha ${index + 1} original:`, testemunha.qualificacaoCompleta);
+        
+        const qualificacaoLimpa = limparQualificacaoInteligente(testemunha.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+          addTestemunha(container, 'mp');
+          const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
+          
+          if (ultimaTestemunha) {
+            const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
+            const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
+              camposPreenchidos++;
+              console.log('✅ Testemunha preenchida:', qualificacaoLimpa);
+            }
+            
+            if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
+              enderecoInput.value = testemunha.endereco;
+              camposPreenchidos++;
+            }
+          }
+        } else {
+          console.log('❌ Testemunha rejeitada - qualificação insuficiente:', qualificacaoLimpa);
+        }
+      });
+    }
+    
+    // Processar testemunhas policiais (caso existam)
+    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
+      dados.testemunhasPoliciais.forEach((policial, index) => {
+        const qualificacaoLimpa = limparQualificacaoInteligente(policial.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+          addPolicial(container);
+          const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
+          
+          if (ultimoPolicial) {
+            const tipoSelect = ultimoPolicial.querySelector('select');
+            const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
+            
+            if (tipoSelect && policial.tipo) {
+              const tipoLower = policial.tipo.toLowerCase();
+              if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
+                tipoSelect.value = tipoLower;
+                camposPreenchidos++;
+              }
+            }
+            
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
+              camposPreenchidos++;
+              console.log('✅ Policial preenchido:', qualificacaoLimpa);
+            }
+          }
+        }
+      });
+    }
+    
+    console.log(`🎯 TOTAL de campos preenchidos: ${camposPreenchidos}`);
+    
+  } catch (error) {
+    console.error('💥 Erro ao distribuir dados:', error);
+  }
+  
+  return camposPreenchidos;
+}
+
+
+
+
 /**
  * Distribuir dados estruturados nos campos - CORRIGIDO PARA QUALIFICAÇÃO COMPLETA
  */
