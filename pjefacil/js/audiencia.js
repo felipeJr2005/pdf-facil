@@ -348,14 +348,38 @@ ${textoCompleto}`;
 /**
  * Distribuir dados estruturados nos campos - CORRIGIDO PARA MONTAR QUALIFICAÇÃO
  */
+/**
+ * Distribuir dados estruturados nos campos - CORRIGIDO PARA USAR qualificacaoCompleta
+ */
 function distribuirDadosNosCampos(container, dados) {
   let camposPreenchidos = 0;
   
+  // Função auxiliar para limpar qualificação
+  function limparQualificacao(qualificacao) {
+    if (!qualificacao || qualificacao.trim() === '') return '';
+    
+    // Remover "não informado" da qualificação
+    let qualificacaoLimpa = qualificacao
+      .replace(/, conhecido como 'não informado'/g, '')
+      .replace(/, conhecida como 'não informado'/g, '')
+      .replace(/, CPF não informado/g, '')
+      .replace(/, filho de não informado/g, '')
+      .replace(/, nascido em não informado/g, '')
+      .replace(/não informado/g, '')
+      .replace(/,\s*,/g, ',') // Remove vírgulas duplas
+      .replace(/,\s*$/g, '') // Remove vírgula no final
+      .trim();
+    
+    return qualificacaoLimpa;
+  }
+  
   try {
-    // Processar réus - MONTANDO qualificação a partir dos campos separados
+    // Processar réus - USANDO qualificacaoCompleta da API
     if (dados.reus && dados.reus.length > 0) {
       dados.reus.forEach(reu => {
-        if (reu.nome && reu.nome.trim() !== '') {
+        const qualificacaoLimpa = limparQualificacao(reu.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
           if (ultimoReu) {
@@ -363,22 +387,11 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: MONTAR qualificação completa no JavaScript
-              let qualificacaoCompleta = reu.nome;
-              
-              // Adicionar filiação se existir
-              if (reu.filiacao && reu.filiacao.trim() !== '') {
-                qualificacaoCompleta += `, filho de ${reu.filiacao}`;
-              }
-              
-              // Adicionar outras informações que podem estar no texto original
-              // (nascimento, CPF, RG, etc. - extrair do texto se disponível)
-              
-              nomeInput.value = qualificacaoCompleta;
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Réu preenchido:', qualificacaoCompleta);
+              console.log('Réu preenchido:', qualificacaoLimpa);
             }
-            if (enderecoInput && !enderecoInput.value && reu.endereco) {
+            if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
               enderecoInput.value = reu.endereco;
               camposPreenchidos++;
             }
@@ -387,10 +400,12 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar vítimas - MONTANDO qualificação
+    // Processar vítimas - USANDO qualificacaoCompleta da API
     if (dados.vitimas && dados.vitimas.length > 0) {
       dados.vitimas.forEach(vitima => {
-        if (vitima.nome && vitima.nome.trim() !== '') {
+        const qualificacaoLimpa = limparQualificacao(vitima.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
           if (ultimaVitima) {
@@ -398,17 +413,11 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // MONTAR qualificação completa
-              let qualificacaoCompleta = vitima.nome;
-              if (vitima.filiacao && vitima.filiacao.trim() !== '') {
-                qualificacaoCompleta += `, filho de ${vitima.filiacao}`;
-              }
-              
-              nomeInput.value = qualificacaoCompleta;
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Vítima preenchida:', qualificacaoCompleta);
+              console.log('Vítima preenchida:', qualificacaoLimpa);
             }
-            if (enderecoInput && !enderecoInput.value && vitima.endereco) {
+            if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
               enderecoInput.value = vitima.endereco;
               camposPreenchidos++;
             }
@@ -417,11 +426,13 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // CORREÇÃO: Processar testemunhasNormais (API retorna assim em vez de testemunhasGerais)
+    // Processar testemunhas gerais - USANDO qualificacaoCompleta da API
     const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
     if (testemunhasGerais && testemunhasGerais.length > 0) {
       testemunhasGerais.forEach(testemunha => {
-        if (testemunha.nome && testemunha.nome.trim() !== '') {
+        const qualificacaoLimpa = limparQualificacao(testemunha.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
           if (ultimaTestemunha) {
@@ -429,17 +440,11 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              // MONTAR qualificação completa
-              let qualificacaoCompleta = testemunha.nome;
-              if (testemunha.filiacao && testemunha.filiacao.trim() !== '') {
-                qualificacaoCompleta += `, filho de ${testemunha.filiacao}`;
-              }
-              
-              nomeInput.value = qualificacaoCompleta;
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Testemunha MP preenchida:', qualificacaoCompleta);
+              console.log('Testemunha MP preenchida:', qualificacaoLimpa);
             }
-            if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
+            if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
               enderecoInput.value = testemunha.endereco;
               camposPreenchidos++;
             }
@@ -448,16 +453,17 @@ function distribuirDadosNosCampos(container, dados) {
       });
     }
     
-    // Processar testemunhas policiais - USANDO nome + matrícula
+    // Processar testemunhas policiais - USANDO qualificacaoCompleta da API
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
       dados.testemunhasPoliciais.forEach(policial => {
-        if (policial.nome && policial.nome.trim() !== '') {
+        const qualificacaoLimpa = limparQualificacao(policial.qualificacaoCompleta);
+        
+        if (qualificacaoLimpa && qualificacaoLimpa.length > 5) { // Só se tiver conteúdo válido
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
             
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
@@ -467,15 +473,9 @@ function distribuirDadosNosCampos(container, dados) {
               }
             }
             if (nomeInput && !nomeInput.value) {
-              // MONTAR nome com matrícula se existir
-              let nomeCompleto = policial.nome;
-              if (policial.matricula && policial.matricula.trim() !== '') {
-                nomeCompleto += ` / ${policial.matricula}`;
-              }
-              
-              nomeInput.value = nomeCompleto;
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('Policial preenchido:', nomeCompleto);
+              console.log('Policial preenchido:', qualificacaoLimpa);
             }
           }
         }
@@ -488,9 +488,13 @@ function distribuirDadosNosCampos(container, dados) {
   
   return camposPreenchidos;
 }
-
 /**
  * Criar relatório do processamento - CORRIGIDO PARA USAR CAMPOS CORRETOS
+ */
+
+
+/**
+ * Criar relatório do processamento - CORRIGIDO PARA USAR qualificacaoCompleta
  */
 function criarRelatorioProcessamento(dados, camposPreenchidos) {
   const timestamp = new Date().toLocaleString();
@@ -505,14 +509,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
   }
   
-  // RÉUS - USANDO nome + filiação
+  // RÉUS - USANDO qualificacaoCompleta da API
   if (dados.reus && dados.reus.length > 0) {
     relatorio += `RÉUS (${dados.reus.length}):\n`;
     dados.reus.forEach((reu, index) => {
-      let qualificacao = reu.nome;
-      if (reu.filiacao) qualificacao += `, filho de ${reu.filiacao}`;
-      
-      relatorio += `${index + 1}. ${qualificacao}\n`;
+      relatorio += `${index + 1}. ${reu.qualificacaoCompleta || 'Qualificação não informada'}\n`;
       if (reu.endereco && reu.endereco.trim() !== '') {
         relatorio += `   Endereço: ${reu.endereco}\n`;
       }
@@ -520,14 +521,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // VÍTIMAS - USANDO nome + filiação
+  // VÍTIMAS - USANDO qualificacaoCompleta da API
   if (dados.vitimas && dados.vitimas.length > 0) {
     relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
     dados.vitimas.forEach((vitima, index) => {
-      let qualificacao = vitima.nome;
-      if (vitima.filiacao) qualificacao += `, filho de ${vitima.filiacao}`;
-      
-      relatorio += `${index + 1}. ${qualificacao}\n`;
+      relatorio += `${index + 1}. ${vitima.qualificacaoCompleta || 'Qualificação não informada'}\n`;
       if (vitima.endereco && vitima.endereco.trim() !== '') {
         relatorio += `   Endereço: ${vitima.endereco}\n`;
       }
@@ -535,15 +533,12 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS GERAIS - CORREÇÃO para testemunhasNormais
+  // TESTEMUNHAS GERAIS - USANDO qualificacaoCompleta da API
   const testemunhasGerais = dados.testemunhasGerais || dados.testemunhasNormais || [];
   if (testemunhasGerais && testemunhasGerais.length > 0) {
     relatorio += `TESTEMUNHAS ACUSAÇÃO (${testemunhasGerais.length}):\n`;
     testemunhasGerais.forEach((testemunha, index) => {
-      let qualificacao = testemunha.nome;
-      if (testemunha.filiacao) qualificacao += `, filho de ${testemunha.filiacao}`;
-      
-      relatorio += `${index + 1}. ${qualificacao}\n`;
+      relatorio += `${index + 1}. ${testemunha.qualificacaoCompleta || 'Qualificação não informada'}\n`;
       if (testemunha.endereco && testemunha.endereco.trim() !== '') {
         relatorio += `   Endereço: ${testemunha.endereco}\n`;
       }
@@ -551,12 +546,11 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS POLICIAIS - USANDO nome + tipo + matrícula
+  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta da API
   if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
     relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
     dados.testemunhasPoliciais.forEach((policial, index) => {
-      let linha = `${index + 1}. ${policial.nome}`;
-      if (policial.matricula) linha += ` / ${policial.matricula}`;
+      let linha = `${index + 1}. ${policial.qualificacaoCompleta || 'Qualificação não informada'}`;
       if (policial.tipo) linha += ` - ${policial.tipo.toUpperCase()}`;
       relatorio += linha + '\n';
     });
