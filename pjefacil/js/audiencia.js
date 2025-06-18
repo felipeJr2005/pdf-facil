@@ -346,7 +346,6 @@ ${textoCompleto}`;
 }
 
 
-
 /**
  * Função para limpar qualificação de forma inteligente
  * Remove "não informado" mas mantém informações úteis
@@ -560,127 +559,6 @@ function distribuirDadosNosCampos(container, dados) {
     
   } catch (error) {
     console.error('💥 Erro ao distribuir dados:', error);
-  }
-  
-  return camposPreenchidos;
-}
-
-
-
-
-/**
- * Distribuir dados estruturados nos campos - CORRIGIDO PARA QUALIFICAÇÃO COMPLETA
- */
-function distribuirDadosNosCampos(container, dados) {
-  let camposPreenchidos = 0;
-  
-  try {
-    // Processar réus - USANDO qualificacaoCompleta
-    if (dados.reus && dados.reus.length > 0) {
-      dados.reus.forEach(reu => {
-        if (reu.qualificacaoCompleta && reu.qualificacaoCompleta.trim() !== '') {
-          addReu(container);
-          const ultimoReu = container.querySelector('#reus-container').lastElementChild;
-          if (ultimoReu) {
-            const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO PRINCIPAL: usar qualificacaoCompleta em vez de nomeCompleto
-              nomeInput.value = reu.qualificacaoCompleta;
-              camposPreenchidos++;
-              console.log('Réu preenchido:', reu.qualificacaoCompleta);
-            }
-            if (enderecoInput && !enderecoInput.value && reu.endereco) {
-              enderecoInput.value = reu.endereco;
-              camposPreenchidos++;
-            }
-          }
-        }
-      });
-    }
-    
-    // Processar vítimas - USANDO qualificacaoCompleta
-    if (dados.vitimas && dados.vitimas.length > 0) {
-      dados.vitimas.forEach(vitima => {
-        if (vitima.qualificacaoCompleta && vitima.qualificacaoCompleta.trim() !== '') {
-          addVitima(container);
-          const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
-          if (ultimaVitima) {
-            const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
-              nomeInput.value = vitima.qualificacaoCompleta;
-              camposPreenchidos++;
-              console.log('Vítima preenchida:', vitima.qualificacaoCompleta);
-            }
-            if (enderecoInput && !enderecoInput.value && vitima.endereco) {
-              enderecoInput.value = vitima.endereco;
-              camposPreenchidos++;
-            }
-          }
-        }
-      });
-    }
-    
-    // Processar testemunhas gerais (MP) - USANDO qualificacaoCompleta
-    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-      dados.testemunhasGerais.forEach(testemunha => {
-        if (testemunha.qualificacaoCompleta && testemunha.qualificacaoCompleta.trim() !== '') {
-          addTestemunha(container, 'mp');
-          const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
-          if (ultimaTestemunha) {
-            const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
-              nomeInput.value = testemunha.qualificacaoCompleta;
-              camposPreenchidos++;
-              console.log('Testemunha MP preenchida:', testemunha.qualificacaoCompleta);
-            }
-            if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
-              enderecoInput.value = testemunha.endereco;
-              camposPreenchidos++;
-            }
-          }
-        }
-      });
-    }
-    
-    // Processar testemunhas policiais - USANDO qualificacaoCompleta
-    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      dados.testemunhasPoliciais.forEach(policial => {
-        if (policial.qualificacaoCompleta && policial.qualificacaoCompleta.trim() !== '') {
-          addPolicial(container);
-          const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-          if (ultimoPolicial) {
-            const tipoSelect = ultimoPolicial.querySelector('select');
-            const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
-            
-            if (tipoSelect && policial.tipo) {
-              const tipoLower = policial.tipo.toLowerCase();
-              if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
-                tipoSelect.value = tipoLower;
-                camposPreenchidos++;
-              }
-            }
-            if (nomeInput && !nomeInput.value) {
-              // CORREÇÃO: usar qualificacaoCompleta
-              nomeInput.value = policial.qualificacaoCompleta;
-              camposPreenchidos++;
-              console.log('Policial preenchido:', policial.qualificacaoCompleta);
-            }
-          }
-        }
-      });
-    }
-    
-  } catch (error) {
-    console.error('Erro ao distribuir dados:', error);
   }
   
   return camposPreenchidos;
