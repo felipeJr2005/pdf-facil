@@ -464,6 +464,33 @@
                 </div>
             </div>
 
+            <!-- Backup e Restore -->
+            <div class="section" style="grid-column: 1 / -1; background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); color: white;">
+                <h2 style="color: white; border-bottom: 2px solid rgba(255,255,255,0.3);">💾 Backup dos Dados</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; backdrop-filter: blur(10px);">
+                        <h3 style="margin-bottom: 15px; font-size: 1.2em;">📤 Exportar Dados</h3>
+                        <p style="margin-bottom: 15px; opacity: 0.9; font-size: 0.95em;">Baixe todas suas aplicações em um arquivo JSON para backup seguro.</p>
+                        <button onclick="exportarDados()" class="btn" style="background: #00b894; width: 100%;">
+                            📥 Baixar Backup
+                        </button>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; backdrop-filter: blur(10px);">
+                        <h3 style="margin-bottom: 15px; font-size: 1.2em;">📥 Importar Dados</h3>
+                        <p style="margin-bottom: 15px; opacity: 0.9; font-size: 0.95em;">Carregue um arquivo de backup para restaurar suas aplicações.</p>
+                        <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="importarDados(this)">
+                        <button onclick="document.getElementById('fileInput').click()" class="btn" style="background: #fd79a8; width: 100%;">
+                            📁 Carregar Backup
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; backdrop-filter: blur(10px);">
+                    <p style="text-align: center; opacity: 0.9; margin: 0; font-size: 0.9em;">
+                        💡 <strong>Dica:</strong> Salve o arquivo de backup no Google Drive, Dropbox ou pen drive para acessar em qualquer computador!
+                    </p>
+                </div>
+            </div>
+
             <!-- Lista de Aplicações -->
             <div class="section applications-list">
                 <h2>📋 Minhas Aplicações</h2>
@@ -1085,6 +1112,141 @@
             renderizarAplicacoes();
             atualizarResumo();
             atualizarComparacao();
+        }
+
+        // Função para exportar dados
+        function exportarDados() {
+            try {
+                // Criar objeto com dados para backup
+                const backupData = {
+                    versao: "1.0",
+                    dataExportacao: new Date().toISOString(),
+                    totalAplicacoes: aplicacoes.length,
+                    aplicacoes: aplicacoes,
+                    taxasReferencia: {
+                        cdi: document.getElementById('taxaCDI').value,
+                        selic: document.getElementById('taxaSELIC').value,
+                        poupanca: document.getElementById('taxaPoupanca').value
+                    }
+                };
+
+                // Converter para JSON
+                const jsonString = JSON.stringify(backupData, null, 2);
+                
+                // Criar arquivo para download
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // Criar link de download
+                const dataAtual = new Date().toISOString().split('T')[0];
+                const nomeArquivo = `aplicacoes-financeiras-backup-${dataAtual}.json`;
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = nomeArquivo;
+                
+                // Executar download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Limpar URL
+                URL.revokeObjectURL(url);
+                
+                alert(`✅ Backup exportado com sucesso!\n\n📁 Arquivo: ${nomeArquivo}\n📊 ${aplicacoes.length} aplicações salvas\n\n💡 Guarde este arquivo em local seguro!`);
+                
+            } catch (error) {
+                console.error('Erro ao exportar dados:', error);
+                alert('❌ Erro ao exportar dados. Tente novamente.');
+            }
+        }
+
+        // Função para importar dados
+        function importarDados(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Verificar se é arquivo JSON
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                alert('❌ Por favor, selecione um arquivo JSON válido.');
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Parse do JSON
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    // Validações básicas
+                    if (!backupData.aplicacoes || !Array.isArray(backupData.aplicacoes)) {
+                        throw new Error('Arquivo não contém dados de aplicações válidos');
+                    }
+
+                    // Confirmar importação
+                    const totalAplicacoes = backupData.aplicacoes.length;
+                    const dataExportacao = backupData.dataExportacao ? 
+                        new Date(backupData.dataExportacao).toLocaleDateString('pt-BR') : 'Desconhecida';
+                    
+                    const confirmar = confirm(
+                        `📋 Dados do Backup:\n\n` +
+                        `📅 Data: ${dataExportacao}\n` +
+                        `📊 Aplicações: ${totalAplicacoes}\n` +
+                        `🔄 Versão: ${backupData.versao || 'N/A'}\n\n` +
+                        `⚠️ Isso irá SUBSTITUIR todas as aplicações atuais!\n\n` +
+                        `Deseja continuar?`
+                    );
+
+                    if (!confirmar) {
+                        input.value = ''; // Limpar input
+                        return;
+                    }
+
+                    // Importar aplicações
+                    aplicacoes = backupData.aplicacoes.map(app => {
+                        // Garantir que cada aplicação tenha um ID único
+                        return {
+                            ...app,
+                            id: app.id || contadorId++
+                        };
+                    });
+
+                    // Atualizar contador de ID
+                    contadorId = Math.max(...aplicacoes.map(app => app.id), 0) + 1;
+
+                    // Importar taxas de referência se disponíveis
+                    if (backupData.taxasReferencia) {
+                        const taxas = backupData.taxasReferencia;
+                        if (taxas.cdi) document.getElementById('taxaCDI').value = taxas.cdi;
+                        if (taxas.selic) document.getElementById('taxaSELIC').value = taxas.selic;
+                        if (taxas.poupanca) document.getElementById('taxaPoupanca').value = taxas.poupanca;
+                    }
+
+                    // Atualizar interface
+                    renderizarAplicacoes();
+                    atualizarResumo();
+                    atualizarComparacao();
+
+                    // Limpar input
+                    input.value = '';
+
+                    alert(`✅ Dados importados com sucesso!\n\n📊 ${totalAplicacoes} aplicações carregadas\n📅 Backup de: ${dataExportacao}\n\n🎯 Sistema atualizado!`);
+
+                } catch (error) {
+                    console.error('Erro ao importar dados:', error);
+                    alert(`❌ Erro ao importar arquivo:\n\n${error.message}\n\nVerifique se o arquivo é um backup válido.`);
+                    input.value = ''; // Limpar input
+                }
+            };
+
+            reader.onerror = function() {
+                alert('❌ Erro ao ler o arquivo. Tente novamente.');
+                input.value = ''; // Limpar input
+            };
+
+            // Ler arquivo
+            reader.readAsText(file);
         }
 
         // Inicialização
