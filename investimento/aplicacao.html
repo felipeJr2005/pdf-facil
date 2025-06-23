@@ -841,7 +841,7 @@
                 porcentagemCDI: tipoTaxa === 'CDI' ? porcentagemCDI : null,
                 taxaPreFixada: tipoTaxa === 'PRE' ? taxaPreFixada : null,
                 taxaAdmin: parseFloat(document.getElementById('taxaAdmin').value) || null,
-                banco: document.getElementById('banco').value.trim() || null
+                banco: document.getElementById('banco').value || null
             };
             
             if (editandoId) {
@@ -916,8 +916,7 @@
                     <div class="application-card">
                         <div class="app-header">
                             <div class="app-type">
-                                ${aplicacao.tipo}
-                                ${aplicacao.banco ? `<span style="color: var(--md-tertiary); font-weight: 400; margin-left: 8px;">${aplicacao.banco}</span>` : ''}
+                                ${aplicacao.tipo}${aplicacao.banco ? ` ${aplicacao.banco}` : ''}
                             </div>
                             <div class="app-value">R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                         </div>
