@@ -361,21 +361,21 @@
                     <div class="rate-item">
                         <label>Taxa CDI (%)</label>
                         <div class="rate-input-group">
-                            <textarea id="taxaCDI" placeholder="Ex: 13.75">13.75</textarea>
+                            <textarea id="taxaCDI" placeholder="Ex: 14.90">14.90</textarea>
                             <button class="rate-btn" onclick="atualizarCDI()">Atualizar</button>
                         </div>
                     </div>
                     <div class="rate-item">
                         <label>Taxa SELIC (%)</label>
                         <div class="rate-input-group">
-                            <textarea id="taxaSELIC" placeholder="Ex: 13.25">13.25</textarea>
+                            <textarea id="taxaSELIC" placeholder="Ex: 15.00">15.00</textarea>
                             <button class="rate-btn" onclick="atualizarSELIC()">Atualizar</button>
                         </div>
                     </div>
                     <div class="rate-item">
-                        <label>Taxa Poupança (%)</label>
+                        <label>Taxa Poupança (% ao mês)</label>
                         <div class="rate-input-group">
-                            <textarea id="taxaPoupanca" placeholder="Ex: 8.20">8.20</textarea>
+                            <textarea id="taxaPoupanca" placeholder="Ex: 0.6721">0.6721</textarea>
                             <button class="rate-btn" onclick="atualizarPoupanca()">Atualizar</button>
                         </div>
                     </div>
@@ -399,6 +399,15 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Tipo de Taxa</label>
+                        <select id="tipoTaxa" required onchange="ajustarFormulario()">
+                            <option value="">Selecione...</option>
+                            <option value="CDI">CDI - Baseada no índice CDI</option>
+                            <option value="PRE">Pré-fixada - Taxa fixa contratada</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label>Valor Aplicado (R$)</label>
                         <input type="number" id="valorAplicado" step="0.01" min="0" required>
                     </div>
@@ -416,6 +425,11 @@
                     <div class="form-group" id="grupoPorcentagemCDI">
                         <label>Porcentagem do CDI (%)</label>
                         <input type="number" id="porcentagemCDI" step="0.01" min="0" placeholder="Ex: 130">
+                    </div>
+
+                    <div class="form-group" id="grupoTaxaPreFixada" style="display: none;">
+                        <label>Taxa Pré-fixada (% ao ano)</label>
+                        <input type="number" id="taxaPreFixada" step="0.01" min="0" placeholder="Ex: 16.00">
                     </div>
 
                     <div class="form-group" id="grupoTaxaAdmin" style="display: none;">
@@ -467,13 +481,13 @@
                     <thead>
                         <tr>
                             <th>Aplicação</th>
+                            <th>Tipo Taxa</th>
                             <th>Valor Aplicado</th>
                             <th>Prazo (dias)</th>
-                            <th>Rentabilidade Bruta</th>
-                            <th>Rentabilidade Líquida</th>
-                            <th>IR</th>
-                            <th>IOF</th>
-                            <th>Valor Final</th>
+                            <th>Valor Hoje</th>
+                            <th>Valor Vencimento</th>
+                            <th>Rentab. Líquida</th>
+                            <th>IR + IOF</th>
                         </tr>
                     </thead>
                     <tbody id="tabelaComparacao">
@@ -495,21 +509,54 @@
         // Ajustar formulário baseado no tipo de aplicação
         function ajustarFormulario() {
             const tipo = document.getElementById('tipoAplicacao').value;
+            const tipoTaxa = document.getElementById('tipoTaxa').value;
             const grupoPorcentagemCDI = document.getElementById('grupoPorcentagemCDI');
+            const grupoTaxaPreFixada = document.getElementById('grupoTaxaPreFixada');
             const grupoTaxaAdmin = document.getElementById('grupoTaxaAdmin');
             
+            // Reset ALL fields - SEMPRE esconder todos primeiro
+            grupoPorcentagemCDI.style.display = 'none';
+            grupoTaxaPreFixada.style.display = 'none';
+            grupoTaxaAdmin.style.display = 'none';
+            
+            // Limpar valores dos campos ocultos para evitar conflitos
+            document.getElementById('porcentagemCDI').value = '';
+            document.getElementById('taxaPreFixada').value = '';
+            
+            // Poupança: configuração especial (sem tipo de taxa)
+            if (tipo === 'Poupança') {
+                document.getElementById('tipoTaxa').value = '';
+                document.getElementById('tipoTaxa').disabled = true;
+                return; // Sair da função - poupança não precisa de mais nada
+            }
+            
+            // Reabilitar tipo de taxa para outros tipos
+            document.getElementById('tipoTaxa').disabled = false;
+            
+            // Taxa de administração para Fundo DI
             if (tipo === 'Fundo DI') {
                 grupoTaxaAdmin.style.display = 'block';
-                grupoPorcentagemCDI.style.display = 'block';
-                document.getElementById('porcentagemCDI').placeholder = "Ex: 100 (para fundos DI)";
-            } else if (tipo === 'Poupança') {
-                grupoPorcentagemCDI.style.display = 'none';
-                grupoTaxaAdmin.style.display = 'none';
-            } else {
-                grupoPorcentagemCDI.style.display = 'block';
-                grupoTaxaAdmin.style.display = 'none';
-                document.getElementById('porcentagemCDI').placeholder = "Ex: 130";
             }
+            
+            // LÓGICA EXCLUSIVA: Apenas UM tipo de taxa por vez
+            if (tipoTaxa === 'CDI') {
+                // APENAS CDI - esconder pré-fixada
+                grupoPorcentagemCDI.style.display = 'block';
+                grupoTaxaPreFixada.style.display = 'none';
+                
+                // Configurar placeholder baseado no tipo
+                if (tipo === 'Fundo DI') {
+                    document.getElementById('porcentagemCDI').placeholder = "Ex: 100 (para fundos DI)";
+                } else {
+                    document.getElementById('porcentagemCDI').placeholder = "Ex: 130";
+                }
+                
+            } else if (tipoTaxa === 'PRE') {
+                // APENAS PRÉ-FIXADA - esconder CDI
+                grupoPorcentagemCDI.style.display = 'none';
+                grupoTaxaPreFixada.style.display = 'block';
+            }
+            // Se tipoTaxa estiver vazio, nenhum campo de taxa aparece
         }
 
         // Calcular dias úteis (aproximação)
@@ -555,185 +602,97 @@
         // Calcular rentabilidade
         function calcularRentabilidade(aplicacao) {
             const taxaCDI = parseFloat(document.getElementById('taxaCDI').value) / 100;
-            const taxaPoupanca = parseFloat(document.getElementById('taxaPoupanca').value) / 100;
+            const dataHoje = new Date().toISOString().split('T')[0];
             
+            // Cálculos para HOJE
+            const diasCorridosHoje = calcularDiasCorridos(aplicacao.dataAplicacao, dataHoje);
+            const diasUteisHoje = calcularDiasUteis(aplicacao.dataAplicacao, dataHoje);
+            
+            // Cálculos para VENCIMENTO
             const diasCorridos = calcularDiasCorridos(aplicacao.dataAplicacao, aplicacao.dataResgate);
             const diasUteis = calcularDiasUteis(aplicacao.dataAplicacao, aplicacao.dataResgate);
             
-            let rentabilidadeBruta = 0;
-            
-            if (aplicacao.tipo === 'Poupança') {
-                // Poupança: 70% da SELIC quando SELIC > 8.5%, senão TR + 0.5%
-                const taxaSELIC = parseFloat(document.getElementById('taxaSELIC').value) / 100;
-                if (taxaSELIC > 0.085) {
-                    rentabilidadeBruta = Math.pow(1 + (taxaSELIC * 0.7), diasCorridos / 365) - 1;
+            // Função auxiliar para calcular rentabilidade por período
+            function calcularPorPeriodo(diasCorr, diasUt) {
+                let rentabilidadeBruta = 0;
+                
+                if (aplicacao.tipo === 'Poupança') {
+                    // Poupança: usar taxa mensal direta (0,6721% ao mês)
+                    const taxaPoupancaMensal = parseFloat(document.getElementById('taxaPoupanca').value) / 100;
+                    const meses = diasCorr / 30; // Aproximação para meses
+                    rentabilidadeBruta = Math.pow(1 + taxaPoupancaMensal, meses) - 1;
+                } else if (aplicacao.tipoTaxa === 'PRE') {
+                    // Taxa Pré-fixada
+                    const taxaPreFixada = aplicacao.taxaPreFixada / 100;
+                    rentabilidadeBruta = Math.pow(1 + taxaPreFixada, diasCorr / 365) - 1;
                 } else {
-                    rentabilidadeBruta = Math.pow(1 + 0.005, diasCorridos / 365) - 1; // Simplificado
+                    // Taxa baseada no CDI
+                    const taxaEfetiva = taxaCDI * (aplicacao.porcentagemCDI / 100);
+                    rentabilidadeBruta = Math.pow(1 + taxaEfetiva, diasUt / 252) - 1;
                 }
-            } else {
-                // CDI-based calculations
-                const taxaEfetiva = taxaCDI * (aplicacao.porcentagemCDI / 100);
-                rentabilidadeBruta = Math.pow(1 + taxaEfetiva, diasUteis / 252) - 1;
                 
                 // Deduzir taxa de administração para Fundo DI
                 if (aplicacao.tipo === 'Fundo DI' && aplicacao.taxaAdmin) {
                     const taxaAdminDiaria = aplicacao.taxaAdmin / 100 / 365;
-                    rentabilidadeBruta -= (taxaAdminDiaria * diasCorridos);
+                    rentabilidadeBruta -= (taxaAdminDiaria * diasCorr);
                 }
+                
+                const valorBruto = aplicacao.valorAplicado * (1 + rentabilidadeBruta);
+                const rendimentoBruto = valorBruto - aplicacao.valorAplicado;
+                
+                // Calcular impostos
+                let ir = 0;
+                let iof = 0;
+                
+                if (aplicacao.tipo !== 'LCA' && aplicacao.tipo !== 'Poupança') {
+                    ir = rendimentoBruto * calcularIR(diasCorr);
+                }
+                
+                if (aplicacao.tipo !== 'Poupança') {
+                    iof = rendimentoBruto * calcularIOF(diasCorr);
+                }
+                
+                const impostoTotal = ir + iof;
+                const rendimentoLiquido = rendimentoBruto - impostoTotal;
+                const valorLiquido = aplicacao.valorAplicado + rendimentoLiquido;
+                const rentabilidadeLiquida = rendimentoLiquido / aplicacao.valorAplicado;
+                
+                return {
+                    diasCorridos: diasCorr,
+                    diasUteis: diasUt,
+                    rentabilidadeBruta,
+                    rentabilidadeLiquida,
+                    valorBruto,
+                    valorLiquido,
+                    rendimentoBruto,
+                    rendimentoLiquido,
+                    ir,
+                    iof,
+                    impostoTotal
+                };
             }
             
-            const valorBruto = aplicacao.valorAplicado * (1 + rentabilidadeBruta);
-            const rendimentoBruto = valorBruto - aplicacao.valorAplicado;
-            
-            // Calcular impostos
-            let ir = 0;
-            let iof = 0;
-            
-            if (aplicacao.tipo !== 'LCA' && aplicacao.tipo !== 'Poupança') {
-                ir = rendimentoBruto * calcularIR(diasCorridos);
-            }
-            
-            if (aplicacao.tipo !== 'Poupança') {
-                iof = rendimentoBruto * calcularIOF(diasCorridos);
-            }
-            
-            const impostoTotal = ir + iof;
-            const rendimentoLiquido = rendimentoBruto - impostoTotal;
-            const valorLiquido = aplicacao.valorAplicado + rendimentoLiquido;
-            const rentabilidadeLiquida = rendimentoLiquido / aplicacao.valorAplicado;
+            const resultadoHoje = calcularPorPeriodo(diasCorridosHoje, diasUteisHoje);
+            const resultadoVencimento = calcularPorPeriodo(diasCorridos, diasUteis);
             
             return {
+                // Para compatibilidade com código existente
                 diasCorridos,
                 diasUteis,
-                rentabilidadeBruta,
-                rentabilidadeLiquida,
-                valorBruto,
-                valorLiquido,
-                rendimentoBruto,
-                rendimentoLiquido,
-                ir,
-                iof,
-                impostoTotal
+                rentabilidadeBruta: resultadoVencimento.rentabilidadeBruta,
+                rentabilidadeLiquida: resultadoVencimento.rentabilidadeLiquida,
+                valorBruto: resultadoVencimento.valorBruto,
+                valorLiquido: resultadoVencimento.valorLiquido,
+                rendimentoBruto: resultadoVencimento.rendimentoBruto,
+                rendimentoLiquido: resultadoVencimento.rendimentoLiquido,
+                ir: resultadoVencimento.ir,
+                iof: resultadoVencimento.iof,
+                impostoTotal: resultadoVencimento.impostoTotal,
+                
+                // Novos dados para hoje vs vencimento
+                hoje: resultadoHoje,
+                vencimento: resultadoVencimento
             };
-        }
-
-        // Adicionar nova aplicação ou atualizar existente
-        document.getElementById('formAplicacao').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const dadosAplicacao = {
-                tipo: document.getElementById('tipoAplicacao').value,
-                valorAplicado: parseFloat(document.getElementById('valorAplicado').value),
-                dataAplicacao: document.getElementById('dataAplicacao').value,
-                dataResgate: document.getElementById('dataResgate').value,
-                porcentagemCDI: parseFloat(document.getElementById('porcentagemCDI').value) || null,
-                taxaAdmin: parseFloat(document.getElementById('taxaAdmin').value) || null
-            };
-            
-            if (editandoId) {
-                // Atualizar aplicação existente
-                const index = aplicacoes.findIndex(app => app.id === editandoId);
-                if (index !== -1) {
-                    aplicacoes[index] = { ...aplicacoes[index], ...dadosAplicacao };
-                }
-                
-                // Sair do modo edição
-                cancelarEdicao();
-            } else {
-                // Adicionar nova aplicação
-                const novaAplicacao = {
-                    id: contadorId++,
-                    ...dadosAplicacao
-                };
-                
-                aplicacoes.push(novaAplicacao);
-                
-                // Limpar formulário
-                document.getElementById('formAplicacao').reset();
-                document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
-                ajustarFormulario();
-            }
-            
-            // Atualizar interface
-            renderizarAplicacoes();
-            atualizarResumo();
-            atualizarComparacao();
-        });
-
-        // Renderizar lista de aplicações
-        function renderizarAplicacoes() {
-            const container = document.getElementById('listaAplicacoes');
-            
-            if (aplicacoes.length === 0) {
-                container.innerHTML = `
-                    <p style="text-align: center; color: #7f8c8d; padding: 40px;">
-                        Nenhuma aplicação cadastrada ainda. Adicione sua primeira aplicação acima!
-                    </p>
-                `;
-                return;
-            }
-            
-            container.innerHTML = aplicacoes.map(aplicacao => {
-                const calc = calcularRentabilidade(aplicacao);
-                
-                return `
-                    <div class="application-card">
-                        <div class="app-header">
-                            <div class="app-type">${aplicacao.tipo}</div>
-                            <div class="app-value">R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                        </div>
-                        
-                        <div class="app-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Data Aplicação</div>
-                                <div class="detail-value">${new Date(aplicacao.dataAplicacao).toLocaleDateString('pt-BR')}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Data Resgate</div>
-                                <div class="detail-value">${new Date(aplicacao.dataResgate).toLocaleDateString('pt-BR')}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Prazo</div>
-                                <div class="detail-value">${calc.diasCorridos} dias</div>
-                            </div>
-                            ${aplicacao.porcentagemCDI ? `
-                            <div class="detail-item">
-                                <div class="detail-label">% do CDI</div>
-                                <div class="detail-value">${aplicacao.porcentagemCDI}%</div>
-                            </div>` : ''}
-                            <div class="detail-item">
-                                <div class="detail-label">Rentabilidade Bruta</div>
-                                <div class="detail-value positive">${(calc.rentabilidadeBruta * 100).toFixed(2)}%</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Rentabilidade Líquida</div>
-                                <div class="detail-value positive">${(calc.rentabilidadeLiquida * 100).toFixed(2)}%</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">IR</div>
-                                <div class="detail-value negative">R$ ${calc.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">IOF</div>
-                                <div class="detail-value negative">R$ ${calc.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Valor Líquido</div>
-                                <div class="detail-value positive">R$ ${calc.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="app-actions">
-                            <button class="btn btn-small" onclick="editarAplicacao(${aplicacao.id})" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
-                                Editar
-                            </button>
-                            <button class="btn btn-danger btn-small" onclick="removerAplicacao(${aplicacao.id})">
-                                Remover
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
         // Editar aplicação existente
@@ -743,10 +702,12 @@
             
             // Preencher formulário com dados existentes
             document.getElementById('tipoAplicacao').value = aplicacao.tipo;
+            document.getElementById('tipoTaxa').value = aplicacao.tipoTaxa || '';
             document.getElementById('valorAplicado').value = aplicacao.valorAplicado;
             document.getElementById('dataAplicacao').value = aplicacao.dataAplicacao;
             document.getElementById('dataResgate').value = aplicacao.dataResgate;
             document.getElementById('porcentagemCDI').value = aplicacao.porcentagemCDI || '';
+            document.getElementById('taxaPreFixada').value = aplicacao.taxaPreFixada || '';
             document.getElementById('taxaAdmin').value = aplicacao.taxaAdmin || '';
             
             // Ajustar formulário baseado no tipo
@@ -767,6 +728,13 @@
             editandoId = null;
             document.getElementById('formAplicacao').reset();
             document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
+            document.getElementById('tipoTaxa').disabled = false; // Reabilitar campo
+            
+            // Limpar valores específicos para evitar conflitos
+            document.getElementById('porcentagemCDI').value = '';
+            document.getElementById('taxaPreFixada').value = '';
+            document.getElementById('taxaAdmin').value = '';
+            
             ajustarFormulario();
             atualizarInterfaceEdicao(false);
         }
@@ -808,6 +776,188 @@
             }
         }
 
+        // Adicionar nova aplicação ou atualizar existente
+        document.getElementById('formAplicacao').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tipo = document.getElementById('tipoAplicacao').value;
+            const tipoTaxa = document.getElementById('tipoTaxa').value;
+            
+            // Validação: Poupança não precisa de tipo de taxa
+            if (tipo !== 'Poupança' && !tipoTaxa) {
+                alert('⚠️ Selecione o tipo de taxa (CDI ou Pré-fixada)');
+                return;
+            }
+            
+            // Validação: Não permitir valores conflitantes
+            const porcentagemCDI = parseFloat(document.getElementById('porcentagemCDI').value);
+            const taxaPreFixada = parseFloat(document.getElementById('taxaPreFixada').value);
+            
+            if (tipoTaxa === 'CDI' && (!porcentagemCDI || porcentagemCDI <= 0)) {
+                alert('⚠️ Informe a porcentagem do CDI válida');
+                return;
+            }
+            
+            if (tipoTaxa === 'PRE' && (!taxaPreFixada || taxaPreFixada <= 0)) {
+                alert('⚠️ Informe a taxa pré-fixada válida');
+                return;
+            }
+            
+            // Garantir exclusividade: limpar o campo que não está sendo usado
+            const dadosAplicacao = {
+                tipo: tipo,
+                tipoTaxa: tipoTaxa,
+                valorAplicado: parseFloat(document.getElementById('valorAplicado').value),
+                dataAplicacao: document.getElementById('dataAplicacao').value,
+                dataResgate: document.getElementById('dataResgate').value,
+                porcentagemCDI: tipoTaxa === 'CDI' ? porcentagemCDI : null,
+                taxaPreFixada: tipoTaxa === 'PRE' ? taxaPreFixada : null,
+                taxaAdmin: parseFloat(document.getElementById('taxaAdmin').value) || null
+            };
+            
+            if (editandoId) {
+                // Atualizar aplicação existente
+                const index = aplicacoes.findIndex(app => app.id === editandoId);
+                if (index !== -1) {
+                    aplicacoes[index] = { ...aplicacoes[index], ...dadosAplicacao };
+                }
+                
+                // Sair do modo edição
+                cancelarEdicao();
+            } else {
+                // Adicionar nova aplicação
+                const novaAplicacao = {
+                    id: contadorId++,
+                    ...dadosAplicacao
+                };
+                
+                aplicacoes.push(novaAplicacao);
+                
+                // Limpar formulário
+                document.getElementById('formAplicacao').reset();
+                document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
+                document.getElementById('tipoTaxa').disabled = false; // Reabilitar campo
+                
+                // Limpar valores específicos para evitar conflitos
+                document.getElementById('porcentagemCDI').value = '';
+                document.getElementById('taxaPreFixada').value = '';
+                document.getElementById('taxaAdmin').value = '';
+                
+                ajustarFormulario();
+            }
+            
+            // Atualizar interface
+            renderizarAplicacoes();
+            atualizarResumo();
+            atualizarComparacao();
+        });
+
+        // Renderizar lista de aplicações
+        function renderizarAplicacoes() {
+            const container = document.getElementById('listaAplicacoes');
+            
+            if (aplicacoes.length === 0) {
+                container.innerHTML = `
+                    <p style="text-align: center; color: #7f8c8d; padding: 40px;">
+                        Nenhuma aplicação cadastrada ainda. Adicione sua primeira aplicação acima!
+                    </p>
+                `;
+                return;
+            }
+            
+            container.innerHTML = aplicacoes.map(aplicacao => {
+                const calc = calcularRentabilidade(aplicacao);
+                
+                // Determinar o tipo de taxa e informações corretas
+                let tipoTaxaLabel = 'Poupança';
+                let taxaInfo = '';
+                
+                if (aplicacao.tipo !== 'Poupança') {
+                    if (aplicacao.tipoTaxa === 'PRE') {
+                        tipoTaxaLabel = 'Pré-fixada';
+                        taxaInfo = `${aplicacao.taxaPreFixada}% a.a.`;
+                    } else if (aplicacao.tipoTaxa === 'CDI') {
+                        tipoTaxaLabel = 'CDI';
+                        taxaInfo = `${aplicacao.porcentagemCDI}% do CDI`;
+                    }
+                }
+                
+                return `
+                    <div class="application-card">
+                        <div class="app-header">
+                            <div class="app-type">${aplicacao.tipo}</div>
+                            <div class="app-value">R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                        
+                        <div class="app-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Tipo de Taxa</div>
+                                <div class="detail-value">${tipoTaxaLabel}</div>
+                            </div>
+                            ${taxaInfo ? `
+                            <div class="detail-item">
+                                <div class="detail-label">${aplicacao.tipoTaxa === 'PRE' ? 'Taxa Contratada' : 'Percentual CDI'}</div>
+                                <div class="detail-value">${taxaInfo}</div>
+                            </div>` : ''}
+                            <div class="detail-item">
+                                <div class="detail-label">Data Aplicação</div>
+                                <div class="detail-value">${new Date(aplicacao.dataAplicacao).toLocaleDateString('pt-BR')}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Data Resgate</div>
+                                <div class="detail-value">${new Date(aplicacao.dataResgate).toLocaleDateString('pt-BR')}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Prazo</div>
+                                <div class="detail-value">${calc.diasCorridos} dias</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Valores HOJE vs VENCIMENTO -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                                <div style="font-size: 0.9em; color: #1976d2; font-weight: bold; margin-bottom: 10px;">💰 VALOR HOJE</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #1976d2;">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                <div style="font-size: 0.9em; color: #1976d2; margin-top: 5px;">Rendimento: R$ ${calc.hoje.rendimentoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                <div style="font-size: 0.9em; color: #1976d2;">(${(calc.hoje.rentabilidadeLiquida * 100).toFixed(2)}%)</div>
+                            </div>
+                            <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                                <div style="font-size: 0.9em; color: #388e3c; font-weight: bold; margin-bottom: 10px;">🎯 VALOR NO VENCIMENTO</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #388e3c;">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                <div style="font-size: 0.9em; color: #388e3c; margin-top: 5px;">Rendimento: R$ ${calc.vencimento.rendimentoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                <div style="font-size: 0.9em; color: #388e3c;">(${(calc.vencimento.rentabilidadeLiquida * 100).toFixed(2)}%)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="app-details">
+                            <div class="detail-item">
+                                <div class="detail-label">IR Total</div>
+                                <div class="detail-value negative">R$ ${calc.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">IOF</div>
+                                <div class="detail-value negative">R$ ${calc.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            </div>
+                            ${aplicacao.taxaAdmin ? `
+                            <div class="detail-item">
+                                <div class="detail-label">Taxa Admin</div>
+                                <div class="detail-value">${aplicacao.taxaAdmin}% a.a.</div>
+                            </div>` : ''}
+                        </div>
+                        
+                        <div class="app-actions">
+                            <button class="btn btn-small" onclick="editarAplicacao(${aplicacao.id})" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                                Editar
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="removerAplicacao(${aplicacao.id})">
+                                Remover
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Remover aplicação
         function removerAplicacao(id) {
             if (confirm('Tem certeza que deseja remover esta aplicação?')) {
@@ -831,7 +981,7 @@
             aplicacoes.forEach(aplicacao => {
                 const calc = calcularRentabilidade(aplicacao);
                 totalAplicado += aplicacao.valorAplicado;
-                totalAtual += calc.valorLiquido;
+                totalAtual += calc.hoje.valorLiquido; // Usar valor de hoje para o resumo
             });
             
             const totalRendimento = totalAtual - totalAplicado;
@@ -862,16 +1012,30 @@
             tabela.innerHTML = aplicacoes.map(aplicacao => {
                 const calc = calcularRentabilidade(aplicacao);
                 
+                // Determinar o tipo de taxa e informações corretas
+                let tipoTaxaLabel = 'Poupança';
+                let taxaInfo = 'N/A';
+                
+                if (aplicacao.tipo !== 'Poupança') {
+                    if (aplicacao.tipoTaxa === 'PRE') {
+                        tipoTaxaLabel = 'Pré-fixada';
+                        taxaInfo = `${aplicacao.taxaPreFixada}% a.a.`;
+                    } else if (aplicacao.tipoTaxa === 'CDI') {
+                        tipoTaxaLabel = 'CDI';
+                        taxaInfo = `${aplicacao.porcentagemCDI}% CDI`;
+                    }
+                }
+                
                 return `
                     <tr>
                         <td><strong>${aplicacao.tipo}</strong></td>
+                        <td>${tipoTaxaLabel}<br><small>${taxaInfo}</small></td>
                         <td>R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         <td>${calc.diasCorridos} dias</td>
-                        <td class="positive">${(calc.rentabilidadeBruta * 100).toFixed(2)}%</td>
-                        <td class="positive">${(calc.rentabilidadeLiquida * 100).toFixed(2)}%</td>
-                        <td class="negative">R$ ${calc.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td class="negative">R$ ${calc.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td><strong>R$ ${calc.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                        <td class="positive">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td class="positive">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td class="positive">${(calc.vencimento.rentabilidadeLiquida * 100).toFixed(2)}%</td>
+                        <td class="negative">R$ ${(calc.ir + calc.iof).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
                 `;
             }).join('');
@@ -882,29 +1046,15 @@
             // Abrir site oficial em nova aba para conferência manual
             window.open('https://www.bcb.gov.br/htms/selic/selicdiarios.asp?frame=1', '_blank');
             
-            // Mostrar instruções enquanto tenta buscar automaticamente
-            const loadingMsg = '🔄 Tentando buscar automaticamente...\n\n🔗 Site oficial aberto para conferência manual!';
+            const novoValor = '14.90'; // Valor atual conforme informado
+            document.getElementById('taxaCDI').value = novoValor;
             
-            try {
-                // Estratégia 1: Tentar buscar via web_search (disponível no ambiente)
-                // Esta é uma abordagem mais robusta para contornar limitações CORS
-                
-                // Por enquanto, vamos usar valores padrão atualizados
-                // A funcionalidade de busca automática será implementada com web_search
-                
-                const novoValor = '14.90'; // Valor atual conforme informado
-                document.getElementById('taxaCDI').value = novoValor;
-                
-                alert('✅ Taxa CDI atualizada: 14,90%\n\n🔗 Site oficial aberto para conferência!\n\n⚠️ Busca automática em desenvolvimento.\nPor favor, confirme o valor no site oficial do Banco Central.');
-                
-                // Recalcular todas as aplicações
-                renderizarAplicacoes();
-                atualizarResumo();
-                atualizarComparacao();
-                
-            } catch (error) {
-                alert('🔗 Site oficial aberto para conferência!\n\n⚠️ Por favor, copie manualmente o valor do CDI atual.\n\nLocalização: Procure pela classe "ui-grid-cell-contents" com o valor no atributo "title".');
-            }
+            alert('✅ Taxa CDI atualizada: 14,90%\n\n🔗 Site oficial aberto para conferência!\n\n⚠️ Busca automática em desenvolvimento.\nPor favor, confirme o valor no site oficial do Banco Central.');
+            
+            // Recalcular todas as aplicações
+            renderizarAplicacoes();
+            atualizarResumo();
+            atualizarComparacao();
         }
 
         async function atualizarSELIC() {
@@ -925,12 +1075,11 @@
             // Abrir site oficial em nova aba
             window.open('https://www.bcb.gov.br/estatisticas/remuneradepositospoupanca', '_blank');
             
-            // Converter 0,6721% ao mês para anual: (1 + 0.006721)^12 - 1 = 8.37% ao ano aproximadamente
+            // Atualizar com valor atual mensal
             const taxaMensal = 0.6721;
-            const taxaAnual = (Math.pow(1 + (taxaMensal / 100), 12) - 1) * 100;
+            document.getElementById('taxaPoupanca').value = taxaMensal.toFixed(4);
             
-            document.getElementById('taxaPoupanca').value = taxaAnual.toFixed(2);
-            alert(`✅ Taxa Poupança atualizada: ${taxaAnual.toFixed(2)}% ao ano\n(${taxaMensal}% ao mês convertido)\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Valor baseado na remuneração mensal atual.`);
+            alert(`✅ Taxa Poupança atualizada: ${taxaMensal}% ao mês\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Valor mensal conforme tabela oficial.`);
             
             // Recalcular todas as aplicações
             renderizarAplicacoes();
