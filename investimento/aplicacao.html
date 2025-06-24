@@ -419,8 +419,10 @@
         let contadorId = 1;
         let editandoId = null;
 
-        // Configuração inicial
-        document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
+        // Configuração inicial - data de hoje no formato correto
+        const hoje = new Date();
+        const dataHojeFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+        document.getElementById('dataAplicacao').value = dataHojeFormatada;
         
         // Ajustar formulário baseado no tipo de aplicação
         function ajustarFormulario() {
@@ -465,21 +467,35 @@
             }
         }
 
-        // Calcular dias úteis (aproximação)
-        function calcularDiasUteis(dataInicio, dataFim) {
-            const inicio = new Date(dataInicio);
-            const fim = new Date(dataFim);
-            const diffTime = Math.abs(fim - inicio);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            // Aproximação: 70% dos dias são úteis
-            return Math.round(diffDays * 0.7);
+        // Função para converter data string para data local (sem problemas de fuso horário)
+        function formatarDataLocal(dataString) {
+            if (!dataString) return '';
+            const [ano, mes, dia] = dataString.split('-');
+            const data = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+            return data.toLocaleDateString('pt-BR');
         }
 
-        // Calcular dias corridos
+        // Calcular dias úteis (aproximação - corrigido para fuso horário local)
+        function calcularDiasUteis(dataInicio, dataFim) {
+            if (!dataInicio || !dataFim) return 0;
+            
+            const diasCorridos = calcularDiasCorridos(dataInicio, dataFim);
+            
+            // Aproximação: 70% dos dias são úteis
+            return Math.round(diasCorridos * 0.7);
+        }
+
+        // Calcular dias corridos (corrigido para fuso horário local)
         function calcularDiasCorridos(dataInicio, dataFim) {
-            const inicio = new Date(dataInicio);
-            const fim = new Date(dataFim);
+            if (!dataInicio || !dataFim) return 0;
+            
+            // Criar datas no fuso horário local
+            const [anoInicio, mesInicio, diaInicio] = dataInicio.split('-');
+            const [anoFim, mesFim, diaFim] = dataFim.split('-');
+            
+            const inicio = new Date(parseInt(anoInicio), parseInt(mesInicio) - 1, parseInt(diaInicio));
+            const fim = new Date(parseInt(anoFim), parseInt(mesFim) - 1, parseInt(diaFim));
+            
             const diffTime = Math.abs(fim - inicio);
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
@@ -508,7 +524,10 @@
         // Calcular rentabilidade
         function calcularRentabilidade(aplicacao) {
             const taxaCDI = parseFloat(document.getElementById('taxaCDI').value) / 100;
-            const dataHoje = new Date().toISOString().split('T')[0];
+            
+            // Data de hoje no formato correto (YYYY-MM-DD) no fuso horário local
+            const hoje = new Date();
+            const dataHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
             
             // Cálculos para HOJE
             const diasCorridosHoje = calcularDiasCorridos(aplicacao.dataAplicacao, dataHoje);
@@ -643,7 +662,9 @@
         function cancelarEdicao() {
             editandoId = null;
             document.getElementById('formAplicacao').reset();
-            document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
+            const hoje = new Date();
+            const dataHojeFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+            document.getElementById('dataAplicacao').value = dataHojeFormatada;
             document.getElementById('tipoTaxa').disabled = false; // Reabilitar campo
             ajustarFormulario();
             atualizarInterfaceEdicao(false);
@@ -708,8 +729,11 @@
             
             // Validar data de resgate se informada
             if (dadosAplicacao.dataResgate) {
-                const dataAplicacao = new Date(dadosAplicacao.dataAplicacao);
-                const dataResgate = new Date(dadosAplicacao.dataResgate);
+                const [anoAplicacao, mesAplicacao, diaAplicacao] = dadosAplicacao.dataAplicacao.split('-');
+                const [anoResgate, mesResgate, diaResgate] = dadosAplicacao.dataResgate.split('-');
+                
+                const dataAplicacao = new Date(parseInt(anoAplicacao), parseInt(mesAplicacao) - 1, parseInt(diaAplicacao));
+                const dataResgate = new Date(parseInt(anoResgate), parseInt(mesResgate) - 1, parseInt(diaResgate));
                 
                 if (dataResgate <= dataAplicacao) {
                     alert('❌ A data de resgate deve ser posterior à data de aplicação!');
@@ -737,7 +761,9 @@
                 
                 // Limpar formulário
                 document.getElementById('formAplicacao').reset();
-                document.getElementById('dataAplicacao').value = new Date().toISOString().split('T')[0];
+                const hoje = new Date();
+                const dataHojeFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+                document.getElementById('dataAplicacao').value = dataHojeFormatada;
                 document.getElementById('tipoTaxa').disabled = false; // Reabilitar campo
                 ajustarFormulario();
             }
@@ -821,12 +847,12 @@
                             <div class="row g-2 mb-3">
                                 <div class="col-6 col-md-3">
                                     <small class="text-muted d-block">Data Aplicação</small>
-                                    <strong>${new Date(aplicacao.dataAplicacao).toLocaleDateString('pt-BR')}</strong>
+                                    <strong>${formatarDataLocal(aplicacao.dataAplicacao)}</strong>
                                 </div>
                                 ${calc.temDataResgate ? `
                                 <div class="col-6 col-md-3">
                                     <small class="text-muted d-block">Data Resgate</small>
-                                    <strong>${new Date(aplicacao.dataResgate).toLocaleDateString('pt-BR')}</strong>
+                                    <strong>${formatarDataLocal(aplicacao.dataResgate)}</strong>
                                 </div>
                                 ` : `
                                 <div class="col-6 col-md-3">
