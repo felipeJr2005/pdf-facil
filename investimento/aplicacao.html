@@ -302,7 +302,7 @@
 
                             <div class="mb-3">
                                 <label for="tipoTaxa" class="form-label fw-semibold">Tipo de Taxa</label>
-                                <select id="tipoTaxa" class="form-select" required onchange="ajustarFormulario()">
+                                <select id="tipoTaxa" class="form-select" required onchange="ajustarFormulario(); limparCamposTaxa();">
                                     <option value="">Selecione...</option>
                                     <option value="CDI">CDI - Baseada no índice CDI</option>
                                     <option value="PRE">Pré-fixada - Taxa fixa contratada</option>
@@ -540,6 +540,23 @@
         const dataHojeFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
         document.getElementById('dataAplicacao').value = dataHojeFormatada;
         
+        // Limpar campos de taxa quando muda tipo (CORREÇÃO DO BUG)
+        function limparCamposTaxa() {
+            const tipoTaxa = document.getElementById('tipoTaxa').value;
+            
+            if (tipoTaxa === 'CDI') {
+                // Se mudou para CDI, limpar campo PRE
+                document.getElementById('taxaPreFixada').value = '';
+            } else if (tipoTaxa === 'PRE') {
+                // Se mudou para PRE, limpar campo CDI
+                document.getElementById('porcentagemCDI').value = '';
+            } else {
+                // Se não tem tipo definido, limpar ambos
+                document.getElementById('porcentagemCDI').value = '';
+                document.getElementById('taxaPreFixada').value = '';
+            }
+        }
+
         // Ajustar formulário baseado no tipo de aplicação
         function ajustarFormulario() {
             const tipo = document.getElementById('tipoAplicacao').value;
@@ -578,6 +595,9 @@
             if (tipo === 'Poupança') {
                 document.getElementById('tipoTaxa').value = '';
                 document.getElementById('tipoTaxa').disabled = true;
+                // Limpar ambos os campos se for poupança
+                document.getElementById('porcentagemCDI').value = '';
+                document.getElementById('taxaPreFixada').value = '';
             } else {
                 document.getElementById('tipoTaxa').disabled = false;
             }
@@ -838,11 +858,26 @@
                 valorAplicado: parseFloat(document.getElementById('valorAplicado').value),
                 dataAplicacao: document.getElementById('dataAplicacao').value,
                 dataResgate: document.getElementById('dataResgate').value || null,
-                porcentagemCDI: parseFloat(document.getElementById('porcentagemCDI').value) || null,
-                taxaPreFixada: parseFloat(document.getElementById('taxaPreFixada').value) || null,
+                porcentagemCDI: null, // Resetar primeiro
+                taxaPreFixada: null,  // Resetar primeiro
                 taxaAdmin: parseFloat(document.getElementById('taxaAdmin').value) || null,
                 banco: document.getElementById('banco').value || null
             };
+            
+            // LÓGICA CORRIGIDA: Definir apenas o campo correto baseado no tipo de taxa
+            if (dadosAplicacao.tipo === 'Poupança') {
+                // Poupança não usa CDI nem PRE
+                dadosAplicacao.porcentagemCDI = null;
+                dadosAplicacao.taxaPreFixada = null;
+            } else if (dadosAplicacao.tipoTaxa === 'CDI') {
+                // Usar apenas porcentagemCDI, limpar taxaPreFixada
+                dadosAplicacao.porcentagemCDI = parseFloat(document.getElementById('porcentagemCDI').value) || null;
+                dadosAplicacao.taxaPreFixada = null;
+            } else if (dadosAplicacao.tipoTaxa === 'PRE') {
+                // Usar apenas taxaPreFixada, limpar porcentagemCDI
+                dadosAplicacao.porcentagemCDI = null;
+                dadosAplicacao.taxaPreFixada = parseFloat(document.getElementById('taxaPreFixada').value) || null;
+            }
             
             // Validação básica
             if (!dadosAplicacao.tipo || !dadosAplicacao.valorAplicado || !dadosAplicacao.dataAplicacao || !dadosAplicacao.tipoTaxa) {
@@ -1171,18 +1206,34 @@
                 versao: "2.0",
                 dataExportacao: new Date().toISOString(),
                 totalAplicacoes: aplicacoes.length,
-                aplicacoes: aplicacoes.map(app => ({
-                    id: app.id,
-                    tipo: app.tipo,
-                    tipoTaxa: app.tipoTaxa,
-                    valorAplicado: app.valorAplicado,
-                    dataAplicacao: app.dataAplicacao,
-                    dataResgate: app.dataResgate,
-                    porcentagemCDI: app.porcentagemCDI,
-                    taxaPreFixada: app.taxaPreFixada,
-                    taxaAdmin: app.taxaAdmin,
-                    banco: app.banco
-                })),
+                aplicacoes: aplicacoes.map(app => {
+                    // CORRIGIR BACKUP: Só incluir o campo correto baseado no tipo de taxa
+                    const aplicacaoLimpa = {
+                        id: app.id,
+                        tipo: app.tipo,
+                        tipoTaxa: app.tipoTaxa,
+                        valorAplicado: app.valorAplicado,
+                        dataAplicacao: app.dataAplicacao,
+                        dataResgate: app.dataResgate,
+                        taxaAdmin: app.taxaAdmin,
+                        banco: app.banco
+                    };
+                    
+                    // Incluir apenas o campo de taxa correto
+                    if (app.tipoTaxa === 'CDI' && app.porcentagemCDI) {
+                        aplicacaoLimpa.porcentagemCDI = app.porcentagemCDI;
+                        aplicacaoLimpa.taxaPreFixada = null;
+                    } else if (app.tipoTaxa === 'PRE' && app.taxaPreFixada) {
+                        aplicacaoLimpa.porcentagemCDI = null;
+                        aplicacaoLimpa.taxaPreFixada = app.taxaPreFixada;
+                    } else {
+                        // Poupança ou outros
+                        aplicacaoLimpa.porcentagemCDI = null;
+                        aplicacaoLimpa.taxaPreFixada = null;
+                    }
+                    
+                    return aplicacaoLimpa;
+                }),
                 taxasReferencia: {
                     cdi: document.getElementById('taxaCDI').value,
                     selic: document.getElementById('taxaSELIC').value,
@@ -1232,18 +1283,31 @@
                     }
                     
                     // Restaurar aplicações
-                    aplicacoes = backup.aplicacoes.map(app => ({
-                        id: app.id,
-                        tipo: app.tipo,
-                        tipoTaxa: app.tipoTaxa || 'CDI', // Compatibilidade
-                        valorAplicado: app.valorAplicado,
-                        dataAplicacao: app.dataAplicacao,
-                        dataResgate: app.dataResgate || null,
-                        porcentagemCDI: app.porcentagemCDI || null,
-                        taxaPreFixada: app.taxaPreFixada || null,
-                        taxaAdmin: app.taxaAdmin || null,
-                        banco: app.banco || null
-                    }));
+                    aplicacoes = backup.aplicacoes.map(app => {
+                        // CORRIGIR IMPORTAÇÃO: Garantir campos limpos baseado no tipo de taxa
+                        const aplicacaoLimpa = {
+                            id: app.id,
+                            tipo: app.tipo,
+                            tipoTaxa: app.tipoTaxa || 'CDI', // Compatibilidade
+                            valorAplicado: app.valorAplicado,
+                            dataAplicacao: app.dataAplicacao,
+                            dataResgate: app.dataResgate || null,
+                            taxaAdmin: app.taxaAdmin || null,
+                            banco: app.banco || null,
+                            porcentagemCDI: null, // Resetar primeiro
+                            taxaPreFixada: null   // Resetar primeiro
+                        };
+                        
+                        // Definir apenas o campo correto baseado no tipo de taxa
+                        if (aplicacaoLimpa.tipoTaxa === 'CDI') {
+                            aplicacaoLimpa.porcentagemCDI = app.porcentagemCDI || null;
+                        } else if (aplicacaoLimpa.tipoTaxa === 'PRE') {
+                            aplicacaoLimpa.taxaPreFixada = app.taxaPreFixada || null;
+                        }
+                        // Para 'Poupança' ou outros, ambos ficam null
+                        
+                        return aplicacaoLimpa;
+                    });
                     
                     // Restaurar taxas de referência
                     if (backup.taxasReferencia) {
@@ -1345,6 +1409,7 @@
         console.log('  - Patrimônio consolidado');
         console.log('  - Taxas de referência atualizáveis');
         console.log('  - 💾 Sistema de Backup JSON v2.0');
+        console.log('  - 🔧 CORREÇÃO: Campos de taxa mutuamente exclusivos');
     </script>
 </body>
 </html>
