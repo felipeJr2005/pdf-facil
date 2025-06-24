@@ -403,10 +403,10 @@
                     <div class="col-md-6">
                         <h6 class="fw-bold text-info mb-2">📥 Importar Dados</h6>
                         <p class="small text-muted mb-3">Restaure seus dados de um arquivo de backup</p>
-                        <input type="file" id="inputBackup" class="form-control mb-2" accept=".json" onchange="importarBackup(event)">
-                        <button class="btn btn-info w-100" onclick="document.getElementById('inputBackup').click()">
+                        <label for="inputBackup" class="btn btn-info w-100" style="cursor: pointer; margin-bottom: 0;">
                             📥 Carregar Backup JSON
-                        </button>
+                            <input type="file" id="inputBackup" class="d-none" accept=".json" onchange="importarBackup(event)">
+                        </label>
                     </div>
                 </div>
                 <div class="row mt-3">
