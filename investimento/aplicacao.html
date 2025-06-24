@@ -459,17 +459,17 @@
                     <div class="tax-grid">
                         <div class="tax-item">
                             <div class="tax-label">CDI</div>
-                            <input type="number" id="taxaCDI" class="tax-value" value="10.65" step="0.01" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
+                            <input type="number" id="taxaCDI" class="tax-value" value="14.85" step="0.01" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
                             <div style="font-size: 0.8em; margin-top: 5px;">% a.a.</div>
                         </div>
                         <div class="tax-item">
                             <div class="tax-label">SELIC</div>
-                            <input type="number" id="taxaSELIC" class="tax-value" value="10.50" step="0.01" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
+                            <input type="number" id="taxaSELIC" class="tax-value" value="15.00" step="0.01" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
                             <div style="font-size: 0.8em; margin-top: 5px;">% a.a.</div>
                         </div>
                         <div class="tax-item">
                             <div class="tax-label">Poupança</div>
-                            <input type="number" id="taxaPoupanca" class="tax-value" value="0.6721" step="0.0001" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
+                            <input type="number" id="taxaPoupanca" class="tax-value" value="0.6616" step="0.0001" style="border: none; background: transparent; text-align: center; font-weight: bold; width: 100%; color: #333;">
                             <div style="font-size: 0.8em; margin-top: 5px;">% a.m.</div>
                             <button onclick="atualizarPoupanca()" style="margin-top: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 0.8em; cursor: pointer;">📊 Atualizar</button>
                         </div>
@@ -668,7 +668,7 @@
                 const valorVencimento = aplicacao.valorAplicado * Math.pow(1 + taxaAnual, diasTotais / 365);
                 
                 // Calcular impostos (IR e IOF)
-                const ir = calcularIR(valorVencimento - aplicacao.valorAplicado, diasTotais);
+                const ir = calcularIR(valorVencimento - aplicacao.valorAplicado, diasTotais, aplicacao.tipo);
                 const iof = calcularIOF(valorHoje - aplicacao.valorAplicado, diasCorridos);
                 
                 // Aplicar taxa de administração se houver
@@ -700,14 +700,21 @@
                 };
             }
 
-            function calcularIR(rendimento, dias) {
+            function calcularIR(rendimento, dias, tipoAplicacao) {
                 if (rendimento <= 0) return 0;
                 
+                // Aplicações ISENTAS de IR para pessoa física
+                const isentasIR = ['LCA', 'LCI', 'Poupança'];
+                if (isentasIR.includes(tipoAplicacao)) {
+                    return 0;
+                }
+                
+                // Tabela regressiva de IR para outras aplicações
                 let aliquota = 0;
-                if (dias <= 180) aliquota = 0.225;
-                else if (dias <= 360) aliquota = 0.20;
-                else if (dias <= 720) aliquota = 0.175;
-                else aliquota = 0.15;
+                if (dias <= 180) aliquota = 0.225;      // 22,5%
+                else if (dias <= 360) aliquota = 0.20;  // 20%
+                else if (dias <= 720) aliquota = 0.175; // 17,5%
+                else aliquota = 0.15;                   // 15%
                 
                 return rendimento * aliquota;
             }
@@ -901,11 +908,12 @@
                 // Abrir site oficial em nova aba
                 window.open('https://www.bcb.gov.br/estatisticas/remuneradepositospoupanca', '_blank');
                 
-                // Atualizar com valor atual mensal
-                const taxaMensal = 0.6721;
+                // Atualizar com valor atual mensal (0,5% + TR)
+                // Com SELIC a 15%, poupança = 0,5% a.m. + TR (~0,16%)
+                const taxaMensal = 0.6616; // 0,5% + TR atual
                 document.getElementById('taxaPoupanca').value = taxaMensal.toFixed(4);
                 
-                alert(`✅ Taxa Poupança atualizada: ${taxaMensal}% ao mês\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Valor mensal conforme tabela oficial.`);
+                alert(`✅ Taxa Poupança atualizada: ${taxaMensal}% ao mês\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Com SELIC a 15%, poupança = 0,5% a.m. + TR`);
                 
                 // Recalcular todas as aplicações
                 renderizarAplicacoes();
