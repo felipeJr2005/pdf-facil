@@ -386,10 +386,45 @@
             </div>
         </div>
 
+        <!-- Sistema de Backup -->
+        <div class="card financial-card mt-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white;">
+                <h3 class="h5 mb-0 fw-bold">💾 Sistema de Backup</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-success mb-2">📤 Exportar Dados</h6>
+                        <p class="small text-muted mb-3">Faça backup de todas suas aplicações e configurações</p>
+                        <button class="btn btn-success w-100" onclick="exportarBackup()">
+                            📤 Baixar Backup JSON
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-info mb-2">📥 Importar Dados</h6>
+                        <p class="small text-muted mb-3">Restaure seus dados de um arquivo de backup</p>
+                        <input type="file" id="inputBackup" class="form-control mb-2" accept=".json" onchange="importarBackup(event)">
+                        <button class="btn btn-info w-100" onclick="document.getElementById('inputBackup').click()">
+                            📥 Carregar Backup JSON
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-warning small mb-0">
+                            <strong>⚠️ Importante:</strong> O backup inclui todas aplicações, taxas de referência e configurações. 
+                            Ao importar, todos os dados atuais serão substituídos pelos dados do arquivo.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Lista de Aplicações -->
         <div class="card financial-card mt-4">
-            <div class="card-header bg-white">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h3 class="h5 mb-0 fw-bold text-primary">📋 Minhas Aplicações</h3>
+                <span class="badge bg-primary" id="contadorAplicacoes">0 aplicações</span>
             </div>
             <div class="card-body">
                 <div id="listaAplicacoes">
@@ -860,6 +895,7 @@
             renderizarAplicacoes();
             atualizarResumo();
             atualizarComparacao();
+            atualizarContadorAplicacoes();
         });
 
         // Renderizar lista de aplicações
@@ -869,7 +905,7 @@
             if (aplicacoes.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-muted py-5">
-                        <i class="fas fa-chart-line fa-3x mb-3"></i>
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
                         <p class="lead">Nenhuma aplicação cadastrada ainda.</p>
                         <p>Adicione sua primeira aplicação usando o formulário acima!</p>
                     </div>
@@ -1022,6 +1058,7 @@
                 renderizarAplicacoes();
                 atualizarResumo();
                 atualizarComparacao();
+                atualizarContadorAplicacoes();
             }
         }
 
@@ -1124,6 +1161,128 @@
             }).join('');
         }
 
+        // ========================================
+        // 💾 SISTEMA DE BACKUP JSON
+        // ========================================
+        
+        // Exportar backup completo
+        function exportarBackup() {
+            const backup = {
+                versao: "2.0",
+                dataExportacao: new Date().toISOString(),
+                totalAplicacoes: aplicacoes.length,
+                aplicacoes: aplicacoes.map(app => ({
+                    id: app.id,
+                    tipo: app.tipo,
+                    tipoTaxa: app.tipoTaxa,
+                    valorAplicado: app.valorAplicado,
+                    dataAplicacao: app.dataAplicacao,
+                    dataResgate: app.dataResgate,
+                    porcentagemCDI: app.porcentagemCDI,
+                    taxaPreFixada: app.taxaPreFixada,
+                    taxaAdmin: app.taxaAdmin,
+                    banco: app.banco
+                })),
+                taxasReferencia: {
+                    cdi: document.getElementById('taxaCDI').value,
+                    selic: document.getElementById('taxaSELIC').value,
+                    poupanca: document.getElementById('taxaPoupanca').value
+                }
+            };
+            
+            const jsonString = JSON.stringify(backup, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const agora = new Date();
+            const dataFormatada = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}_${String(agora.getHours()).padStart(2, '0')}-${String(agora.getMinutes()).padStart(2, '0')}`;
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup_aplicacoes_financeiras_${dataFormatada}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ Backup exportado com sucesso!\n\n📊 Resumo:\n• ${backup.totalAplicacoes} aplicações\n• Data: ${new Date(backup.dataExportacao).toLocaleString('pt-BR')}\n• Versão: ${backup.versao}\n\n💾 Arquivo salvo como: backup_aplicacoes_financeiras_${dataFormatada}.json`);
+        }
+        
+        // Importar backup
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    
+                    // Validar estrutura do backup
+                    if (!backup.aplicacoes || !backup.taxasReferencia) {
+                        throw new Error('Formato de backup inválido');
+                    }
+                    
+                    // Confirmação antes de importar
+                    const confirmar = confirm(`🔄 IMPORTAR BACKUP\n\n📊 Dados do arquivo:\n• Versão: ${backup.versao || 'N/A'}\n• Data: ${backup.dataExportacao ? new Date(backup.dataExportacao).toLocaleString('pt-BR') : 'N/A'}\n• Aplicações: ${backup.totalAplicacoes || backup.aplicacoes.length}\n\n⚠️ ATENÇÃO: Todos os dados atuais serão substituídos!\n\nDeseja continuar?`);
+                    
+                    if (!confirmar) {
+                        // Limpar input
+                        event.target.value = '';
+                        return;
+                    }
+                    
+                    // Restaurar aplicações
+                    aplicacoes = backup.aplicacoes.map(app => ({
+                        id: app.id,
+                        tipo: app.tipo,
+                        tipoTaxa: app.tipoTaxa || 'CDI', // Compatibilidade
+                        valorAplicado: app.valorAplicado,
+                        dataAplicacao: app.dataAplicacao,
+                        dataResgate: app.dataResgate || null,
+                        porcentagemCDI: app.porcentagemCDI || null,
+                        taxaPreFixada: app.taxaPreFixada || null,
+                        taxaAdmin: app.taxaAdmin || null,
+                        banco: app.banco || null
+                    }));
+                    
+                    // Restaurar taxas de referência
+                    if (backup.taxasReferencia) {
+                        document.getElementById('taxaCDI').value = backup.taxasReferencia.cdi || '14.90';
+                        document.getElementById('taxaSELIC').value = backup.taxasReferencia.selic || '15.00';
+                        document.getElementById('taxaPoupanca').value = backup.taxasReferencia.poupanca || '0.6721';
+                    }
+                    
+                    // Ajustar contador de IDs
+                    contadorId = aplicacoes.length > 0 ? Math.max(...aplicacoes.map(app => app.id)) + 1 : 1;
+                    
+                    // Atualizar interface
+                    renderizarAplicacoes();
+                    atualizarResumo();
+                    atualizarComparacao();
+                    atualizarContadorAplicacoes();
+                    
+                    // Limpar input
+                    event.target.value = '';
+                    
+                    alert(`✅ Backup importado com sucesso!\n\n📊 Dados restaurados:\n• ${aplicacoes.length} aplicações\n• Taxas de referência atualizadas\n• Interface atualizada\n\n🎉 Seus investimentos foram restaurados!`);
+                    
+                } catch (error) {
+                    alert(`❌ Erro ao importar backup!\n\nDetalhes: ${error.message}\n\nVerifique se o arquivo é um backup válido do Controlador Financeiro.`);
+                    // Limpar input
+                    event.target.value = '';
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Atualizar contador de aplicações
+        function atualizarContadorAplicacoes() {
+            const contador = document.getElementById('contadorAplicacoes');
+            const total = aplicacoes.length;
+            contador.textContent = `${total} ${total === 1 ? 'aplicação' : 'aplicações'}`;
+        }
+
         // Funções de atualização das taxas
         async function atualizarCDI() {
             // Abrir site oficial em nova aba para conferência manual
@@ -1177,6 +1336,7 @@
         renderizarAplicacoes();
         atualizarResumo();
         atualizarComparacao();
+        atualizarContadorAplicacoes();
         
         console.log('🏦 Controlador Financeiro Bootstrap 5.3.7 Iniciado!');
         console.log('✅ Funcionalidades ativas:');
@@ -1184,6 +1344,7 @@
         console.log('  - Impostos corretos por período');
         console.log('  - Patrimônio consolidado');
         console.log('  - Taxas de referência atualizáveis');
+        console.log('  - 💾 Sistema de Backup JSON v2.0');
     </script>
 </body>
 </html>
