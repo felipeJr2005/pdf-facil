@@ -191,7 +191,7 @@
                                         <div class="col-md-4 col-sm-6">
                                             <div class="text-center">
                                                 <label class="form-label fw-bold">CDI</label>
-                                                <input type="number" id="taxaCDI" class="form-control text-center" value="10.65" step="0.01">
+                                                <input type="number" id="taxaCDI" class="form-control text-center" value="14.90" step="0.01">
                                                 <small class="text-muted">% a.a.</small>
                                                 <button onclick="atualizarCDI()" class="btn btn-primary btn-sm mt-2 w-100">📊 Atualizar CDI</button>
                                             </div>
@@ -199,7 +199,7 @@
                                         <div class="col-md-4 col-sm-6">
                                             <div class="text-center">
                                                 <label class="form-label fw-bold">SELIC</label>
-                                                <input type="number" id="taxaSELIC" class="form-control text-center" value="10.50" step="0.01">
+                                                <input type="number" id="taxaSELIC" class="form-control text-center" value="15.00" step="0.01">
                                                 <small class="text-muted">% a.a.</small>
                                                 <button onclick="atualizarSELIC()" class="btn btn-primary btn-sm mt-2 w-100">📊 Atualizar SELIC</button>
                                             </div>
@@ -677,11 +677,14 @@
 
             // Funções de atualização das taxas
             async function atualizarCDI() {
-                // Simulação de atualização do CDI
-                const taxaAtual = 10.75; // Taxa exemplo
-                document.getElementById('taxaCDI').value = taxaAtual.toFixed(2);
+                // Abrir site oficial em nova aba para conferência manual
+                window.open('https://www.bcb.gov.br/htms/selic/selicdiarios.asp?frame=1', '_blank');
                 
-                alert(`✅ Taxa CDI atualizada: ${taxaAtual}% ao ano\n\n💡 Valores podem variar diariamente conforme mercado.`);
+                // Atualizar com valor atual conforme referência
+                const novoValor = '14.90';
+                document.getElementById('taxaCDI').value = novoValor;
+                
+                alert('✅ Taxa CDI atualizada: 14,90% ao ano\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Procure por "Taxa CDI" na página oficial para confirmar o valor atual.');
                 
                 // Recalcular todas as aplicações
                 renderizarAplicacoes();
@@ -690,11 +693,14 @@
             }
 
             async function atualizarSELIC() {
-                // Simulação de atualização da SELIC
-                const taxaAtual = 10.50; // Taxa exemplo
-                document.getElementById('taxaSELIC').value = taxaAtual.toFixed(2);
+                // Abrir site oficial em nova aba
+                window.open('https://www.bcb.gov.br/controleinflacao/historicotaxasjuros', '_blank');
                 
-                alert(`✅ Taxa SELIC atualizada: ${taxaAtual}% ao ano\n\n💡 Taxa definida pelo COPOM a cada 45 dias.`);
+                // Atualizar com valor atual padrão
+                const novoValor = '15.00';
+                document.getElementById('taxaSELIC').value = novoValor;
+                
+                alert('✅ Taxa SELIC atualizada: 15,00% ao ano\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Procure por "Taxa básica de juros" na página oficial para confirmar.');
                 
                 // Recalcular todas as aplicações
                 renderizarAplicacoes();
@@ -710,7 +716,7 @@
                 const taxaMensal = 0.6721;
                 document.getElementById('taxaPoupanca').value = taxaMensal.toFixed(4);
                 
-                alert(`✅ Taxa Poupança atualizada: ${taxaMensal}% ao mês\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Valor mensal conforme tabela oficial.`);
+                alert(`✅ Taxa Poupança atualizada: ${taxaMensal}% ao mês\n\n🔗 Site oficial aberto para conferência!\n\nFonte: Banco Central do Brasil\n\n💡 Valor mensal conforme tabela oficial do Banco Central.`);
                 
                 // Recalcular todas as aplicações
                 renderizarAplicacoes();
