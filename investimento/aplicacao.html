@@ -5,194 +5,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>💰 Controle de Aplicações Financeiras</title>
         
-        <!-- Bootstrap 5 via CDN - Estilo limpo e profissional -->
+        <!-- Bootstrap 5 via CDN -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-        
-        <style>
-            body {
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                padding: 20px;
-            }
-
-            .container-fluid {
-                max-width: 1400px;
-                margin: 0 auto;
-            }
-
-            .card {
-                border: none;
-                border-radius: 16px;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-                backdrop-filter: blur(10px);
-                background: rgba(255, 255, 255, 0.95);
-            }
-
-            .card-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 16px 16px 0 0 !important;
-                border: none;
-                font-weight: 600;
-            }
-
-            .summary-card {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 16px;
-                text-align: center;
-                border: none;
-            }
-
-            .summary-value {
-                font-size: 1.8rem;
-                font-weight: 700;
-                margin-bottom: 0.5rem;
-            }
-
-            .summary-label {
-                opacity: 0.9;
-                font-weight: 500;
-            }
-
-            .application-card {
-                border: 2px solid #e8f4f8;
-                border-radius: 16px;
-                transition: all 0.3s ease;
-                background: rgba(255, 255, 255, 0.95);
-                margin-bottom: 1rem;
-            }
-
-            .application-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-                border-color: #667eea;
-            }
-
-            .btn-primary {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-                padding: 12px 24px;
-            }
-
-            .btn-danger {
-                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-            }
-
-            .btn-secondary {
-                background: #6c757d;
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-            }
-
-            .form-control, .form-select {
-                border-radius: 12px;
-                border: 2px solid #e1e8ed;
-                padding: 12px 15px;
-                transition: all 0.3s ease;
-            }
-
-            .form-control:focus, .form-select:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            }
-
-            .tax-card {
-                background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-                border-radius: 16px;
-                border: none;
-            }
-
-            .tax-input {
-                border: none;
-                background: rgba(255, 255, 255, 0.7);
-                text-align: center;
-                font-weight: 600;
-                border-radius: 8px;
-                backdrop-filter: blur(5px);
-            }
-
-            .backup-section {
-                background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
-                color: white;
-                border-radius: 16px;
-                border: none;
-            }
-
-            .backup-card {
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 12px;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-            }
-
-            .table {
-                background: white;
-                border-radius: 16px;
-                overflow: hidden;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            }
-
-            .table thead th {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                font-weight: 600;
-            }
-
-            .positive { color: #22c55e; font-weight: 600; }
-            .negative { color: #ef4444; font-weight: 600; }
-
-            h1 {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                font-weight: 700;
-                text-align: center;
-                margin-bottom: 2rem;
-            }
-
-            @media (max-width: 768px) {
-                .container-fluid {
-                    padding: 10px;
-                }
-                
-                body {
-                    padding: 10px;
-                }
-                
-                h1 {
-                    font-size: 1.8rem;
-                }
-                
-                .card {
-                    margin-bottom: 1rem;
-                }
-                
-                .summary-value {
-                    font-size: 1.4rem;
-                }
-            }
-        </style>
     </head>
-    <body>
-        <div class="container-fluid">
-            <h1 class="display-4 mb-4">💰 Controle de Aplicações Financeiras</h1>
+    <body class="bg-light">
+        <div class="container-fluid py-4">
+            <h1 class="display-4 mb-4 text-center text-primary">💰 Controle de Aplicações Financeiras</h1>
             
             <div class="row">
                 <!-- Painel Esquerdo - Cadastro -->
                 <div class="col-xl-4 col-lg-5 mb-4">
                     <div class="card h-auto position-lg-sticky" style="top: 20px;">
-                        <div class="card-header">
+                        <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">💰 Nova Aplicação</h5>
                         </div>
                         <div class="card-body">
@@ -273,40 +97,40 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header">
+                                <div class="card-header bg-primary text-white">
                                     <h5 class="mb-0">💰 Resumo do Portfólio</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
                                         <div class="col-6 col-lg-3">
-                                            <div class="card summary-card h-100">
-                                                <div class="card-body">
-                                                    <div class="summary-value" id="totalAplicado">R$ 0,00</div>
-                                                    <div class="summary-label">Total Aplicado</div>
+                                            <div class="card bg-primary text-white h-100">
+                                                <div class="card-body text-center">
+                                                    <div class="fs-4 fw-bold" id="totalAplicado">R$ 0,00</div>
+                                                    <div>Total Aplicado</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-6 col-lg-3">
-                                            <div class="card summary-card h-100">
-                                                <div class="card-body">
-                                                    <div class="summary-value" id="totalAtual">R$ 0,00</div>
-                                                    <div class="summary-label">Valor Atual</div>
+                                            <div class="card bg-success text-white h-100">
+                                                <div class="card-body text-center">
+                                                    <div class="fs-4 fw-bold" id="totalAtual">R$ 0,00</div>
+                                                    <div>Valor Atual</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-6 col-lg-3">
-                                            <div class="card summary-card h-100">
-                                                <div class="card-body">
-                                                    <div class="summary-value" id="totalRendimento">R$ 0,00</div>
-                                                    <div class="summary-label">Rendimento</div>
+                                            <div class="card bg-info text-white h-100">
+                                                <div class="card-body text-center">
+                                                    <div class="fs-4 fw-bold" id="totalRendimento">R$ 0,00</div>
+                                                    <div>Rendimento</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-6 col-lg-3">
-                                            <div class="card summary-card h-100">
-                                                <div class="card-body">
-                                                    <div class="summary-value" id="rentabilidadeTotal">0,00%</div>
-                                                    <div class="summary-label">Rentabilidade</div>
+                                            <div class="card bg-warning text-white h-100">
+                                                <div class="card-body text-center">
+                                                    <div class="fs-4 fw-bold" id="rentabilidadeTotal">0,00%</div>
+                                                    <div>Rentabilidade</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -319,26 +143,26 @@
                     <!-- Backup e Restore -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="card backup-section">
-                                <div class="card-header">
+                            <div class="card">
+                                <div class="card-header bg-dark text-white">
                                     <h5 class="mb-0">💾 Backup dos Dados</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <div class="card backup-card h-100">
+                                            <div class="card h-100">
                                                 <div class="card-body">
                                                     <h6 class="mb-3">📤 Exportar Dados</h6>
-                                                    <p class="mb-3 opacity-75">Baixe todas suas aplicações em um arquivo JSON para backup seguro.</p>
+                                                    <p class="mb-3">Baixe todas suas aplicações em um arquivo JSON para backup seguro.</p>
                                                     <button onclick="exportarDados()" class="btn btn-success w-100">📥 Baixar Backup</button>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="card backup-card h-100">
+                                            <div class="card h-100">
                                                 <div class="card-body">
                                                     <h6 class="mb-3">📥 Importar Dados</h6>
-                                                    <p class="mb-3 opacity-75">Carregue um arquivo de backup para restaurar suas aplicações.</p>
+                                                    <p class="mb-3">Carregue um arquivo de backup para restaurar suas aplicações.</p>
                                                     <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="importarDados(this)">
                                                     <button onclick="document.getElementById('fileInput').click()" class="btn btn-warning w-100">📁 Carregar Backup</button>
                                                 </div>
@@ -346,10 +170,8 @@
                                         </div>
                                     </div>
                                     <div class="mt-3">
-                                        <div class="card backup-card">
-                                            <div class="card-body text-center">
-                                                <p class="mb-0 opacity-75">💡 <strong>Dica:</strong> Salve o arquivo de backup no Google Drive, Dropbox ou pen drive para acessar em qualquer computador!</p>
-                                            </div>
+                                        <div class="alert alert-info">
+                                            <strong>💡 Dica:</strong> Salve o arquivo de backup no Google Drive, Dropbox ou pen drive para acessar em qualquer computador!
                                         </div>
                                     </div>
                                 </div>
@@ -360,32 +182,32 @@
                     <!-- Taxas de Referência -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="card tax-card">
-                                <div class="card-header bg-transparent">
-                                    <h5 class="mb-0 text-dark">📊 Taxas de Referência</h5>
+                            <div class="card">
+                                <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0">📊 Taxas de Referência</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
                                         <div class="col-md-4 col-sm-6">
                                             <div class="text-center">
-                                                <label class="form-label">CDI</label>
-                                                <input type="number" id="taxaCDI" class="form-control tax-input" value="10.65" step="0.01">
+                                                <label class="form-label fw-bold">CDI</label>
+                                                <input type="number" id="taxaCDI" class="form-control text-center" value="10.65" step="0.01">
                                                 <small class="text-muted">% a.a.</small>
                                                 <button onclick="atualizarCDI()" class="btn btn-primary btn-sm mt-2 w-100">📊 Atualizar CDI</button>
                                             </div>
                                         </div>
                                         <div class="col-md-4 col-sm-6">
                                             <div class="text-center">
-                                                <label class="form-label">SELIC</label>
-                                                <input type="number" id="taxaSELIC" class="form-control tax-input" value="10.50" step="0.01">
+                                                <label class="form-label fw-bold">SELIC</label>
+                                                <input type="number" id="taxaSELIC" class="form-control text-center" value="10.50" step="0.01">
                                                 <small class="text-muted">% a.a.</small>
                                                 <button onclick="atualizarSELIC()" class="btn btn-primary btn-sm mt-2 w-100">📊 Atualizar SELIC</button>
                                             </div>
                                         </div>
                                         <div class="col-md-4 col-12">
                                             <div class="text-center">
-                                                <label class="form-label">Poupança</label>
-                                                <input type="number" id="taxaPoupanca" class="form-control tax-input" value="0.6721" step="0.0001">
+                                                <label class="form-label fw-bold">Poupança</label>
+                                                <input type="number" id="taxaPoupanca" class="form-control text-center" value="0.6721" step="0.0001">
                                                 <small class="text-muted">% a.m.</small>
                                                 <button onclick="atualizarPoupanca()" class="btn btn-primary btn-sm mt-2 w-100">📊 Atualizar Poupança</button>
                                             </div>
@@ -400,7 +222,7 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header">
+                                <div class="card-header bg-primary text-white">
                                     <h5 class="mb-0">📋 Minhas Aplicações</h5>
                                 </div>
                                 <div class="card-body">
@@ -416,7 +238,7 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header">
+                                <div class="card-header bg-primary text-white">
                                     <h5 class="mb-0">📈 Comparação de Investimentos</h5>
                                 </div>
                                 <div class="card-body">
@@ -676,10 +498,10 @@
                     const calc = calcularRendimento(aplicacao);
                     
                     return `
-                        <div class="application-card">
+                        <div class="card mb-3">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 text-primary fw-bold">${aplicacao.tipo}${aplicacao.banco ? ` ${aplicacao.banco}` : ''}</h6>
+                                    <h6 class="mb-0 text-primary fw-bold">${aplicacao.tipo}${aplicacao.banco ? ` - ${aplicacao.banco}` : ''}</h6>
                                     <span class="fw-bold">R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                                 
@@ -687,13 +509,13 @@
                                     <div class="col-6">
                                         <div class="border rounded p-2 bg-light">
                                             <small class="text-muted">Valor Atual</small>
-                                            <div class="fw-bold positive">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                            <div class="fw-bold text-success">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="border rounded p-2 bg-light">
                                             <small class="text-muted">Rendimento</small>
-                                            <div class="fw-bold positive">R$ ${calc.hoje.rendimentoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                            <div class="fw-bold text-success">R$ ${calc.hoje.rendimentoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -717,7 +539,7 @@
                                     <div class="col-6">
                                         <div class="border rounded p-2 bg-light">
                                             <small class="text-muted">Valor no Vencimento</small>
-                                            <div class="fw-bold positive">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                            <div class="fw-bold text-success">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -822,10 +644,10 @@
                             <td>${tipoTaxaLabel}<br><small class="text-muted">${taxaInfo}</small></td>
                             <td>R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td>${calc.diasCorridos} dias</td>
-                            <td class="positive">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td class="positive">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td class="positive">${(calc.vencimento.rentabilidadeLiquida * 100).toFixed(2)}%</td>
-                            <td class="negative">R$ ${(calc.ir + calc.iof).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-success">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-success">R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-success">${(calc.vencimento.rentabilidadeLiquida * 100).toFixed(2)}%</td>
+                            <td class="text-danger">R$ ${(calc.ir + calc.iof).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         </tr>
                     `;
                 }).join('');
@@ -833,7 +655,7 @@
                 container.innerHTML = `
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
-                            <thead>
+                            <thead class="table-primary">
                                 <tr>
                                     <th>Aplicação</th>
                                     <th>Taxa</th>
