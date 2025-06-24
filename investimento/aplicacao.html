@@ -201,6 +201,26 @@
             padding: 0.5rem 0.75rem;
         }
 
+        .patrimonio-consolidado {
+            background: linear-gradient(135deg, #1e3a8a 0%, #64748b 100%);
+            border-radius: 12px;
+            color: white;
+            padding: 1.5rem;
+        }
+
+        .patrimonio-metric {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease;
+        }
+
+        .patrimonio-metric:hover {
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .financial-header {
                 padding: 1rem 0;
@@ -345,20 +365,20 @@
                         </div>
                         <div class="col-6">
                             <div class="summary-metric">
-                                <div class="summary-value" id="totalAtual">R$ 0,00</div>
-                                <div class="small">Valor Atual</div>
+                                <div class="summary-value" id="valorHoje">R$ 0,00</div>
+                                <div class="small">💰 Valor Hoje</div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="summary-metric">
-                                <div class="summary-value" id="totalRendimento">R$ 0,00</div>
-                                <div class="small">Rendimento</div>
+                                <div class="summary-value" id="valorVencimento">R$ 0,00</div>
+                                <div class="small">🎯 No Vencimento</div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="summary-metric">
-                                <div class="summary-value" id="rentabilidadeTotal">0,00%</div>
-                                <div class="small">Rentabilidade</div>
+                                <div class="summary-value" id="rentabilidadeHoje">0,00%</div>
+                                <div class="small">Rentab. Atual</div>
                             </div>
                         </div>
                     </div>
@@ -382,6 +402,56 @@
             </div>
         </div>
 
+        <!-- Patrimônio Consolidado -->
+        <div class="card financial-card mt-4" id="patrimonioConsolidado" style="display: none;">
+            <div class="card-header" style="background: linear-gradient(135deg, #1e3a8a 0%, #64748b 100%); color: white;">
+                <h3 class="h5 mb-0 fw-bold">💼 Patrimônio Consolidado</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="text-center p-3" style="background: rgba(30, 58, 138, 0.1); border-radius: 8px;">
+                            <div class="h5 mb-1 text-primary fw-bold" id="patrimonioTotalAplicado">R$ 0,00</div>
+                            <small class="text-muted">Total Aplicado</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3" style="background: rgba(2, 132, 199, 0.1); border-radius: 8px;">
+                            <div class="h5 mb-1 fw-bold" style="color: #0284c7;" id="patrimonioValorHoje">R$ 0,00</div>
+                            <small class="text-muted">💰 Valor Hoje</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3" style="background: rgba(5, 150, 105, 0.1); border-radius: 8px;">
+                            <div class="h5 mb-1 fw-bold" style="color: #059669;" id="patrimonioValorVencimento">R$ 0,00</div>
+                            <small class="text-muted">🎯 No Vencimento</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3" style="background: rgba(5, 150, 105, 0.1); border-radius: 8px;">
+                            <div class="h5 mb-1 fw-bold" style="color: #059669;" id="patrimonioGanhoTotal">R$ 0,00</div>
+                            <small class="text-muted">📈 Ganho Total</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <small class="text-muted">Rendimento Atual:</small>
+                        <strong class="text-info d-block" id="patrimonioRendimentoHoje">R$ 0,00 (0,00%)</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Rendimento Projetado:</small>
+                        <strong class="text-success d-block" id="patrimonioRendimentoVencimento">R$ 0,00 (0,00%)</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Ganho Adicional:</small>
+                        <strong class="text-warning d-block" id="patrimonioGanhoAdicional">R$ 0,00 (0,00%)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabela de Comparação -->
         <div class="card financial-card mt-4" id="secaoComparacao" style="display: none;">
             <div class="card-header bg-white">
@@ -393,13 +463,13 @@
                         <thead>
                             <tr>
                                 <th>Aplicação</th>
-                                <th>Tipo Taxa</th>
+                                <th>Taxa</th>
                                 <th>Valor Aplicado</th>
-                                <th>Prazo (dias)</th>
+                                <th>Período (dias)</th>
                                 <th>Valor Hoje</th>
                                 <th>Valor Vencimento</th>
-                                <th>Rentab. Líquida</th>
-                                <th>IR + IOF</th>
+                                <th>Rentab. Hoje</th>
+                                <th>Impostos Hoje</th>
                             </tr>
                         </thead>
                         <tbody id="tabelaComparacao">
@@ -414,6 +484,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 
     <script>
+        // ========================================
+        // 🏦 CONTROLADOR FINANCEIRO BOOTSTRAP 5.3.7
+        // ========================================
+        // ✅ Dois cenários de cálculo: HOJE vs VENCIMENTO
+        // ✅ Impostos corretos por período específico  
+        // ✅ Patrimônio consolidado com projeções
+        // ✅ Taxas de referência atualizáveis via CDN oficial
+        // ✅ Campos opcionais (banco, data resgate)
+        // ✅ Interface responsiva e profissional
+        // ========================================
+        
         // Dados globais
         let aplicacoes = [];
         let contadorId = 1;
@@ -521,7 +602,7 @@
             return (tabelaIOF[dias] || 0) / 100;
         }
 
-        // Calcular rentabilidade
+        // Calcular rentabilidade CORRIGIDO - Dois cenários independentes
         function calcularRentabilidade(aplicacao) {
             const taxaCDI = parseFloat(document.getElementById('taxaCDI').value) / 100;
             
@@ -529,24 +610,24 @@
             const hoje = new Date();
             const dataHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
             
-            // Cálculos para HOJE
+            // CENÁRIO 1: Cálculos para HOJE (período desde aplicação até hoje)
             const diasCorridosHoje = calcularDiasCorridos(aplicacao.dataAplicacao, dataHoje);
             const diasUteisHoje = calcularDiasUteis(aplicacao.dataAplicacao, dataHoje);
             
             // Verificar se tem data de resgate
             const temDataResgate = aplicacao.dataResgate && aplicacao.dataResgate.trim() !== '';
             
-            // Cálculos para VENCIMENTO (só se tiver data de resgate)
-            let diasCorridos = diasCorridosHoje;
-            let diasUteis = diasUteisHoje;
+            // CENÁRIO 2: Cálculos para VENCIMENTO (período total até vencimento)
+            let diasCorridosVencimento = diasCorridosHoje;
+            let diasUteisVencimento = diasUteisHoje;
             
             if (temDataResgate) {
-                diasCorridos = calcularDiasCorridos(aplicacao.dataAplicacao, aplicacao.dataResgate);
-                diasUteis = calcularDiasUteis(aplicacao.dataAplicacao, aplicacao.dataResgate);
+                diasCorridosVencimento = calcularDiasCorridos(aplicacao.dataAplicacao, aplicacao.dataResgate);
+                diasUteisVencimento = calcularDiasUteis(aplicacao.dataAplicacao, aplicacao.dataResgate);
             }
             
-            // Função auxiliar para calcular rentabilidade por período
-            function calcularPorPeriodo(diasCorr, diasUt) {
+            // Função auxiliar para calcular rentabilidade por período específico
+            function calcularPorPeriodo(diasCorr, diasUt, cenario = 'hoje') {
                 let rentabilidadeBruta = 0;
                 
                 if (aplicacao.tipo === 'Poupança') {
@@ -573,16 +654,16 @@
                 const valorBruto = aplicacao.valorAplicado * (1 + rentabilidadeBruta);
                 const rendimentoBruto = valorBruto - aplicacao.valorAplicado;
                 
-                // Calcular impostos
+                // Calcular impostos (IR baseado no período específico)
                 let ir = 0;
                 let iof = 0;
                 
                 if (aplicacao.tipo !== 'LCA' && aplicacao.tipo !== 'Poupança') {
-                    ir = rendimentoBruto * calcularIR(diasCorr);
+                    ir = rendimentoBruto * calcularIR(diasCorr); // IR baseado no período correto
                 }
                 
                 if (aplicacao.tipo !== 'Poupança') {
-                    iof = rendimentoBruto * calcularIOF(diasCorr);
+                    iof = rendimentoBruto * calcularIOF(diasCorr); // IOF baseado no período correto
                 }
                 
                 const impostoTotal = ir + iof;
@@ -605,13 +686,16 @@
                 };
             }
             
-            const resultadoHoje = calcularPorPeriodo(diasCorridosHoje, diasUteisHoje);
-            const resultadoVencimento = temDataResgate ? calcularPorPeriodo(diasCorridos, diasUteis) : resultadoHoje;
+            // Calcular os dois cenários independentemente
+            const resultadoHoje = calcularPorPeriodo(diasCorridosHoje, diasUteisHoje, 'hoje');
+            const resultadoVencimento = temDataResgate ? 
+                calcularPorPeriodo(diasCorridosVencimento, diasUteisVencimento, 'vencimento') : 
+                resultadoHoje;
             
             return {
-                // Para compatibilidade com código existente
-                diasCorridos,
-                diasUteis,
+                // Para compatibilidade com código existente (valores do vencimento)
+                diasCorridos: diasCorridosVencimento,
+                diasUteis: diasUteisVencimento,
                 rentabilidadeBruta: resultadoVencimento.rentabilidadeBruta,
                 rentabilidadeLiquida: resultadoVencimento.rentabilidadeLiquida,
                 valorBruto: resultadoVencimento.valorBruto,
@@ -622,10 +706,14 @@
                 iof: resultadoVencimento.iof,
                 impostoTotal: resultadoVencimento.impostoTotal,
                 
-                // Novos dados para hoje vs vencimento
+                // Novos dados separados por cenário
                 hoje: resultadoHoje,
                 vencimento: resultadoVencimento,
-                temDataResgate: temDataResgate
+                temDataResgate: temDataResgate,
+                
+                // Dados adicionais para controle
+                diasCorridosHoje: diasCorridosHoje,
+                diasCorridosVencimento: diasCorridosVencimento
             };
         }
 
@@ -804,7 +892,7 @@
                                 </div>
                                 <div class="text-end">
                                     <h5 class="text-primary mb-0">R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h5>
-                                    <small class="text-muted">${calc.temDataResgate ? `${calc.diasCorridos} dias` : 'Liquidez diária'}</small>
+                                    <small class="text-muted">${calc.temDataResgate ? `${calc.diasCorridosHoje} dias (hoje) / ${calc.diasCorridosVencimento} dias (total)` : 'Liquidez diária'}</small>
                                 </div>
                             </div>
                             
@@ -861,12 +949,12 @@
                                 </div>
                                 `}
                                 <div class="col-6 col-md-3">
-                                    <small class="text-muted d-block">IR Total</small>
-                                    <strong class="negative">R$ ${calc.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                    <small class="text-muted d-block">IR Hoje</small>
+                                    <strong class="negative">R$ ${calc.hoje.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <small class="text-muted d-block">IOF</small>
-                                    <strong class="negative">R$ ${calc.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                    <strong class="negative">R$ ${calc.hoje.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                                 </div>
                             </div>
                             
@@ -888,6 +976,23 @@
                                 <div class="mb-2">
                                     <small class="text-muted">Taxa de Administração:</small>
                                     <strong> ${aplicacao.taxaAdmin}% a.a.</strong>
+                                </div>
+                            ` : ''}
+                            
+                            ${calc.temDataResgate ? `
+                                <div class="row g-2 mt-2 pt-2" style="border-top: 1px solid #dee2e6;">
+                                    <div class="col-12">
+                                        <small class="text-muted fw-bold">💡 Impostos no Vencimento:</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">IR Final:</small>
+                                        <strong class="text-warning"> R$ ${calc.vencimento.ir.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                        <small class="text-muted"> (${(calcularIR(calc.diasCorridosVencimento) * 100).toFixed(1)}%)</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">IOF Final:</small>
+                                        <strong class="text-warning"> R$ ${calc.vencimento.iof.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                    </div>
                                 </div>
                             ` : ''}
                             
@@ -920,28 +1025,64 @@
             }
         }
 
-        // Atualizar resumo do portfólio
+        // Atualizar resumo do portfólio CORRIGIDO
         function atualizarResumo() {
             let totalAplicado = 0;
-            let totalAtual = 0;
+            let totalHoje = 0;
+            let totalVencimento = 0;
             
             aplicacoes.forEach(aplicacao => {
                 const calc = calcularRentabilidade(aplicacao);
                 totalAplicado += aplicacao.valorAplicado;
-                totalAtual += calc.hoje.valorLiquido; // Usar valor de hoje para o resumo
+                totalHoje += calc.hoje.valorLiquido;
+                totalVencimento += calc.vencimento.valorLiquido;
             });
             
-            const totalRendimento = totalAtual - totalAplicado;
-            const rentabilidadeTotal = totalAplicado > 0 ? (totalRendimento / totalAplicado) * 100 : 0;
+            const rendimentoHoje = totalHoje - totalAplicado;
+            const rendimentoVencimento = totalVencimento - totalAplicado;
+            const rentabilidadeHoje = totalAplicado > 0 ? (rendimentoHoje / totalAplicado) * 100 : 0;
+            const rentabilidadeVencimento = totalAplicado > 0 ? (rendimentoVencimento / totalAplicado) * 100 : 0;
             
+            // Atualizar resumo principal
             document.getElementById('totalAplicado').textContent = 
                 `R$ ${totalAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('totalAtual').textContent = 
-                `R$ ${totalAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('totalRendimento').textContent = 
-                `R$ ${totalRendimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('rentabilidadeTotal').textContent = 
-                `${rentabilidadeTotal.toFixed(2)}%`;
+            document.getElementById('valorHoje').textContent = 
+                `R$ ${totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            document.getElementById('valorVencimento').textContent = 
+                `R$ ${totalVencimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            document.getElementById('rentabilidadeHoje').textContent = 
+                `${rentabilidadeHoje.toFixed(2)}%`;
+            
+            // Atualizar patrimônio consolidado
+            atualizarPatrimonioConsolidado(totalAplicado, totalHoje, totalVencimento, rendimentoHoje, rendimentoVencimento, rentabilidadeHoje, rentabilidadeVencimento);
+        }
+
+        // Nova função para atualizar patrimônio consolidado
+        function atualizarPatrimonioConsolidado(totalAplicado, totalHoje, totalVencimento, rendimentoHoje, rendimentoVencimento, rentabilidadeHoje, rentabilidadeVencimento) {
+            const ganhoTotal = totalVencimento - totalHoje;
+            const ganhoAdicionalPerc = totalHoje > 0 ? ((totalVencimento - totalHoje) / totalHoje) * 100 : 0;
+            
+            if (aplicacoes.length > 0) {
+                document.getElementById('patrimonioConsolidado').style.display = 'block';
+                
+                document.getElementById('patrimonioTotalAplicado').textContent = 
+                    `R$ ${totalAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                document.getElementById('patrimonioValorHoje').textContent = 
+                    `R$ ${totalHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                document.getElementById('patrimonioValorVencimento').textContent = 
+                    `R$ ${totalVencimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                document.getElementById('patrimonioGanhoTotal').textContent = 
+                    `R$ ${ganhoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                
+                document.getElementById('patrimonioRendimentoHoje').textContent = 
+                    `R$ ${rendimentoHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${rentabilidadeHoje.toFixed(2)}%)`;
+                document.getElementById('patrimonioRendimentoVencimento').textContent = 
+                    `R$ ${rendimentoVencimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${rentabilidadeVencimento.toFixed(2)}%)`;
+                document.getElementById('patrimonioGanhoAdicional').textContent = 
+                    `R$ ${ganhoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${ganhoAdicionalPerc.toFixed(2)}%)`;
+            } else {
+                document.getElementById('patrimonioConsolidado').style.display = 'none';
+            }
         }
 
         // Atualizar tabela de comparação
@@ -973,11 +1114,11 @@
                             <small class="text-muted">${taxaInfo}</small>
                         </td>
                         <td>R$ ${aplicacao.valorAplicado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td>${calc.temDataResgate ? `${calc.diasCorridos} dias` : '<span class="text-success">Liquidez diária</span>'}</td>
+                        <td>${calc.temDataResgate ? `${calc.diasCorridosHoje} / ${calc.diasCorridosVencimento}` : '<span class="text-success">Liquidez diária</span>'}</td>
                         <td class="positive">R$ ${calc.hoje.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         <td class="positive">${calc.temDataResgate ? `R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '<span class="text-muted">N/A</span>'}</td>
-                        <td class="positive">${calc.temDataResgate ? `${(calc.vencimento.rentabilidadeLiquida * 100).toFixed(2)}%` : `${(calc.hoje.rentabilidadeLiquida * 100).toFixed(2)}%`}</td>
-                        <td class="negative">R$ ${(calc.ir + calc.iof).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td class="positive">${(calc.hoje.rentabilidadeLiquida * 100).toFixed(2)}%</td>
+                        <td class="negative">R$ ${(calc.hoje.ir + calc.hoje.iof).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
                 `;
             }).join('');
@@ -1035,6 +1176,14 @@
         // Inicialização
         renderizarAplicacoes();
         atualizarResumo();
+        atualizarComparacao();
+        
+        console.log('🏦 Controlador Financeiro Bootstrap 5.3.7 Iniciado!');
+        console.log('✅ Funcionalidades ativas:');
+        console.log('  - Cálculo separado: Valor Hoje vs Vencimento');
+        console.log('  - Impostos corretos por período');
+        console.log('  - Patrimônio consolidado');
+        console.log('  - Taxas de referência atualizáveis');
     </script>
 </body>
 </html>
