@@ -403,31 +403,56 @@
         <!-- Sistema de Backup -->
         <div class="card financial-card mt-4">
             <div class="card-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white;">
-                <h3 class="h5 mb-0 fw-bold">💾 Sistema de Backup</h3>
+                <h3 class="h5 mb-0 fw-bold">💾 Sistema de Backup & Persistência</h3>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <!-- Backup Local -->
+                <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <h6 class="fw-bold text-success mb-2">📤 Exportar Dados</h6>
-                        <p class="small text-muted mb-3">Faça backup de todas suas aplicações e configurações</p>
+                        <h6 class="fw-bold text-success mb-2">📤 Backup Local</h6>
+                        <p class="small text-muted mb-3">Faça backup para seu computador</p>
                         <button class="btn btn-success w-100" onclick="exportarBackup()">
                             📤 Baixar Backup JSON
                         </button>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="fw-bold text-info mb-2">📥 Importar Dados</h6>
-                        <p class="small text-muted mb-3">Restaure seus dados de um arquivo de backup</p>
+                        <h6 class="fw-bold text-info mb-2">📥 Importar Local</h6>
+                        <p class="small text-muted mb-3">Restaure dados de um arquivo</p>
                         <label for="inputBackup" class="btn btn-info w-100" style="cursor: pointer; margin-bottom: 0;">
-                            📥 Carregar Backup JSON
+                            📥 Carregar Arquivo JSON
                             <input type="file" id="inputBackup" class="d-none" accept=".json" onchange="importarBackup(event)">
                         </label>
                     </div>
                 </div>
+                
+                <hr>
+                
+                <!-- Servidor -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary mb-2">☁️ Carregar do Servidor</h6>
+                        <p class="small text-muted mb-3">Buscar dados salvos no servidor</p>
+                        <button class="btn btn-primary w-100" onclick="carregarDoServidor()">
+                            ☁️ Carregar do Servidor
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-warning mb-2">💾 Salvar no Servidor</h6>
+                        <p class="small text-muted mb-3">Manter dados atualizados no servidor</p>
+                        <button class="btn btn-warning w-100" onclick="salvarNoServidor()">
+                            💾 Salvar no Servidor
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="row mt-3">
                     <div class="col-12">
-                        <div class="alert alert-warning small mb-0">
-                            <strong>⚠️ Importante:</strong> O backup inclui todas aplicações, taxas de referência e configurações. 
-                            Ao importar, todos os dados atuais serão substituídos pelos dados do arquivo.
+                        <div class="alert alert-info small mb-0">
+                            <strong>💡 Dicas:</strong>
+                            <br>• <strong>Backup Local:</strong> Para segurança e portabilidade
+                            <br>• <strong>Servidor:</strong> Para acessar seus dados de qualquer lugar
+                            <br>• <strong>Auto-save:</strong> Carregar do servidor automaticamente ao abrir a página
+                            <br>• <strong>Dados sincronizados:</strong> Servidor sempre atualizado com suas aplicações
                         </div>
                     </div>
                 </div>
@@ -1479,6 +1504,189 @@
             atualizarComparacao();
         }
 
+        // ========================================
+        // ☁️ SISTEMA DE PERSISTÊNCIA DO SERVIDOR
+        // ========================================
+        
+        // Carregar dados do servidor
+        async function carregarDoServidor() {
+            try {
+                mostrarNotificacao('⏳ Carregando dados do servidor...', 'info');
+                
+                const response = await fetch('./data/load.php');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // Confirmar antes de substituir dados atuais
+                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
+                    
+                    if (!confirmar) {
+                        mostrarNotificacao('❌ Operação cancelada', 'warning');
+                        return;
+                    }
+                    
+                    // Restaurar aplicações
+                    aplicacoes = result.data.aplicacoes.map(app => {
+                        const aplicacaoLimpa = {
+                            id: app.id,
+                            tipo: app.tipo,
+                            tipoTaxa: app.tipoTaxa || 'CDI',
+                            valorAplicado: app.valorAplicado,
+                            dataAplicacao: app.dataAplicacao,
+                            dataResgate: app.dataResgate || null,
+                            taxaAdmin: app.taxaAdmin || null,
+                            banco: app.banco || null,
+                            porcentagemCDI: null,
+                            taxaPreFixada: null
+                        };
+                        
+                        if (aplicacaoLimpa.tipoTaxa === 'CDI') {
+                            aplicacaoLimpa.porcentagemCDI = app.porcentagemCDI || null;
+                        } else if (aplicacaoLimpa.tipoTaxa === 'PRE') {
+                            aplicacaoLimpa.taxaPreFixada = app.taxaPreFixada || null;
+                        }
+                        
+                        return aplicacaoLimpa;
+                    });
+                    
+                    // Restaurar taxas de referência
+                    if (result.data.taxasReferencia) {
+                        document.getElementById('taxaCDI').value = result.data.taxasReferencia.cdi || '14.90';
+                        document.getElementById('taxaSELIC').value = result.data.taxasReferencia.selic || '15.00';
+                        document.getElementById('taxaPoupanca').value = result.data.taxasReferencia.poupanca || '0.6721';
+                    }
+                    
+                    // Ajustar contador de IDs
+                    contadorId = aplicacoes.length > 0 ? Math.max(...aplicacoes.map(app => app.id)) + 1 : 1;
+                    
+                    // Atualizar interface
+                    renderizarAplicacoes();
+                    atualizarResumo();
+                    atualizarComparacao();
+                    atualizarContadorAplicacoes();
+                    verificarVencimentosVisuais();
+                    
+                    mostrarNotificacao(`✅ ${aplicacoes.length} aplicações carregadas do servidor!`, 'success');
+                    
+                } else {
+                    mostrarNotificacao(result.error || 'Erro ao carregar dados do servidor', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar do servidor:', error);
+                mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
+            }
+        }
+        
+        // Salvar dados no servidor
+        async function salvarNoServidor() {
+            try {
+                const dadosBackup = {
+                    versao: "2.0",
+                    dataExportacao: new Date().toISOString(),
+                    totalAplicacoes: aplicacoes.length,
+                    aplicacoes: aplicacoes.map(app => {
+                        const aplicacaoLimpa = {
+                            id: app.id,
+                            tipo: app.tipo,
+                            tipoTaxa: app.tipoTaxa,
+                            valorAplicado: app.valorAplicado,
+                            dataAplicacao: app.dataAplicacao,
+                            dataResgate: app.dataResgate,
+                            taxaAdmin: app.taxaAdmin,
+                            banco: app.banco
+                        };
+                        
+                        if (app.tipoTaxa === 'CDI' && app.porcentagemCDI) {
+                            aplicacaoLimpa.porcentagemCDI = app.porcentagemCDI;
+                            aplicacaoLimpa.taxaPreFixada = null;
+                        } else if (app.tipoTaxa === 'PRE' && app.taxaPreFixada) {
+                            aplicacaoLimpa.porcentagemCDI = null;
+                            aplicacaoLimpa.taxaPreFixada = app.taxaPreFixada;
+                        } else {
+                            aplicacaoLimpa.porcentagemCDI = null;
+                            aplicacaoLimpa.taxaPreFixada = null;
+                        }
+                        
+                        return aplicacaoLimpa;
+                    }),
+                    taxasReferencia: {
+                        cdi: document.getElementById('taxaCDI').value,
+                        selic: document.getElementById('taxaSELIC').value,
+                        poupanca: document.getElementById('taxaPoupanca').value
+                    }
+                };
+                
+                mostrarNotificacao('⏳ Salvando no servidor...', 'info');
+                
+                const response = await fetch('./data/save.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dadosBackup)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarNotificacao(`✅ Dados salvos no servidor!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}`, 'success');
+                } else {
+                    mostrarNotificacao(`❌ Erro ao salvar: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao salvar no servidor:', error);
+                mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
+            }
+        }
+        
+        // Função para mostrar notificações toast
+        function mostrarNotificacao(mensagem, tipo = 'info') {
+            const cores = {
+                success: 'alert-success',
+                error: 'alert-danger', 
+                warning: 'alert-warning',
+                info: 'alert-info'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `alert ${cores[tipo]} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;';
+            toast.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div style="white-space: pre-line;">${mensagem}</div>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto remover após 5 segundos
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+        
+        // Auto-carregar do servidor quando a página carrega
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tentar carregar automaticamente do servidor (silencioso)
+            fetch('./data/load.php')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success && result.data && result.data.aplicacoes.length > 0) {
+                        console.log(`🌐 ${result.data.aplicacoes.length} aplicações encontradas no servidor`);
+                        // Se desejar carregamento automático, descomente as linhas abaixo:
+                        // carregarDoServidor();
+                    }
+                })
+                .catch(error => {
+                    console.log('ℹ️ Primeira execução ou servidor indisponível');
+                });
+        });
+
         // Inicialização
         renderizarAplicacoes();
         atualizarResumo();
@@ -1490,9 +1698,11 @@
         console.log('✅ Funcionalidades ativas:');
         console.log('  - Cálculo separado: HOJE vs VENCIMENTO');
         console.log('  - Impostos corretos por período específico');
-        console.log('  - Sistema de backup e importação');
+        console.log('  - Sistema de backup local (JSON)');
+        console.log('  - Persistência no servidor (load/save)');
         console.log('  - Verificação visual de vencimentos');
         console.log('  - Interface responsiva e profissional');
+        console.log('🌐 Para carregar dados do servidor, clique em "Carregar do Servidor"');
     </script>
 </body>
 </html>
