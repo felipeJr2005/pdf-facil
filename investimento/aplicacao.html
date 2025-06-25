@@ -8,6 +8,9 @@
     <!-- Bootstrap 5.3.7 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     
+    <!-- EmailJS CDN -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
     <!-- Custom CSS para aplicação financeira -->
     <style>
         :root {
@@ -279,6 +282,64 @@
             </div>
         </div>
 
+        <!-- Configurações de Notificação -->
+        <div class="card financial-card mt-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); color: white;">
+                <h3 class="h5 mb-0 fw-bold">🔔 Notificações de Vencimento</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <h6 class="fw-bold text-warning mb-2">📧 Configurar Email para Alertas</h6>
+                        <p class="small text-muted mb-3">Receba notificações automáticas quando suas aplicações vencerem</p>
+                        <div class="input-group mb-3">
+                            <input type="email" id="emailNotificacao" class="form-control" placeholder="seu@email.com" value="">
+                            <button class="btn btn-outline-warning" onclick="salvarEmailNotificacao()">Salvar Email</button>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="notificacaoAtiva" checked>
+                            <label class="form-check-label fw-semibold" for="notificacaoAtiva">
+                                Ativar notificações automáticas
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold text-info mb-2">🧪 Testar Sistema</h6>
+                        <p class="small text-muted mb-3">Envie um email de teste para verificar se está funcionando</p>
+                        <button class="btn btn-info w-100 mb-2" onclick="enviarEmailTeste()">
+                            📧 Enviar Email Teste
+                        </button>
+                        <button class="btn btn-warning w-100" onclick="verificarVencimentosAgora()">
+                            🚨 Verificar Vencimentos Agora
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-info small mb-0">
+                            <strong>💡 Como funciona:</strong> O sistema verifica automaticamente suas aplicações a cada 24h. 
+                            Se alguma venceu, você receberá um email com todos os detalhes. 
+                            <strong>Gratuito:</strong> Até 200 emails por mês via EmailJS.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas de Vencimento (Visível) -->
+        <div class="alert alert-danger d-none" id="alertaVencimentos" role="alert">
+            <div class="d-flex align-items-center mb-2">
+                <div class="me-2" style="font-size: 1.5rem;">🚨</div>
+                <h5 class="alert-heading mb-0">Aplicações Vencidas - Dinheiro Parado!</h5>
+            </div>
+            <div id="listaVencimentos"></div>
+            <hr>
+            <p class="mb-0 small">
+                <strong>💡 Dica:</strong> Aplicações vencidas não rendem mais! 
+                Considere reaplicar ou resgatar o valor para não perder rentabilidade.
+            </p>
+        </div>
+
         <div class="row">
             <!-- Formulário de Nova Aplicação -->
             <div class="col-lg-6">
@@ -528,12 +589,248 @@
         // ✅ Taxas de referência atualizáveis via CDN oficial
         // ✅ Campos opcionais (banco, data resgate)
         // ✅ Interface responsiva e profissional
+        // ✅ 📧 Sistema de notificações EmailJS
+        // ✅ 🚨 Verificação automática de vencimentos
         // ========================================
         
         // Dados globais
         let aplicacoes = [];
         let contadorId = 1;
         let editandoId = null;
+
+        // ========================================
+        // 📧 SISTEMA DE NOTIFICAÇÕES EmailJS
+        // ========================================
+        
+        // Configuração EmailJS (SUAS CHAVES CONFIGURADAS)
+        const EMAIL_CONFIG = {
+            PUBLIC_KEY: '5mQQPuOhbolyVkNl9',
+            SERVICE_ID: 'service_fcqgmt4', 
+            TEMPLATE_ID: 'template_yngycbg'
+        };
+        
+        // Inicializar EmailJS
+        function inicializarEmailJS() {
+            if (EMAIL_CONFIG.PUBLIC_KEY !== 'SEU_PUBLIC_KEY_AQUI') {
+                emailjs.init(EMAIL_CONFIG.PUBLIC_KEY);
+                console.log('📧 EmailJS inicializado com sucesso!');
+            } else {
+                console.warn('⚠️ Configure as chaves do EmailJS para ativar notificações');
+            }
+        }
+        
+        // Verificar se aplicação está vencida
+        function isAplicacaoVencida(dataResgate) {
+            if (!dataResgate) return false;
+            
+            const hoje = new Date();
+            const [anoResgate, mesResgate, diaResgate] = dataResgate.split('-');
+            const dataVencimento = new Date(parseInt(anoResgate), parseInt(mesResgate) - 1, parseInt(diaResgate));
+            
+            return hoje > dataVencimento;
+        }
+        
+        // Calcular dias vencidos
+        function calcularDiasVencidos(dataResgate) {
+            if (!dataResgate) return 0;
+            
+            const hoje = new Date();
+            const [anoResgate, mesResgate, diaResgate] = dataResgate.split('-');
+            const dataVencimento = new Date(parseInt(anoResgate), parseInt(mesResgate) - 1, parseInt(diaResgate));
+            
+            const diffTime = hoje - dataVencimento;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+        
+        // Obter aplicações vencidas
+        function obterAplicacoesVencidas() {
+            return aplicacoes.filter(app => app.dataResgate && isAplicacaoVencida(app.dataResgate));
+        }
+        
+        // Verificar vencimentos e exibir alertas visuais
+        function verificarVencimentosVisuais() {
+            const vencidas = obterAplicacoesVencidas();
+            const alertaElement = document.getElementById('alertaVencimentos');
+            const listaElement = document.getElementById('listaVencimentos');
+            
+            if (vencidas.length > 0) {
+                alertaElement.classList.remove('d-none');
+                
+                let valorTotalParado = 0;
+                let htmlLista = '<ul class="mb-2">';
+                
+                vencidas.forEach(app => {
+                    const calc = calcularRentabilidade(app);
+                    const diasVencidos = calcularDiasVencidos(app.dataResgate);
+                    valorTotalParado += calc.vencimento.valorLiquido;
+                    
+                    htmlLista += `
+                        <li class="mb-1">
+                            <strong>${app.tipo}</strong> 
+                            ${app.banco ? `(${app.banco})` : ''} - 
+                            R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - 
+                            <span class="text-danger fw-bold">${diasVencidos} dias vencida</span>
+                        </li>
+                    `;
+                });
+                
+                htmlLista += '</ul>';
+                htmlLista += `<p class="mb-0"><strong>💰 Total parado: R$ ${valorTotalParado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></p>`;
+                
+                listaElement.innerHTML = htmlLista;
+            } else {
+                alertaElement.classList.add('d-none');
+            }
+        }
+        
+        // Enviar email de notificação de vencimentos
+        function enviarEmailVencimentos(aplicacoesVencidas) {
+            const emailDestino = document.getElementById('emailNotificacao').value;
+            const notificacaoAtiva = document.getElementById('notificacaoAtiva').checked;
+            
+            if (!emailDestino || !notificacaoAtiva) {
+                console.log('📧 Email não configurado ou notificações desativadas');
+                return;
+            }
+            
+            if (EMAIL_CONFIG.PUBLIC_KEY === 'SEU_PUBLIC_KEY_AQUI') {
+                console.warn('⚠️ Configure as chaves do EmailJS primeiro');
+                return;
+            }
+            
+            let valorTotalParado = 0;
+            let detalhesVencimentos = '';
+            
+            aplicacoesVencidas.forEach((app, index) => {
+                const calc = calcularRentabilidade(app);
+                const diasVencidos = calcularDiasVencidos(app.dataResgate);
+                valorTotalParado += calc.vencimento.valorLiquido;
+                
+                detalhesVencimentos += `
+${index + 1}. ${app.tipo} ${app.banco ? `(${app.banco})` : ''}
+   • Valor: R$ ${calc.vencimento.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+   • Vencimento: ${formatarDataLocal(app.dataResgate)}  
+   • Dias vencida: ${diasVencidos} dias
+   • Aplicado em: ${formatarDataLocal(app.dataAplicacao)}
+
+`;
+            });
+            
+            const templateParams = {
+                to_email: emailDestino,
+                quantidade_vencidas: aplicacoesVencidas.length,
+                valor_total_parado: `R$ ${valorTotalParado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                detalhes_vencimentos: detalhesVencimentos,
+                data_verificacao: new Date().toLocaleDateString('pt-BR'),
+                hora_verificacao: new Date().toLocaleTimeString('pt-BR')
+            };
+            
+            emailjs.send(EMAIL_CONFIG.SERVICE_ID, EMAIL_CONFIG.TEMPLATE_ID, templateParams)
+                .then(function(response) {
+                    console.log('📧 Email de vencimento enviado com sucesso!', response.status, response.text);
+                })
+                .catch(function(error) {
+                    console.error('❌ Erro ao enviar email:', error);
+                });
+        }
+        
+        // Verificar vencimentos automático (chamado a cada 24h)
+        function verificarVencimentosAutomatico() {
+            console.log('🔍 Verificando vencimentos automáticos...');
+            
+            const vencidas = obterAplicacoesVencidas();
+            
+            // Atualizar alertas visuais
+            verificarVencimentosVisuais();
+            
+            // Enviar email se houver vencimentos
+            if (vencidas.length > 0) {
+                console.log(`🚨 ${vencidas.length} aplicações vencidas encontradas!`);
+                enviarEmailVencimentos(vencidas);
+            } else {
+                console.log('✅ Nenhuma aplicação vencida encontrada');
+            }
+        }
+        
+        // Verificar vencimentos agora (botão manual)
+        function verificarVencimentosAgora() {
+            verificarVencimentosAutomatico();
+            
+            const vencidas = obterAplicacoesVencidas();
+            if (vencidas.length > 0) {
+                alert(`🚨 ATENÇÃO!\n\n${vencidas.length} aplicações vencidas encontradas!\n\nVerifique os alertas na tela e seu email para mais detalhes.`);
+            } else {
+                alert('✅ Parabéns!\n\nNenhuma aplicação vencida encontrada.\nTodas as suas aplicações estão em dia! 🎉');
+            }
+        }
+        
+        // Salvar email de notificação
+        function salvarEmailNotificacao() {
+            const email = document.getElementById('emailNotificacao').value;
+            
+            if (!email) {
+                alert('❌ Por favor, digite um email válido');
+                return;
+            }
+            
+            // Validação básica de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('❌ Por favor, digite um email válido');
+                return;
+            }
+            
+            // Salvar no localStorage
+            localStorage.setItem('emailNotificacao', email);
+            alert(`✅ Email salvo com sucesso!\n\n📧 ${email}\n\nVocê receberá notificações quando suas aplicações vencerem.`);
+        }
+        
+        // Enviar email de teste
+        function enviarEmailTeste() {
+            const emailDestino = document.getElementById('emailNotificacao').value;
+            
+            if (!emailDestino) {
+                alert('❌ Por favor, configure seu email primeiro');
+                return;
+            }
+            
+            if (EMAIL_CONFIG.PUBLIC_KEY === 'SEU_PUBLIC_KEY_AQUI') {
+                alert('⚠️ CONFIGURAÇÃO NECESSÁRIA\n\nPara ativar as notificações por email, você precisa:\n\n1. Criar uma conta no EmailJS (emailjs.com)\n2. Configurar um serviço de email (Gmail, Outlook, etc.)\n3. Criar um template de email\n4. Substituir as chaves no código\n\nIsso leva apenas 5 minutos! 😊');
+                return;
+            }
+            
+            const templateParams = {
+                to_email: emailDestino,
+                quantidade_vencidas: 1,
+                valor_total_parado: 'R$ 50.000,00',
+                detalhes_vencimentos: `
+1. CDB Teste (Banco Teste)
+   • Valor: R$ 50.000,00
+   • Vencimento: ${new Date().toLocaleDateString('pt-BR')}
+   • Dias vencida: 5 dias
+   • Aplicado em: ${new Date(Date.now() - 95*24*60*60*1000).toLocaleDateString('pt-BR')}
+
+`,
+                data_verificacao: new Date().toLocaleDateString('pt-BR'),
+                hora_verificacao: new Date().toLocaleTimeString('pt-BR')
+            };
+            
+            emailjs.send(EMAIL_CONFIG.SERVICE_ID, EMAIL_CONFIG.TEMPLATE_ID, templateParams)
+                .then(function(response) {
+                    alert(`✅ Email de teste enviado com sucesso!\n\n📧 Verifique sua caixa de entrada: ${emailDestino}\n\nSe não receber, verifique o spam/lixo eletrônico.`);
+                })
+                .catch(function(error) {
+                    alert(`❌ Erro ao enviar email de teste!\n\nDetalhes: ${error}\n\nVerifique sua configuração do EmailJS.`);
+                });
+        }
+        
+        // Carregar email salvo
+        function carregarEmailSalvo() {
+            const emailSalvo = localStorage.getItem('emailNotificacao');
+            if (emailSalvo) {
+                document.getElementById('emailNotificacao').value = emailSalvo;
+            }
+        }
 
         // Configuração inicial - data de hoje no formato correto
         const hoje = new Date();
@@ -931,6 +1228,7 @@
             atualizarResumo();
             atualizarComparacao();
             atualizarContadorAplicacoes();
+            verificarVencimentosVisuais(); // Verificar vencimentos após mudanças
         });
 
         // Renderizar lista de aplicações
@@ -1094,6 +1392,7 @@
                 atualizarResumo();
                 atualizarComparacao();
                 atualizarContadorAplicacoes();
+                verificarVencimentosVisuais(); // Verificar vencimentos após remoção
             }
         }
 
@@ -1324,6 +1623,7 @@
                     atualizarResumo();
                     atualizarComparacao();
                     atualizarContadorAplicacoes();
+                    verificarVencimentosVisuais(); // Verificar vencimentos após importação
                     
                     // Limpar input
                     event.target.value = '';
@@ -1402,14 +1702,14 @@
         atualizarComparacao();
         atualizarContadorAplicacoes();
         
+        // Inicializar sistema de notificações
+        inicializarEmailJS();
+        carregarEmailSalvo();
+        verificarVencimentosVisuais();
+        
+        // Configurar verificação automática a cada 24 horas
+        setInterval(verificarVencimentosAutomatico, 24 * 60 * 60 * 1000);
+        
         console.log('🏦 Controlador Financeiro Bootstrap 5.3.7 Iniciado!');
         console.log('✅ Funcionalidades ativas:');
-        console.log('  - Cálculo separado: Valor Hoje vs Vencimento');
-        console.log('  - Impostos corretos por período');
-        console.log('  - Patrimônio consolidado');
-        console.log('  - Taxas de referência atualizáveis');
-        console.log('  - 💾 Sistema de Backup JSON v2.0');
-        console.log('  - 🔧 CORREÇÃO: Campos de taxa mutuamente exclusivos');
-    </script>
-</body>
-</html>
+        console.log('  - Cálculo separado:
