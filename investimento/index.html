@@ -142,6 +142,36 @@
             color: white;
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #047857 0%, var(--success-color) 100%);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info-color) 0%, #0ea5e9 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #0369a1 0%, var(--info-color) 100%);
+            color: white;
+            transform: translateY(-1px);
+        }
+
         .metric-today {
             background: rgba(14, 165, 233, 0.1);
             border: 1px solid rgba(14, 165, 233, 0.3);
@@ -409,38 +439,24 @@
                 <!-- Backup Local -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <h6 class="fw-bold text-success mb-2">📤 Backup Local</h6>
-                        <p class="small text-muted mb-3">Faça backup para seu computador</p>
-                        <button class="btn btn-success w-100" onclick="exportarBackup()">
-                            📤 Baixar Backup JSON
+                        <h6 class="fw-bold text-success mb-2">📦 Backup Local</h6>
+                        <p class="small text-muted mb-3">Exportar dados para seu computador</p>
+                        <button class="btn btn-success w-100 mb-2" onclick="exportarBackup()">
+                            📤 Baixar Backup
                         </button>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="fw-bold text-info mb-2">📥 Importar Local</h6>
-                        <p class="small text-muted mb-3">Restaure dados de um arquivo</p>
-                        <label for="inputBackup" class="btn btn-info w-100" style="cursor: pointer; margin-bottom: 0;">
-                            📥 Carregar Arquivo JSON
+                        <label for="inputBackup" class="btn btn-success w-100" style="cursor: pointer; margin-bottom: 0;">
+                            📥 Importar Backup
                             <input type="file" id="inputBackup" class="d-none" accept=".json" onchange="importarBackup(event)">
                         </label>
                     </div>
-                </div>
-                
-                <hr>
-                
-                <!-- Servidor -->
-                <div class="row g-3">
                     <div class="col-md-6">
-                        <h6 class="fw-bold text-primary mb-2">☁️ Carregar do Servidor</h6>
-                        <p class="small text-muted mb-3">Buscar dados salvos no servidor</p>
-                        <button class="btn btn-primary w-100" onclick="carregarDoServidor()">
-                            ☁️ Carregar do Servidor
+                        <h6 class="fw-bold text-info mb-2">☁️ Dados do Servidor</h6>
+                        <p class="small text-muted mb-3">Sincronizar com servidor remoto</p>
+                        <button class="btn btn-info w-100 mb-2" onclick="carregarDoServidor()">
+                            📥 Carregar do Servidor
                         </button>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="fw-bold text-warning mb-2">💾 Salvar no Servidor</h6>
-                        <p class="small text-muted mb-3">Manter dados atualizados no servidor</p>
-                        <button class="btn btn-warning w-100" onclick="salvarNoServidor()">
-                            💾 Salvar no Servidor
+                        <button class="btn btn-info w-100" onclick="salvarNoServidor()">
+                            📤 Salvar no Servidor
                         </button>
                     </div>
                 </div>
@@ -448,11 +464,11 @@
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="alert alert-info small mb-0">
-                            <strong>💡 Dicas:</strong>
-                            <br>• <strong>Backup Local:</strong> Para segurança e portabilidade
-                            <br>• <strong>Servidor:</strong> Para acessar seus dados de qualquer lugar
-                            <br>• <strong>Auto-save:</strong> Carregar do servidor automaticamente ao abrir a página
-                            <br>• <strong>Dados sincronizados:</strong> Servidor sempre atualizado com suas aplicações
+                            <strong>💡 Como usar:</strong>
+                            <br>• <strong>Backup Local:</strong> Segurança pessoal e portabilidade entre dispositivos
+                            <br>• <strong>Servidor:</strong> Acesse seus dados de qualquer lugar com internet
+                            <br>• <strong>Sincronização:</strong> Use "Carregar" → modificar → "Salvar" para manter atualizado
+                            <br>• <strong>Segurança:</strong> Dados criptografados e protegidos no servidor
                         </div>
                     </div>
                 </div>
