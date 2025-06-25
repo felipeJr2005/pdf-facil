@@ -1,0 +1,25 @@
+{
+  "versao": "3.0",
+  "ultimaAtualizacao": "2025-06-25T13:09:17.903Z",
+  "contadorId": 2,
+  "aplicacoes": [
+    {
+      "id": 1,
+      "tipo": "LCA",
+      "tipoTaxa": "CDI",
+      "valorAplicado": 233000,
+      "dataAplicacao": "2025-04-14",
+      "dataResgate": "2030-01-01",
+      "porcentagemCDI": 94,
+      "taxaPreFixada": null,
+      "taxaAdmin": null,
+      "banco": "RICO"
+    }
+  ],
+  "emailNotificacao": "",
+  "taxasReferencia": {
+    "cdi": "14.90",
+    "selic": "15.00",
+    "poupanca": "0.6721"
+  }
+}
