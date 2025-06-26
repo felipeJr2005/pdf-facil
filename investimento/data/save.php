@@ -1,4 +1,8 @@
 <?php
+// Suprimir warnings que quebram JSON
+error_reporting(0);
+ini_set('display_errors', 0);
+
 // API para salvar dados no servidor
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
