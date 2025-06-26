@@ -3,7 +3,7 @@
 // Este arquivo será executado diariamente via cron
 
 // Configurações
-define('EMAIL_DESTINO', 'felipejunior@gmail.com'); // ⬅️ ALTERE AQUI
+define('EMAIL_DESTINO', 'seu-email@gmail.com'); // ⬅️ ALTERE AQUI
 
 // Função para logging simplificada (sem criar diretório)
 function logMessage($message) {
@@ -24,11 +24,25 @@ try {
 
     // 2. Verificar se arquivo de aplicações existe
     $arquivoAplicacoes = __DIR__ . '/aplicacoes.json';
+    $arquivoAplicacoesData = __DIR__ . '/data/aplicacoes.json';
+    
     logMessage("🔍 Procurando arquivo: $arquivoAplicacoes");
     
-    if (!file_exists($arquivoAplicacoes)) {
-        logMessage("❌ Arquivo aplicacoes.json não encontrado");
-        logMessage("💡 Verifique se o arquivo foi criado corretamente");
+    if (file_exists($arquivoAplicacoes)) {
+        logMessage("✅ Encontrado em: $arquivoAplicacoes");
+    } elseif (file_exists($arquivoAplicacoesData)) {
+        $arquivoAplicacoes = $arquivoAplicacoesData;
+        logMessage("✅ Encontrado em: $arquivoAplicacoes");
+    } else {
+        logMessage("❌ Arquivo aplicacoes.json não encontrado em:");
+        logMessage("   - $arquivoAplicacoes");
+        logMessage("   - $arquivoAplicacoesData");
+        
+        // Verificar conteúdo da pasta data
+        if (is_dir(__DIR__ . '/data')) {
+            $arquivosData = scandir(__DIR__ . '/data');
+            logMessage("📂 Arquivos em /data: " . implode(', ', $arquivosData));
+        }
         exit;
     }
 
