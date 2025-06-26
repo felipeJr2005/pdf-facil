@@ -3,7 +3,7 @@
 // Este arquivo será executado diariamente via cron
 
 // Configurações
-define('EMAIL_DESTINO', 'seu-email@gmail.com'); // ⬅️ ALTERE AQUI
+define('EMAIL_DESTINO', 'felipejunior@gmail.com'); // ⬅️ ALTERE AQUI
 
 // Função para logging simplificada (sem criar diretório)
 function logMessage($message) {
