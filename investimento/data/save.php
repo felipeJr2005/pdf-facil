@@ -1,165 +1,108 @@
 <?php
-// Configuração básica
-ini_set('display_errors', 0);
+// CORREÇÃO: Suprimir warnings que quebram JSON
 error_reporting(0);
+ini_set('display_errors', 0);
 
-// Headers
-header('Content-Type: application/json; charset=utf-8');
+// API para salvar dados no servidor
+header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Função para resposta segura
-function responder($data, $status = 200) {
-    http_response_code($status);
-    echo json_encode($data);
+// Verificar método
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Método não permitido. Use POST.'
+    ]);
     exit;
 }
 
+// Caminho do arquivo JSON
+$arquivo = __DIR__ . '/aplicacoes.json';
+
 try {
-    // CORS
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        responder(['status' => 'CORS OK']);
-    }
-    
-    // Verificar método
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        responder([
-            'success' => false,
-            'error' => 'Use POST',
-            'metodo' => $_SERVER['REQUEST_METHOD']
-        ], 405);
-    }
-    
-    // Ler dados
+    // Ler dados enviados
     $input = file_get_contents('php://input');
-    
-    if (empty($input)) {
-        responder([
-            'success' => false,
-            'error' => 'Nenhum dado recebido'
-        ], 400);
-    }
-    
-    // Decodificar JSON
     $dados = json_decode($input, true);
     
-    if (!is_array($dados)) {
-        responder([
+    if ($dados === null) {
+        http_response_code(400);
+        echo json_encode([
             'success' => false,
-            'error' => 'JSON inválido: ' . json_last_error_msg()
-        ], 400);
+            'error' => 'Dados JSON inválidos enviados'
+        ]);
+        exit;
     }
     
-    // Verificar aplicações
-    if (!isset($dados['aplicacoes'])) {
-        responder([
+    // Validar estrutura básica
+    if (!isset($dados['aplicacoes']) || !isset($dados['taxasReferencia'])) {
+        http_response_code(400);
+        echo json_encode([
             'success' => false,
-            'error' => 'Campo aplicacoes não encontrado'
-        ], 400);
+            'error' => 'Estrutura de dados inválida. Faltam campos obrigatórios.'
+        ]);
+        exit;
     }
     
-    // TENTAR MÚLTIPLAS LOCALIZAÇÕES COM PERMISSÃO
-    $locaisPossiveis = [
-        __DIR__ . '/aplicacoes.json',                    // Pasta atual
-        __DIR__ . '/../aplicacoes.json',                 // Pasta pai  
-        '/tmp/aplicacoes.json',                          // Pasta temporária
-        __DIR__ . '/data/aplicacoes.json'                // Pasta data (última tentativa)
+    // Adicionar metadados de salvamento
+    $dados['versao'] = '2.0';
+    $dados['dataExportacao'] = date('c'); // Formato ISO 8601
+    $dados['totalAplicacoes'] = count($dados['aplicacoes']);
+    $dados['ultimoSalvamento'] = [
+        'timestamp' => time(),
+        'data' => date('Y-m-d H:i:s'),
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'desconhecido'
     ];
     
-    $arquivoEscolhido = null;
-    $localEscolhido = null;
-    
-    // Testar cada local
-    foreach ($locaisPossiveis as $local) {
-        $dir = dirname($local);
-        
-        // Verificar se diretório existe e é gravável
-        if (is_dir($dir) && is_writable($dir)) {
-            $arquivoEscolhido = $local;
-            $localEscolhido = $dir;
-            break;
+    // Fazer backup do arquivo atual (se existir)
+    if (file_exists($arquivo)) {
+        $backup = $arquivo . '.backup.' . date('Y-m-d_H-i-s');
+        if (!copy($arquivo, $backup)) {
+            // Log do erro, mas não falhar por causa disso
+            error_log("Falha ao criar backup: $backup");
         }
     }
     
-    // Se nenhum local com permissão
-    if (!$arquivoEscolhido) {
-        $permissoes = [];
-        foreach ($locaisPossiveis as $local) {
-            $dir = dirname($local);
-            $permissoes[] = [
-                'diretorio' => $dir,
-                'existe' => is_dir($dir) ? 'SIM' : 'NÃO',
-                'gravavel' => is_writable($dir) ? 'SIM' : 'NÃO'
-            ];
-        }
-        
-        responder([
-            'success' => false,
-            'error' => 'Nenhum diretório com permissão de escrita encontrado',
-            'testados' => $permissoes
-        ], 500);
-    }
-    
-    // Preparar dados finais
-    $dadosFinais = [
-        'versao' => '2.0',
-        'dataExportacao' => date('c'),
-        'totalAplicacoes' => count($dados['aplicacoes']),
-        'aplicacoes' => $dados['aplicacoes'],
-        'localSalvamento' => $localEscolhido
-    ];
-    
-    // Incluir taxas se existirem
-    if (isset($dados['taxasReferencia'])) {
-        $dadosFinais['taxasReferencia'] = $dados['taxasReferencia'];
-    }
-    
-    // Converter para JSON
-    $json = json_encode($dadosFinais, JSON_PRETTY_PRINT);
+    // Converter para JSON formatado
+    $json = json_encode($dados, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     
     if ($json === false) {
-        responder([
+        http_response_code(500);
+        echo json_encode([
             'success' => false,
-            'error' => 'Erro ao gerar JSON: ' . json_last_error_msg()
-        ], 500);
+            'error' => 'Erro ao codificar dados para JSON'
+        ]);
+        exit;
     }
     
-    // Backup se arquivo existir
-    if (file_exists($arquivoEscolhido)) {
-        $backup = $arquivoEscolhido . '.backup.' . date('Ymd-His');
-        @copy($arquivoEscolhido, $backup);
-    }
-    
-    // Salvar
-    $resultado = file_put_contents($arquivoEscolhido, $json, LOCK_EX);
-    
-    if ($resultado === false) {
-        responder([
+    // Salvar arquivo
+    if (file_put_contents($arquivo, $json, LOCK_EX) === false) {
+        http_response_code(500);
+        echo json_encode([
             'success' => false,
-            'error' => 'Falha ao salvar arquivo',
-            'arquivo' => $arquivoEscolhido,
-            'diretorio' => $localEscolhido
-        ], 500);
+            'error' => 'Erro ao salvar arquivo no servidor'
+        ]);
+        exit;
     }
     
-    // Sucesso
-    responder([
+    // Sucesso!
+    echo json_encode([
         'success' => true,
-        'message' => 'Dados salvos com sucesso!',
+        'message' => 'Dados salvos no servidor com sucesso!',
         'data' => [
-            'totalAplicacoes' => count($dados['aplicacoes']),
-            'bytes' => $resultado,
-            'arquivo' => basename($arquivoEscolhido),
-            'local' => $localEscolhido,
-            'dataHora' => date('d/m/Y H:i:s')
+            'totalAplicacoes' => $dados['totalAplicacoes'],
+            'dataUltimoSalvamento' => $dados['ultimoSalvamento']['data'],
+            'tamanhoArquivo' => filesize($arquivo) . ' bytes'
         ]
     ]);
     
 } catch (Exception $e) {
-    responder([
+    http_response_code(500);
+    echo json_encode([
         'success' => false,
-        'error' => 'Erro interno: ' . $e->getMessage()
-    ], 500);
+        'error' => 'Erro interno do servidor: ' . $e->getMessage()
+    ]);
 }
 ?>
