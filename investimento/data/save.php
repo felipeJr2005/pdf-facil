@@ -9,11 +9,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Função para log
-function debug($msg) {
-    error_log("[SAVE DEBUG] " . $msg);
-}
-
 // Função para resposta segura
 function responder($data, $status = 200) {
     http_response_code($status);
@@ -22,8 +17,6 @@ function responder($data, $status = 200) {
 }
 
 try {
-    debug("=== SAVE.PHP INICIADO ===");
-    
     // CORS
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         responder(['status' => 'CORS OK']);
@@ -38,11 +31,8 @@ try {
         ], 405);
     }
     
-    debug("Método POST confirmado");
-    
-    // Verificar se consegue ler input
+    // Ler dados
     $input = file_get_contents('php://input');
-    debug("Input lido: " . strlen($input) . " bytes");
     
     if (empty($input)) {
         responder([
@@ -51,60 +41,79 @@ try {
         ], 400);
     }
     
-    // Tentar decodificar JSON
+    // Decodificar JSON
     $dados = json_decode($input, true);
-    debug("JSON decode: " . (is_array($dados) ? 'OK' : 'FALHOU'));
     
     if (!is_array($dados)) {
         responder([
             'success' => false,
-            'error' => 'JSON inválido',
-            'json_error' => json_last_error_msg(),
-            'primeiro_char' => substr($input, 0, 1)
+            'error' => 'JSON inválido: ' . json_last_error_msg()
         ], 400);
     }
     
-    // Verificar se tem aplicações
+    // Verificar aplicações
     if (!isset($dados['aplicacoes'])) {
         responder([
             'success' => false,
-            'error' => 'Campo aplicacoes não encontrado',
-            'campos' => array_keys($dados)
+            'error' => 'Campo aplicacoes não encontrado'
         ], 400);
     }
     
-    debug("Aplicações encontradas: " . count($dados['aplicacoes']));
+    // TENTAR MÚLTIPLAS LOCALIZAÇÕES COM PERMISSÃO
+    $locaisPossiveis = [
+        __DIR__ . '/aplicacoes.json',                    // Pasta atual
+        __DIR__ . '/../aplicacoes.json',                 // Pasta pai  
+        '/tmp/aplicacoes.json',                          // Pasta temporária
+        __DIR__ . '/data/aplicacoes.json'                // Pasta data (última tentativa)
+    ];
     
-    // Verificar permissões
-    $dir = __DIR__;
-    debug("Diretório: $dir");
+    $arquivoEscolhido = null;
+    $localEscolhido = null;
     
-    if (!is_writable($dir)) {
-        responder([
-            'success' => false,
-            'error' => 'Sem permissão de escrita',
-            'diretorio' => $dir
-        ], 500);
+    // Testar cada local
+    foreach ($locaisPossiveis as $local) {
+        $dir = dirname($local);
+        
+        // Verificar se diretório existe e é gravável
+        if (is_dir($dir) && is_writable($dir)) {
+            $arquivoEscolhido = $local;
+            $localEscolhido = $dir;
+            break;
+        }
     }
     
-    // Arquivo destino
-    $arquivo = $dir . '/aplicacoes.json';
-    debug("Arquivo: $arquivo");
+    // Se nenhum local com permissão
+    if (!$arquivoEscolhido) {
+        $permissoes = [];
+        foreach ($locaisPossiveis as $local) {
+            $dir = dirname($local);
+            $permissoes[] = [
+                'diretorio' => $dir,
+                'existe' => is_dir($dir) ? 'SIM' : 'NÃO',
+                'gravavel' => is_writable($dir) ? 'SIM' : 'NÃO'
+            ];
+        }
+        
+        responder([
+            'success' => false,
+            'error' => 'Nenhum diretório com permissão de escrita encontrado',
+            'testados' => $permissoes
+        ], 500);
+    }
     
     // Preparar dados finais
     $dadosFinais = [
         'versao' => '2.0',
         'dataExportacao' => date('c'),
         'totalAplicacoes' => count($dados['aplicacoes']),
-        'aplicacoes' => $dados['aplicacoes']
+        'aplicacoes' => $dados['aplicacoes'],
+        'localSalvamento' => $localEscolhido
     ];
     
-    // Se tem taxas, incluir
+    // Incluir taxas se existirem
     if (isset($dados['taxasReferencia'])) {
         $dadosFinais['taxasReferencia'] = $dados['taxasReferencia'];
     }
-    
-    debug("Dados preparados");
     
     // Converter para JSON
     $json = json_encode($dadosFinais, JSON_PRETTY_PRINT);
@@ -112,43 +121,42 @@ try {
     if ($json === false) {
         responder([
             'success' => false,
-            'error' => 'Erro ao gerar JSON',
-            'json_error' => json_last_error_msg()
+            'error' => 'Erro ao gerar JSON: ' . json_last_error_msg()
         ], 500);
     }
     
-    debug("JSON gerado: " . strlen($json) . " bytes");
-    
     // Backup se arquivo existir
-    if (file_exists($arquivo)) {
-        $backup = $arquivo . '.bak';
-        copy($arquivo, $backup);
-        debug("Backup criado");
+    if (file_exists($arquivoEscolhido)) {
+        $backup = $arquivoEscolhido . '.backup.' . date('Ymd-His');
+        @copy($arquivoEscolhido, $backup);
     }
     
     // Salvar
-    $resultado = file_put_contents($arquivo, $json, LOCK_EX);
+    $resultado = file_put_contents($arquivoEscolhido, $json, LOCK_EX);
     
     if ($resultado === false) {
         responder([
             'success' => false,
-            'error' => 'Falha ao salvar arquivo'
+            'error' => 'Falha ao salvar arquivo',
+            'arquivo' => $arquivoEscolhido,
+            'diretorio' => $localEscolhido
         ], 500);
     }
-    
-    debug("Arquivo salvo: $resultado bytes");
     
     // Sucesso
     responder([
         'success' => true,
-        'message' => 'Salvo com sucesso!',
-        'totalAplicacoes' => count($dados['aplicacoes']),
-        'bytes' => $resultado,
-        'dataHora' => date('d/m/Y H:i:s')
+        'message' => 'Dados salvos com sucesso!',
+        'data' => [
+            'totalAplicacoes' => count($dados['aplicacoes']),
+            'bytes' => $resultado,
+            'arquivo' => basename($arquivoEscolhido),
+            'local' => $localEscolhido,
+            'dataHora' => date('d/m/Y H:i:s')
+        ]
     ]);
     
 } catch (Exception $e) {
-    debug("ERRO: " . $e->getMessage());
     responder([
         'success' => false,
         'error' => 'Erro interno: ' . $e->getMessage()

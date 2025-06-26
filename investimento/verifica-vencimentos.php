@@ -1,198 +1,222 @@
 <?php
-// Verificador automático de vencimentos
-// Este arquivo será executado diariamente via cron
+// Configuração básica
+date_default_timezone_set('America/Sao_Paulo');
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-// Configurações
-define('EMAIL_DESTINO', 'felipejunior@gmail.com'); // ⬅️ ALTERE AQUI
-
-// Função para logging simplificada (sem criar diretório)
-function logMessage($message) {
-    $timestamp = date('Y-m-d H:i:s');
-    echo "[$timestamp] $message<br>\n";
-    
-    // Tentar log em arquivo simples (se não conseguir, continua)
-    @file_put_contents(__DIR__ . '/vencimentos.log', "[$timestamp] $message\n", FILE_APPEND);
+// Função para log com timestamp
+function logMsg($message) {
+    $timestamp = date('[Y-m-d H:i:s]');
+    echo $timestamp . ' ' . $message . PHP_EOL;
 }
 
-logMessage("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS ===");
+logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS ===");
 
-try {
-    // 1. Debug - mostrar diretório atual e arquivos
-    logMessage("📁 Diretório atual: " . __DIR__);
-    $arquivos = scandir(__DIR__);
-    logMessage("📂 Arquivos no diretório: " . implode(', ', $arquivos));
+// Buscar arquivo aplicacoes.json em múltiplas localizações
+$locaisPossiveis = [
+    __DIR__ . '/aplicacoes.json',                    // Pasta atual
+    __DIR__ . '/data/aplicacoes.json',               // Pasta data
+    __DIR__ . '/../aplicacoes.json',                 // Pasta pai
+    '/tmp/aplicacoes.json'                           // Pasta temporária
+];
 
-    // 2. Verificar se arquivo de aplicações existe
-    $arquivoAplicacoes = __DIR__ . '/aplicacoes.json';
-    $arquivoAplicacoesData = __DIR__ . '/data/aplicacoes.json';
+$arquivoEncontrado = null;
+$localEncontrado = null;
+
+logMsg("🔍 Procurando arquivo aplicacoes.json...");
+
+foreach ($locaisPossiveis as $local) {
+    logMsg("🔍 Verificando: $local");
     
-    logMessage("🔍 Procurando arquivo: $arquivoAplicacoes");
-    
-    if (file_exists($arquivoAplicacoes)) {
-        logMessage("✅ Encontrado em: $arquivoAplicacoes");
-    } elseif (file_exists($arquivoAplicacoesData)) {
-        $arquivoAplicacoes = $arquivoAplicacoesData;
-        logMessage("✅ Encontrado em: $arquivoAplicacoes");
+    if (file_exists($local)) {
+        $arquivoEncontrado = $local;
+        $localEncontrado = dirname($local);
+        logMsg("✅ Encontrado em: $local");
+        break;
     } else {
-        logMessage("❌ Arquivo aplicacoes.json não encontrado em:");
-        logMessage("   - $arquivoAplicacoes");
-        logMessage("   - $arquivoAplicacoesData");
-        
-        // Verificar conteúdo da pasta data
-        if (is_dir(__DIR__ . '/data')) {
-            $arquivosData = scandir(__DIR__ . '/data');
-            logMessage("📂 Arquivos em /data: " . implode(', ', $arquivosData));
+        logMsg("❌ Não encontrado: $local");
+    }
+}
+
+if (!$arquivoEncontrado) {
+    logMsg("❌ ERRO: Arquivo aplicacoes.json não encontrado em nenhuma localização!");
+    logMsg("📂 Locais verificados:");
+    foreach ($locaisPossiveis as $local) {
+        logMsg("   - $local");
+    }
+    exit(1);
+}
+
+// Tentar ler o arquivo
+$conteudo = file_get_contents($arquivoEncontrado);
+
+if ($conteudo === false) {
+    logMsg("❌ ERRO: Não foi possível ler o arquivo: $arquivoEncontrado");
+    exit(1);
+}
+
+logMsg("📄 Arquivo lido com sucesso: " . strlen($conteudo) . " bytes");
+logMsg("📄 Primeiros 100 chars: " . substr($conteudo, 0, 100));
+
+// Decodificar JSON
+$dados = json_decode($conteudo, true);
+
+if ($dados === null) {
+    logMsg("❌ ERRO: JSON inválido no arquivo: " . json_last_error_msg());
+    exit(1);
+}
+
+// Verificar estrutura
+if (isset($dados['versao'])) {
+    logMsg("📦 Estrutura detectada: Arquivo com metadata (versão " . $dados['versao'] . ")");
+    $aplicacoes = $dados['aplicacoes'] ?? [];
+} else {
+    logMsg("📦 Estrutura detectada: Array direto de aplicações");
+    $aplicacoes = $dados;
+}
+
+$totalAplicacoes = count($aplicacoes);
+logMsg("📊 Total de aplicações: $totalAplicacoes");
+
+if ($totalAplicacoes === 0) {
+    logMsg("ℹ️ Nenhuma aplicação encontrada no arquivo");
+    exit(0);
+}
+
+// Data atual para comparação
+$hoje = date('Y-m-d');
+logMsg("📅 Verificando vencimentos para: $hoje");
+
+$vencimentosHoje = [];
+$vencimentosProximos = [];
+
+// Verificar cada aplicação
+foreach ($aplicacoes as $aplicacao) {
+    $nome = $aplicacao['nome'] ?? 'Sem nome';
+    $dataVencimento = $aplicacao['dataVencimento'] ?? null;
+    
+    logMsg("🔍 Verificando: $nome - Vencimento: " . ($dataVencimento ?: 'Sem data'));
+    
+    if (!$dataVencimento) {
+        continue;
+    }
+    
+    // Converter data para formato comparável
+    $vencimento = null;
+    
+    // Tentar diferentes formatos de data
+    $formatosData = ['Y-m-d', 'd/m/Y', 'Y/m/d', 'd-m-Y'];
+    
+    foreach ($formatosData as $formato) {
+        $dataObj = DateTime::createFromFormat($formato, $dataVencimento);
+        if ($dataObj !== false) {
+            $vencimento = $dataObj->format('Y-m-d');
+            break;
         }
-        exit;
-    }
-
-    // 3. Ler aplicações
-    $conteudo = file_get_contents($arquivoAplicacoes);
-    logMessage("📄 Conteúdo do arquivo (primeiros 100 chars): " . substr($conteudo, 0, 100));
-    
-    $dados = json_decode($conteudo, true);
-    
-    if (!$dados) {
-        logMessage("❌ Erro ao decodificar aplicacoes.json");
-        logMessage("🔍 JSON erro: " . json_last_error_msg());
-        exit;
     }
     
-    // Verificar se existe a propriedade 'aplicacoes'
-    if (isset($dados['aplicacoes'])) {
-        $aplicacoes = $dados['aplicacoes'];
-        logMessage("📦 Estrutura detectada: Arquivo com metadata (versão {$dados['versao']})");
-    } else {
-        // Fallback: se não tem propriedade aplicacoes, assume que o array é a raiz
-        $aplicacoes = $dados;
-        logMessage("📦 Estrutura detectada: Array simples de aplicações");
+    if (!$vencimento) {
+        logMsg("⚠️ Data de vencimento inválida para $nome: $dataVencimento");
+        continue;
     }
-
-    logMessage("📊 Total de aplicações: " . count($aplicacoes));
-
-    // 4. Data de hoje
-    $hoje = date('Y-m-d');
-    logMessage("📅 Verificando vencimentos para: $hoje");
-
-    // 5. Buscar vencimentos de hoje
-    $vencimentosHoje = [];
     
-    foreach ($aplicacoes as $aplicacao) {
-        // Debug - mostrar cada aplicação
-        logMessage("🔍 Verificando: " . ($aplicacao['nome'] ?? 'Sem nome') . " - Vencimento: " . ($aplicacao['dataVencimento'] ?? 'Sem data'));
-        
-        // Verificar se tem data de vencimento
-        if (isset($aplicacao['dataVencimento']) && !empty($aplicacao['dataVencimento'])) {
-            // Normalizar formato da data (DD/MM/YYYY -> YYYY-MM-DD)
-            $dataVencimento = $aplicacao['dataVencimento'];
-            
-            // Se está no formato DD/MM/YYYY, converter
-            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dataVencimento, $matches)) {
-                $dataVencimento = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-                logMessage("📅 Data convertida: {$aplicacao['dataVencimento']} -> $dataVencimento");
-            }
-            
-            // Verificar se vence hoje
-            if ($dataVencimento === $hoje) {
-                $vencimentosHoje[] = $aplicacao;
-                logMessage("⚠️  VENCIMENTO HOJE: " . $aplicacao['nome']);
-            }
-        }
+    // Verificar se vence hoje
+    if ($vencimento === $hoje) {
+        logMsg("🎯 VENCIMENTO HOJE: $nome");
+        $vencimentosHoje[] = $aplicacao;
     }
-
-    // 6. Se não há vencimentos hoje
-    if (empty($vencimentosHoje)) {
-        logMessage("✅ Nenhum vencimento para hoje");
-        logMessage("=== VERIFICAÇÃO CONCLUÍDA ===");
-        exit;
-    }
-
-    // 7. Há vencimentos - preparar dados para email
-    logMessage("📧 Preparando email para " . count($vencimentosHoje) . " vencimento(s)");
-
-    // Calcular totais das aplicações que vencem
-    $dadosEmail = [
-        'totalInvestido' => 0,
-        'valorAtual' => 0,
-        'rendimento' => 0,
-        'rentabilidade' => 0,
-        'aplicacoes' => []
-    ];
-
-    foreach ($vencimentosHoje as $app) {
-        $valorAplicado = floatval($app['valorAplicado'] ?? 0);
-        $valorAtual = floatval($app['valorAtual'] ?? $valorAplicado);
-        $rendimento = $valorAtual - $valorAplicado;
-        $rentabilidade = $valorAplicado > 0 ? ($rendimento / $valorAplicado) * 100 : 0;
-
-        $dadosEmail['totalInvestido'] += $valorAplicado;
-        $dadosEmail['valorAtual'] += $valorAtual;
-        $dadosEmail['rendimento'] += $rendimento;
-        
-        $dadosEmail['aplicacoes'][] = [
-            'nome' => $app['nome'] ?? 'Sem nome',
-            'valorAplicado' => $valorAplicado,
-            'valorAtual' => $valorAtual,
-            'rendimento' => $rendimento,
-            'rentabilidade' => $rentabilidade,
-            'dataVencimento' => $app['dataVencimento'] ?? '',
-            'banco' => $app['banco'] ?? ''
+    
+    // Verificar próximos 7 dias
+    $diasDiferenca = (strtotime($vencimento) - strtotime($hoje)) / (24 * 3600);
+    
+    if ($diasDiferenca > 0 && $diasDiferenca <= 7) {
+        logMsg("📅 Vencimento próximo: $nome em $diasDiferenca dias");
+        $vencimentosProximos[] = [
+            'aplicacao' => $aplicacao,
+            'dias' => $diasDiferenca
         ];
     }
-
-    // Calcular rentabilidade geral
-    if ($dadosEmail['totalInvestido'] > 0) {
-        $dadosEmail['rentabilidade'] = ($dadosEmail['rendimento'] / $dadosEmail['totalInvestido']) * 100;
-    }
-
-    // 8. Chamar API de envio de email
-    $dadosParaAPI = [
-        'dados' => $dadosEmail,
-        'email' => EMAIL_DESTINO,
-        'tipo' => 'vencimento'
-    ];
-
-    // Descobrir URL base automaticamente
-    $protocolo = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $urlAPI = $protocolo . '://' . $host . '/investimento/send-email.php';
-    
-    logMessage("🔗 Chamando API: $urlAPI");
-    
-    // Fazer requisição POST para a API
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $urlAPI);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dadosParaAPI));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json'
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Para evitar problemas SSL
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $erro = curl_error($ch);
-    curl_close($ch);
-
-    // 9. Verificar resultado
-    if ($erro) {
-        logMessage("❌ Erro cURL: $erro");
-    } elseif ($httpCode !== 200) {
-        logMessage("❌ Erro HTTP: $httpCode - $response");
-    } else {
-        $resultado = json_decode($response, true);
-        if ($resultado && $resultado['success']) {
-            logMessage("✅ Email enviado com sucesso!");
-        } else {
-            logMessage("❌ Falha no envio: " . ($resultado['message'] ?? 'Erro desconhecido'));
-        }
-    }
-
-} catch (Exception $e) {
-    logMessage("❌ ERRO CRÍTICO: " . $e->getMessage());
 }
 
-logMessage("=== VERIFICAÇÃO CONCLUÍDA ===");
+// Resultados
+if (count($vencimentosHoje) > 0) {
+    logMsg("🚨 AÇÃO NECESSÁRIA: " . count($vencimentosHoje) . " vencimento(s) hoje!");
+    
+    foreach ($vencimentosHoje as $app) {
+        $nome = $app['nome'] ?? 'Sem nome';
+        $valor = isset($app['valor']) ? 'R$ ' . number_format($app['valor'], 2, ',', '.') : 'Valor não informado';
+        logMsg("   - $nome: $valor");
+    }
+    
+    // Tentar enviar email
+    if (file_exists(__DIR__ . '/send-email.php')) {
+        logMsg("📧 Tentando enviar email de notificação...");
+        
+        try {
+            // Include do arquivo de email
+            include_once __DIR__ . '/send-email.php';
+            
+            // Preparar dados para o email
+            $assunto = "⚠️ Aplicações Vencendo Hoje - " . date('d/m/Y');
+            
+            $mensagem = "Você tem " . count($vencimentosHoje) . " aplicação(ões) vencendo hoje:\n\n";
+            
+            foreach ($vencimentosHoje as $app) {
+                $nome = $app['nome'] ?? 'Sem nome';
+                $valor = isset($app['valor']) ? 'R$ ' . number_format($app['valor'], 2, ',', '.') : 'Valor não informado';
+                $tipo = $app['tipoAplicacao'] ?? 'Não informado';
+                
+                $mensagem .= "• $nome\n";
+                $mensagem .= "  Valor: $valor\n";
+                $mensagem .= "  Tipo: $tipo\n";
+                $mensagem .= "  Vencimento: " . date('d/m/Y') . "\n\n";
+            }
+            
+            $mensagem .= "Acesse o sistema para mais detalhes: https://pdffacil.com/investimento/\n";
+            
+            // Tentar enviar email (a função deve estar definida em send-email.php)
+            if (function_exists('enviarEmail')) {
+                $resultado = enviarEmail($assunto, $mensagem);
+                if ($resultado) {
+                    logMsg("✅ Email enviado com sucesso!");
+                } else {
+                    logMsg("❌ Falha ao enviar email");
+                }
+            } else {
+                logMsg("⚠️ Função enviarEmail não encontrada em send-email.php");
+            }
+            
+        } catch (Exception $e) {
+            logMsg("❌ Erro ao enviar email: " . $e->getMessage());
+        }
+    } else {
+        logMsg("⚠️ Arquivo send-email.php não encontrado - email não enviado");
+    }
+    
+} else {
+    logMsg("✅ Nenhum vencimento para hoje");
+}
+
+// Informar sobre próximos vencimentos
+if (count($vencimentosProximos) > 0) {
+    logMsg("📅 Próximos vencimentos (7 dias):");
+    foreach ($vencimentosProximos as $item) {
+        $nome = $item['aplicacao']['nome'] ?? 'Sem nome';
+        $dias = round($item['dias']);
+        logMsg("   - $nome em $dias dia(s)");
+    }
+}
+
+logMsg("=== VERIFICAÇÃO CONCLUÍDA ===");
+
+// Se chamado via URL, mostrar resultado em JSON também
+if (isset($_SERVER['HTTP_HOST'])) {
+    echo "\n\n<!-- JSON para JavaScript -->\n";
+    echo "<script>console.log(" . json_encode([
+        'vencimentosHoje' => count($vencimentosHoje),
+        'vencimentosProximos' => count($vencimentosProximos),
+        'arquivoEncontrado' => $arquivoEncontrado,
+        'totalAplicacoes' => $totalAplicacoes
+    ]) . ");</script>";
+}
 ?>
