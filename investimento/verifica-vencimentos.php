@@ -3,49 +3,60 @@
 // Este arquivo será executado diariamente via cron
 
 // Configurações
-define('LOG_FILE', __DIR__ . '/logs/vencimentos.log');
 define('EMAIL_DESTINO', 'felipejunior@gmail.com'); // ⬅️ ALTERE AQUI
 
-// Função para logging
+// Função para logging simplificada (sem criar diretório)
 function logMessage($message) {
     $timestamp = date('Y-m-d H:i:s');
-    $logDir = dirname(LOG_FILE);
-    if (!is_dir($logDir)) {
-        mkdir($logDir, 0755, true);
-    }
-    file_put_contents(LOG_FILE, "[$timestamp] $message\n", FILE_APPEND);
-    echo "[$timestamp] $message\n";
+    echo "[$timestamp] $message<br>\n";
+    
+    // Tentar log em arquivo simples (se não conseguir, continua)
+    @file_put_contents(__DIR__ . '/vencimentos.log', "[$timestamp] $message\n", FILE_APPEND);
 }
 
 logMessage("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS ===");
 
 try {
-    // 1. Verificar se arquivo de aplicações existe
+    // 1. Debug - mostrar diretório atual e arquivos
+    logMessage("📁 Diretório atual: " . __DIR__);
+    $arquivos = scandir(__DIR__);
+    logMessage("📂 Arquivos no diretório: " . implode(', ', $arquivos));
+
+    // 2. Verificar se arquivo de aplicações existe
     $arquivoAplicacoes = __DIR__ . '/aplicacoes.json';
+    logMessage("🔍 Procurando arquivo: $arquivoAplicacoes");
+    
     if (!file_exists($arquivoAplicacoes)) {
         logMessage("❌ Arquivo aplicacoes.json não encontrado");
+        logMessage("💡 Verifique se o arquivo foi criado corretamente");
         exit;
     }
 
-    // 2. Ler aplicações
+    // 3. Ler aplicações
     $conteudo = file_get_contents($arquivoAplicacoes);
+    logMessage("📄 Conteúdo do arquivo (primeiros 100 chars): " . substr($conteudo, 0, 100));
+    
     $aplicacoes = json_decode($conteudo, true);
     
     if (!$aplicacoes) {
         logMessage("❌ Erro ao decodificar aplicacoes.json");
+        logMessage("🔍 JSON erro: " . json_last_error_msg());
         exit;
     }
 
     logMessage("📊 Total de aplicações: " . count($aplicacoes));
 
-    // 3. Data de hoje
+    // 4. Data de hoje
     $hoje = date('Y-m-d');
     logMessage("📅 Verificando vencimentos para: $hoje");
 
-    // 4. Buscar vencimentos de hoje
+    // 5. Buscar vencimentos de hoje
     $vencimentosHoje = [];
     
     foreach ($aplicacoes as $aplicacao) {
+        // Debug - mostrar cada aplicação
+        logMessage("🔍 Verificando: " . ($aplicacao['nome'] ?? 'Sem nome') . " - Vencimento: " . ($aplicacao['dataVencimento'] ?? 'Sem data'));
+        
         // Verificar se tem data de vencimento
         if (isset($aplicacao['dataVencimento']) && !empty($aplicacao['dataVencimento'])) {
             // Normalizar formato da data (DD/MM/YYYY -> YYYY-MM-DD)
@@ -54,6 +65,7 @@ try {
             // Se está no formato DD/MM/YYYY, converter
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dataVencimento, $matches)) {
                 $dataVencimento = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+                logMessage("📅 Data convertida: {$aplicacao['dataVencimento']} -> $dataVencimento");
             }
             
             // Verificar se vence hoje
@@ -64,14 +76,14 @@ try {
         }
     }
 
-    // 5. Se não há vencimentos hoje
+    // 6. Se não há vencimentos hoje
     if (empty($vencimentosHoje)) {
         logMessage("✅ Nenhum vencimento para hoje");
         logMessage("=== VERIFICAÇÃO CONCLUÍDA ===");
         exit;
     }
 
-    // 6. Há vencimentos - preparar dados para email
+    // 7. Há vencimentos - preparar dados para email
     logMessage("📧 Preparando email para " . count($vencimentosHoje) . " vencimento(s)");
 
     // Calcular totais das aplicações que vencem
@@ -109,14 +121,19 @@ try {
         $dadosEmail['rentabilidade'] = ($dadosEmail['rendimento'] / $dadosEmail['totalInvestido']) * 100;
     }
 
-    // 7. Chamar API de envio de email
+    // 8. Chamar API de envio de email
     $dadosParaAPI = [
         'dados' => $dadosEmail,
         'email' => EMAIL_DESTINO,
-        'tipo' => 'vencimento' // Identificar que é email de vencimento
+        'tipo' => 'vencimento'
     ];
 
-    $urlAPI = 'https://' . $_SERVER['HTTP_HOST'] . '/investimento/send-email.php';
+    // Descobrir URL base automaticamente
+    $protocolo = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $urlAPI = $protocolo . '://' . $host . '/investimento/send-email.php';
+    
+    logMessage("🔗 Chamando API: $urlAPI");
     
     // Fazer requisição POST para a API
     $ch = curl_init();
@@ -128,13 +145,14 @@ try {
     ]);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Para evitar problemas SSL
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $erro = curl_error($ch);
     curl_close($ch);
 
-    // 8. Verificar resultado
+    // 9. Verificar resultado
     if ($erro) {
         logMessage("❌ Erro cURL: $erro");
     } elseif ($httpCode !== 200) {
