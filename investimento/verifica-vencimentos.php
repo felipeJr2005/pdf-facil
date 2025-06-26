@@ -50,12 +50,22 @@ try {
     $conteudo = file_get_contents($arquivoAplicacoes);
     logMessage("📄 Conteúdo do arquivo (primeiros 100 chars): " . substr($conteudo, 0, 100));
     
-    $aplicacoes = json_decode($conteudo, true);
+    $dados = json_decode($conteudo, true);
     
-    if (!$aplicacoes) {
+    if (!$dados) {
         logMessage("❌ Erro ao decodificar aplicacoes.json");
         logMessage("🔍 JSON erro: " . json_last_error_msg());
         exit;
+    }
+    
+    // Verificar se existe a propriedade 'aplicacoes'
+    if (isset($dados['aplicacoes'])) {
+        $aplicacoes = $dados['aplicacoes'];
+        logMessage("📦 Estrutura detectada: Arquivo com metadata (versão {$dados['versao']})");
+    } else {
+        // Fallback: se não tem propriedade aplicacoes, assume que o array é a raiz
+        $aplicacoes = $dados;
+        logMessage("📦 Estrutura detectada: Array simples de aplicações");
     }
 
     logMessage("📊 Total de aplicações: " . count($aplicacoes));
