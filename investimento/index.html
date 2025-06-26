@@ -1635,7 +1635,7 @@
                 
                 mostrarNotificacao('⏳ Salvando no servidor...', 'info');
                 
-                const response = await fetch('./data/save.php', {
+                const response = await fetch('save.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

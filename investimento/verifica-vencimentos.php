@@ -12,12 +12,11 @@ function logMsg($message) {
 
 logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS ===");
 
-// Buscar arquivo aplicacoes.json em múltiplas localizações
+// Buscar arquivo aplicacoes.json - PRIORIDADE: PASTA PRINCIPAL
 $locaisPossiveis = [
-    __DIR__ . '/aplicacoes.json',                    // Pasta atual
-    __DIR__ . '/data/aplicacoes.json',               // Pasta data
-    __DIR__ . '/../aplicacoes.json',                 // Pasta pai
-    '/tmp/aplicacoes.json'                           // Pasta temporária
+    __DIR__ . '/aplicacoes.json',                    // Pasta principal (NOVA PRIORIDADE)
+    __DIR__ . '/data/aplicacoes.json',               // Pasta data (backup)
+    '/tmp/aplicacoes.json'                           // Temporário (último recurso)
 ];
 
 $arquivoEncontrado = null;
