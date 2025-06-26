@@ -4,7 +4,7 @@
 
 // Configurações
 define('LOG_FILE', __DIR__ . '/logs/vencimentos.log');
-define('EMAIL_DESTINO', 'seu-email@gmail.com'); // ⬅️ ALTERE AQUI
+define('EMAIL_DESTINO', 'felipejunior@gmail.com'); // ⬅️ ALTERE AQUI
 
 // Função para logging
 function logMessage($message) {
