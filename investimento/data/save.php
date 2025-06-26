@@ -19,8 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Caminho do arquivo JSON - PASTA PRINCIPAL
-$arquivo = dirname(__DIR__) . '/aplicacoes.json';
+// CAMINHO CORRIGIDO - Arquivo JSON na mesma pasta (data/)
+$arquivo = __DIR__ . '/aplicacoes.json';
 
 try {
     // Ler dados enviados
