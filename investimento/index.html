@@ -1520,8 +1520,12 @@
             atualizarComparacao();
         }
 
-       
-     async function carregarDoServidor() {
+        // ========================================
+        // ☁️ SISTEMA DE PERSISTÊNCIA - VERSÃO LIMPA
+        // ========================================
+        
+        // Carregar dados do servidor
+        async function carregarDoServidor() {
             try {
                 mostrarNotificacao('⏳ Carregando dados...', 'info');
                 
@@ -1560,14 +1564,14 @@
                         return aplicacaoLimpa;
                     });
                     
-                    // Restaurar taxas
+                    // Restaurar taxas de referência
                     if (result.data.taxasReferencia) {
                         document.getElementById('taxaCDI').value = result.data.taxasReferencia.cdi || '14.90';
                         document.getElementById('taxaSELIC').value = result.data.taxasReferencia.selic || '15.00';
                         document.getElementById('taxaPoupanca').value = result.data.taxasReferencia.poupanca || '0.6721';
                     }
                     
-                    // Atualizar contador
+                    // Atualizar contador de IDs
                     contadorId = aplicacoes.length > 0 ? Math.max(...aplicacoes.map(app => app.id)) + 1 : 1;
                     
                     // Atualizar interface
@@ -1644,11 +1648,6 @@
                     mostrarNotificacao(`✅ Dados salvos!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}`, 'success');
                 } else {
                     mostrarNotificacao(`❌ Erro: ${result.error}`, 'error');
-                    
-                    // Log debug para análise
-                    if (result.debug) {
-                        console.error('Debug info:', result.debug);
-                    }
                 }
                 
             } catch (error) {

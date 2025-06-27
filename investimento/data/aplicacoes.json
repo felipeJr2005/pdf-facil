@@ -1,7 +1,7 @@
 {
   "versao": "2.0",
-  "dataExportacao": "2025-06-24T23:21:42.318Z",
-  "totalAplicacoes": 9,
+  "dataExportacao": "2025-06-26T17:03:02.956Z",
+  "totalAplicacoes": 10,
   "aplicacoes": [
     {
       "id": 1,
@@ -10,10 +10,10 @@
       "valorAplicado": 233000,
       "dataAplicacao": "2025-04-14",
       "dataResgate": "2030-01-01",
-      "porcentagemCDI": 94,
-      "taxaPreFixada": null,
       "taxaAdmin": null,
-      "banco": "RICO"
+      "banco": "RICO",
+      "porcentagemCDI": 94,
+      "taxaPreFixada": null
     },
     {
       "id": 2,
@@ -22,10 +22,10 @@
       "valorAplicado": 232000,
       "dataAplicacao": "2025-02-18",
       "dataResgate": "2025-08-21",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.3,
       "taxaAdmin": null,
-      "banco": "C6"
+      "banco": "C6",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.3
     },
     {
       "id": 3,
@@ -34,10 +34,10 @@
       "valorAplicado": 242500,
       "dataAplicacao": "2025-04-07",
       "dataResgate": "2025-10-06",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.35,
       "taxaAdmin": null,
-      "banco": "PAGBANK"
+      "banco": "PAGBANK",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.35
     },
     {
       "id": 4,
@@ -46,10 +46,10 @@
       "valorAplicado": 3140.49,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-08-18",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.8,
       "taxaAdmin": null,
-      "banco": "INTER_CSF"
+      "banco": "INTER_CSF",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.8
     },
     {
       "id": 5,
@@ -58,10 +58,10 @@
       "valorAplicado": 6220.56,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-09-09",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.8,
       "taxaAdmin": null,
-      "banco": "INTER_STELLANTIS"
+      "banco": "INTER_STELLANTIS",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.8
     },
     {
       "id": 6,
@@ -70,10 +70,10 @@
       "valorAplicado": 11855.28,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-09-12",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.8,
       "taxaAdmin": null,
-      "banco": "INTER_QISTA_01"
+      "banco": "INTER_QISTA_01",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.8
     },
     {
       "id": 7,
@@ -82,10 +82,10 @@
       "valorAplicado": 1889.45,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-09-12",
-      "porcentagemCDI": null,
-      "taxaPreFixada": 15.8,
       "taxaAdmin": null,
-      "banco": "INTER_QISTA_02"
+      "banco": "INTER_QISTA_02",
+      "porcentagemCDI": null,
+      "taxaPreFixada": 15.8
     },
     {
       "id": 8,
@@ -94,10 +94,10 @@
       "valorAplicado": 1241.74,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-09-29",
-      "porcentagemCDI": 115,
-      "taxaPreFixada": null,
       "taxaAdmin": null,
-      "banco": "INTER_DIGIMAIS"
+      "banco": "INTER_DIGIMAIS",
+      "porcentagemCDI": 115,
+      "taxaPreFixada": null
     },
     {
       "id": 9,
@@ -106,10 +106,22 @@
       "valorAplicado": 704.22,
       "dataAplicacao": "2025-06-11",
       "dataResgate": "2025-09-29",
-      "porcentagemCDI": 115,
-      "taxaPreFixada": null,
       "taxaAdmin": null,
-      "banco": "INTER_NEON"
+      "banco": "INTER_NEON",
+      "porcentagemCDI": 115,
+      "taxaPreFixada": null
+    },
+    {
+      "id": 10,
+      "tipo": "CDB",
+      "tipoTaxa": "CDI",
+      "valorAplicado": 5000,
+      "dataAplicacao": "2025-06-01",
+      "dataResgate": "2025-08-01",
+      "taxaAdmin": null,
+      "banco": "teste",
+      "porcentagemCDI": 100,
+      "taxaPreFixada": null
     }
   ],
   "taxasReferencia": {
