@@ -1521,17 +1521,15 @@
         }
 
        
-   // Carregar dados do servidor
-        async function carregarDoServidor() {
+     async function carregarDoServidor() {
             try {
-                mostrarNotificacao('⏳ Carregando dados do servidor...', 'info');
+                mostrarNotificacao('⏳ Carregando dados...', 'info');
                 
                 const response = await fetch('./data/load.php');
                 const result = await response.json();
                 
                 if (result.success && result.data) {
-                    // Confirmar antes de substituir dados atuais
-                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n• Arquivo: ${result.arquivo || 'aplicacoes.json'}\n• Local: ${result.local || 'raiz absoluta do site'}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
+                    const confirmar = confirm(`☁️ CARREGAR DADOS\n\n📊 ${result.data.totalAplicacoes} aplicações encontradas\n🕒 ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n\n⚠️ Dados atuais serão substituídos!\n\nContinuar?`);
                     
                     if (!confirmar) {
                         mostrarNotificacao('❌ Operação cancelada', 'warning');
@@ -1562,14 +1560,14 @@
                         return aplicacaoLimpa;
                     });
                     
-                    // Restaurar taxas de referência
+                    // Restaurar taxas
                     if (result.data.taxasReferencia) {
                         document.getElementById('taxaCDI').value = result.data.taxasReferencia.cdi || '14.90';
                         document.getElementById('taxaSELIC').value = result.data.taxasReferencia.selic || '15.00';
                         document.getElementById('taxaPoupanca').value = result.data.taxasReferencia.poupanca || '0.6721';
                     }
                     
-                    // Ajustar contador de IDs
+                    // Atualizar contador
                     contadorId = aplicacoes.length > 0 ? Math.max(...aplicacoes.map(app => app.id)) + 1 : 1;
                     
                     // Atualizar interface
@@ -1579,15 +1577,15 @@
                     atualizarContadorAplicacoes();
                     verificarVencimentosVisuais();
                     
-                    mostrarNotificacao(`✅ ${aplicacoes.length} aplicações carregadas do servidor!\n📁 De: ${result.arquivo}`, 'success');
+                    mostrarNotificacao(`✅ ${aplicacoes.length} aplicações carregadas!`, 'success');
                     
                 } else {
-                    mostrarNotificacao(result.error || 'Erro ao carregar dados do servidor', 'error');
+                    mostrarNotificacao(result.error || 'Erro ao carregar dados', 'error');
                 }
                 
             } catch (error) {
-                console.error('❌ Erro ao carregar do servidor:', error);
-                mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
+                console.error('Erro ao carregar:', error);
+                mostrarNotificacao('❌ Erro de conexão: ' + error.message, 'error');
             }
         }
         
@@ -1630,7 +1628,7 @@
                     }
                 };
                 
-                mostrarNotificacao('⏳ Salvando no servidor...', 'info');
+                mostrarNotificacao('⏳ Salvando...', 'info');
                 
                 const response = await fetch('./data/save.php', {
                     method: 'POST',
@@ -1643,23 +1641,21 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    mostrarNotificacao(`✅ Dados salvos no servidor!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}\n📁 Como: ${result.data.arquivo}\n📍 Em: ${result.data.local}`, 'success');
+                    mostrarNotificacao(`✅ Dados salvos!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}`, 'success');
                 } else {
-                    mostrarNotificacao(`❌ Erro ao salvar: ${result.error}`, 'error');
+                    mostrarNotificacao(`❌ Erro: ${result.error}`, 'error');
                     
-                    // Mostrar informações de debug se disponível
+                    // Log debug para análise
                     if (result.debug) {
-                        console.error('🔧 Debug info:', result.debug);
-                        console.log('📍 Tentando salvar em:', result.debug.arquivo_destino);
+                        console.error('Debug info:', result.debug);
                     }
                 }
                 
             } catch (error) {
-                console.error('❌ Erro ao salvar no servidor:', error);
-                mostrarNotificacao('❌ Erro de conexão com o servidor: ' + error.message, 'error');
+                console.error('Erro ao salvar:', error);
+                mostrarNotificacao('❌ Erro de conexão: ' + error.message, 'error');
             }
         }
-
         
         // Função para mostrar notificações toast
         function mostrarNotificacao(mensagem, tipo = 'info') {
