@@ -1,11 +1,11 @@
 <?php
-// API para carregar dados do servidor
+// API para carregar dados do servidor - VERSÃO RAIZ (como funcionava antes)
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
 
-// Caminho do arquivo JSON
-$arquivo = __DIR__ . '/aplicacoes.json';
+// CAMINHO CORRIGIDO - CARREGAR DA RAIZ como funcionava antes
+$arquivo = dirname(__DIR__) . '/aplicacoes.json';
 
 try {
     // Verificar se arquivo existe
@@ -13,7 +13,8 @@ try {
         http_response_code(404);
         echo json_encode([
             'success' => false,
-            'error' => 'Arquivo de dados não encontrado no servidor'
+            'error' => 'Arquivo de dados não encontrado no servidor',
+            'info' => 'Procurando por: aplicacoes.json na raiz'
         ]);
         exit;
     }
@@ -47,7 +48,9 @@ try {
         'success' => true,
         'data' => $dados,
         'message' => 'Dados carregados do servidor com sucesso!',
-        'timestamp' => date('Y-m-d H:i:s')
+        'timestamp' => date('Y-m-d H:i:s'),
+        'arquivo' => 'aplicacoes.json',
+        'local' => 'raiz do investimento'
     ]);
     
 } catch (Exception $e) {

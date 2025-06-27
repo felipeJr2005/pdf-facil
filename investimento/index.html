@@ -1520,11 +1520,8 @@
             atualizarComparacao();
         }
 
-        // ========================================
-        // ☁️ SISTEMA DE PERSISTÊNCIA DO SERVIDOR
-        // ========================================
-        
-        // Carregar dados do servidor
+       
+ // Carregar dados do servidor
         async function carregarDoServidor() {
             try {
                 mostrarNotificacao('⏳ Carregando dados do servidor...', 'info');
@@ -1534,7 +1531,7 @@
                 
                 if (result.success && result.data) {
                     // Confirmar antes de substituir dados atuais
-                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
+                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n• Arquivo: ${result.arquivo || 'aplicacoes.json'}\n• Local: ${result.local || 'raiz'}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
                     
                     if (!confirmar) {
                         mostrarNotificacao('❌ Operação cancelada', 'warning');
@@ -1582,7 +1579,7 @@
                     atualizarContadorAplicacoes();
                     verificarVencimentosVisuais();
                     
-                    mostrarNotificacao(`✅ ${aplicacoes.length} aplicações carregadas do servidor!`, 'success');
+                    mostrarNotificacao(`✅ ${aplicacoes.length} aplicações carregadas do servidor!\n📁 De: ${result.arquivo}`, 'success');
                     
                 } else {
                     mostrarNotificacao(result.error || 'Erro ao carregar dados do servidor', 'error');
@@ -1594,15 +1591,7 @@
             }
         }
         
- 
-
-
-
-
-
-
-
-// Salvar dados no servidor - CAMINHO CORRIGIDO
+        // Salvar dados no servidor
         async function salvarNoServidor() {
             try {
                 const dadosBackup = {
@@ -1643,7 +1632,6 @@
                 
                 mostrarNotificacao('⏳ Salvando no servidor...', 'info');
                 
-                // CAMINHO CORRIGIDO: ./data/save.php
                 const response = await fetch('./data/save.php', {
                     method: 'POST',
                     headers: {
@@ -1655,18 +1643,14 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    mostrarNotificacao(`✅ Dados salvos no servidor!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}`, 'success');
+                    mostrarNotificacao(`✅ Dados salvos no servidor!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}\n📁 Como: ${result.data.arquivo}\n📍 Em: ${result.data.local}`, 'success');
                 } else {
                     mostrarNotificacao(`❌ Erro ao salvar: ${result.error}`, 'error');
                     
                     // Mostrar informações de debug se disponível
                     if (result.debug) {
                         console.error('🔧 Debug info:', result.debug);
-                        
-                        // Se for problema de permissão, mostrar dica
-                        if (!result.debug.pasta_gravavel) {
-                            mostrarNotificacao('💡 DICA: Execute no servidor:\nchmod 755 /var/www/html/investimento/data/', 'warning');
-                        }
+                        console.log('📍 Tentando salvar em:', result.debug.arquivo_destino);
                     }
                 }
                 
@@ -1675,16 +1659,6 @@
                 mostrarNotificacao('❌ Erro de conexão com o servidor: ' + error.message, 'error');
             }
         }
-
-
-
-
-
-
-
-
-
-
 
         
         // Função para mostrar notificações toast

@@ -1,5 +1,5 @@
 <?php
-// API para salvar dados no servidor - VERSÃO LIMPA
+// API para salvar dados no servidor - VERSÃO RAIZ (como funcionava antes)
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -18,8 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// CAMINHO CORRIGIDO - Arquivo JSON na mesma pasta (data/)
-$arquivo = __DIR__ . '/aplicacoes.json';
+// CAMINHO CORRIGIDO - SALVAR NA RAIZ como funcionava antes
+// Pasta pai de data/ = raiz do investimento  
+$arquivo = dirname(__DIR__) . '/aplicacoes.json';
 
 try {
     // Ler dados enviados
@@ -64,9 +65,10 @@ try {
         throw new Exception('Erro ao codificar dados para JSON: ' . json_last_error_msg());
     }
     
-    // Verificar se pasta é gravável
-    if (!is_writable(dirname($arquivo))) {
-        throw new Exception('Pasta não tem permissão de escrita. Execute: chmod 755 ' . dirname($arquivo));
+    // Verificar se pasta pai é gravável
+    $pastaDestino = dirname($arquivo);
+    if (!is_writable($pastaDestino)) {
+        throw new Exception("Pasta não tem permissão de escrita: $pastaDestino");
     }
     
     // Tentar salvar arquivo
@@ -84,7 +86,9 @@ try {
             'totalAplicacoes' => $dados['totalAplicacoes'],
             'dataUltimoSalvamento' => $dados['ultimoSalvamento']['data'],
             'tamanhoArquivo' => filesize($arquivo) . ' bytes',
-            'bytesEscritos' => $resultado
+            'bytesEscritos' => $resultado,
+            'arquivo' => 'aplicacoes.json',
+            'local' => 'raiz do investimento'
         ]
     ]);
     
@@ -94,13 +98,13 @@ try {
         'success' => false,
         'error' => $e->getMessage(),
         'debug' => [
-            'arquivo' => $arquivo,
+            'arquivo_destino' => $arquivo,
+            'pasta_destino' => dirname($arquivo),
             'pasta_gravavel' => is_writable(dirname($arquivo)),
             'arquivo_existe' => file_exists($arquivo),
             'arquivo_gravavel' => file_exists($arquivo) ? is_writable($arquivo) : false,
             'timestamp' => date('Y-m-d H:i:s'),
-            'permissoes_pasta' => is_dir(dirname($arquivo)) ? substr(sprintf('%o', fileperms(dirname($arquivo))), -4) : 'N/A',
-            'permissoes_arquivo' => file_exists($arquivo) ? substr(sprintf('%o', fileperms($arquivo)), -4) : 'N/A'
+            'explicacao' => 'Tentando salvar na RAIZ como funcionava antes'
         ]
     ]);
 }
