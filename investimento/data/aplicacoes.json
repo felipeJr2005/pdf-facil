@@ -1,7 +1,7 @@
 {
   "versao": "2.0",
-  "dataExportacao": "2025-06-26T17:03:02.956Z",
-  "totalAplicacoes": 10,
+  "dataExportacao": "2025-06-27T14:01:52.037Z",
+  "totalAplicacoes": 11,
   "aplicacoes": [
     {
       "id": 1,
@@ -112,15 +112,27 @@
       "taxaPreFixada": null
     },
     {
-      "id": 10,
+      "id": 11,
       "tipo": "CDB",
       "tipoTaxa": "CDI",
-      "valorAplicado": 5000,
-      "dataAplicacao": "2025-06-01",
-      "dataResgate": "2025-08-01",
+      "valorAplicado": 60000,
+      "dataAplicacao": "2025-05-24",
+      "dataResgate": "2025-07-25",
       "taxaAdmin": null,
-      "banco": "teste",
-      "porcentagemCDI": 100,
+      "banco": "Rico_Bruna",
+      "porcentagemCDI": 150,
+      "taxaPreFixada": null
+    },
+    {
+      "id": 12,
+      "tipo": "CDB",
+      "tipoTaxa": "CDI",
+      "valorAplicado": 3000,
+      "dataAplicacao": "2025-05-24",
+      "dataResgate": "2025-07-27",
+      "taxaAdmin": null,
+      "banco": "Rico_Bruna02",
+      "porcentagemCDI": 230,
       "taxaPreFixada": null
     }
   ],
