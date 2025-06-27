@@ -18,9 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// CAMINHO CORRIGIDO - SALVAR NA RAIZ como funcionava antes
-// Pasta pai de data/ = raiz do investimento  
-$arquivo = dirname(__DIR__) . '/aplicacoes.json';
+// CAMINHO CORRIGIDO - SALVAR NA RAIZ ABSOLUTA do site (junto com bem-vindo.html, etc)
+// Subir 2 níveis: data/ -> investimento/ -> raiz do site  
+$arquivo = dirname(dirname(__DIR__)) . '/aplicacoes.json';
 
 try {
     // Ler dados enviados
@@ -88,7 +88,7 @@ try {
             'tamanhoArquivo' => filesize($arquivo) . ' bytes',
             'bytesEscritos' => $resultado,
             'arquivo' => 'aplicacoes.json',
-            'local' => 'raiz do investimento'
+            'local' => 'raiz absoluta do site (junto com bem-vindo.html, etc)'
         ]
     ]);
     

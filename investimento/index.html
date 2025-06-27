@@ -1521,7 +1521,7 @@
         }
 
        
- // Carregar dados do servidor
+   // Carregar dados do servidor
         async function carregarDoServidor() {
             try {
                 mostrarNotificacao('⏳ Carregando dados do servidor...', 'info');
@@ -1531,7 +1531,7 @@
                 
                 if (result.success && result.data) {
                     // Confirmar antes de substituir dados atuais
-                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n• Arquivo: ${result.arquivo || 'aplicacoes.json'}\n• Local: ${result.local || 'raiz'}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
+                    const confirmar = confirm(`☁️ CARREGAR DO SERVIDOR\n\n📊 Dados encontrados:\n• Versão: ${result.data.versao}\n• Data: ${new Date(result.data.dataExportacao).toLocaleString('pt-BR')}\n• Aplicações: ${result.data.totalAplicacoes}\n• Arquivo: ${result.arquivo || 'aplicacoes.json'}\n• Local: ${result.local || 'raiz absoluta do site'}\n\n⚠️ ATENÇÃO: Dados atuais serão substituídos!\n\nDeseja continuar?`);
                     
                     if (!confirmar) {
                         mostrarNotificacao('❌ Operação cancelada', 'warning');
