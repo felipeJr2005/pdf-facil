@@ -1594,7 +1594,15 @@
             }
         }
         
-        // Salvar dados no servidor
+ 
+
+
+
+
+
+
+
+// Salvar dados no servidor - CAMINHO CORRIGIDO
         async function salvarNoServidor() {
             try {
                 const dadosBackup = {
@@ -1635,7 +1643,7 @@
                 
                 mostrarNotificacao('⏳ Salvando no servidor...', 'info');
                 
-                
+                // CAMINHO CORRIGIDO: ./data/save.php
                 const response = await fetch('./data/save.php', {
                     method: 'POST',
                     headers: {
@@ -1650,13 +1658,34 @@
                     mostrarNotificacao(`✅ Dados salvos no servidor!\n📊 ${result.data.totalAplicacoes} aplicações\n🕒 ${result.data.dataUltimoSalvamento}`, 'success');
                 } else {
                     mostrarNotificacao(`❌ Erro ao salvar: ${result.error}`, 'error');
+                    
+                    // Mostrar informações de debug se disponível
+                    if (result.debug) {
+                        console.error('🔧 Debug info:', result.debug);
+                        
+                        // Se for problema de permissão, mostrar dica
+                        if (!result.debug.pasta_gravavel) {
+                            mostrarNotificacao('💡 DICA: Execute no servidor:\nchmod 755 /var/www/html/investimento/data/', 'warning');
+                        }
+                    }
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao salvar no servidor:', error);
-                mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
+                mostrarNotificacao('❌ Erro de conexão com o servidor: ' + error.message, 'error');
             }
         }
+
+
+
+
+
+
+
+
+
+
+
         
         // Função para mostrar notificações toast
         function mostrarNotificacao(mensagem, tipo = 'info') {
