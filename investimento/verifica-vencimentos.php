@@ -1,5 +1,5 @@
 <?php
-// SISTEMA DE VERIFICAÇÃO DE VENCIMENTOS - VERSÃO CORRIGIDA
+// SISTEMA DE VERIFICAÇÃO DE VENCIMENTOS - VERSÃO AJUSTADA PARA 3 DIAS
 // Configuração básica
 date_default_timezone_set('America/Sao_Paulo');
 ini_set('display_errors', 1);
@@ -14,7 +14,7 @@ function logMsg($message) {
     echo $timestamp . ' ' . $message . PHP_EOL;
 }
 
-logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS CORRIGIDA ===");
+logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS (3 DIAS + DIA DO VENCIMENTO) ===");
 
 // Buscar arquivo aplicacoes.json com prioridade correta
 $locaisPossiveis = [
@@ -83,6 +83,7 @@ if ($totalAplicacoes === 0) {
 // Data atual para comparação
 $hoje = date('Y-m-d');
 logMsg("📅 Verificando vencimentos para: $hoje");
+logMsg("⚙️ Configuração de alertas: 3 dias antes + dia do vencimento");
 
 // FUNÇÃO PARA CALCULAR RENTABILIDADE (SIMPLIFICADA)
 function calcularValorAtual($aplicacao, $taxasReferencia) {
@@ -143,7 +144,7 @@ function formatarNomeAplicacao($aplicacao) {
 
 // Arrays para armazenar resultados
 $vencimentosHoje = [];
-$vencimentosProximos = [];
+$vencimentosProximos = []; // 3 dias antes
 $aplicacoesVencidas = [];
 
 // Verificar cada aplicação
@@ -187,9 +188,9 @@ foreach ($aplicacoes as $aplicacao) {
             'valor_atual' => $valorAtual
         ];
     }
-    // Se vence nos próximos 7 dias
-    else if ($diasDiferenca <= 7) {
-        logMsg("📅 Vencimento próximo: $nome em $diasDiferenca dias");
+    // Se vence nos próximos 3 dias (mas não hoje)
+    else if ($diasDiferenca <= 3 && $diasDiferenca > 0) {
+        logMsg("📅 Vencimento em 3 dias: $nome em $diasDiferenca dias");
         
         $valorAtual = calcularValorAtual($aplicacao, $taxasReferencia);
         $vencimentosProximos[] = [
@@ -248,8 +249,18 @@ $totalAlertas = count($aplicacoesVencidas) + count($vencimentosHoje) + count($ve
 if ($totalAlertas > 0) {
     logMsg("🚨 ALERTAS ENCONTRADOS: $totalAlertas");
     
+    // Determinar tipo de alerta para o assunto
+    $tipoAlerta = "";
+    if (count($aplicacoesVencidas) > 0) {
+        $tipoAlerta = "DINHEIRO PARADO";
+    } else if (count($vencimentosHoje) > 0) {
+        $tipoAlerta = "VENCE HOJE";
+    } else {
+        $tipoAlerta = "VENCE EM 3 DIAS";
+    }
+    
     // Construir conteúdo do email
-    $assunto = "🚨 Alerta de Vencimentos - Investimentos (" . date('d/m/Y') . ")";
+    $assunto = "🚨 $tipoAlerta - Investimentos (" . date('d/m/Y') . ")";
     
     $conteudoHtml = "
     <html>
@@ -263,12 +274,14 @@ if ($totalAlertas > 0) {
             .proxima { background: #d5f4e6; border-left: 5px solid #27ae60; }
             .valor { font-weight: bold; color: #2c3e50; }
             .dias { font-weight: bold; color: #8e44ad; }
+            .data { font-size: 0.9em; color: #666; }
         </style>
     </head>
     <body>
         <div class='header'>
             <h1>🚨 Alerta de Vencimentos de Investimentos</h1>
             <p><strong>Data:</strong> " . date('d/m/Y H:i') . "</p>
+            <p><strong>Configuração:</strong> Alertas em 3 dias + dia do vencimento</p>
         </div>
     ";
     
@@ -296,7 +309,8 @@ if ($totalAlertas > 0) {
     // Vencimentos hoje
     if (count($vencimentosHoje) > 0) {
         $conteudoHtml .= "<div class='secao hoje'>";
-        $conteudoHtml .= "<h2>⏰ VENCIMENTOS HOJE</h2>";
+        $conteudoHtml .= "<h2>⏰ VENCIMENTOS HOJE - PARA DE RENDER!</h2>";
+        $conteudoHtml .= "<p><strong>HOJE:</strong> Estas aplicações param de render e o dinheiro fica disponível.</p>";
         
         $totalHoje = 0;
         foreach ($vencimentosHoje as $item) {
@@ -304,25 +318,32 @@ if ($totalAlertas > 0) {
             $totalHoje += $item['valor_atual'];
             
             $conteudoHtml .= "<p><strong>{$item['nome']}</strong><br>";
-            $conteudoHtml .= "Valor atual: <span class='valor'>$valorFormatado</span></p>";
+            $conteudoHtml .= "Valor disponível hoje: <span class='valor'>$valorFormatado</span><br>";
+            $conteudoHtml .= "<span class='data'>Dinheiro já na conta para nova aplicação</span></p>";
         }
         
         $totalHojeFormatado = 'R$ ' . number_format($totalHoje, 2, ',', '.');
-        $conteudoHtml .= "<p><strong>💰 TOTAL HOJE: <span class='valor'>$totalHojeFormatado</span></strong></p>";
+        $conteudoHtml .= "<p><strong>💰 TOTAL DISPONÍVEL: <span class='valor'>$totalHojeFormatado</span></strong></p>";
         $conteudoHtml .= "</div>";
     }
     
-    // Próximos vencimentos
+    // Próximos vencimentos (3 dias)
     if (count($vencimentosProximos) > 0) {
         $conteudoHtml .= "<div class='secao proxima'>";
-        $conteudoHtml .= "<h2>📅 PRÓXIMOS VENCIMENTOS (7 dias)</h2>";
+        $conteudoHtml .= "<h2>📅 VENCIMENTOS EM 3 DIAS - PREPARE-SE!</h2>";
+        $conteudoHtml .= "<p><strong>PLANEJAMENTO:</strong> Você tem 3 dias para decidir o que fazer com estes valores.</p>";
         
         foreach ($vencimentosProximos as $item) {
             $valorFormatado = 'R$ ' . number_format($item['valor_atual'], 2, ',', '.');
             
+            // Calcular data exata do vencimento
+            $dataVencimento = new DateTime();
+            $dataVencimento->modify("+{$item['dias']} days");
+            $dataFormatada = $dataVencimento->format('d/m/Y');
+            
             $conteudoHtml .= "<p><strong>{$item['nome']}</strong><br>";
             $conteudoHtml .= "Valor atual: <span class='valor'>$valorFormatado</span><br>";
-            $conteudoHtml .= "Vence em: <span class='dias'>{$item['dias']} dias</span></p>";
+            $conteudoHtml .= "Vence em: <span class='dias'>{$item['dias']} dias</span> <span class='data'>($dataFormatada)</span></p>";
         }
         $conteudoHtml .= "</div>";
     }
@@ -332,16 +353,19 @@ if ($totalAlertas > 0) {
             <p><strong>💡 Próximos passos:</strong></p>
             <ul>
                 <li>Acesse seu sistema: <a href='https://seudominio.railway.app/investimento/'>Controlador Financeiro</a></li>
-                <li>Verifique as aplicações vencidas</li>
-                <li>Considere reaplicar ou resgatar os valores</li>
-                <li>Atualize as datas no sistema após ações</li>
+                <li>Para vencimentos hoje: Verificar se dinheiro já está na conta</li>
+                <li>Para vencimentos em 3 dias: Pesquisar novas opções de investimento</li>
+                <li>Considerar reaplicar ou resgatar conforme sua estratégia</li>
+                <li>Atualizar datas no sistema após ações tomadas</li>
             </ul>
         </div>
         
         <hr>
-        <p><small><em>Email automático gerado pelo Sistema de Verificação de Vencimentos<br>
+        <p><small><em>Email automático - Sistema de Verificação de Vencimentos<br>
+        Configuração: Alertas 3 dias antes + dia do vencimento<br>
         Arquivo verificado: $arquivoEncontrado<br>
-        Aplicações analisadas: $totalAplicacoes</em></small></p>
+        Aplicações analisadas: $totalAplicacoes<br>
+        Próxima verificação: " . date('d/m/Y', strtotime('+1 day')) . "</em></small></p>
     </body>
     </html>";
     
@@ -362,7 +386,7 @@ if ($totalAlertas > 0) {
     }
     
 } else {
-    logMsg("✅ Nenhum vencimento ou aplicação vencida encontrada");
+    logMsg("✅ Nenhum vencimento em 3 dias ou aplicação vencida encontrada");
 }
 
 logMsg("=== VERIFICAÇÃO CONCLUÍDA ===");
@@ -372,7 +396,7 @@ if (php_sapi_name() === 'cli') {
     echo "\n--- RESUMO FINAL ---\n";
     echo "Aplicações vencidas: " . count($aplicacoesVencidas) . "\n";
     echo "Vencimentos hoje: " . count($vencimentosHoje) . "\n";
-    echo "Vencimentos próximos: " . count($vencimentosProximos) . "\n";
+    echo "Vencimentos em 3 dias: " . count($vencimentosProximos) . "\n";
     echo "Email enviado: " . ($totalAlertas > 0 ? 'SIM' : 'NÃO') . "\n";
 }
 
@@ -382,9 +406,10 @@ if (isset($_SERVER['HTTP_HOST'])) {
     echo "<script>console.log(" . json_encode([
         'vencidas' => count($aplicacoesVencidas),
         'hoje' => count($vencimentosHoje),
-        'proximas' => count($vencimentosProximos),
+        'proximas_3_dias' => count($vencimentosProximos),
         'total_aplicacoes' => $totalAplicacoes,
         'arquivo' => $arquivoEncontrado,
+        'configuracao' => '3 dias + dia do vencimento',
         'timestamp' => date('Y-m-d H:i:s')
     ]) . ");</script>";
 }
