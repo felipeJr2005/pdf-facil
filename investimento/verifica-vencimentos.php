@@ -1,8 +1,12 @@
 <?php
+// SISTEMA DE VERIFICAÇÃO DE VENCIMENTOS - VERSÃO CORRIGIDA
 // Configuração básica
 date_default_timezone_set('America/Sao_Paulo');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
+// Incluir configurações de email
+require_once __DIR__ . '/email-config.php';
 
 // Função para log com timestamp
 function logMsg($message) {
@@ -10,17 +14,16 @@ function logMsg($message) {
     echo $timestamp . ' ' . $message . PHP_EOL;
 }
 
-logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS ===");
+logMsg("=== INICIANDO VERIFICAÇÃO DE VENCIMENTOS CORRIGIDA ===");
 
-// Buscar arquivo aplicacoes.json - PRIORIDADE: PASTA PRINCIPAL
+// Buscar arquivo aplicacoes.json com prioridade correta
 $locaisPossiveis = [
-    __DIR__ . '/aplicacoes.json',                    // Pasta principal (NOVA PRIORIDADE)
-    __DIR__ . '/data/aplicacoes.json',               // Pasta data (backup)
-    '/tmp/aplicacoes.json'                           // Temporário (último recurso)
+    __DIR__ . '/aplicacoes.json',                    // Pasta principal
+    __DIR__ . '/data/aplicacoes.json',               // Pasta data
+    '/tmp/aplicacoes.json'                           // Temporário
 ];
 
 $arquivoEncontrado = null;
-$localEncontrado = null;
 
 logMsg("🔍 Procurando arquivo aplicacoes.json...");
 
@@ -29,7 +32,6 @@ foreach ($locaisPossiveis as $local) {
     
     if (file_exists($local)) {
         $arquivoEncontrado = $local;
-        $localEncontrado = dirname($local);
         logMsg("✅ Encontrado em: $local");
         break;
     } else {
@@ -38,15 +40,11 @@ foreach ($locaisPossiveis as $local) {
 }
 
 if (!$arquivoEncontrado) {
-    logMsg("❌ ERRO: Arquivo aplicacoes.json não encontrado em nenhuma localização!");
-    logMsg("📂 Locais verificados:");
-    foreach ($locaisPossiveis as $local) {
-        logMsg("   - $local");
-    }
+    logMsg("❌ ERRO: Arquivo aplicacoes.json não encontrado!");
     exit(1);
 }
 
-// Tentar ler o arquivo
+// Ler e decodificar arquivo
 $conteudo = file_get_contents($arquivoEncontrado);
 
 if ($conteudo === false) {
@@ -55,9 +53,7 @@ if ($conteudo === false) {
 }
 
 logMsg("📄 Arquivo lido com sucesso: " . strlen($conteudo) . " bytes");
-logMsg("📄 Primeiros 100 chars: " . substr($conteudo, 0, 100));
 
-// Decodificar JSON
 $dados = json_decode($conteudo, true);
 
 if ($dados === null) {
@@ -65,13 +61,15 @@ if ($dados === null) {
     exit(1);
 }
 
-// Verificar estrutura
+// Verificar estrutura e extrair aplicações
 if (isset($dados['versao'])) {
     logMsg("📦 Estrutura detectada: Arquivo com metadata (versão " . $dados['versao'] . ")");
     $aplicacoes = $dados['aplicacoes'] ?? [];
+    $taxasReferencia = $dados['taxasReferencia'] ?? [];
 } else {
     logMsg("📦 Estrutura detectada: Array direto de aplicações");
     $aplicacoes = $dados;
+    $taxasReferencia = ['cdi' => '14.90', 'selic' => '15.00', 'poupanca' => '0.6721'];
 }
 
 $totalAplicacoes = count($aplicacoes);
@@ -86,136 +84,308 @@ if ($totalAplicacoes === 0) {
 $hoje = date('Y-m-d');
 logMsg("📅 Verificando vencimentos para: $hoje");
 
+// FUNÇÃO PARA CALCULAR RENTABILIDADE (SIMPLIFICADA)
+function calcularValorAtual($aplicacao, $taxasReferencia) {
+    $valorAplicado = $aplicacao['valorAplicado'];
+    $dataAplicacao = $aplicacao['dataAplicacao'];
+    $hoje = date('Y-m-d');
+    
+    // Calcular dias corridos
+    $dataInicio = new DateTime($dataAplicacao);
+    $dataFim = new DateTime($hoje);
+    $diasCorridos = $dataFim->diff($dataInicio)->days;
+    
+    if ($diasCorridos == 0) {
+        return $valorAplicado; // Aplicação hoje, sem rendimento
+    }
+    
+    $rentabilidade = 0;
+    
+    // Calcular rentabilidade baseada no tipo
+    if ($aplicacao['tipo'] === 'Poupança') {
+        $taxaPoupancaMensal = floatval($taxasReferencia['poupanca']) / 100;
+        $meses = $diasCorridos / 30;
+        $rentabilidade = pow(1 + $taxaPoupancaMensal, $meses) - 1;
+    } else if ($aplicacao['tipoTaxa'] === 'PRE') {
+        $taxaPreFixada = $aplicacao['taxaPreFixada'] / 100;
+        $rentabilidade = pow(1 + $taxaPreFixada, $diasCorridos / 365) - 1;
+    } else if ($aplicacao['tipoTaxa'] === 'CDI') {
+        $taxaCDI = floatval($taxasReferencia['cdi']) / 100;
+        $porcentagemCDI = $aplicacao['porcentagemCDI'] / 100;
+        $taxaEfetiva = $taxaCDI * $porcentagemCDI;
+        $diasUteis = round($diasCorridos * 0.7); // Aproximação
+        $rentabilidade = pow(1 + $taxaEfetiva, $diasUteis / 252) - 1;
+    }
+    
+    $valorBruto = $valorAplicado * (1 + $rentabilidade);
+    
+    // Calcular IR simplificado (se não for LCA/Poupança)
+    $ir = 0;
+    if ($aplicacao['tipo'] !== 'LCA' && $aplicacao['tipo'] !== 'Poupança') {
+        $rendimento = $valorBruto - $valorAplicado;
+        if ($diasCorridos <= 180) $ir = $rendimento * 0.225;
+        else if ($diasCorridos <= 360) $ir = $rendimento * 0.20;
+        else if ($diasCorridos <= 720) $ir = $rendimento * 0.175;
+        else $ir = $rendimento * 0.15;
+    }
+    
+    return $valorBruto - $ir;
+}
+
+// FUNÇÃO PARA FORMATAR NOME DA APLICAÇÃO
+function formatarNomeAplicacao($aplicacao) {
+    $nome = $aplicacao['tipo'];
+    if (!empty($aplicacao['banco'])) {
+        $nome .= " (" . $aplicacao['banco'] . ")";
+    }
+    return $nome;
+}
+
+// Arrays para armazenar resultados
 $vencimentosHoje = [];
 $vencimentosProximos = [];
+$aplicacoesVencidas = [];
 
 // Verificar cada aplicação
 foreach ($aplicacoes as $aplicacao) {
-    $nome = $aplicacao['nome'] ?? 'Sem nome';
-    $dataVencimento = $aplicacao['dataVencimento'] ?? null;
+    $nome = formatarNomeAplicacao($aplicacao);
+    $dataResgate = $aplicacao['dataResgate'] ?? null;
     
-    logMsg("🔍 Verificando: $nome - Vencimento: " . ($dataVencimento ?: 'Sem data'));
+    logMsg("🔍 Verificando: $nome - Resgate: " . ($dataResgate ?: 'Liquidez diária'));
     
-    if (!$dataVencimento) {
+    if (!$dataResgate) {
+        logMsg("   ℹ️ Liquidez diária - sem data de vencimento");
         continue;
     }
     
-    // Converter data para formato comparável
-    $vencimento = null;
+    // Calcular diferença de dias
+    $dataVencimento = new DateTime($dataResgate);
+    $dataHoje = new DateTime($hoje);
+    $diferenca = $dataHoje->diff($dataVencimento);
+    $diasDiferenca = $diferenca->days;
     
-    // Tentar diferentes formatos de data
-    $formatosData = ['Y-m-d', 'd/m/Y', 'Y/m/d', 'd-m-Y'];
-    
-    foreach ($formatosData as $formato) {
-        $dataObj = DateTime::createFromFormat($formato, $dataVencimento);
-        if ($dataObj !== false) {
-            $vencimento = $dataObj->format('Y-m-d');
-            break;
-        }
+    // Se data já passou (vencida)
+    if ($dataHoje > $dataVencimento) {
+        logMsg("🚨 APLICAÇÃO VENCIDA: $nome - há $diasDiferenca dias!");
+        
+        $valorAtual = calcularValorAtual($aplicacao, $taxasReferencia);
+        $aplicacoesVencidas[] = [
+            'aplicacao' => $aplicacao,
+            'nome' => $nome,
+            'dias_vencida' => $diasDiferenca,
+            'valor_atual' => $valorAtual
+        ];
     }
-    
-    if (!$vencimento) {
-        logMsg("⚠️ Data de vencimento inválida para $nome: $dataVencimento");
-        continue;
-    }
-    
-    // Verificar se vence hoje
-    if ($vencimento === $hoje) {
+    // Se vence hoje
+    else if ($diferenca->days == 0 && $dataHoje->format('Y-m-d') == $dataVencimento->format('Y-m-d')) {
         logMsg("🎯 VENCIMENTO HOJE: $nome");
-        $vencimentosHoje[] = $aplicacao;
+        
+        $valorAtual = calcularValorAtual($aplicacao, $taxasReferencia);
+        $vencimentosHoje[] = [
+            'aplicacao' => $aplicacao,
+            'nome' => $nome,
+            'valor_atual' => $valorAtual
+        ];
     }
-    
-    // Verificar próximos 7 dias
-    $diasDiferenca = (strtotime($vencimento) - strtotime($hoje)) / (24 * 3600);
-    
-    if ($diasDiferenca > 0 && $diasDiferenca <= 7) {
+    // Se vence nos próximos 7 dias
+    else if ($diasDiferenca <= 7) {
         logMsg("📅 Vencimento próximo: $nome em $diasDiferenca dias");
+        
+        $valorAtual = calcularValorAtual($aplicacao, $taxasReferencia);
         $vencimentosProximos[] = [
             'aplicacao' => $aplicacao,
-            'dias' => $diasDiferenca
+            'nome' => $nome,
+            'dias' => $diasDiferenca,
+            'valor_atual' => $valorAtual
         ];
     }
 }
 
-// Resultados
-if (count($vencimentosHoje) > 0) {
-    logMsg("🚨 AÇÃO NECESSÁRIA: " . count($vencimentosHoje) . " vencimento(s) hoje!");
-    
-    foreach ($vencimentosHoje as $app) {
-        $nome = $app['nome'] ?? 'Sem nome';
-        $valor = isset($app['valor']) ? 'R$ ' . number_format($app['valor'], 2, ',', '.') : 'Valor não informado';
-        logMsg("   - $nome: $valor");
+// FUNÇÃO PARA ENVIAR EMAIL USANDO send-email-direto.php
+function enviarEmailVencimento($assunto, $conteudoHtml, $destinatario = null) {
+    if (!$destinatario) {
+        $destinatario = SMTP_USERNAME; // Usar email configurado
     }
     
-    // Tentar enviar email
-    if (file_exists(__DIR__ . '/send-email.php')) {
-        logMsg("📧 Tentando enviar email de notificação...");
+    // Tentar usar send-email-direto.php
+    try {
+        logMsg("📧 Preparando envio de email...");
         
-        try {
-            // Include do arquivo de email
-            include_once __DIR__ . '/send-email.php';
+        // Incluir arquivo de envio direto
+        if (file_exists(__DIR__ . '/send-email-direto.php')) {
+            include_once __DIR__ . '/send-email-direto.php';
             
-            // Preparar dados para o email
-            $assunto = "⚠️ Aplicações Vencendo Hoje - " . date('d/m/Y');
-            
-            $mensagem = "Você tem " . count($vencimentosHoje) . " aplicação(ões) vencendo hoje:\n\n";
-            
-            foreach ($vencimentosHoje as $app) {
-                $nome = $app['nome'] ?? 'Sem nome';
-                $valor = isset($app['valor']) ? 'R$ ' . number_format($app['valor'], 2, ',', '.') : 'Valor não informado';
-                $tipo = $app['tipoAplicacao'] ?? 'Não informado';
+            // Chamar função de envio direto
+            if (function_exists('enviarEmailDireto')) {
+                $resultado = enviarEmailDireto($destinatario, $assunto, $conteudoHtml);
                 
-                $mensagem .= "• $nome\n";
-                $mensagem .= "  Valor: $valor\n";
-                $mensagem .= "  Tipo: $tipo\n";
-                $mensagem .= "  Vencimento: " . date('d/m/Y') . "\n\n";
-            }
-            
-            $mensagem .= "Acesse o sistema para mais detalhes: https://pdffacil.com/investimento/\n";
-            
-            // Tentar enviar email (a função deve estar definida em send-email.php)
-            if (function_exists('enviarEmail')) {
-                $resultado = enviarEmail($assunto, $mensagem);
-                if ($resultado) {
+                if ($resultado['success']) {
                     logMsg("✅ Email enviado com sucesso!");
+                    return true;
                 } else {
-                    logMsg("❌ Falha ao enviar email");
+                    logMsg("❌ Falha ao enviar email: " . $resultado['message']);
+                    return false;
                 }
             } else {
-                logMsg("⚠️ Função enviarEmail não encontrada em send-email.php");
+                logMsg("❌ Função enviarEmailDireto não encontrada");
+                return false;
             }
-            
-        } catch (Exception $e) {
-            logMsg("❌ Erro ao enviar email: " . $e->getMessage());
+        } else {
+            logMsg("❌ Arquivo send-email-direto.php não encontrado");
+            return false;
         }
+        
+    } catch (Exception $e) {
+        logMsg("❌ Erro ao enviar email: " . $e->getMessage());
+        return false;
+    }
+}
+
+// PROCESSAR RESULTADOS E ENVIAR EMAILS
+
+$totalAlertas = count($aplicacoesVencidas) + count($vencimentosHoje) + count($vencimentosProximos);
+
+if ($totalAlertas > 0) {
+    logMsg("🚨 ALERTAS ENCONTRADOS: $totalAlertas");
+    
+    // Construir conteúdo do email
+    $assunto = "🚨 Alerta de Vencimentos - Investimentos (" . date('d/m/Y') . ")";
+    
+    $conteudoHtml = "
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+            .header { color: #c0392b; border-bottom: 3px solid #e74c3c; padding-bottom: 10px; margin-bottom: 20px; }
+            .secao { margin: 20px 0; padding: 15px; border-radius: 5px; }
+            .vencida { background: #fadbd8; border-left: 5px solid #e74c3c; }
+            .hoje { background: #fdeaa7; border-left: 5px solid #f39c12; }
+            .proxima { background: #d5f4e6; border-left: 5px solid #27ae60; }
+            .valor { font-weight: bold; color: #2c3e50; }
+            .dias { font-weight: bold; color: #8e44ad; }
+        </style>
+    </head>
+    <body>
+        <div class='header'>
+            <h1>🚨 Alerta de Vencimentos de Investimentos</h1>
+            <p><strong>Data:</strong> " . date('d/m/Y H:i') . "</p>
+        </div>
+    ";
+    
+    // Aplicações vencidas (PRIORIDADE MÁXIMA)
+    if (count($aplicacoesVencidas) > 0) {
+        $conteudoHtml .= "<div class='secao vencida'>";
+        $conteudoHtml .= "<h2>🚨 APLICAÇÕES VENCIDAS - DINHEIRO PARADO!</h2>";
+        $conteudoHtml .= "<p><strong>ATENÇÃO:</strong> As aplicações abaixo já venceram e não estão mais rendendo!</p>";
+        
+        $totalVencido = 0;
+        foreach ($aplicacoesVencidas as $item) {
+            $valorFormatado = 'R$ ' . number_format($item['valor_atual'], 2, ',', '.');
+            $totalVencido += $item['valor_atual'];
+            
+            $conteudoHtml .= "<p><strong>{$item['nome']}</strong><br>";
+            $conteudoHtml .= "Valor atual: <span class='valor'>$valorFormatado</span><br>";
+            $conteudoHtml .= "Vencida há: <span class='dias'>{$item['dias_vencida']} dias</span></p>";
+        }
+        
+        $totalVencidoFormatado = 'R$ ' . number_format($totalVencido, 2, ',', '.');
+        $conteudoHtml .= "<p><strong>💰 TOTAL PARADO: <span class='valor'>$totalVencidoFormatado</span></strong></p>";
+        $conteudoHtml .= "</div>";
+    }
+    
+    // Vencimentos hoje
+    if (count($vencimentosHoje) > 0) {
+        $conteudoHtml .= "<div class='secao hoje'>";
+        $conteudoHtml .= "<h2>⏰ VENCIMENTOS HOJE</h2>";
+        
+        $totalHoje = 0;
+        foreach ($vencimentosHoje as $item) {
+            $valorFormatado = 'R$ ' . number_format($item['valor_atual'], 2, ',', '.');
+            $totalHoje += $item['valor_atual'];
+            
+            $conteudoHtml .= "<p><strong>{$item['nome']}</strong><br>";
+            $conteudoHtml .= "Valor atual: <span class='valor'>$valorFormatado</span></p>";
+        }
+        
+        $totalHojeFormatado = 'R$ ' . number_format($totalHoje, 2, ',', '.');
+        $conteudoHtml .= "<p><strong>💰 TOTAL HOJE: <span class='valor'>$totalHojeFormatado</span></strong></p>";
+        $conteudoHtml .= "</div>";
+    }
+    
+    // Próximos vencimentos
+    if (count($vencimentosProximos) > 0) {
+        $conteudoHtml .= "<div class='secao proxima'>";
+        $conteudoHtml .= "<h2>📅 PRÓXIMOS VENCIMENTOS (7 dias)</h2>";
+        
+        foreach ($vencimentosProximos as $item) {
+            $valorFormatado = 'R$ ' . number_format($item['valor_atual'], 2, ',', '.');
+            
+            $conteudoHtml .= "<p><strong>{$item['nome']}</strong><br>";
+            $conteudoHtml .= "Valor atual: <span class='valor'>$valorFormatado</span><br>";
+            $conteudoHtml .= "Vence em: <span class='dias'>{$item['dias']} dias</span></p>";
+        }
+        $conteudoHtml .= "</div>";
+    }
+    
+    $conteudoHtml .= "
+        <div style='margin-top: 30px; padding: 10px; background: #ecf0f1; border-radius: 5px;'>
+            <p><strong>💡 Próximos passos:</strong></p>
+            <ul>
+                <li>Acesse seu sistema: <a href='https://seudominio.railway.app/investimento/'>Controlador Financeiro</a></li>
+                <li>Verifique as aplicações vencidas</li>
+                <li>Considere reaplicar ou resgatar os valores</li>
+                <li>Atualize as datas no sistema após ações</li>
+            </ul>
+        </div>
+        
+        <hr>
+        <p><small><em>Email automático gerado pelo Sistema de Verificação de Vencimentos<br>
+        Arquivo verificado: $arquivoEncontrado<br>
+        Aplicações analisadas: $totalAplicacoes</em></small></p>
+    </body>
+    </html>";
+    
+    // Tentar enviar email
+    logMsg("📧 Enviando email de alerta...");
+    
+    $emailEnviado = enviarEmailVencimento($assunto, $conteudoHtml);
+    
+    if ($emailEnviado) {
+        logMsg("✅ Email de alerta enviado com sucesso!");
     } else {
-        logMsg("⚠️ Arquivo send-email.php não encontrado - email não enviado");
+        logMsg("❌ Falha ao enviar email de alerta");
+        
+        // Log alternativo - salvar conteúdo em arquivo
+        $arquivoLog = __DIR__ . '/log_vencimentos_' . date('Y-m-d') . '.html';
+        file_put_contents($arquivoLog, $conteudoHtml);
+        logMsg("💾 Conteúdo salvo em: $arquivoLog");
     }
     
 } else {
-    logMsg("✅ Nenhum vencimento para hoje");
-}
-
-// Informar sobre próximos vencimentos
-if (count($vencimentosProximos) > 0) {
-    logMsg("📅 Próximos vencimentos (7 dias):");
-    foreach ($vencimentosProximos as $item) {
-        $nome = $item['aplicacao']['nome'] ?? 'Sem nome';
-        $dias = round($item['dias']);
-        logMsg("   - $nome em $dias dia(s)");
-    }
+    logMsg("✅ Nenhum vencimento ou aplicação vencida encontrada");
 }
 
 logMsg("=== VERIFICAÇÃO CONCLUÍDA ===");
 
-// Se chamado via URL, mostrar resultado em JSON também
+// Resultado para logs do servidor/CRON
+if (php_sapi_name() === 'cli') {
+    echo "\n--- RESUMO FINAL ---\n";
+    echo "Aplicações vencidas: " . count($aplicacoesVencidas) . "\n";
+    echo "Vencimentos hoje: " . count($vencimentosHoje) . "\n";
+    echo "Vencimentos próximos: " . count($vencimentosProximos) . "\n";
+    echo "Email enviado: " . ($totalAlertas > 0 ? 'SIM' : 'NÃO') . "\n";
+}
+
+// Para debug via web
 if (isset($_SERVER['HTTP_HOST'])) {
-    echo "\n\n<!-- JSON para JavaScript -->\n";
+    echo "\n\n<!-- Dados para JavaScript -->\n";
     echo "<script>console.log(" . json_encode([
-        'vencimentosHoje' => count($vencimentosHoje),
-        'vencimentosProximos' => count($vencimentosProximos),
-        'arquivoEncontrado' => $arquivoEncontrado,
-        'totalAplicacoes' => $totalAplicacoes
+        'vencidas' => count($aplicacoesVencidas),
+        'hoje' => count($vencimentosHoje),
+        'proximas' => count($vencimentosProximos),
+        'total_aplicacoes' => $totalAplicacoes,
+        'arquivo' => $arquivoEncontrado,
+        'timestamp' => date('Y-m-d H:i:s')
     ]) . ");</script>";
 }
 ?>
