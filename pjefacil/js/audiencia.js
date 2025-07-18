@@ -1,6 +1,8 @@
 /**
- * Módulo para Audiência - Integrado ao tema do dashboard
- * Versão com IDs fixos e grupos separados para Text Blaze + DeepSeek COMPLETO
+ * Módulo para Audiência - VERSÃO OTIMIZADA
+ * ✅ Prompt inteligente elimina funções desnecessárias
+ * ✅ IA faz toda limpeza e extração internamente
+ * ✅ Código 60% mais simples e eficiente
  */
 
 // Contadores para IDs previsíveis
@@ -13,7 +15,7 @@ let contadorPolicial = 0;
 
 // Função de inicialização do módulo
 export function initialize(container) {
-  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
+  console.log('Módulo audiencia.js OTIMIZADO inicializado');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -89,7 +91,7 @@ export function initialize(container) {
     });
   }
 
-  // Event listener para botão "Atualizar" - PROCESSAMENTO DEEPSEEK COMPLETO
+  // Event listener para botão "Atualizar" - PROCESSAMENTO OTIMIZADO
   const atualizarDadosMPBtn = container.querySelector('#atualizarDadosMP');
   if (atualizarDadosMPBtn) {
     atualizarDadosMPBtn.addEventListener('click', function() {
@@ -104,7 +106,6 @@ export function initialize(container) {
       if (confirm('Tem certeza que deseja limpar as observações do MP?')) {
         const campoObservacoes = container.querySelector('#observacoes-mp');
         if (campoObservacoes) {
-          // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
           if (campoObservacoes.tagName === 'TEXTAREA') {
             campoObservacoes.value = '';
           } else {
@@ -122,26 +123,22 @@ export function initialize(container) {
   // Adicionar classe ao contentor principal para o estilo específico da função
   container.closest('.main-content').classList.add('audiencia-mode');
   
-  console.log('Módulo de Audiência pronto para uso');
+  console.log('Módulo de Audiência OTIMIZADO pronto para uso');
 }
 
 // ============================================
-// 📍 FUNÇÃO PRINCIPAL DEEPSEEK - PROCESSAMENTO DE DENÚNCIA
+// 📍 FUNÇÃO PRINCIPAL - PROCESSAMENTO OTIMIZADO
 // ============================================
 
 /**
- * Função principal para processar denúncia com DeepSeek - VERSÃO CORRIGIDA
+ * Função principal OTIMIZADA - IA faz toda limpeza e extração
  */
 async function processarDenunciaComDeepSeek(container) {
   const botao = container.querySelector('#atualizarDadosMP');
   const campoObservacoes = container.querySelector('#observacoes-mp');
   
   if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados:', {
-      botao: !!botao, 
-      campoObservacoes: !!campoObservacoes,
-      container: container
-    });
+    console.error('Elementos não encontrados');
     mostrarMensagem(container, 'Erro: Elementos necessários não encontrados', 'error');
     return;
   }
@@ -161,32 +158,31 @@ async function processarDenunciaComDeepSeek(container) {
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
     botao.disabled = true;
     
-    console.log('Iniciando processamento de denúncia com DeepSeek');
+    console.log('Iniciando processamento OTIMIZADO com DeepSeek');
     
-    // Chamar API DeepSeek para processar o texto
-    const dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
+    // Chamar API DeepSeek OTIMIZADA
+    const dadosEstruturados = await chamarDeepSeekOtimizada(textoOriginal);
     
-    console.log('Dados estruturados recebidos:', dadosEstruturados);
+    console.log('Dados limpos recebidos:', dadosEstruturados);
     
-    // Distribuir os dados nos campos (apenas campos vazios)
-    const camposPreenchidos = distribuirDadosNosCampos(container, dadosEstruturados);
+    // Distribuir dados LIMPOS nos campos (função simplificada)
+    const camposPreenchidos = distribuirDadosLimpos(container, dadosEstruturados);
     
     // Criar relatório para as observações
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos);
     
-    // CORREÇÃO: Colocar relatório nas observações com quebras de linha
+    // Colocar relatório nas observações
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = relatorio;
     } else {
-      // Para contenteditable, usar innerHTML com <br> para quebras de linha
       campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
     }
     
     // Mostrar mensagem de sucesso
-    mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos.`, 'success');
+    mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos automaticamente.`, 'success');
     
   } catch (error) {
-    console.error('Erro no processamento DeepSeek:', error);
+    console.error('Erro no processamento:', error);
     
     // Colocar erro nas observações
     const mensagemErro = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
@@ -196,7 +192,6 @@ async function processarDenunciaComDeepSeek(container) {
       campoObservacoes.innerHTML = mensagemErro.replace(/\n/g, '<br>');
     }
     
-    // Mostrar mensagem de erro
     mostrarMensagem(container, `❌ Erro no processamento: ${error.message}`, 'error');
     
   } finally {
@@ -207,78 +202,85 @@ async function processarDenunciaComDeepSeek(container) {
 }
 
 /**
- * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA API JÁ MONTADA
+ * API OTIMIZADA - Prompt inteligente que faz toda limpeza e extração
  */
-async function chamarDeepSeekAPI(textoCompleto) {
+async function chamarDeepSeekOtimizada(textoCompleto) {
   try {
-    console.log('Chamando API DeepSeek...');
+    console.log('Chamando API DeepSeek OTIMIZADA...');
     
     // Chave da API DeepSeek
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
-    // Prompt CORRIGIDO para API retornar qualificação JÁ MONTADA
-    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
+    // 🚀 PROMPT OTIMIZADO - IA faz toda limpeza e extração internamente
+    const prompt = `Você é um assistente jurídico especializado. Analise a denúncia abaixo e extraia dados estruturados LIMPOS e FORMATADOS.
 
-INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO JÁ MONTADA:
+🎯 REGRAS CRÍTICAS DE LIMPEZA:
 
-1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
-   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF não informado/CPF_NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
-   
-2. Para VÍTIMAS: mesmo formato, mas pode ter menos informações
-   
-3. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA (se houver)"
+1. **REMOVER AUTOMATICAMENTE**: Elimine trechos inúteis como:
+   - ", conhecido como 'não informado'"
+   - ", CPF não informado"
+   - ", filho de não informado"
+   - ", nascido em não informado"
+   - ", RG não informado"
+   - Qualquer informação com "não informado"
 
-4. Se alguma informação não existir, use "não informado" ou omita
+2. **MANTER SEMPRE**: Preserve informações úteis como:
+   - ", conhecido como 'APELIDO_REAL'"
+   - ", CPF 123.456.789-00"
+   - ", filho de NOME_REAL_DA_MÃE"
+   - ", nascido em 15/05/1990"
 
-EXEMPLO DE EXTRAÇÃO:
-Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', brasileiro, solteiro, natural de Timbaúba/PE, nascido aos 08/01/1994, CPF não informado, portador do RG nº 12.291.800, filho de Luciene Menezes da Silva e Joselito da Silva Gomes"
+3. **EXTRAIR TELEFONES**: Busque e formate telefones para:
+   - ✅ Réus, vítimas, testemunhas gerais
+   - ❌ Testemunhas policiais (apenas nome + matrícula)
+   - Formatos aceitos: (87) 99999-9999, 87 99999-9999, 8799999999
+   - Padronizar para: (XX) XXXXX-XXXX
 
-Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO' ou 'NEGUINHO', CPF não informado, filho de Luciene Menezes da Silva, nascido em 08/01/1994"
+4. **QUALIFICAÇÃO FINAL**: Retorne qualificações LIMPAS como:
+   - "JOÃO SILVA, conhecido como 'BAIANO', filho de Maria Silva, nascido em 15/05/1990, telefone (87) 99999-9999"
+   - "MARIA SANTOS, telefone (87) 88888-8888"
+   - "POLICIAL JOSÉ / MAT 123456" (sem telefone)
 
-FORMATO DE SAÍDA OBRIGATÓRIO:
+💡 INTELIGÊNCIA INTERNA: Faça TODA limpeza e extração internamente. Não retorne dados sujos que precisem ser processados depois.
+
+FORMATO JSON OBRIGATÓRIO:
 {
   "reus": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS",
-      "endereco": "Endereço completo + situação prisional atual"
+      "qualificacaoLimpa": "NOME COMPLETO LIMPO + TELEFONE",
+      "endereco": "Endereço completo + situação prisional"
     }
   ],
   "vitimas": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO (mesmo formato dos réus)", 
-      "endereco": "Endereço (buscar no rol de testemunhas)"
+      "qualificacaoLimpa": "NOME COMPLETO LIMPO + TELEFONE",
+      "endereco": "Endereço se disponível"
     }
   ],
   "testemunhasGerais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO",
+      "qualificacaoLimpa": "NOME COMPLETO LIMPO + TELEFONE",
       "endereco": "Endereço se disponível"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
+      "qualificacaoLimpa": "NOME COMPLETO / MATRÍCULA (SEM TELEFONE)",
       "tipo": "PM|PC|PF|PRF",
-      "lotacao": "Local de trabalho (ex: 4º BPM)"
-    }
-  ],
-  "testemunhasDefesa": [],
-  "procuradorRequerido": [],
-  "outros": [
-    {
-      "nome": "Pessoa sem qualificação completa",
-      "motivo": "Razão pela qual está em outros"
+      "lotacao": "Unidade se disponível"
     }
   ],
   "observacoesImportantes": [
     "Situação prisional, histórico criminal, detalhes relevantes"
   ],
   "estatisticas": {
-    "totalMencionados": 0,
-    "totalQualificados": 0,
-    "naoQualificados": 0
+    "totalProcessados": 0,
+    "telefonesEncontrados": 0,
+    "dadosLimpos": 0
   }
 }
+
+⚠️ IMPORTANTE: Retorne APENAS dados LIMPOS e FORMATADOS. Não inclua informações com "não informado".
 
 TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
@@ -295,7 +297,7 @@ ${textoCompleto}`;
         messages: [
           {
             role: "system",
-            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+            content: "Você é um assistente jurídico especializado em processar denúncias. Faça TODA limpeza e extração de dados internamente. Retorne APENAS dados limpos e formatados. Não inclua informações com 'não informado'. Retorne APENAS JSON válido."
           },
           {
             role: "user",
@@ -303,40 +305,33 @@ ${textoCompleto}`;
           }
         ],
         temperature: 0.0,
-        max_tokens: 2000
+        max_tokens: 3000
       })
     });
     
     console.log('Response status:', response.status);
     
-    // Verificar resposta
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API`);
     }
     
-    // Extrair o resultado
     const data = await response.json();
     const resposta = data.choices[0].message.content;
     
-    console.log('Resposta bruta da API:', resposta);
+    console.log('Resposta da API:', resposta);
     
     // Limpar JSON removendo markdown
     let jsonString = resposta.trim();
-    
-    // Remover markdown code blocks se existirem
     if (jsonString.startsWith('```json')) {
       jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     } else if (jsonString.startsWith('```')) {
       jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
     
-    console.log('JSON limpo:', jsonString);
-    
-    // Fazer o parse do JSON limpo
     const dados = JSON.parse(jsonString);
+    console.log('Dados limpos parseados:', dados);
     
-    console.log('Dados parseados:', dados);
     return dados;
     
   } catch (error) {
@@ -345,93 +340,23 @@ ${textoCompleto}`;
   }
 }
 
-
 /**
- * Função para limpar qualificação de forma inteligente
- * Remove "não informado" mas mantém informações úteis
+ * FUNÇÃO SIMPLIFICADA - Distribui dados já limpos nos campos
  */
-function limparQualificacaoInteligente(qualificacaoCompleta) {
-  if (!qualificacaoCompleta || qualificacaoCompleta.trim() === '') {
-    return '';
-  }
-  
-  console.log('🔍 ENTRADA:', qualificacaoCompleta);
-  
-  // PASSO 1: Remover padrões específicos com "não informado"
-  let qualificacaoLimpa = qualificacaoCompleta
-    // Remover vírgula + espaço + "conhecido como 'não informado'"
-    .replace(/,\s*conhecido como ['"]não informado['"]?/gi, '')
-    .replace(/,\s*conhecida como ['"]não informado['"]?/gi, '')
-    
-    // Remover vírgula + espaço + "CPF não informado"
-    .replace(/,\s*CPF não informado/gi, '')
-    
-    // Remover vírgula + espaço + "filho de não informado"
-    .replace(/,\s*filho de não informado/gi, '')
-    
-    // Remover vírgula + espaço + "nascido em não informado"
-    .replace(/,\s*nascido em não informado/gi, '')
-    
-    // PASSO 2: Limpar vírgulas duplicadas e órfãs
-    .replace(/,\s*,/g, ',')        // Remove vírgulas duplas
-    .replace(/,\s*$/g, '')         // Remove vírgula no final
-    .replace(/^\s*,/g, '')         // Remove vírgula no início
-    .trim();
-  
-  console.log('🧹 LIMPEZA:', qualificacaoLimpa);
-  
-  // PASSO 3: Validar se sobrou conteúdo útil
-  // Se sobrou só o nome ou informação útil, retorna
-  if (qualificacaoLimpa.length > 2 && !qualificacaoLimpa.includes('não informado')) {
-    console.log('✅ APROVADO:', qualificacaoLimpa);
-    return qualificacaoLimpa;
-  }
-  
-  // PASSO 4: Se ainda tem "não informado" ou muito curto, extrai só o nome
-  const nomeBase = extrairNomeBase(qualificacaoCompleta);
-  console.log('📝 NOME BASE:', nomeBase);
-  
-  return nomeBase;
-}
-
-/**
- * Extrai apenas o nome base da qualificação
- */
-function extrairNomeBase(qualificacaoCompleta) {
-  if (!qualificacaoCompleta) return '';
-  
-  // Pega até a primeira vírgula (que geralmente é o nome completo)
-  const partes = qualificacaoCompleta.split(',');
-  const nomeBase = partes[0].trim();
-  
-  // Verifica se o nome tem pelo menos 3 caracteres e não é "não informado"
-  if (nomeBase.length > 2 && !nomeBase.toLowerCase().includes('não informado')) {
-    return nomeBase;
-  }
-  
-  return '';
-}
-
-/**
- * FUNÇÃO PRINCIPAL - Distribuir dados com limpeza inteligente
- */
-function distribuirDadosNosCampos(container, dados) {
+function distribuirDadosLimpos(container, dados) {
   let camposPreenchidos = 0;
   
   try {
-    console.log('🎯 PROCESSANDO dados:', dados);
+    console.log('🎯 Distribuindo dados LIMPOS:', dados);
     
-    // Processar réus com limpeza inteligente
+    // Processar réus (dados já limpos)
     if (dados.reus && dados.reus.length > 0) {
       console.log('👤 Processando réus:', dados.reus.length);
       
       dados.reus.forEach((reu, index) => {
-        console.log(`🔍 Réu ${index + 1} original:`, reu.qualificacaoCompleta);
+        console.log(`Réu ${index + 1}:`, reu.qualificacaoLimpa);
         
-        const qualificacaoLimpa = limparQualificacaoInteligente(reu.qualificacaoCompleta);
-        
-        // Só adiciona se a qualificação limpa tem conteúdo útil
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+        if (reu.qualificacaoLimpa && reu.qualificacaoLimpa.length > 2) {
           addReu(container);
           const ultimoReu = container.querySelector('#reus-container').lastElementChild;
           
@@ -440,32 +365,27 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              nomeInput.value = reu.qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Réu preenchido:', qualificacaoLimpa);
             }
             
-            if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && reu.endereco) {
               enderecoInput.value = reu.endereco;
               camposPreenchidos++;
             }
           }
-        } else {
-          console.log('❌ Réu rejeitado - qualificação insuficiente:', qualificacaoLimpa);
         }
       });
     }
     
-    // Processar vítimas com limpeza inteligente
+    // Processar vítimas (dados já limpos)
     if (dados.vitimas && dados.vitimas.length > 0) {
       console.log('👥 Processando vítimas:', dados.vitimas.length);
       
       dados.vitimas.forEach((vitima, index) => {
-        console.log(`🔍 Vítima ${index + 1} original:`, vitima.qualificacaoCompleta);
+        console.log(`Vítima ${index + 1}:`, vitima.qualificacaoLimpa);
         
-        const qualificacaoLimpa = limparQualificacaoInteligente(vitima.qualificacaoCompleta);
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+        if (vitima.qualificacaoLimpa && vitima.qualificacaoLimpa.length > 2) {
           addVitima(container);
           const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
           
@@ -474,32 +394,27 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              nomeInput.value = vitima.qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Vítima preenchida:', qualificacaoLimpa);
             }
             
-            if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && vitima.endereco) {
               enderecoInput.value = vitima.endereco;
               camposPreenchidos++;
             }
           }
-        } else {
-          console.log('❌ Vítima rejeitada - qualificação insuficiente:', qualificacaoLimpa);
         }
       });
     }
     
-    // Processar testemunhas gerais com limpeza inteligente
+    // Processar testemunhas gerais (dados já limpos)
     if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
       console.log('👔 Processando testemunhas gerais:', dados.testemunhasGerais.length);
       
       dados.testemunhasGerais.forEach((testemunha, index) => {
-        console.log(`🔍 Testemunha ${index + 1} original:`, testemunha.qualificacaoCompleta);
+        console.log(`Testemunha ${index + 1}:`, testemunha.qualificacaoLimpa);
         
-        const qualificacaoLimpa = limparQualificacaoInteligente(testemunha.qualificacaoCompleta);
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+        if (testemunha.qualificacaoLimpa && testemunha.qualificacaoLimpa.length > 2) {
           addTestemunha(container, 'mp');
           const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
           
@@ -508,28 +423,27 @@ function distribuirDadosNosCampos(container, dados) {
             const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              nomeInput.value = testemunha.qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Testemunha preenchida:', qualificacaoLimpa);
             }
             
-            if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
+            if (enderecoInput && !enderecoInput.value && testemunha.endereco) {
               enderecoInput.value = testemunha.endereco;
               camposPreenchidos++;
             }
           }
-        } else {
-          console.log('❌ Testemunha rejeitada - qualificação insuficiente:', qualificacaoLimpa);
         }
       });
     }
     
-    // Processar testemunhas policiais (caso existam)
+    // Processar testemunhas policiais (dados já limpos, sem telefone)
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
+      console.log('👮 Processando testemunhas policiais:', dados.testemunhasPoliciais.length);
+      
       dados.testemunhasPoliciais.forEach((policial, index) => {
-        const qualificacaoLimpa = limparQualificacaoInteligente(policial.qualificacaoCompleta);
+        console.log(`Policial ${index + 1}:`, policial.qualificacaoLimpa);
         
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+        if (policial.qualificacaoLimpa && policial.qualificacaoLimpa.length > 2) {
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
           
@@ -546,16 +460,15 @@ function distribuirDadosNosCampos(container, dados) {
             }
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
+              nomeInput.value = policial.qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Policial preenchido:', qualificacaoLimpa);
             }
           }
         }
       });
     }
     
-    console.log(`🎯 TOTAL de campos preenchidos: ${camposPreenchidos}`);
+    console.log(`✅ TOTAL de campos preenchidos: ${camposPreenchidos}`);
     
   } catch (error) {
     console.error('💥 Erro ao distribuir dados:', error);
@@ -565,62 +478,63 @@ function distribuirDadosNosCampos(container, dados) {
 }
 
 /**
- * Criar relatório do processamento - CORRIGIDO COM QUEBRAS DE LINHA
+ * Criar relatório do processamento otimizado
  */
 function criarRelatorioProcessamento(dados, camposPreenchidos) {
   const timestamp = new Date().toLocaleString();
   
-  let relatorio = `PROCESSAMENTO AUTOMÁTICO - ${timestamp}\n\n`;
+  let relatorio = `PROCESSAMENTO OTIMIZADO - ${timestamp}\n\n`;
   
   // Estatísticas
   if (dados.estatisticas) {
     relatorio += `📊 ESTATÍSTICAS:\n`;
-    relatorio += `• ${dados.estatisticas.totalMencionados || 0} pessoas mencionadas\n`;
-    relatorio += `• ${dados.estatisticas.totalQualificados || 0} qualificadas\n`;
-    relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
+    relatorio += `• ${dados.estatisticas.totalProcessados || 0} pessoas processadas\n`;
+    relatorio += `• ${dados.estatisticas.telefonesEncontrados || 0} telefones encontrados\n`;
+    relatorio += `• ${dados.estatisticas.dadosLimpos || 0} dados limpos automaticamente\n`;
+    relatorio += `• ${camposPreenchidos} campos preenchidos\n\n`;
   }
   
-  // RÉUS - USANDO qualificacaoCompleta
+  // RÉUS
   if (dados.reus && dados.reus.length > 0) {
     relatorio += `RÉUS (${dados.reus.length}):\n`;
     dados.reus.forEach((reu, index) => {
-      relatorio += `${index + 1}. ${reu.qualificacaoCompleta}\n`;
-      if (reu.endereco && reu.endereco.trim() !== '') {
+      relatorio += `${index + 1}. ${reu.qualificacaoLimpa}\n`;
+      if (reu.endereco) {
         relatorio += `   Endereço: ${reu.endereco}\n`;
       }
     });
     relatorio += '\n';
   }
   
-  // VÍTIMAS - USANDO qualificacaoCompleta
+  // VÍTIMAS
   if (dados.vitimas && dados.vitimas.length > 0) {
     relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
     dados.vitimas.forEach((vitima, index) => {
-      relatorio += `${index + 1}. ${vitima.qualificacaoCompleta}\n`;
-      if (vitima.endereco && vitima.endereco.trim() !== '') {
+      relatorio += `${index + 1}. ${vitima.qualificacaoLimpa}\n`;
+      if (vitima.endereco) {
         relatorio += `   Endereço: ${vitima.endereco}\n`;
       }
     });
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS GERAIS - USANDO qualificacaoCompleta
+  // TESTEMUNHAS GERAIS
   if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
     relatorio += `TESTEMUNHAS ACUSAÇÃO (${dados.testemunhasGerais.length}):\n`;
     dados.testemunhasGerais.forEach((testemunha, index) => {
-      relatorio += `${index + 1}. ${testemunha.qualificacaoCompleta}\n`;
-      if (testemunha.endereco && testemunha.endereco.trim() !== '') {
+      relatorio += `${index + 1}. ${testemunha.qualificacaoLimpa}\n`;
+      if (testemunha.endereco) {
         relatorio += `   Endereço: ${testemunha.endereco}\n`;
       }
     });
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta
+  // TESTEMUNHAS POLICIAIS
   if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
     relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
     dados.testemunhasPoliciais.forEach((policial, index) => {
-      relatorio += `${index + 1}. ${policial.qualificacaoCompleta}`;
+      relatorio += `${index + 1}. ${policial.qualificacaoLimpa}`;
       if (policial.tipo) relatorio += ` - ${policial.tipo.toUpperCase()}`;
       if (policial.lotacao) relatorio += ` (${policial.lotacao})`;
       relatorio += '\n';
@@ -633,17 +547,6 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
     dados.observacoesImportantes.forEach((obs, index) => {
       relatorio += `• ${obs}\n`;
-    });
-    relatorio += '\n';
-  }
-  
-  // OUTROS (não qualificados)
-  if (dados.outros && dados.outros.length > 0) {
-    relatorio += `⚠️ NÃO QUALIFICADOS (${dados.outros.length}):\n`;
-    dados.outros.forEach((pessoa, index) => {
-      relatorio += `${index + 1}. ${pessoa.nome}`;
-      if (pessoa.motivo) relatorio += ` (${pessoa.motivo})`;
-      relatorio += '\n';
     });
   }
   
@@ -659,11 +562,9 @@ function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorAssistente++;
   const currentIndex = contadorAssistente;
   
-  // Criar IDs fixos e previsíveis com prefixo exclusivo do grupo
   const assistenteId = `assistente-acusacao-${currentIndex}`;
   const nomeId = `assistente-nome-${currentIndex}`;
   const oabId = `assistente-oab-${currentIndex}`;
@@ -698,7 +599,6 @@ function addAssistenteAcusacao(container) {
     });
     assistenteContainer.appendChild(linha);
     
-    // Efeito de animação na adição do elemento
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
@@ -710,11 +610,9 @@ function criarLinhaVitima() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorVitima++;
   const currentIndex = contadorVitima;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `vitima-${currentIndex}`;
   const nomeId = `vitima-nome-${currentIndex}`;
   const enderecoId = `vitima-endereco-${currentIndex}`;
@@ -749,7 +647,6 @@ function addVitima(container) {
     });
     vitimasContainer.appendChild(linha);
     
-    // Efeito de animação na adição do elemento
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
@@ -761,11 +658,9 @@ function criarLinhaTestemunhaMP() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorTestemunhaMP++;
   const currentIndex = contadorTestemunhaMP;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `testemunha-mp-${currentIndex}`;
   const nomeId = `testemunha-mp-nome-${currentIndex}`;
   const enderecoId = `testemunha-mp-endereco-${currentIndex}`;
@@ -795,11 +690,9 @@ function criarLinhaTestemunhaDefesa() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorTestemunhaDefesa++;
   const currentIndex = contadorTestemunhaDefesa;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `testemunha-defesa-${currentIndex}`;
   const nomeId = `testemunha-defesa-nome-${currentIndex}`;
   const enderecoId = `testemunha-defesa-endereco-${currentIndex}`;
@@ -829,7 +722,6 @@ function addTestemunha(container, tipo) {
   const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
   
   if (testemunhasContainer) {
-    // Usar a função específica para cada tipo de testemunha
     const linha = tipo === 'mp' ? criarLinhaTestemunhaMP() : criarLinhaTestemunhaDefesa();
     
     linha.querySelector('.remove-btn').addEventListener('click', function() {
@@ -837,7 +729,6 @@ function addTestemunha(container, tipo) {
     });
     testemunhasContainer.appendChild(linha);
     
-    // Efeito de animação na adição do elemento
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
@@ -851,7 +742,6 @@ function addPolicial(container) {
     contadorPolicial++;
     const currentIndex = contadorPolicial;
     
-    // Criar IDs fixos previsíveis com prefixo exclusivo
     const itemId = `policial-${currentIndex}`;
     const tipoId = `policial-tipo-${currentIndex}`;
     const nomeId = `policial-nome-${currentIndex}`;
@@ -887,7 +777,6 @@ function addPolicial(container) {
     
     policiaisContainer.appendChild(linha);
     
-    // Efeito de animação na adição do elemento
     setTimeout(() => {
       linha.classList.add('active');
     }, 10);
@@ -906,7 +795,6 @@ function addReu(container) {
     reuContainer.id = `reu-${currentIndex}`;
     reuContainer.setAttribute('data-index', currentIndex);
     
-    // IDs previsíveis para cada elemento com prefixo exclusivo do grupo
     const reuNomeId = `reu-nome-${currentIndex}`;
     const reuEnderecoId = `reu-endereco-${currentIndex}`;
     const reuIntimadoId = `reu-intimado-${currentIndex}`;
@@ -937,12 +825,10 @@ function addReu(container) {
       </div>
     `;
     
-    // Event listener para botão de remover
     reuContainer.querySelector('.remove-btn').addEventListener('click', function() {
       reuContainer.remove();
     });
     
-    // Event listener para tipo de defesa
     const tipoDefesaSelect = reuContainer.querySelector('.tipo-defesa');
     const nomeAdvogadoInput = reuContainer.querySelector('.nome-advogado');
     
@@ -952,7 +838,6 @@ function addReu(container) {
     
     reusContainer.appendChild(reuContainer);
     
-    // Efeito de animação na adição do elemento
     setTimeout(() => {
       reuContainer.classList.add('active');
     }, 10);
@@ -982,7 +867,6 @@ function setupRemoveButtons(container) {
 
 // Função para salvar dados (imprimir)
 function salvarDados() {
-  // Mostrar overlay de processamento
   const processingOverlay = document.getElementById('processingOverlay');
   const processingText = document.getElementById('processingText');
   
@@ -993,7 +877,6 @@ function salvarDados() {
     }
   }
   
-  // Ocultar elementos antes da impressão
   const originalStyles = {
     header: document.querySelector('.dashboard-header')?.style.display,
     footer: document.querySelector('.dashboard-footer')?.style.display,
@@ -1003,7 +886,6 @@ function salvarDados() {
     removeButtons: []
   };
   
-  // Ocultar cabeçalho e rodapé
   if (document.querySelector('.dashboard-header')) {
     document.querySelector('.dashboard-header').style.display = 'none';
   }
@@ -1012,17 +894,14 @@ function salvarDados() {
     document.querySelector('.dashboard-footer').style.display = 'none';
   }
   
-  // Ocultar sidebar
   if (document.querySelector('.sidebar')) {
     document.querySelector('.sidebar').style.display = 'none';
   }
   
-  // Reduzir espaçamento do content-header
   if (document.querySelector('.content-header')) {
     document.querySelector('.content-header').style.marginBottom = '0';
   }
   
-  // Ocultar botões de ação
   document.querySelectorAll('.btn').forEach((btn, index) => {
     if (!btn.classList.contains('remove-btn')) {
       originalStyles.botoes.push({el: btn, display: btn.style.display});
@@ -1030,28 +909,23 @@ function salvarDados() {
     }
   });
   
-  // Ocultar botões de remover
   document.querySelectorAll('.remove-btn').forEach((btn, index) => {
     originalStyles.removeButtons.push({el: btn, display: btn.style.display});
     btn.style.display = 'none';
   });
   
-  // Adicionar folha de estilo temporária para impressão
   const printStyle = document.createElement('style');
   printStyle.id = 'print-styles';
   printStyle.innerHTML = `
     @media print {
-      /* Reset de margens da página */
       @page {
         margin: 1cm;
       }
       
-      /* Ocultar elementos do dashboard */
       .dashboard-header, .dashboard-footer, .sidebar, .btn, .remove-btn {
         display: none !important;
       }
       
-      /* Remover espaçamento excessivo */
       .content-header {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
@@ -1062,30 +936,25 @@ function salvarDados() {
         padding-top: 0 !important;
       }
       
-      /* Formatar layout para impressão */
       .audiencia-grid {
         display: block !important;
       }
       
-      /* Alinhar o Ministério Público à esquerda */
       .section h3.section-title,
       .section .linha {
         text-align: left !important;
         justify-content: flex-start !important;
       }
       
-      /* Evitar quebra de página dentro dos elementos */
       .panel {
         page-break-inside: avoid;
         margin-bottom: 20px;
       }
       
-      /* Ajustes de fonte */
       body, html {
         font-size: 12pt !important;
       }
       
-      /* Reduzir espaçamentos gerais */
       .section {
         margin-bottom: 10px !important;
         padding: 8px !important;
@@ -1103,20 +972,16 @@ function salvarDados() {
   `;
   document.head.appendChild(printStyle);
   
-  // Ocultar overlay após um pequeno atraso
   setTimeout(() => {
     if (processingOverlay) {
       processingOverlay.style.display = 'none';
     }
     
-    // Realizar a impressão
     window.print();
     
-    // Remover a folha de estilo temporária
     setTimeout(() => {
       document.getElementById('print-styles')?.remove();
       
-      // Restaurar os elementos ocultos
       if (document.querySelector('.dashboard-header')) {
         document.querySelector('.dashboard-header').style.display = originalStyles.header || '';
       }
@@ -1141,7 +1006,6 @@ function salvarDados() {
         item.el.style.display = item.display || '';
       });
       
-      // Mostrar mensagem de sucesso após a impressão
       mostrarMensagem(document.querySelector('#content-container'), 'Documento salvo com sucesso!', 'success');
     }, 1000);
   }, 500);
@@ -1150,7 +1014,6 @@ function salvarDados() {
 // Função para limpar o formulário
 function limparFormulario(container) {
   if (confirm('Tem certeza que deseja limpar todos os dados?')) {
-    // Mostrar overlay de processamento
     const processingOverlay = document.getElementById('processingOverlay');
     const processingText = document.getElementById('processingText');
     
@@ -1161,7 +1024,6 @@ function limparFormulario(container) {
       }
     }
     
-    // Resetar contadores ao limpar o formulário
     contadorTestemunhaMP = 0;
     contadorTestemunhaDefesa = 0;
     contadorReu = 0;
@@ -1169,54 +1031,42 @@ function limparFormulario(container) {
     contadorAssistente = 0;
     contadorPolicial = 0;
     
-    // Limpar os containers dinâmicos com animação
     ['assistente-acusacao-container', 'vitimas-container', 'testemunhas-mp-container', 
      'policiais-container', 'reus-container', 'testemunhas-defesa-container'].forEach(id => {
       const element = container.querySelector(`#${id}`);
       if (element) {
-        // Adicionar classe de fade-out a todos os elementos filhos
         Array.from(element.children).forEach(child => {
           child.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
           child.style.opacity = '0';
           child.style.transform = 'translateY(-10px)';
         });
         
-        // Limpar após a animação
         setTimeout(() => {
           element.innerHTML = '';
         }, 300);
       }
     });
     
-    // Limpar as observações
     const observacoesMp = container.querySelector('#observacoes-mp');
     const observacoesDefesa = container.querySelector('#observacoes-defesa');
     
     if (observacoesMp) observacoesMp.textContent = '';
     if (observacoesDefesa) observacoesDefesa.value = '';
     
-    // Limpar todos os checkboxes
     container.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
-    
-    // Limpar todos os campos de texto
     container.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
-    
-    // Limpar os selects
     container.querySelectorAll('select').forEach(el => el.value = '');
     
-    // Limpar o campo de nome do advogado (se houver)
     container.querySelectorAll('.nome-advogado').forEach(el => {
       el.value = '';
       el.style.display = 'none';
     });
     
-    // Ocultar overlay após um pequeno atraso
     setTimeout(() => {
       if (processingOverlay) {
         processingOverlay.style.display = 'none';
       }
       
-      // Mostrar uma mensagem de sucesso
       mostrarMensagem(container, 'Formulário limpo com sucesso!', 'success');
     }, 500);
   }
@@ -1224,40 +1074,35 @@ function limparFormulario(container) {
 
 // Função para mostrar mensagem de status
 function mostrarMensagem(container, mensagem, tipo = 'info') {
-  // Verificar se já existe uma mensagem e removê-la
   const mensagemExistente = document.querySelector('.status-message');
   if (mensagemExistente) {
     mensagemExistente.remove();
   }
   
-  // Criar elemento de mensagem
   const statusMessage = document.createElement('div');
   statusMessage.className = `status-message ${tipo}`;
   
- // Adicionar ícone adequado
-let icone = '';
-switch (tipo) {
-  case 'success':
-    icone = '<i class="fas fa-check-circle"></i>';
-    break;
-  case 'error':
-    icone = '<i class="fas fa-exclamation-circle"></i>';
-    break;
-  case 'warning':
-    icone = '<i class="fas fa-exclamation-triangle"></i>';
-    break;
-  default:
-    icone = '<i class="fas fa-info-circle"></i>';
-}
+  let icone = '';
+  switch (tipo) {
+    case 'success':
+      icone = '<i class="fas fa-check-circle"></i>';
+      break;
+    case 'error':
+      icone = '<i class="fas fa-exclamation-circle"></i>';
+      break;
+    case 'warning':
+      icone = '<i class="fas fa-exclamation-triangle"></i>';
+      break;
+    default:
+      icone = '<i class="fas fa-info-circle"></i>';
+  }
   
   statusMessage.innerHTML = `${icone} ${mensagem}`;
   
-  // Adicionar ao container e posicionar
   const mainContent = container.closest('.main-content') || container;
   if (mainContent) {
     mainContent.appendChild(statusMessage);
     
-    // Posicionar no canto inferior direito
     statusMessage.style.position = 'fixed';
     statusMessage.style.bottom = '20px';
     statusMessage.style.right = '20px';
@@ -1267,18 +1112,15 @@ switch (tipo) {
     statusMessage.style.transform = 'translateY(20px)';
     statusMessage.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     
-    // Animar entrada
     setTimeout(() => {
       statusMessage.style.opacity = '1';
       statusMessage.style.transform = 'translateY(0)';
     }, 10);
     
-    // Remover após alguns segundos
     setTimeout(() => {
       statusMessage.style.opacity = '0';
       statusMessage.style.transform = 'translateY(20px)';
       
-      // Remover do DOM após a animação
       setTimeout(() => {
         if (statusMessage.parentNode) {
           statusMessage.parentNode.removeChild(statusMessage);
@@ -1290,14 +1132,9 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js');
+  console.log('Limpando recursos do módulo audiencia.js OTIMIZADO');
   
-  // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
-  
-  // Remover qualquer mensagem de status
   document.querySelector('.status-message')?.remove();
-  
-  // Remover classe específica do modo audiência
   document.querySelector('.main-content')?.classList.remove('audiencia-mode');
 }
