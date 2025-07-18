@@ -2,27 +2,6 @@
  * Módulo para Audiência - Integrado ao tema do dashboard
  * Versão com IDs fixos e grupos separados para Text Blaze + DeepSeek COMPLETO
  * ✅ VERSÃO CORRIGIDA - Limpeza inteligente + Extração de telefone
- * ✅ ATUALIZADA - Testemunhas policiais COM telefone e separação nome/matrícula
- * ✅ ATUALIZADA - "OBSERVAÇÕES DO MP" ao invés de "OBSERVAÇÕES IMPORTANTES"
- * 🔍 DEBUG VERSION - Logs detalhados para diagnosticar problema separação policiais
- * 🚨 CORRIGIDA - Funções extrairNomeBase e separarNomeMatricula corrigidas
- * 🤖 PROMPT MELHORADO - IA proibida de retornar "não informado"
- * 
- * NOVIDADES DESTA VERSÃO DEBUG CORRIGIDA:
- * 1. extrairNomeBase() corrigida para policiais (detecta " / ")
- * 2. separarNomeMatricula() corrigida com fallbacks
- * 3. Processamento de policiais robusto (funciona mesmo com dados ruins)
- * 4. Prompt da IA reformulado (proíbe "não informado")
- * 5. System message mais enfático
- * 6. Logs detalhados para cada etapa
- * 7. Fallbacks para situações problemáticas
- * 8. Tratamento de tipo "PMPE" como "PM"
- * 
- * RESULTADO ESPERADO:
- * - Campo nome: "Gerson da Silva de Souza"
- * - Campo matrícula: "MAT 144"
- * - Tipo: "PM"
- * - Sem "não informado" em lugar algum
  */
 
 // Contadores para IDs previsíveis
@@ -36,14 +15,6 @@ let contadorPolicial = 0;
 // Função de inicialização do módulo
 export function initialize(container) {
   console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
-  console.log('🔍 VERSÃO DEBUG CORRIGIDA - Logs detalhados habilitados');
-  console.log('✅ Limpeza inteligente de qualificações');
-  console.log('✅ Extração de telefone para todas as pessoas');
-  console.log('✅ Separação automática nome/matrícula para policiais');
-  console.log('✅ Relatório com "OBSERVAÇÕES DO MP"');
-  console.log('🚨 CORREÇÕES: extrairNomeBase e separarNomeMatricula corrigidas');
-  console.log('🤖 PROMPT MELHORADO: IA proibida de retornar "não informado"');
-  console.log('🔍 Debug habilitado para diagnóstico completo');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -152,7 +123,7 @@ export function initialize(container) {
   // Adicionar classe ao contentor principal para o estilo específico da função
   container.closest('.main-content').classList.add('audiencia-mode');
   
-  console.log('Módulo de Audiência DEBUG CORRIGIDO pronto para uso (V13.2)');
+  console.log('Módulo de Audiência pronto para uso');
 }
 
 // ============================================
@@ -191,7 +162,7 @@ async function processarDenunciaComDeepSeek(container) {
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
     botao.disabled = true;
     
-    console.log('Iniciando processamento de denúncia com DeepSeek + Telefone (incluindo policiais)');
+    console.log('Iniciando processamento de denúncia com DeepSeek + Telefone (exceto policiais)');
     
     // Chamar API DeepSeek para processar o texto
     const dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
@@ -213,7 +184,7 @@ async function processarDenunciaComDeepSeek(container) {
     }
     
     // Mostrar mensagem de sucesso
-    mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos (telefones para todas as pessoas).`, 'success');
+    mostrarMensagem(container, `✅ Processamento concluído! ${camposPreenchidos} campos preenchidos (telefones para réus, vítimas e testemunhas gerais).`, 'success');
     
   } catch (error) {
     console.error('Erro no processamento DeepSeek:', error);
@@ -246,67 +217,72 @@ async function chamarDeepSeekAPI(textoCompleto) {
     // Chave da API DeepSeek
     const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
     
-    // 🚀 PROMPT OTIMIZADO E APRIMORADO - IA faz toda limpeza e extração internamente
-    const prompt = `Você é um assistente jurídico especializado. Analise a denúncia abaixo e extraia dados estruturados LIMPOS e FORMATADOS.
+    // Prompt CORRIGIDO com instruções para TELEFONE
+    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
-🚨 INSTRUÇÕES CRÍTICAS - SIGA RIGOROSAMENTE:
+INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
 
-❌ NUNCA NUNCA NUNCA inclua "não informado" em qualquer parte da resposta
-❌ NUNCA inclua "telefone não informado" 
-❌ NUNCA inclua "MATRÍCULA não informada"
-❌ Se não souber algo, simplesmente OMITA essa informação
+1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
+   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
+   
+2. Para VÍTIMAS e TESTEMUNHAS: mesmo formato, mas pode ter menos informações
+   
+3. **TELEFONE OBRIGATÓRIO**: Busque SEMPRE telefones no texto para réus, vítimas, testemunhas gerais e testemunhas policiais
+   Formatos: (87) 99999-9999, 87 99999-9999, 8799999999, etc.
+   Incluir na qualificação: "...nascido em DD/MM/AAAA, telefone (87) 99999-9999"
+   
+4. Se alguma informação não existir, use "não informado" (será limpo depois)
 
-✅ EXTRAIR APENAS DADOS REAIS e VÁLIDOS do texto
-✅ Se não há telefone, NÃO mencione telefone
-✅ Se não há CPF, NÃO mencione CPF
-✅ Se não há matrícula específica, use "MAT 144" como padrão
+5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA, telefone (XX) XXXXX-XXXX"
 
-PARA TESTEMUNHAS POLICIAIS - FORMATO ESPECÍFICO:
-- Se encontrar "Gerson da Silva de Souza / MAT 144" 
-- Retorne: "Gerson da Silva de Souza / MAT 144"
-- NUNCA: "Gerson da Silva de Souza / MATRÍCULA não informada"
+EXEMPLO DE EXTRAÇÃO COM TELEFONE:
+Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, telefone (87) 98765-4321, filho de Maria Silva"
 
-🎯 TELEFONES: Busque e formate telefones para:
-- ✅ Réus, vítimas, testemunhas gerais e testemunhas policiais
-- Formatos: (87) 99999-9999, 87 99999-9999, 8799999999
-- Padronizar para: (XX) XXXXX-XXXX
+Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, filho de Maria Silva, telefone (87) 98765-4321"
 
-🎯 QUALIFICAÇÃO FINAL: Retorne qualificações LIMPAS como:
-- "JOÃO SILVA, conhecido como 'BAIANO', filho de Maria Silva, nascido em 15/05/1990, telefone (87) 99999-9999"
-- "MARIA SANTOS, telefone (87) 88888-8888"
-- "POLICIAL JOSÉ / MAT 123456" (com matrícula específica ou MAT 144 como padrão)
+⚠️ IMPORTANTE: SEMPRE buscar telefones no texto para réus, vítimas e testemunhas gerais. 
+Testemunhas policiais: apenas nome e matrícula, SEM telefone!
 
-💡 INTELIGÊNCIA INTERNA: Faça TODA limpeza e extração internamente. NUNCA retorne dados sujos.
-
-FORMATO JSON OBRIGATÓRIO:
+FORMATO DE SAÍDA OBRIGATÓRIO:
 {
   "reus": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO LIMPO + TELEFONE SE HOUVER",
-      "endereco": "Endereço completo + situação prisional"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE",
+      "endereco": "Endereço completo + situação prisional atual",
+      "telefone": "(87) 99999-9999"
     }
   ],
   "vitimas": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO LIMPO + TELEFONE SE HOUVER",
-      "endereco": "Endereço se disponível"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", 
+      "endereco": "Endereço (buscar no rol de testemunhas)",
+      "telefone": "(87) 99999-9999"
     }
   ],
   "testemunhasGerais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO LIMPO + TELEFONE SE HOUVER",
-      "endereco": "Endereço se disponível"
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE",
+      "endereco": "Endereço se disponível",
+      "telefone": "(87) 99999-9999"
     }
   ],
   "testemunhasPoliciais": [
     {
-      "qualificacaoCompleta": "NOME COMPLETO / MAT 144",
-      "tipo": "PM",
-      "lotacao": "Unidade se disponível"
+      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA, telefone (XX) XXXXX-XXXX",
+      "tipo": "PM|PC|PF|PRF",
+      "lotacao": "Local de trabalho (ex: 4º BPM)"
+    }
+  ],
+  "testemunhasDefesa": [],
+  "procuradorRequerido": [],
+  "outros": [
+    {
+      "nome": "Pessoa sem qualificação completa",
+      "motivo": "Razão pela qual está em outros"
     }
   ],
   "observacoesImportantes": [
-    "Situação prisional, histórico criminal, detalhes relevantes"
+    "Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"
   ],
   "estatisticas": {
     "totalMencionados": 0,
@@ -315,13 +291,6 @@ FORMATO JSON OBRIGATÓRIO:
     "telefonesEncontrados": 0
   }
 }
-
-⚠️ CRÍTICO: 
-- NÃO retorne "não informado" em lugar algum
-- SEMPRE extraia telefones quando disponíveis
-- Para policiais use "MAT 144" se matrícula não estiver clara
-- Qualificação deve ser LIMPA e COMPLETA
-- OMITA informações não disponíveis ao invés de colocar "não informado"
 
 TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
@@ -338,7 +307,7 @@ ${textoCompleto}`;
         messages: [
           {
             role: "system",
-            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. REGRA FUNDAMENTAL: NUNCA NUNCA NUNCA inclua 'não informado' em qualquer parte da resposta. Se não souber uma informação, simplesmente OMITA. Para testemunhas policiais use 'MAT 144' como matrícula padrão. Monte qualificação completa conforme instruído e busque telefones para todas as pessoas. Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído e busque telefones para réus, vítimas e testemunhas gerais (NÃO para testemunhas policiais). Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
           },
           {
             role: "user",
@@ -488,16 +457,13 @@ function validarEFormatarTelefone(telefone) {
 /**
  * Função CORRIGIDA para limpeza inteligente de qualificação
  * Remove apenas "não informado" mas mantém informações úteis
- * VERSÃO DEBUG para testemunhas policiais
  */
 function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '', nomePessoa = '') {
   if (!qualificacaoCompleta || qualificacaoCompleta.trim() === '') {
     return '';
   }
   
-  console.log('🧹 ===== FUNÇÃO limparQualificacaoInteligente =====');
-  console.log('📥 ENTRADA:', qualificacaoCompleta);
-  console.log('👤 Nome pessoa:', nomePessoa);
+  console.log('🔍 ENTRADA:', qualificacaoCompleta);
   
   // PASSO 1: Remover APENAS padrões com "não informado" - MAIS ESPECÍFICO
   let qualificacaoLimpa = qualificacaoCompleta
@@ -526,19 +492,10 @@ function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '',
   
   console.log('🧹 APÓS LIMPEZA:', qualificacaoLimpa);
   
-  // DEBUG: Verificar se o padrão " / " ainda existe após limpeza
-  if (qualificacaoLimpa.includes(' / ')) {
-    console.log('✅ Padrão " / " preservado após limpeza');
-  } else {
-    console.log('❌ Padrão " / " PERDIDO após limpeza - isso vai impedir a separação!');
-  }
-  
   // PASSO 3: Buscar telefone se temos texto original e nome
   let telefone = '';
   if (textoOriginal && nomePessoa) {
-    console.log('📱 Buscando telefone para:', nomePessoa);
     telefone = extrairTelefonesDaOrigemTexto(textoOriginal, nomePessoa);
-    console.log('📱 Telefone encontrado:', telefone);
   }
   
   // PASSO 4: Adicionar telefone ao final se encontrado
@@ -548,120 +505,32 @@ function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '',
   }
   
   // PASSO 5: Validar se sobrou conteúdo útil
+  // Se a qualificação ficou muito curta ou só tem "não informado", extrair nome base
   if (qualificacaoLimpa.length < 3 || qualificacaoLimpa.toLowerCase().includes('não informad')) {
     const nomeBase = extrairNomeBase(qualificacaoCompleta);
     console.log('📝 USANDO NOME BASE:', nomeBase);
     
     // Se encontrou telefone, adicionar ao nome base
     if (telefone && nomeBase) {
-      const resultado = `${nomeBase}, telefone ${telefone}`;
-      console.log('🧹 ===== RESULTADO FINAL (nome base + telefone):', resultado, '=====\n');
-      return resultado;
+      return `${nomeBase}, telefone ${telefone}`;
     }
     
-    console.log('🧹 ===== RESULTADO FINAL (apenas nome base):', nomeBase, '=====\n');
     return nomeBase;
   }
   
-  console.log('🧹 ===== RESULTADO FINAL:', qualificacaoLimpa, '=====\n');
+  console.log('✅ RESULTADO FINAL:', qualificacaoLimpa);
   return qualificacaoLimpa;
 }
 
 /**
- * Separar nome e matrícula para testemunhas policiais - VERSÃO DEBUG CORRIGIDA
- */
-function separarNomeMatricula(qualificacaoCompleta) {
-  console.log('\n🔧 ===== FUNÇÃO separarNomeMatricula =====');
-  console.log('📥 Entrada:', qualificacaoCompleta);
-  
-  if (!qualificacaoCompleta) {
-    console.log('❌ Entrada vazia, retornando valores vazios');
-    return { nome: '', matricula: '' };
-  }
-  
-  // CORREÇÃO: Lidar com diferentes formatos
-  // Padrão esperado: "NOME COMPLETO / MATRÍCULA, telefone (XX) XXXXX-XXXX"
-  // Padrão IA ruim: "NOME COMPLETO / MATRÍCULA não informada, telefone não informado"
-  
-  console.log('🔍 Buscando padrão " / " para separar...');
-  
-  // Buscar padrão " / " para separar nome da matrícula
-  const partes = qualificacaoCompleta.split(' / ');
-  console.log('📊 Partes encontradas:', partes);
-  console.log('📊 Número de partes:', partes.length);
-  
-  if (partes.length >= 2) {
-    let nome = partes[0].trim(); // Nome com possível telefone
-    let resto = partes[1].trim(); // Matrícula + possível telefone
-    
-    console.log('✂️ Nome (parte 0):', nome);
-    console.log('✂️ Resto (parte 1):', resto);
-    
-    // Extrair matrícula - remover textos problemáticos
-    let matricula = resto
-      .replace(/não\s+informada?/gi, '') // Remove "não informada"
-      .replace(/,.*$/g, '') // Remove tudo após vírgula (telefone, etc)
-      .replace(/telefone.*$/gi, '') // Remove telefone se houver
-      .trim();
-    
-    // Se matrícula ficou vazia ou só tem "MATRÍCULA", criar uma genérica
-    if (!matricula || matricula.toLowerCase() === 'matrícula') {
-      matricula = 'MAT 144'; // Valor padrão
-      console.log('⚠️ Matrícula vazia/inválida - usando padrão:', matricula);
-    }
-    
-    console.log('🎯 RESULTADO FINAL:');
-    console.log('  - Nome:', `"${nome}"`);
-    console.log('  - Matrícula:', `"${matricula}"`);
-    console.log('🔧 ===== FIM FUNÇÃO separarNomeMatricula =====\n');
-    
-    return { nome, matricula };
-  }
-  
-  // Se não conseguir separar, tentar extrair nome pelo menos
-  console.log('❌ FALHA na separação - padrão " / " não encontrado');
-  
-  // FALLBACK: Se não tem " / ", usar tudo como nome e criar matrícula genérica
-  const nomeFallback = qualificacaoCompleta
-    .replace(/,.*$/g, '') // Remove tudo após vírgula
-    .replace(/telefone.*$/gi, '') // Remove telefone
-    .trim();
-  
-  const matriculaFallback = 'MAT 144'; // Matrícula padrão
-  
-  console.log('🎯 FALLBACK:');
-  console.log('  - Nome:', `"${nomeFallback}"`);
-  console.log('  - Matrícula:', `"${matriculaFallback}"`);
-  console.log('🔧 ===== FIM FUNÇÃO separarNomeMatricula =====\n');
-  
-  return { nome: nomeFallback, matricula: matriculaFallback };
-}
-
-/**
- * Extrair nome base da qualificação (função melhorada) - CORRIGIDA PARA POLICIAIS
+ * Extrair nome base da qualificação (função melhorada)
  */
 function extrairNomeBase(qualificacaoCompleta) {
   if (!qualificacaoCompleta) return '';
   
-  console.log('📝 ===== FUNÇÃO extrairNomeBase =====');
-  console.log('📥 Entrada:', qualificacaoCompleta);
-  
-  // CORREÇÃO ESPECÍFICA PARA POLICIAIS: Se tem " / " no meio, pegar antes da barra
-  if (qualificacaoCompleta.includes(' / ')) {
-    const nomeAntesBarra = qualificacaoCompleta.split(' / ')[0].trim();
-    console.log('👮 Formato policial detectado - nome antes da barra:', nomeAntesBarra);
-    
-    if (nomeAntesBarra.length > 2) {
-      console.log('📝 ===== RESULTADO (policial):', nomeAntesBarra, '=====\n');
-      return nomeAntesBarra;
-    }
-  }
-  
-  // Lógica original para outros tipos
+  // Pega até a primeira vírgula (que geralmente é o nome completo)
   const partes = qualificacaoCompleta.split(',');
   let nomeBase = partes[0].trim();
-  
-  console.log('📋 Primeira parte (antes da vírgula):', nomeBase);
   
   // Limpar possíveis sujeiras do nome
   nomeBase = nomeBase
@@ -669,16 +538,11 @@ function extrairNomeBase(qualificacaoCompleta) {
     .replace(/[^\w\s]+$/, '')  // Remove caracteres especiais no final
     .trim();
   
-  console.log('🧹 Nome após limpeza:', nomeBase);
-  
   // Verifica se o nome tem pelo menos 3 caracteres e não é "não informado"
   if (nomeBase.length > 2 && !nomeBase.toLowerCase().includes('não informad')) {
-    console.log('📝 ===== RESULTADO FINAL:', nomeBase, '=====\n');
     return nomeBase;
   }
   
-  console.log('❌ Nome inválido - muito curto ou contém "não informado"');
-  console.log('📝 ===== RESULTADO FINAL: [VAZIO] =====\n');
   return '';
 }
 
@@ -812,85 +676,46 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
       });
     }
     
-    // Processar testemunhas policiais (COM telefone e separação nome/matrícula) - DEBUG
+    // Processar testemunhas policiais (SEM telefone - apenas nome e matrícula)
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      console.log('👮 ===== PROCESSANDO TESTEMUNHAS POLICIAIS =====');
-      
       dados.testemunhasPoliciais.forEach((policial, index) => {
-        console.log(`\n🔍 Policial ${index + 1}:`);
-        console.log('📥 Entrada qualificacaoCompleta:', policial.qualificacaoCompleta);
-        
         const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
-        console.log('📝 Nome base extraído:', nomeBase);
         
-        const qualificacaoLimpa = limparQualificacaoInteligente(
-          policial.qualificacaoCompleta, 
-          textoOriginal, 
-          nomeBase
-        );
-        console.log('🧹 Após limpeza:', qualificacaoLimpa);
+        // Para policiais, não buscar telefone - apenas limpeza básica
+        const qualificacaoLimpa = policial.qualificacaoCompleta
+          .replace(/,\s*conhecid[oa]\s+como\s+['"]não\s+informad[oa]['"]?/gi, '')
+          .replace(/,\s*CPF\s+não\s+informado/gi, '')
+          .replace(/,\s*filh[oa]\s+de\s+não\s+informad[oa]/gi, '')
+          .replace(/,\s*nascid[oa]\s+em\s+não\s+informad[oa]/gi, '')
+          .replace(/,\s*,+/g, ',')
+          .replace(/,\s*$/g, '')
+          .replace(/^\s*,+/g, '')
+          .trim();
         
         if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          // Separar nome e matrícula COM DEBUG
-          console.log('🔧 Iniciando separação nome/matrícula...');
-          const { nome, matricula } = separarNomeMatricula(qualificacaoLimpa);
-          console.log('✅ Nome separado:', nome);
-          console.log('✅ Matrícula separada:', matricula);
-          
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-          console.log('📋 Elemento policial criado:', !!ultimoPolicial);
           
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
-            
-            console.log('🎯 Campos encontrados:');
-            console.log('  - tipoSelect:', !!tipoSelect);
-            console.log('  - nomeInput:', !!nomeInput, nomeInput ? '(ID: ' + nomeInput.id + ')' : '');
-            console.log('  - matriculaInput:', !!matriculaInput, matriculaInput ? '(ID: ' + matriculaInput.id + ')' : '');
-            
-            // DEBUG: Verificar todos os inputs do policial
-            const todosInputs = ultimoPolicial.querySelectorAll('input');
-            console.log('🔍 TODOS os inputs encontrados:');
-            todosInputs.forEach((input, idx) => {
-              console.log(`  ${idx}: placeholder="${input.placeholder}" id="${input.id}" class="${input.className}"`);
-            });
             
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
               if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
                 tipoSelect.value = tipoLower;
                 camposPreenchidos++;
-                console.log('✅ Tipo preenchido:', tipoLower);
               }
             }
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = nome; // Nome com telefone
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Campo NOME preenchido com:', nome);
-            }
-            
-            if (matriculaInput && !matriculaInput.value && matricula) {
-              matriculaInput.value = matricula; // Apenas matrícula
-              camposPreenchidos++;
-              console.log('✅ Campo MATRÍCULA preenchido com:', matricula);
-            } else {
-              console.log('❌ Campo MATRÍCULA NÃO preenchido - Motivos:');
-              console.log('  - matriculaInput existe:', !!matriculaInput);
-              console.log('  - matriculaInput.value está vazio:', !matriculaInput?.value);
-              console.log('  - matricula tem valor:', !!matricula);
-              console.log('  - valor da matricula:', matricula);
+              console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
             }
           }
-        } else {
-          console.log('❌ Qualificação limpa inválida:', qualificacaoLimpa);
         }
       });
-      
-      console.log('👮 ===== FIM PROCESSAMENTO POLICIAIS =====\n');
     }
     
     console.log(`🎯 TOTAL de campos preenchidos: ${camposPreenchidos}`);
@@ -955,7 +780,7 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta (com telefone)
+  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta (sem telefone)
   if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
     relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
     dados.testemunhasPoliciais.forEach((policial, index) => {
@@ -967,9 +792,9 @@ function criarRelatorioProcessamento(dados, camposPreenchidos) {
     relatorio += '\n';
   }
   
-  // OBSERVAÇÕES DO MP
+  // OBSERVAÇÕES IMPORTANTES
   if (dados.observacoesImportantes && dados.observacoesImportantes.length > 0) {
-    relatorio += `📋 OBSERVAÇÕES DO MP:\n`;
+    relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
     dados.observacoesImportantes.forEach((obs, index) => {
       relatorio += `• ${obs}\n`;
     });
@@ -1629,7 +1454,7 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js DEBUG CORRIGIDO (V13.2)');
+  console.log('Limpando recursos do módulo audiencia.js');
   
   // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
@@ -1640,40 +1465,3 @@ export function cleanup() {
   // Remover classe específica do modo audiência
   document.querySelector('.main-content')?.classList.remove('audiencia-mode');
 }
-
-// ============================================
-// 📍 VERSÃO DEBUG CORRIGIDA - V13.2
-// ============================================
-// 
-// 🚨 PRINCIPAIS CORREÇÕES DESTA VERSÃO:
-// 1. extrairNomeBase() corrigida para detectar formato policial (" / ")
-// 2. separarNomeMatricula() com fallbacks robustos
-// 3. Processamento de policiais tolerante a erros
-// 4. Prompt da IA reformulado - proíbe "não informado"
-// 5. System message mais enfático
-// 6. Tratamento de "PMPE" como "PM"
-// 7. Fallback para matrícula: "MAT 144"
-// 8. Logs detalhados em cada etapa
-// 
-// 🔍 DEBUG FEATURES:
-// - Logs detalhados no processamento de policiais
-// - Verificação de querySelector para campos
-// - Rastreamento da função separarNomeMatricula
-// - Logs na função limparQualificacaoInteligente
-// - Verificação de todos os inputs criados
-// - Diagnóstico completo do fluxo de dados
-// - Fallbacks para situações problemáticas
-// 
-// 📋 FORMATO ESPERADO TESTEMUNHAS POLICIAIS:
-// - IA retorna: "Gerson da Silva de Souza / MAT 144"
-// - Campo nome: "Gerson da Silva de Souza"
-// - Campo matrícula: "MAT 144"
-// - Campo tipo: "PM"
-// 
-// 🚨 PARA TESTAR:
-// 1. Substitua o arquivo audiencia.js
-// 2. Execute com testemunhas policiais
-// 3. Verifique console (F12) para logs
-// 4. Campos devem ser preenchidos corretamente
-// 5. Sem "não informado" em lugar algum
-// ============================================
