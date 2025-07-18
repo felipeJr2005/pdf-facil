@@ -4,6 +4,7 @@
  * ✅ VERSÃO CORRIGIDA - Limpeza inteligente + Extração de telefone
  * ✅ ATUALIZADA - Testemunhas policiais COM telefone e separação nome/matrícula
  * ✅ ATUALIZADA - "OBSERVAÇÕES DO MP" ao invés de "OBSERVAÇÕES IMPORTANTES"
+ * 🔍 DEBUG VERSION - Logs detalhados para diagnosticar problema separação policiais
  * 
  * NOVIDADES DA VERSÃO:
  * - Testemunhas policiais agora têm telefone no retorno da IA
@@ -11,6 +12,13 @@
  * - Campo nome: "JOSÉ SILVA, telefone (87) 99999-9999"
  * - Campo matrícula: "MAT 123456"
  * - Relatório usa "OBSERVAÇÕES DO MP"
+ * 
+ * DEBUG ADICIONADO:
+ * - Logs detalhados no processamento de policiais
+ * - Verificação de querySelector para campos
+ * - Rastreamento da função separarNomeMatricula
+ * - Logs na função limparQualificacaoInteligente
+ * - Verificação de todos os inputs criados
  */
 
 // Contadores para IDs previsíveis
@@ -24,10 +32,12 @@ let contadorPolicial = 0;
 // Função de inicialização do módulo
 export function initialize(container) {
   console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
+  console.log('🔍 VERSÃO DEBUG - Logs detalhados habilitados');
   console.log('✅ Limpeza inteligente de qualificações');
   console.log('✅ Extração de telefone para todas as pessoas');
   console.log('✅ Separação automática nome/matrícula para policiais');
   console.log('✅ Relatório com "OBSERVAÇÕES DO MP"');
+  console.log('🔍 Debug habilitado para diagnóstico de problemas');
   
   // Resetar contadores ao inicializar o módulo
   contadorTestemunhaMP = 0;
@@ -471,13 +481,16 @@ function validarEFormatarTelefone(telefone) {
 /**
  * Função CORRIGIDA para limpeza inteligente de qualificação
  * Remove apenas "não informado" mas mantém informações úteis
+ * VERSÃO DEBUG para testemunhas policiais
  */
 function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '', nomePessoa = '') {
   if (!qualificacaoCompleta || qualificacaoCompleta.trim() === '') {
     return '';
   }
   
-  console.log('🔍 ENTRADA:', qualificacaoCompleta);
+  console.log('🧹 ===== FUNÇÃO limparQualificacaoInteligente =====');
+  console.log('📥 ENTRADA:', qualificacaoCompleta);
+  console.log('👤 Nome pessoa:', nomePessoa);
   
   // PASSO 1: Remover APENAS padrões com "não informado" - MAIS ESPECÍFICO
   let qualificacaoLimpa = qualificacaoCompleta
@@ -506,10 +519,19 @@ function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '',
   
   console.log('🧹 APÓS LIMPEZA:', qualificacaoLimpa);
   
+  // DEBUG: Verificar se o padrão " / " ainda existe após limpeza
+  if (qualificacaoLimpa.includes(' / ')) {
+    console.log('✅ Padrão " / " preservado após limpeza');
+  } else {
+    console.log('❌ Padrão " / " PERDIDO após limpeza - isso vai impedir a separação!');
+  }
+  
   // PASSO 3: Buscar telefone se temos texto original e nome
   let telefone = '';
   if (textoOriginal && nomePessoa) {
+    console.log('📱 Buscando telefone para:', nomePessoa);
     telefone = extrairTelefonesDaOrigemTexto(textoOriginal, nomePessoa);
+    console.log('📱 Telefone encontrado:', telefone);
   }
   
   // PASSO 4: Adicionar telefone ao final se encontrado
@@ -519,52 +541,70 @@ function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '',
   }
   
   // PASSO 5: Validar se sobrou conteúdo útil
-  // Se a qualificação ficou muito curta ou só tem "não informado", extrair nome base
   if (qualificacaoLimpa.length < 3 || qualificacaoLimpa.toLowerCase().includes('não informad')) {
     const nomeBase = extrairNomeBase(qualificacaoCompleta);
     console.log('📝 USANDO NOME BASE:', nomeBase);
     
     // Se encontrou telefone, adicionar ao nome base
     if (telefone && nomeBase) {
-      return `${nomeBase}, telefone ${telefone}`;
+      const resultado = `${nomeBase}, telefone ${telefone}`;
+      console.log('🧹 ===== RESULTADO FINAL (nome base + telefone):', resultado, '=====\n');
+      return resultado;
     }
     
+    console.log('🧹 ===== RESULTADO FINAL (apenas nome base):', nomeBase, '=====\n');
     return nomeBase;
   }
   
-  console.log('✅ RESULTADO FINAL:', qualificacaoLimpa);
+  console.log('🧹 ===== RESULTADO FINAL:', qualificacaoLimpa, '=====\n');
   return qualificacaoLimpa;
 }
 
 /**
- * Separar nome e matrícula para testemunhas policiais
+ * Separar nome e matrícula para testemunhas policiais - VERSÃO DEBUG
  */
 function separarNomeMatricula(qualificacaoCompleta) {
-  if (!qualificacaoCompleta) return { nome: '', matricula: '' };
+  console.log('\n🔧 ===== FUNÇÃO separarNomeMatricula =====');
+  console.log('📥 Entrada:', qualificacaoCompleta);
   
-  console.log('🔍 Separando nome e matrícula:', qualificacaoCompleta);
+  if (!qualificacaoCompleta) {
+    console.log('❌ Entrada vazia, retornando valores vazios');
+    return { nome: '', matricula: '' };
+  }
   
   // Padrão: "NOME COMPLETO / MATRÍCULA, telefone (XX) XXXXX-XXXX"
   // Ou: "NOME COMPLETO / MATRÍCULA"
   
+  console.log('🔍 Buscando padrão " / " para separar...');
+  
   // Buscar padrão " / " para separar nome da matrícula
   const partes = qualificacaoCompleta.split(' / ');
+  console.log('📊 Partes encontradas:', partes);
+  console.log('📊 Número de partes:', partes.length);
   
   if (partes.length >= 2) {
     const nome = partes[0].trim(); // Nome com possível telefone
     const resto = partes[1].trim(); // Matrícula + possível telefone
     
+    console.log('✂️ Nome (parte 0):', nome);
+    console.log('✂️ Resto (parte 1):', resto);
+    
     // Extrair apenas a matrícula (até vírgula ou telefone)
     const matricula = resto.split(',')[0].trim();
     
-    console.log('✅ Nome extraído:', nome);
-    console.log('✅ Matrícula extraída:', matricula);
+    console.log('🎯 RESULTADO FINAL:');
+    console.log('  - Nome:', nome);
+    console.log('  - Matrícula:', matricula);
+    console.log('🔧 ===== FIM FUNÇÃO separarNomeMatricula =====\n');
     
     return { nome, matricula };
   }
   
   // Se não conseguir separar, retorna tudo no nome
-  console.log('⚠️ Não conseguiu separar - usando tudo como nome');
+  console.log('❌ FALHA na separação - padrão " / " não encontrado');
+  console.log('🎯 FALLBACK - usando tudo como nome');
+  console.log('🔧 ===== FIM FUNÇÃO separarNomeMatricula =====\n');
+  
   return { nome: qualificacaoCompleta, matricula: '' };
 }
 
@@ -722,50 +762,85 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
       });
     }
     
-    // Processar testemunhas policiais (COM telefone e separação nome/matrícula)
+    // Processar testemunhas policiais (COM telefone e separação nome/matrícula) - DEBUG
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
+      console.log('👮 ===== PROCESSANDO TESTEMUNHAS POLICIAIS =====');
+      
       dados.testemunhasPoliciais.forEach((policial, index) => {
+        console.log(`\n🔍 Policial ${index + 1}:`);
+        console.log('📥 Entrada qualificacaoCompleta:', policial.qualificacaoCompleta);
+        
         const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
+        console.log('📝 Nome base extraído:', nomeBase);
+        
         const qualificacaoLimpa = limparQualificacaoInteligente(
           policial.qualificacaoCompleta, 
           textoOriginal, 
           nomeBase
         );
+        console.log('🧹 Após limpeza:', qualificacaoLimpa);
         
         if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          // Separar nome e matrícula
+          // Separar nome e matrícula COM DEBUG
+          console.log('🔧 Iniciando separação nome/matrícula...');
           const { nome, matricula } = separarNomeMatricula(qualificacaoLimpa);
+          console.log('✅ Nome separado:', nome);
+          console.log('✅ Matrícula separada:', matricula);
           
           addPolicial(container);
           const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
+          console.log('📋 Elemento policial criado:', !!ultimoPolicial);
           
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
             const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
             
+            console.log('🎯 Campos encontrados:');
+            console.log('  - tipoSelect:', !!tipoSelect);
+            console.log('  - nomeInput:', !!nomeInput, nomeInput ? '(ID: ' + nomeInput.id + ')' : '');
+            console.log('  - matriculaInput:', !!matriculaInput, matriculaInput ? '(ID: ' + matriculaInput.id + ')' : '');
+            
+            // DEBUG: Verificar todos os inputs do policial
+            const todosInputs = ultimoPolicial.querySelectorAll('input');
+            console.log('🔍 TODOS os inputs encontrados:');
+            todosInputs.forEach((input, idx) => {
+              console.log(`  ${idx}: placeholder="${input.placeholder}" id="${input.id}" class="${input.className}"`);
+            });
+            
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
               if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
                 tipoSelect.value = tipoLower;
                 camposPreenchidos++;
+                console.log('✅ Tipo preenchido:', tipoLower);
               }
             }
             
             if (nomeInput && !nomeInput.value) {
               nomeInput.value = nome; // Nome com telefone
               camposPreenchidos++;
-              console.log('✅ Policial nome preenchido:', nome);
+              console.log('✅ Campo NOME preenchido com:', nome);
             }
             
             if (matriculaInput && !matriculaInput.value && matricula) {
               matriculaInput.value = matricula; // Apenas matrícula
               camposPreenchidos++;
-              console.log('✅ Policial matrícula preenchida:', matricula);
+              console.log('✅ Campo MATRÍCULA preenchido com:', matricula);
+            } else {
+              console.log('❌ Campo MATRÍCULA NÃO preenchido - Motivos:');
+              console.log('  - matriculaInput existe:', !!matriculaInput);
+              console.log('  - matriculaInput.value está vazio:', !matriculaInput?.value);
+              console.log('  - matricula tem valor:', !!matricula);
+              console.log('  - valor da matricula:', matricula);
             }
           }
+        } else {
+          console.log('❌ Qualificação limpa inválida:', qualificacaoLimpa);
         }
       });
+      
+      console.log('👮 ===== FIM PROCESSAMENTO POLICIAIS =====\n');
     }
     
     console.log(`🎯 TOTAL de campos preenchidos: ${camposPreenchidos}`);
@@ -1504,7 +1579,7 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js ATUALIZADO');
+  console.log('Limpando recursos do módulo audiencia.js ATUALIZADO (DEBUG VERSION)');
   
   // Remover estilos de impressão se existirem
   document.getElementById('print-styles')?.remove();
@@ -1517,7 +1592,7 @@ export function cleanup() {
 }
 
 // ============================================
-// 📍 VERSÃO ATUALIZADA - V13.1
+// 📍 VERSÃO ATUALIZADA - V13.1 DEBUG
 // ============================================
 // 
 // ✅ PRINCIPAIS ATUALIZAÇÕES:
@@ -1528,9 +1603,23 @@ export function cleanup() {
 // 5. Relatório usa "OBSERVAÇÕES DO MP"
 // 6. Logs informativos sobre o processamento
 // 
+// 🔍 DEBUG ADICIONADO:
+// - Logs detalhados no processamento de policiais
+// - Verificação de querySelector para campos
+// - Rastreamento da função separarNomeMatricula
+// - Logs na função limparQualificacaoInteligente
+// - Verificação de todos os inputs criados
+// - Diagnóstico completo do fluxo de dados
+// 
 // 📋 FORMATO TESTEMUNHAS POLICIAIS:
 // - IA retorna: "JOSÉ SILVA / MAT 123456, telefone (87) 99999-9999"
 // - Campo nome: "JOSÉ SILVA, telefone (87) 99999-9999"
 // - Campo matrícula: "MAT 123456"
 // - Campo tipo: "PM" (automático)
+// 
+// 🚨 PARA USAR:
+// 1. Substitua o arquivo audiencia.js
+// 2. Execute o teste com testemunhas policiais
+// 3. Verifique o console (F12) para logs detalhados
+// 4. Identifique onde está falhando a separação
 // ============================================
