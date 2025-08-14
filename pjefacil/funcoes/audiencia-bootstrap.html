@@ -65,9 +65,23 @@
           <div class="d-flex justify-content-between align-items-center mb-2">
             <label for="observacoes-mp" class="form-label mb-0">Observações do Ministério Público</label>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-sm btn-outline-secondary" id="atualizarDadosMP">
-                <i class="fas fa-sync-alt me-1"></i> Atualizar
-              </button>
+              <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                  Atualizar
+                </button>
+                <ul class="dropdown-menu">
+                  <li>
+                    <button class="dropdown-item" type="button" id="processarDeepSeek">
+                      Modelo Ds
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" type="button" id="processarGemini">
+                      Modelo Ge
+                    </button>
+                  </li>
+                </ul>
+              </div>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="limparObservacoesMP">
                 <i class="fas fa-eraser me-1"></i> Branco
               </button>
