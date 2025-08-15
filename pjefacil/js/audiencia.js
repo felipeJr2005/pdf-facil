@@ -893,7 +893,7 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
 function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo = 'IA') {
   const timestamp = new Date().toLocaleString();
   
-  let relatorio = `PROCESSAMENTO AUTOMÁTICO [${nomeModelo}] - ${timestamp}\n\n`;
+  let relatorio = `PROCESSAMENTO - ${timestamp}\n\n`;
   
   // Estatísticas
   if (dados.estatisticas) {
@@ -1195,7 +1195,7 @@ function addPolicial(container) {
         <option value="prf">PRF</option>
       </select>
       <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-policial="${currentIndex}">
-      <input type="text" placeholder="Matrícula/RG" class="form-control endereco" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
+      <input type="text" placeholder="Matrícula/RG" class="form-control matricula" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
       <div class="d-flex align-items-center ms-auto">
         <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-policial-intimado="${currentIndex}">
         <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
