@@ -1,6 +1,6 @@
 {
   "versao": "2.0",
-  "dataExportacao": "2025-08-09T23:30:36.021Z",
+  "dataExportacao": "2025-08-22T10:35:36.141Z",
   "totalAplicacoes": 10,
   "aplicacoes": [
     {
@@ -19,13 +19,13 @@
       "id": 2,
       "tipo": "CDB",
       "tipoTaxa": "PRE",
-      "valorAplicado": 232000,
-      "dataAplicacao": "2025-02-18",
-      "dataResgate": "2025-08-21",
+      "valorAplicado": 246800,
+      "dataAplicacao": "2025-08-21",
+      "dataResgate": "2026-02-21",
       "taxaAdmin": null,
       "banco": "C6",
       "porcentagemCDI": null,
-      "taxaPreFixada": 15.3
+      "taxaPreFixada": 15.5
     },
     {
       "id": 3,
@@ -41,15 +41,15 @@
     },
     {
       "id": 4,
-      "tipo": "CDB",
+      "tipo": "LCA",
       "tipoTaxa": "PRE",
-      "valorAplicado": 3140.49,
-      "dataAplicacao": "2025-06-11",
-      "dataResgate": "2025-08-18",
+      "valorAplicado": 3253,
+      "dataAplicacao": "2025-08-22",
+      "dataResgate": "2025-09-23",
       "taxaAdmin": null,
       "banco": "INTER_CSF",
       "porcentagemCDI": null,
-      "taxaPreFixada": 15.8
+      "taxaPreFixada": 86
     },
     {
       "id": 5,
