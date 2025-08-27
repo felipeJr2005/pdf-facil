@@ -666,6 +666,11 @@ function extrairTelefonesDaOrigemTexto(textoCompleto, nomePessoa) {
 /**
  * FUNÇÃO CORRIGIDA - Distribuir dados com limpeza inteligente e telefone
  */
+// COLE ESTA FUNÇÃO CORRIGIDA NO LUGAR DA EXISTENTE EM audiencia.js
+
+/**
+ * FUNÇÃO CORRIGIDA - Distribuir dados com limpeza inteligente e telefone
+ */
 function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
   let camposPreenchidos = 0;
   
@@ -698,19 +703,19 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
             const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
             const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
             
-if (nomeInput && !nomeInput.value) {
-  const dadosPolicial = extrairDadosPolicial(qualificacaoLimpa);
-  nomeInput.value = dadosPolicial.nome;
-  
-  const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
-  if (matriculaInput && !matriculaInput.value && dadosPolicial.matricula) {
-    matriculaInput.value = dadosPolicial.matricula;
-    camposPreenchidos++;
-  }
-  
-  camposPreenchidos++;
-  console.log('✅ Policial preenchido - Nome:', dadosPolicial.nome, 'Matrícula:', dadosPolicial.matricula);
-}
+            // ==================================================================
+            // ▼▼▼ CORREÇÃO APLICADA AQUI ▼▼▼
+            // A lógica incorreta de "policial" foi removida.
+            // Agora, simplesmente preenchemos o nome do réu com a qualificação limpa.
+            // ==================================================================
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
+              camposPreenchidos++;
+              console.log('✅ Réu preenchido:', qualificacaoLimpa);
+            }
+            // ==================================================================
+            // ▲▲▲ FIM DA CORREÇÃO ▲▲▲
+            // ==================================================================
             
             if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
               enderecoInput.value = reu.endereco;
@@ -824,6 +829,7 @@ if (nomeInput && !nomeInput.value) {
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
+            const dadosPolicial = extrairDadosPolicial(qualificacaoLimpa);
             
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
@@ -834,9 +840,14 @@ if (nomeInput && !nomeInput.value) {
             }
             
             if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
-              camposPreenchidos++;
-              console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
+                nomeInput.value = dadosPolicial.nome;
+                const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
+                if (matriculaInput && !matriculaInput.value && dadosPolicial.matricula) {
+                    matriculaInput.value = dadosPolicial.matricula;
+                    camposPreenchidos++;
+                }
+                camposPreenchidos++;
+                console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
             }
           }
         }
