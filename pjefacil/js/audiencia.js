@@ -577,19 +577,22 @@ function criarLinhaTestemunhaDefesa() {
 
 // Função para adicionar testemunha (MP ou defesa)
 function addTestemunha(container, tipo) {
-  const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
-  
-  if (testemunhasContainer) {
-    // Usar a função específica para cada tipo de testemunha
-    const linha = tipo === 'mp' ? criarLinhaTestemunhaMP() : criarLinhaTestemunhaDefesa();
-    
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
-      linha.remove();
-    });
-    testemunhasContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento    throw new Error(`Falha ao processar texto: ${error.message}`);
-  }
+ const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
+ 
+ if (testemunhasContainer) {
+   // Usar a função específica para cada tipo de testemunha
+   const linha = tipo === 'mp' ? criarLinhaTestemunhaMP() : criarLinhaTestemunhaDefesa();
+   
+   linha.querySelector('.remove-btn').addEventListener('click', function() {
+     linha.remove();
+   });
+   testemunhasContainer.appendChild(linha);
+   
+   // Efeito de animação na adição do elemento
+   setTimeout(() => {
+     linha.classList.add('active');
+   }, 10);
+ }
 }
 
 // ============================================
