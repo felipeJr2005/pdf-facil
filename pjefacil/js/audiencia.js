@@ -386,6 +386,11 @@ function addVitima(container) {
     vitimasContainer.appendChild(linha);
     
     // Efeito de animação na adição do elemento
+    setTimeout(() => {
+      linha.classList.add('active');
+    }, 10);
+  }
+} 
 
 // Função para adicionar policial
 function addPolicial(container) {
@@ -498,11 +503,6 @@ function addReu(container) {
     // Efeito de animação na adição do elemento
     setTimeout(() => {
       reuContainer.classList.add('active');
-    }, 10);
-  }
-}
-    setTimeout(() => {
-      linha.classList.add('active');
     }, 10);
   }
 }
