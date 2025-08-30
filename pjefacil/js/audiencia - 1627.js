@@ -1,185 +1,4 @@
-// Processar réus com limpeza inteligente + telefone
-    if (dados.reus && dados.reus.length > 0) {
-      console.log('👤 Processando réus:', dados.reus.length);
-      
-      dados.reus.forEach((reu, index) => {
-        try {
-          console.log(`🔍 Réu ${index + 1} original:`, reu.qualificacaoCompleta);
-          
-          // Extrair nome para busca de telefone
-          const nomeBase = extrairNomeBase(reu.qualificacaoCompleta);
-          
-          // Aplicar limpeza inteligente com busca de telefone
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            reu.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          // Só adiciona se a qualificação limpa tem conteúdo útil
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addReu(container);
-            const ultimoReu = container.querySelector('#reus-container').lastElementChild;
-            
-            if (ultimoReu) {
-              const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Réu preenchido:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
-                enderecoInput.value = reu.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Réu rejeitado - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar réu ${index + 1}:`, error);
-          // Continua processando os outros réus
-        }
-      });
-    }
-    
-    // Processar vítimas com limpeza inteligente + telefone
-    if (dados.vitimas && dados.vitimas.length > 0) {
-      console.log('👥 Processando vítimas:', dados.vitimas.length);
-      
-      dados.vitimas.forEach((vitima, index) => {
-        try {
-          console.log(`🔍 Vítima ${index + 1} original:`, vitima.qualificacaoCompleta);
-          
-          const nomeBase = extrairNomeBase(vitima.qualificacaoCompleta);
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            vitima.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addVitima(container);
-            const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
-            
-            if (ultimaVitima) {
-              const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Vítima preenchida:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
-                enderecoInput.value = vitima.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Vítima rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar vítima ${index + 1}:`, error);
-          // Continua processando as outras vítimas
-        }
-      });
-    }
-    
-    // Processar testemunhas gerais com limpeza inteligente + telefone
-    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-      console.log('👓 Processando testemunhas gerais:', dados.testemunhasGerais.length);
-      
-      dados.testemunhasGerais.forEach((testemunha, index) => {
-        try {
-          console.log(`🔍 Testemunha ${index + 1} original:`, testemunha.qualificacaoCompleta);
-          
-          const nomeBase = extrairNomeBase(testemunha.qualificacaoCompleta);
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            testemunha.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addTestemunha(container, 'mp');
-            const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
-            
-            if (ultimaTestemunha) {
-              const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Testemunha preenchida:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
-                enderecoInput.value = testemunha.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Testemunha rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar testemunha ${index + 1}:`, error);
-          // Continua processando as outras testemunhas
-        }
-      });
-    }
-    
-    // Processar testemunhas policiais (SEM telefone - apenas nome e matrícula)
-    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      dados.testemunhasPoliciais.forEach((policial, index) => {
-        try {
-          const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
-          
-          // Para policiais, não buscar telefone - apenas limpeza básica
-          const qualificacaoLimpa = policial.qualificacaoCompleta
-            .replace(/,\s*conhecid[oa]\s+como\s+['"]não\s+informad[oa]['"]?/gi, '')
-            .replace(/,\s*CPF\s+não\s+informado/gi, '')
-            .replace(/,\s*filh[oa]\s+de\s+não\s+informad[oa]/gi, '')
-            .replace(/,\s*nascid[oa]\s+em\s+não\s+informad[oa]/gi, '')
-            .replace(/,\s*,+/g, ',')
-            .replace(/,\s*$/g, '')
-            .replace(/^\s*,+/g, '')
-            .trim();
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addPolicial(container);
-            const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-            
-            if (ultimoPolicial) {
-              const tipoSelect = ultimoPolicial.querySelector('select');
-              const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-              
-              if (tipoSelect && policial.tipo) {
-                const tipoLower = policial.tipo.toLowerCase();
-                if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
-                  tipoSelect.value = tipoLower;
-                  camposPreenchidos++;
-                }
-              }
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar policial ${index + 1}:`, error);
-          // Continua processando os outros policiais
-        }
-      });
-    }/**
+/**
  * Módulo para Audiência - Integrado ao tema do dashboard
  * Versão com IDs fixos e grupos separados para Text Blaze + DeepSeek COMPLETO
  * ✅ VERSÃO CORRIGIDA - Limpeza inteligente + Extração de telefone
@@ -394,12 +213,10 @@ async function processarDenunciaComIA(container, modelo) {
     mostrarMensagem(container, `❌ Erro no processamento ${nomeModelo}: ${error.message}`, 'error');
     
   } finally {
-    // Restaurar botão original com verificação de segurança
-    if (botao) {
-      const nomeModelo = modelo === 'deepseek' ? 'Ds' : 'Ge';
-      botao.innerHTML = `Modelo ${nomeModelo}`;
-      botao.disabled = false;
-    }
+    // Restaurar botão original
+    const nomeModelo = modelo === 'deepseek' ? 'Ds' : 'Ge';
+    botao.innerHTML = `Modelo ${nomeModelo}`;
+    botao.disabled = false;
   }
 }
 
@@ -407,8 +224,6 @@ async function processarDenunciaComIA(container, modelo) {
  * Função para chamar a API Gemini - NOVA
  */
 async function chamarGeminiAPI(textoCompleto) {
-  let response = null;
-  
   try {
     console.log('Chamando API Gemini...');
     
@@ -495,7 +310,7 @@ TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
     
     // Fazer a requisição para a API Gemini
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -548,9 +363,6 @@ ${textoCompleto}`;
   } catch (error) {
     console.error("Erro na API Gemini:", error);
     throw new Error(`Falha ao processar texto: ${error.message}`);
-  } finally {
-    // Cleanup: liberar referências se necessário
-    response = null;
   }
 }
 
@@ -558,8 +370,6 @@ ${textoCompleto}`;
  * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM TELEFONE
  */
 async function chamarDeepSeekAPI(textoCompleto) {
-  let response = null;
-  
   try {
     console.log('Chamando API DeepSeek...');
     
@@ -646,7 +456,7 @@ TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
     
     // Fazer a requisição para a API
-    response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -704,9 +514,6 @@ ${textoCompleto}`;
   } catch (error) {
     console.error("Erro na API DeepSeek:", error);
     throw new Error(`Falha ao processar texto: ${error.message}`);
-  } finally {
-    // Cleanup: liberar referências se necessário
-    response = null;
   }
 }
 
@@ -900,35 +707,6 @@ function extrairNomeBase(qualificacaoCompleta) {
 }
 
 /**
- * Função para separar nome e matrícula de testemunhas policiais
- */
-function separarNomeMatricula(qualificacaoCompleta) {
-  if (!qualificacaoCompleta) return { nome: '', matricula: '' };
-  
-  // Exemplo: "SOLDADO JOÃO CARLOS PEREIRA / MATRÍCULA 123456"
-  const partes = qualificacaoCompleta.split(' / ');
-  
-  if (partes.length >= 2) {
-    const nome = partes[0].trim();
-    const matriculaParte = partes[1].trim();
-    
-    // Extrair apenas os números da matrícula
-    const matricula = matriculaParte.replace(/\D/g, ''); // Remove não-dígitos
-    
-    return {
-      nome: nome,
-      matricula: matricula
-    };
-  }
-  
-  // Se não conseguir separar, retorna tudo como nome
-  return {
-    nome: qualificacaoCompleta.trim(),
-    matricula: ''
-  };
-}
-
-/**
  * FUNÇÃO CORRIGIDA - Distribuir dados com limpeza inteligente e telefone
  */
 function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
@@ -1081,7 +859,6 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
           if (ultimoPolicial) {
             const tipoSelect = ultimoPolicial.querySelector('select');
             const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
             
             if (tipoSelect && policial.tipo) {
               const tipoLower = policial.tipo.toLowerCase();
@@ -1091,19 +868,10 @@ function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
               }
             }
             
-            // Separar nome e matrícula corretamente
-            const { nome, matricula } = separarNomeMatricula(qualificacaoLimpa);
-            
-            if (nomeInput && !nomeInput.value && nome) {
-              nomeInput.value = nome;
+            if (nomeInput && !nomeInput.value) {
+              nomeInput.value = qualificacaoLimpa;
               camposPreenchidos++;
-              console.log('✅ Policial nome preenchido:', nome);
-            }
-            
-            if (matriculaInput && !matriculaInput.value && matricula) {
-              matriculaInput.value = matricula;
-              camposPreenchidos++;
-              console.log('✅ Policial matrícula preenchida:', matricula);
+              console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
             }
           }
         }
@@ -1829,8 +1597,8 @@ switch (tipo) {
       statusMessage.style.transform = 'translateY(0)';
     }, 10);
     
-    // Guardar referência do timeout para possível cleanup
-    let timeoutId = setTimeout(() => {
+    // Remover após alguns segundos
+    setTimeout(() => {
       statusMessage.style.opacity = '0';
       statusMessage.style.transform = 'translateY(20px)';
       
@@ -1841,9 +1609,6 @@ switch (tipo) {
         }
       }, 300);
     }, 5000);
-    
-    // Permitir cleanup manual do timeout se necessário
-    statusMessage._timeoutId = timeoutId;
   }
 }
 
