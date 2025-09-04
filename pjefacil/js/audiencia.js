@@ -1,94 +1,3 @@
-
-    
-    // Processar vítimas com limpeza inteligente + telefone
-    if (dados.vitimas && dados.vitimas.length > 0) {
-      console.log('👥 Processando vítimas:', dados.vitimas.length);
-      
-      dados.vitimas.forEach((vitima, index) => {
-        try {
-          console.log(`🔍 Vítima ${index + 1} original:`, vitima.qualificacaoCompleta);
-          
-          const nomeBase = extrairNomeBase(vitima.qualificacaoCompleta);
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            vitima.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addVitima(container);
-            const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
-            
-            if (ultimaVitima) {
-              const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Vítima preenchida:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
-                enderecoInput.value = vitima.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Vítima rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar vítima ${index + 1}:`, error);
-          // Continua processando as outras vítimas
-        }
-      });
-    }
-    
-    // Processar testemunhas gerais com limpeza inteligente + telefone
-    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-      console.log('👓 Processando testemunhas gerais:', dados.testemunhasGerais.length);
-      
-      dados.testemunhasGerais.forEach((testemunha, index) => {
-        try {
-          console.log(`🔍 Testemunha ${index + 1} original:`, testemunha.qualificacaoCompleta);
-          
-          const nomeBase = extrairNomeBase(testemunha.qualificacaoCompleta);
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            testemunha.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addTestemunha(container, 'mp');
-            const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
-            
-            if (ultimaTestemunha) {
-              const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Testemunha preenchida:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
-                enderecoInput.value = testemunha.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Testemunha rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar testemunha ${index + 1}:`, error);
-          // Continua processando as outras testemunhas
-        }
-      });
-    }
-        
-
 // Contadores para IDs previsíveis
 let contadorTestemunhaMP = 0;
 let contadorTestemunhaDefesa = 0;
@@ -832,139 +741,110 @@ function separarNomeMatricula(qualificacaoCompleta) {
   };
 }
 
+
 /**
- * FUNÇÃO CORRIGIDA - Distribuir dados com limpeza inteligente e telefone
+ * Helper para processar uma lista de pessoas (réus, vítimas, testemunhas) e preencher a UI.
+ * @param {HTMLElement} container - O elemento container principal.
+ * @param {Array} pessoas - A lista de objetos de pessoa para processar.
+ * @param {string} textoOriginal - O texto original para contexto (ex: busca de telefone).
+ * @param {object} config - Configuração para o processamento.
+ * @param {string} config.tipoPessoa - O tipo de pessoa (ex: 'Réu', 'Vítima').
+ * @param {string} config.logIcon - O ícone para o log.
+ * @param {string} config.containerSelector - O seletor CSS para o container na UI.
+ * @param {Function} config.addFuncao - A função para adicionar um novo elemento na UI.
+ * @param {Array} [config.addFuncaoArgs] - Argumentos extras para a função de adicionar.
+ * @returns {number} - O número de campos preenchidos.
+ */
+function processarPessoasUI(container, pessoas, textoOriginal, config) {
+  if (!pessoas || pessoas.length === 0) {
+    return 0;
+  }
+
+  let camposPreenchidosLocal = 0;
+  console.log(`${config.logIcon} Processando ${config.tipoPessoa}(s):`, pessoas.length);
+
+  pessoas.forEach((pessoa, index) => {
+    try {
+      console.log(`🔍 ${config.tipoPessoa} ${index + 1} original:`, pessoa.qualificacaoCompleta);
+
+      const nomeBase = extrairNomeBase(pessoa.qualificacaoCompleta);
+      const qualificacaoLimpa = limparQualificacaoInteligente(
+        pessoa.qualificacaoCompleta,
+        textoOriginal,
+        nomeBase
+      );
+
+      if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
+        // Chama a função 'add' específica para este tipo de pessoa
+        config.addFuncao(container, ...(config.addFuncaoArgs || []));
+        
+        const ultimoElemento = container.querySelector(config.containerSelector).lastElementChild;
+
+        if (ultimoElemento) {
+          const nomeInput = ultimoElemento.querySelector('input[placeholder="Nome"]');
+          const enderecoInput = ultimoElemento.querySelector('input[placeholder="Endereço"]');
+
+          if (nomeInput && !nomeInput.value) {
+            nomeInput.value = qualificacaoLimpa;
+            camposPreenchidosLocal++;
+            console.log(`✅ ${config.tipoPessoa} preenchido:`, qualificacaoLimpa);
+          }
+
+          if (enderecoInput && !enderecoInput.value && pessoa.endereco && pessoa.endereco.trim() !== '') {
+            enderecoInput.value = pessoa.endereco;
+            camposPreenchidosLocal++;
+          }
+        }
+      } else {
+        console.log(`❌ ${config.tipoPessoa} rejeitado - qualificação insuficiente:`, qualificacaoLimpa);
+      }
+    } catch (error) {
+      console.error(`💥 Erro ao processar ${config.tipoPessoa} ${index + 1}:`, error);
+    }
+  });
+
+  return camposPreenchidosLocal;
+}
+
+
+/**
+ * FUNÇÃO REATORADA - Distribui dados nos campos da UI de forma mais limpa.
  */
 function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
   let camposPreenchidos = 0;
   
   try {
-    console.log('🎯 PROCESSANDO dados:', dados);
+    console.log('🎯 Distribuindo dados recebidos da IA:', dados);
     
-    // Processar réus com limpeza inteligente + telefone
-    if (dados.reus && dados.reus.length > 0) {
-      console.log('👤 Processando réus:', dados.reus.length);
-      
-      dados.reus.forEach((reu, index) => {
-        console.log(`🔍 Réu ${index + 1} original:`, reu.qualificacaoCompleta);
-        
-        // Extrair nome para busca de telefone
-        const nomeBase = extrairNomeBase(reu.qualificacaoCompleta);
-        
-        // Aplicar limpeza inteligente com busca de telefone
-        const qualificacaoLimpa = limparQualificacaoInteligente(
-          reu.qualificacaoCompleta, 
-          textoOriginal, 
-          nomeBase
-        );
-        
-        // Só adiciona se a qualificação limpa tem conteúdo útil
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          addReu(container);
-          const ultimoReu = container.querySelector('#reus-container').lastElementChild;
-          
-          if (ultimoReu) {
-            const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
-              camposPreenchidos++;
-              console.log('✅ Réu preenchido:', qualificacaoLimpa);
-            }
-            
-            if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
-              enderecoInput.value = reu.endereco;
-              camposPreenchidos++;
-            }
-          }
-        } else {
-          console.log('❌ Réu rejeitado - qualificação insuficiente:', qualificacaoLimpa);
-        }
-      });
-    }
+    // Processar réus
+    camposPreenchidos += processarPessoasUI(container, dados.reus, textoOriginal, {
+        tipoPessoa: 'Réu',
+        logIcon: '👤',
+        containerSelector: '#reus-container',
+        addFuncao: addReu
+    });
+
+    // Processar vítimas
+    camposPreenchidos += processarPessoasUI(container, dados.vitimas, textoOriginal, {
+        tipoPessoa: 'Vítima',
+        logIcon: '👥',
+        containerSelector: '#vitimas-container',
+        addFuncao: addVitima
+    });
+
+    // Processar testemunhas de acusação (gerais)
+    camposPreenchidos += processarPessoasUI(container, dados.testemunhasGerais, textoOriginal, {
+        tipoPessoa: 'Testemunha',
+        logIcon: '👓',
+        containerSelector: '#testemunhas-mp-container',
+        addFuncao: addTestemunha,
+        addFuncaoArgs: ['mp']
+    });
     
-    // Processar vítimas com limpeza inteligente + telefone
-    if (dados.vitimas && dados.vitimas.length > 0) {
-      console.log('👥 Processando vítimas:', dados.vitimas.length);
-      
-      dados.vitimas.forEach((vitima, index) => {
-        console.log(`🔍 Vítima ${index + 1} original:`, vitima.qualificacaoCompleta);
-        
-        const nomeBase = extrairNomeBase(vitima.qualificacaoCompleta);
-        const qualificacaoLimpa = limparQualificacaoInteligente(
-          vitima.qualificacaoCompleta, 
-          textoOriginal, 
-          nomeBase
-        );
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          addVitima(container);
-          const ultimaVitima = container.querySelector('#vitimas-container').lastElementChild;
-          
-          if (ultimaVitima) {
-            const nomeInput = ultimaVitima.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimaVitima.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
-              camposPreenchidos++;
-              console.log('✅ Vítima preenchida:', qualificacaoLimpa);
-            }
-            
-            if (enderecoInput && !enderecoInput.value && vitima.endereco && vitima.endereco.trim() !== '') {
-              enderecoInput.value = vitima.endereco;
-              camposPreenchidos++;
-            }
-          }
-        } else {
-          console.log('❌ Vítima rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-        }
-      });
-    }
-    
-    // Processar testemunhas gerais com limpeza inteligente + telefone
-    if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-      console.log('👓 Processando testemunhas gerais:', dados.testemunhasGerais.length);
-      
-      dados.testemunhasGerais.forEach((testemunha, index) => {
-        console.log(`🔍 Testemunha ${index + 1} original:`, testemunha.qualificacaoCompleta);
-        
-        const nomeBase = extrairNomeBase(testemunha.qualificacaoCompleta);
-        const qualificacaoLimpa = limparQualificacaoInteligente(
-          testemunha.qualificacaoCompleta, 
-          textoOriginal, 
-          nomeBase
-        );
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          addTestemunha(container, 'mp');
-          const ultimaTestemunha = container.querySelector('#testemunhas-mp-container').lastElementChild;
-          
-          if (ultimaTestemunha) {
-            const nomeInput = ultimaTestemunha.querySelector('input[placeholder="Nome"]');
-            const enderecoInput = ultimaTestemunha.querySelector('input[placeholder="Endereço"]');
-            
-            if (nomeInput && !nomeInput.value) {
-              nomeInput.value = qualificacaoLimpa;
-              camposPreenchidos++;
-              console.log('✅ Testemunha preenchida:', qualificacaoLimpa);
-            }
-            
-            if (enderecoInput && !enderecoInput.value && testemunha.endereco && testemunha.endereco.trim() !== '') {
-              enderecoInput.value = testemunha.endereco;
-              camposPreenchidos++;
-            }
-          }
-        } else {
-          console.log('❌ Testemunha rejeitada - qualificação insuficiente:', qualificacaoLimpa);
-        }
-      });
-    }
-    
-    // Processar testemunhas policiais (SEM telefone - apenas nome e matrícula)
+    // Processar testemunhas policiais (lógica específica, mantida separada)
     if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      dados.testemunhasPoliciais.forEach((policial, index) => {
+      console.log('👮 Processando testemunhas policiais:', dados.testemunhasPoliciais.length);
+      dados.testemunhasPoliciais.forEach((policial) => {
         const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
         
         // Para policiais, não buscar telefone - apenas limpeza básica
