@@ -179,11 +179,7 @@
           // Continua processando os outros policiais
         }
       });
-    }/**
- * Módulo para Audiência - Integrado ao tema do dashboard
- * Versão com IDs fixos e grupos separados para Text Blaze + DeepSeek COMPLETO
- * ✅ VERSÃO CORRIGIDA - Limpeza inteligente + Extração de telefone
- */
+    }
 
 // Contadores para IDs previsíveis
 let contadorTestemunhaMP = 0;
