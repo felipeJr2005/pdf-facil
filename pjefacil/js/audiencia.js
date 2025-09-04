@@ -991,19 +991,48 @@ function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo = 'IA'
 }
 
 // ============================================
-// 🔍 FUNÇÕES DE CRIAÇÃO DE ELEMENTOS (ORIGINAIS)
+// 🔍 FUNÇÕES DE UI (CRIAÇÃO E MANIPULAÇÃO DE ELEMENTOS)
 // ============================================
 
-// Função para criar linha de assistente de acusação
+/**
+ * Função genérica para adicionar um elemento a um contêiner com animação e botão de remover.
+ * @param {HTMLElement} container - O contêiner principal do módulo.
+ * @param {object} config - Configurações.
+ * @param {string} config.containerSelector - Seletor CSS do contêiner onde o elemento será adicionado.
+ * @param {Function} config.createElementFn - Função que cria e retorna o novo HTMLElement.
+ * @param {Function} [config.postAddHook] - Hook opcional para executar lógica adicional no elemento criado.
+ */
+function addElement(container, config) {
+  const targetContainer = container.querySelector(config.containerSelector);
+  if (targetContainer) {
+    const element = config.createElementFn();
+    
+    const removeBtn = element.querySelector('.remove-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => element.remove());
+    }
+
+    if (config.postAddHook) {
+      config.postAddHook(element);
+    }
+
+    targetContainer.appendChild(element);
+
+    setTimeout(() => {
+      element.classList.add('active');
+    }, 10);
+  }
+}
+
+// --- Funções de Criação ---
+
 function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorAssistente++;
   const currentIndex = contadorAssistente;
   
-  // Criar IDs fixos e previsíveis com prefixo exclusivo do grupo
   const assistenteId = `assistente-acusacao-${currentIndex}`;
   const nomeId = `assistente-nome-${currentIndex}`;
   const oabId = `assistente-oab-${currentIndex}`;
@@ -1012,7 +1041,7 @@ function criarLinhaAssistenteAcusacao() {
   linha.setAttribute('data-index', currentIndex);
   linha.id = assistenteId;
 
-  const baseHtml = `
+  linha.innerHTML = `
     <input type="text" placeholder="Nome do Assistente" class="form-control nome" id="${nomeId}" data-textblaze-acusacao-assistente="${currentIndex}">
     <input type="text" placeholder="OAB" class="form-control oab" id="${oabId}" data-textblaze-acusacao-assistente-oab="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
@@ -1023,38 +1052,16 @@ function criarLinhaAssistenteAcusacao() {
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
     </button>
   `;
-
-  linha.innerHTML = baseHtml;
   return linha;
 }
 
-// Função para adicionar assistente de acusação
-function addAssistenteAcusacao(container) {
-  const assistenteContainer = container.querySelector('#assistente-acusacao-container');
-  if (assistenteContainer) {
-    const linha = criarLinhaAssistenteAcusacao();
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
-      linha.remove();
-    });
-    assistenteContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  }
-}
-
-// Função para criar linha vítima
 function criarLinhaVitima() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorVitima++;
   const currentIndex = contadorVitima;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `vitima-${currentIndex}`;
   const nomeId = `vitima-nome-${currentIndex}`;
   const enderecoId = `vitima-endereco-${currentIndex}`;
@@ -1063,7 +1070,7 @@ function criarLinhaVitima() {
   linha.id = itemId;
   linha.setAttribute('data-index', currentIndex);
   
-  const baseHtml = `
+  linha.innerHTML = `
     <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-vitima="${currentIndex}">
     <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-vitima-endereco="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
@@ -1074,38 +1081,16 @@ function criarLinhaVitima() {
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
     </button>
   `;
-
-  linha.innerHTML = baseHtml;
   return linha;
 }
 
-// Função para adicionar vítima
-function addVitima(container) {
-  const vitimasContainer = container.querySelector('#vitimas-container');
-  if (vitimasContainer) {
-    const linha = criarLinhaVitima();
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
-      linha.remove();
-    });
-    vitimasContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  }
-}
-
-// Função para criar linha testemunha MP
 function criarLinhaTestemunhaMP() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
   
-  // Incrementar contador para ID único
   contadorTestemunhaMP++;
   const currentIndex = contadorTestemunhaMP;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `testemunha-mp-${currentIndex}`;
   const nomeId = `testemunha-mp-nome-${currentIndex}`;
   const enderecoId = `testemunha-mp-endereco-${currentIndex}`;
@@ -1114,7 +1099,7 @@ function criarLinhaTestemunhaMP() {
   linha.id = itemId;
   linha.setAttribute('data-index', currentIndex);
   
-  const baseHtml = `
+  linha.innerHTML = `
     <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-mp-testemunha="${currentIndex}">
     <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-mp-testemunha-endereco="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
@@ -1125,21 +1110,16 @@ function criarLinhaTestemunhaMP() {
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
     </button>
   `;
-
-  linha.innerHTML = baseHtml;
   return linha;
 }
 
-// Função para criar linha testemunha Defesa
 function criarLinhaTestemunhaDefesa() {
   const linha = document.createElement('div');
   linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
-  
-  // Incrementar contador para ID único
+
   contadorTestemunhaDefesa++;
   const currentIndex = contadorTestemunhaDefesa;
   
-  // Definir IDs previsíveis com prefixo exclusivo do grupo
   const itemId = `testemunha-defesa-${currentIndex}`;
   const nomeId = `testemunha-defesa-nome-${currentIndex}`;
   const enderecoId = `testemunha-defesa-endereco-${currentIndex}`;
@@ -1148,7 +1128,7 @@ function criarLinhaTestemunhaDefesa() {
   linha.id = itemId;
   linha.setAttribute('data-index', currentIndex);
   
-  const baseHtml = `
+  linha.innerHTML = `
     <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-defesa-testemunha="${currentIndex}">
     <input type="text" placeholder="Endereço" class="form-control endereco" id="${enderecoId}" data-textblaze-defesa-testemunha-endereco="${currentIndex}">
     <div class="d-flex align-items-center ms-auto">
@@ -1159,85 +1139,45 @@ function criarLinhaTestemunhaDefesa() {
       <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
     </button>
   `;
-
-  linha.innerHTML = baseHtml;
   return linha;
 }
 
-// Função para adicionar testemunha (MP ou defesa)
-function addTestemunha(container, tipo) {
-  const testemunhasContainer = container.querySelector(`#testemunhas-${tipo}-container`);
+function criarLinhaPolicial() {
+  contadorPolicial++;
+  const currentIndex = contadorPolicial;
   
-  if (testemunhasContainer) {
-    // Usar a função específica para cada tipo de testemunha
-    const linha = tipo === 'mp' ? criarLinhaTestemunhaMP() : criarLinhaTestemunhaDefesa();
-    
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
-      linha.remove();
-    });
-    testemunhasContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  }
+  const itemId = `policial-${currentIndex}`;
+  const tipoId = `policial-tipo-${currentIndex}`;
+  const nomeId = `policial-nome-${currentIndex}`;
+  const matriculaId = `policial-matricula-${currentIndex}`;
+  const intimadoId = `policial-intimado-${currentIndex}`;
+  
+  const linha = document.createElement('div');
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.id = itemId;
+  linha.setAttribute('data-index', currentIndex);
+  
+  linha.innerHTML = `
+    <select class="form-select tipo-policial" style="width: auto; min-width: 100px;" id="${tipoId}" data-textblaze-policial-tipo="${currentIndex}">
+      <option value="pm">PM</option>
+      <option value="pc">PC</option>
+      <option value="pf">PF</option>
+      <option value="prf">PRF</option>
+    </select>
+    <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-policial="${currentIndex}">
+    <input type="text" placeholder="Matrícula/RG" class="form-control matricula" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
+    <div class="d-flex align-items-center ms-auto">
+      <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-policial-intimado="${currentIndex}">
+      <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
+    </div>
+    <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
+      <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
+    </button>
+  `;
+  return linha;
 }
 
-// Função para adicionar policial
-function addPolicial(container) {
-  const policiaisContainer = container.querySelector('#policiais-container');
-  if (policiaisContainer) {
-    contadorPolicial++;
-    const currentIndex = contadorPolicial;
-    
-    // Criar IDs fixos previsíveis com prefixo exclusivo
-    const itemId = `policial-${currentIndex}`;
-    const tipoId = `policial-tipo-${currentIndex}`;
-    const nomeId = `policial-nome-${currentIndex}`;
-    const matriculaId = `policial-matricula-${currentIndex}`;
-    const intimadoId = `policial-intimado-${currentIndex}`;
-    
-    const linha = document.createElement('div');
-    linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
-    linha.id = itemId;
-    linha.setAttribute('data-index', currentIndex);
-    
-    linha.innerHTML = `
-      <select class="form-select tipo-policial" style="width: auto; min-width: 100px;" id="${tipoId}" data-textblaze-policial-tipo="${currentIndex}">
-        <option value="pm">PM</option>
-        <option value="pc">PC</option>
-        <option value="pf">PF</option>
-        <option value="prf">PRF</option>
-      </select>
-      <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-policial="${currentIndex}">
-      <input type="text" placeholder="Matrícula/RG" class="form-control matricula" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
-      <div class="d-flex align-items-center ms-auto">
-        <input type="checkbox" id="${intimadoId}" class="form-check-input intimado" data-textblaze-policial-intimado="${currentIndex}">
-        <label class="form-check-label ms-1" for="${intimadoId}">Intimado</label>
-      </div>
-      <button class="btn btn-danger btn-sm p-0 rounded lh-1 d-flex align-items-center justify-content-center remove-btn" aria-label="Remover">
-        <span class="d-block" style="width: 24px; height: 24px; line-height: 24px;">×</span>
-      </button>
-    `;
-    
-    linha.querySelector('.remove-btn').addEventListener('click', function() {
-      linha.remove();
-    });
-    
-    policiaisContainer.appendChild(linha);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      linha.classList.add('active');
-    }, 10);
-  }
-}
-
-// Função para adicionar réu
-function addReu(container) {
-  const reusContainer = container.querySelector('#reus-container');
-  if (reusContainer) {
+function criarLinhaReu() {
     contadorReu++;
     const currentIndex = contadorReu;
     
@@ -1246,7 +1186,6 @@ function addReu(container) {
     reuContainer.id = `reu-${currentIndex}`;
     reuContainer.setAttribute('data-index', currentIndex);
     
-    // IDs previsíveis para cada elemento com prefixo exclusivo do grupo
     const reuNomeId = `reu-nome-${currentIndex}`;
     const reuEnderecoId = `reu-endereco-${currentIndex}`;
     const reuIntimadoId = `reu-intimado-${currentIndex}`;
@@ -1276,27 +1215,53 @@ function addReu(container) {
         </div>
       </div>
     `;
-    
-    // Event listener para botão de remover
-    reuContainer.querySelector('.remove-btn').addEventListener('click', function() {
-      reuContainer.remove();
-    });
-    
-    // Event listener para tipo de defesa
-    const tipoDefesaSelect = reuContainer.querySelector('.tipo-defesa');
-    const nomeAdvogadoInput = reuContainer.querySelector('.nome-advogado');
-    
-    tipoDefesaSelect.addEventListener('change', function() {
-      nomeAdvogadoInput.style.display = this.value === 'particular' ? 'block' : 'none';
-    });
-    
-    reusContainer.appendChild(reuContainer);
-    
-    // Efeito de animação na adição do elemento
-    setTimeout(() => {
-      reuContainer.classList.add('active');
-    }, 10);
-  }
+    return reuContainer;
+}
+
+// --- Funções de Adição (Refatoradas) ---
+
+function addAssistenteAcusacao(container) {
+  addElement(container, {
+    containerSelector: '#assistente-acusacao-container',
+    createElementFn: criarLinhaAssistenteAcusacao
+  });
+}
+
+function addVitima(container) {
+  addElement(container, {
+    containerSelector: '#vitimas-container',
+    createElementFn: criarLinhaVitima
+  });
+}
+
+function addTestemunha(container, tipo) {
+  addElement(container, {
+    containerSelector: `#testemunhas-${tipo}-container`,
+    createElementFn: tipo === 'mp' ? criarLinhaTestemunhaMP : criarLinhaTestemunhaDefesa
+  });
+}
+
+function addPolicial(container) {
+  addElement(container, {
+    containerSelector: '#policiais-container',
+    createElementFn: criarLinhaPolicial
+  });
+}
+
+function addReu(container) {
+  addElement(container, {
+    containerSelector: '#reus-container',
+    createElementFn: criarLinhaReu,
+    postAddHook: (element) => {
+      const tipoDefesaSelect = element.querySelector('.tipo-defesa');
+      const nomeAdvogadoInput = element.querySelector('.nome-advogado');
+      if (tipoDefesaSelect && nomeAdvogadoInput) {
+        tipoDefesaSelect.addEventListener('change', function() {
+          nomeAdvogadoInput.style.display = this.value === 'particular' ? 'block' : 'none';
+        });
+      }
+    }
+  });
 }
 
 // ============================================
