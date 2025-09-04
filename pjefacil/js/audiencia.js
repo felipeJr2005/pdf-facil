@@ -1,50 +1,4 @@
-// Processar réus com limpeza inteligente + telefone
-    if (dados.reus && dados.reus.length > 0) {
-      console.log('👤 Processando réus:', dados.reus.length);
-      
-      dados.reus.forEach((reu, index) => {
-        try {
-          console.log(`🔍 Réu ${index + 1} original:`, reu.qualificacaoCompleta);
-          
-          // Extrair nome para busca de telefone
-          const nomeBase = extrairNomeBase(reu.qualificacaoCompleta);
-          
-          // Aplicar limpeza inteligente com busca de telefone
-          const qualificacaoLimpa = limparQualificacaoInteligente(
-            reu.qualificacaoCompleta, 
-            textoOriginal, 
-            nomeBase
-          );
-          
-          // Só adiciona se a qualificação limpa tem conteúdo útil
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addReu(container);
-            const ultimoReu = container.querySelector('#reus-container').lastElementChild;
-            
-            if (ultimoReu) {
-              const nomeInput = ultimoReu.querySelector('input[placeholder="Nome"]');
-              const enderecoInput = ultimoReu.querySelector('input[placeholder="Endereço"]');
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Réu preenchido:', qualificacaoLimpa);
-              }
-              
-              if (enderecoInput && !enderecoInput.value && reu.endereco && reu.endereco.trim() !== '') {
-                enderecoInput.value = reu.endereco;
-                camposPreenchidos++;
-              }
-            }
-          } else {
-            console.log('❌ Réu rejeitado - qualificação insuficiente:', qualificacaoLimpa);
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar réu ${index + 1}:`, error);
-          // Continua processando os outros réus
-        }
-      });
-    }
+
     
     // Processar vítimas com limpeza inteligente + telefone
     if (dados.vitimas && dados.vitimas.length > 0) {
@@ -133,53 +87,7 @@
         }
       });
     }
-    
-    // Processar testemunhas policiais (SEM telefone - apenas nome e matrícula)
-    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      dados.testemunhasPoliciais.forEach((policial, index) => {
-        try {
-          const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
-          
-          // Para policiais, não buscar telefone - apenas limpeza básica
-          const qualificacaoLimpa = policial.qualificacaoCompleta
-            .replace(/,\s*conhecid[oa]\s+como\s+['"]não\s+informad[oa]['"]?/gi, '')
-            .replace(/,\s*CPF\s+não\s+informado/gi, '')
-            .replace(/,\s*filh[oa]\s+de\s+não\s+informad[oa]/gi, '')
-            .replace(/,\s*nascid[oa]\s+em\s+não\s+informad[oa]/gi, '')
-            .replace(/,\s*,+/g, ',')
-            .replace(/,\s*$/g, '')
-            .replace(/^\s*,+/g, '')
-            .trim();
-          
-          if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-            addPolicial(container);
-            const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-            
-            if (ultimoPolicial) {
-              const tipoSelect = ultimoPolicial.querySelector('select');
-              const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-              
-              if (tipoSelect && policial.tipo) {
-                const tipoLower = policial.tipo.toLowerCase();
-                if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
-                  tipoSelect.value = tipoLower;
-                  camposPreenchidos++;
-                }
-              }
-              
-              if (nomeInput && !nomeInput.value) {
-                nomeInput.value = qualificacaoLimpa;
-                camposPreenchidos++;
-                console.log('✅ Policial preenchido (sem telefone):', qualificacaoLimpa);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`💥 Erro ao processar policial ${index + 1}:`, error);
-          // Continua processando os outros policiais
-        }
-      });
-    }
+        
 
 // Contadores para IDs previsíveis
 let contadorTestemunhaMP = 0;
