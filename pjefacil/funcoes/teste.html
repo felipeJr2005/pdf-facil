@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Teste Extensivo de Conexão e Erros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{font-family:system-ui,Arial,sans-serif;color-scheme:light dark}
+    body{margin:24px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:1100px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .card{border:1px solid #8884;padding:12px;border-radius:8px}
+    label{font-size:12px;color:#666}
+    input,textarea,select,button{font:inherit;padding:8px;border-radius:6px;border:1px solid #8884}
+    button{cursor:pointer}
+    #log{white-space:pre-wrap;max-height:420px;overflow:auto;background:#0002;padding:10px;border-radius:8px}
+    .ok{color:#0a0}.warn{color:#c80}.err{color:#e00}
+    .badge{display:inline-block;border:1px solid #999;padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px}
+    .muted{color:#666}
+    code{background:#0002;padding:1px 4px;border-radius:4px}
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="card">
+      <h1>Diagnóstico “Alô, mundo” + Logs</h1>
+      <div>
+        <span class="badge" id="b-js">JS: aguardando</span>
+        <span class="badge" id="b-dom">DOM: aguardando</span>
+        <span class="badge" id="b-file">Protocolo: ?</span>
+        <span class="badge" id="b-csp">CSP: ?</span>
+        <span class="badge" id="b-sw">ServiceWorker: ?</span>
+        <span class="badge" id="b-ext">Extensão: ?</span>
+      </div>
+      <p id="hello" class="muted">Inicializando…</p>
+    </div>
+
+    <div class="card">
+      <h3>Entradas</h3>
+      <div class="row">
+        <div style="flex:1 1 240px">
+          <label>URL para <code>fetch</code> (GET)</label>
+          <input id="in-url" placeholder="https://httpbin.org/get" style="width:100%">
+        </div>
+        <div style="flex:1 1 240px">
+          <label>URL de módulo p/ importar</label>
+          <input id="in-module" placeholder="./js/audiencia.js" style="width:100%">
+        </div>
+        <div style="flex:1 1 240px">
+          <label>Chave Gemini (opcional, para teste real)</label>
+          <input id="in-key" placeholder="AIza..." style="width:100%">
+        </div>
+      </div>
+      <div class="row">
+        <div style="flex:1 1 100%">
+          <label>Texto para teste Gemini</label>
+          <textarea id="in-text" rows="3" placeholder="Seu texto de teste..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ações</h3>
+      <div class="row">
+        <button id="btn-all">Rodar Tudo</button>
+        <button id="btn-env">Ambiente</button>
+        <button id="btn-console">Console.log</button>
+        <button id="btn-error">Forçar Erro</button>
+        <button id="btn-timer">Timer/Promise</button>
+        <button id="btn-storage">Storage/Quota</button>
+        <button id="btn-cookie">Cookie</button>
+        <button id="btn-import">Importar Módulo</button>
+        <button id="btn-dup">Testar Duplicação Identificador</button>
+        <button id="btn-fetch">Fetch URL</button>
+        <button id="btn-cors">Pré-flight CORS</button>
+        <button id="btn-gemini">Testar Gemini</button>
+        <button id="btn-clear">Limpar Log</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Log</h3>
+      <div id="log" aria-live="polite"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // -------- infra de log --------
+  const $ = sel => document.querySelector(sel);
+  const logBox = $("#log");
+  const ts = () => new Date().toISOString().replace('T',' ').replace('Z','');
+  const write = (msg, cls="") => {
+    const line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = `[${ts()}] ${msg}`;
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+  };
+  const badge = (id, text, ok=null) => {
+    const el = $(id); if(!el) return;
+    el.textContent = text;
+    el.className = "badge" + (ok===true ? " ok" : ok===false ? " err" : "");
+  };
+  // espelha console no painel
+  ["log","warn","error","info"].forEach(k=>{
+    const orig = console[k].bind(console);
+    console[k] = (...args)=>{
+      orig(...args);
+      const cls = k==="error"?"err":k==="warn"?"warn":"";
+      write(`console.${k}: `+args.map(a=>toStr(a)).join(" "), cls);
+    };
+  });
+  const toStr = (v)=>{
+    try {
+      if (v instanceof Error) return `${v.name}: ${v.message}\n${v.stack||""}`;
+      if (typeof v==="object") return JSON.stringify(v, null, 2);
+      return String(v);
+    } catch { return String(v); }
+  };
+
+  // -------- sinalizadores base --------
+  badge("#b-js","JS: ativo",true);
+  $("#hello").textContent = "Alô, mundo — JS ativo.";
+  write("JS carregado.");
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ()=>{ badge("#b-dom","DOM: pronto",true); write("DOMContentLoaded."); });
+  } else {
+    badge("#b-dom","DOM: pronto",true); write("DOM já pronto.");
+  }
+
+  // protocolo e file://
+  const isFile = location.protocol === "file:";
+  badge("#b-file", `Protocolo: ${location.protocol}`, !isFile);
+  if (isFile) {
+    write("Aviso: executando via file://. Módulos ES e CORS podem falhar por política do navegador.", "warn");
+  }
+
+  // CSP
+  const cspMeta = [...document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]')].map(m=>m.content).join(" | ");
+  if (cspMeta) {
+    badge("#b-csp","CSP: meta detectada",true);
+    write("CSP meta: "+cspMeta);
+  } else {
+    badge("#b-csp","CSP: não detectada",null);
+  }
+
+  // Service Worker
+  if ("serviceWorker" in navigator) {
+    badge("#b-sw","ServiceWorker: suportado",true);
+  } else {
+    badge("#b-sw","ServiceWorker: indisponível",false);
+  }
+
+  // Extensões: heurística mínimo
+  const hasChrome = typeof window.chrome !== "undefined";
+  badge("#b-ext", `Extensão API: ${hasChrome?"chrome":"indisponível"}`, hasChrome?null:false);
+  if (hasChrome) write("API chrome detectada. Mensagens 'Unchecked runtime.lastError' vêm de extensões, não do site.", "warn");
+
+  // erros globais
+  window.onerror = (msg, src, line, col, err)=>{
+    write(`onerror => ${msg} @ ${src}:${line}:${col}\n${err && err.stack ? err.stack : ""}`, "err");
+    return false;
+  };
+  window.onunhandledrejection = (e)=>{
+    write("unhandledrejection => "+toStr(e.reason||e), "err");
+  };
+
+  // -------- utilitários --------
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  async function fetchWithReport(url, init){
+    const t0 = performance.now();
+    try {
+      write(`Fetch ▶ ${url} ${init?.method?init.method:"GET"}`);
+      const res = await fetch(url, init);
+      const t1 = performance.now();
+      const headers = {}; res.headers.forEach((v,k)=>headers[k]=v);
+      let bodyText = "";
+      try { bodyText = await res.text(); } catch {}
+      const out = {
+        ok: res.ok, status: res.status, statusText: res.statusText,
+        url: res.url, type: res.type, redirected: res.redirected,
+        time_ms: Math.round(t1 - t0),
+        headers, body_sample: bodyText.slice(0, 1200)
+      };
+      write("Fetch ◀ resposta:\n"+JSON.stringify(out,null,2), res.ok?"ok":"warn");
+      return out;
+    } catch (err) {
+      const t1 = performance.now();
+      const info = {
+        network_error: true,
+        time_ms: Math.round(t1 - t0),
+        name: err.name,
+        message: err.message
+      };
+      // pistas comuns
+      if (/CORS/i.test(err.message)) info.hint = "Provável CORS bloqueado";
+      if (/Failed to fetch/i.test(err.message)) info.hint = isFile ? "file:// + CORS/mixed content" : "Rede/CORS/DNS";
+      write("Fetch ✖ erro:\n"+JSON.stringify(info,null,2), "err");
+      return info;
+    }
+  }
+
+  function looksLikeApiKey(k){
+    if (!k) return {ok:false, reason:"vazio"};
+    const re = /^[A-Za-z0-9_\-]{20,}$/;
+    return {ok: re.test(k), reason: re.test(k)?"ok":"formato suspeito"};
+  }
+
+  // -------- testes --------
+  async function testEnv(){
+    write("Ambiente ▶");
+    const data = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      location: { href: location.href, origin: location.origin, protocol: location.protocol },
+      cookiesEnabled: navigator.cookieEnabled,
+      crossOriginIsolated: !!window.crossOriginIsolated,
+      modulesSupported: typeof import === "function",
+    };
+    write("Ambiente ◀\n"+JSON.stringify(data,null,2),"ok");
+  }
+
+  function testConsole(){
+    console.log("Log padrão");
+    console.info("Info");
+    console.warn("Aviso");
+    console.error(new Error("Erro simulado do console"));
+  }
+
+  function testError(){
+    try { /* força ReferenceError */ nãoExiste.func(); } catch(e){
+      write("Try/catch capturou: "+toStr(e), "ok");
+    }
+    // unhandled proposital
+    Promise.reject(new Error("Promise rejeitada proposital"));
+  }
+
+  async function testTimer(){
+    const t0 = performance.now();
+    await sleep(120);
+    const t1 = performance.now();
+    write(`Timer+Promise ok em ${Math.round(t1-t0)}ms`,"ok");
+  }
+
+  function testStorage(){
+    try {
+      localStorage.setItem("_t", String(Date.now()));
+      const v = localStorage.getItem("_t");
+      localStorage.removeItem("_t");
+      write("localStorage ok: "+v, "ok");
+    } catch(e){ write("localStorage erro: "+toStr(e), "err"); }
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(est=>{
+        write("Quota:\n"+JSON.stringify(est,null,2),"ok");
+      });
+    }
+  }
+
+  function testCookie(){
+    try {
+      document.cookie = "teste_cookie=1; path=/; SameSite=Lax";
+      write("Cookie setado. document.cookie="+document.cookie, "ok");
+    } catch(e){ write("Cookie erro: "+toStr(e),"err"); }
+  }
+
+  async function testImport(){
+    const url = $("#in-module").value.trim();
+    if (!url) { write("Informe URL do módulo.","warn"); return; }
+    write("Import ▶ "+url);
+    try{
+      // tentativa 1: import normal
+      const mod = await import(url);
+      write("Import ◀ sucesso. Exports: "+Object.keys(mod).join(", ") || "(nenhum)","ok");
+      // tentativa 2: checar redeclaração indireta via data:module
+      try {
+        const blob = new Blob([`const X=1; export const ok=X;`],{type:'text/javascript'});
+        const u = URL.createObjectURL(blob);
+        const m2 = await import(u);
+        write("Import data:module ok: "+Object.keys(m2).join(","),"ok");
+        URL.revokeObjectURL(u);
+      } catch(e){ write("Import data:module falhou: "+toStr(e),"warn"); }
+    } catch(e){
+      const msg = toStr(e);
+      write("Import ✖ erro:\n"+msg,"err");
+      if (/has already been declared/i.test(msg)) {
+        write("Diagnóstico: identificador duplicado no módulo. Unifique a definição ou renomeie.","err");
+      }
+      if (isFile) write("Dica: sirva via HTTP. Módulos sob file:// falham em alguns navegadores.","warn");
+    }
+  }
+
+  async function testDupIdentifier(){
+    write("Teste duplicação ▶");
+    try {
+      // gera SyntaxError em tempo de parse do eval
+      eval(`"use strict"; const ZZ=1; const ZZ=2;`);
+      write("Sem erro inesperado","warn");
+    } catch(e){
+      write("Duplicação capturada: "+e.name+" - "+e.message,"ok");
+    }
+  }
+
+  async function testFetchUrl(){
+    const url = $("#in-url").value.trim() || "https://httpbin.org/get";
+    await fetchWithReport(url);
+  }
+
+  async function testPreflight(){
+    const url = $("#in-url").value.trim();
+    if (!url) { write("Informe URL alvo para pré-flight.","warn"); return; }
+    // Força CORS preflight: método custom + header custom
+    await fetchWithReport(url, {
+      method: "PUT",
+      headers: { "Content-Type":"application/json", "X-Custom-Header":"probe" },
+      body: JSON.stringify({probe:true})
+    });
+  }
+
+  async function testGemini(){
+    const key = $("#in-key").value.trim();
+    const text = $("#in-text").value.trim() || "Teste simples";
+    const model = "gemini-1.5-flash";
+    const k = looksLikeApiKey(key);
+    if (!k.ok) write("Chave com formato suspeito: "+k.reason,"warn");
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(key||"INVALIDO")}`;
+    const payload = {
+      contents: [{ parts: [{ text: "Diga apenas: OK\n\n"+text }] }],
+      generationConfig: { temperature: 0.0, maxOutputTokens: 64 }
+    };
+    const res = await fetchWithReport(url, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.network_error) {
+      write("Gemini falhou por rede/CORS. Verifique HTTPS, chave, e política do navegador.", "err");
+      if (isFile) write("Dica: abra via http://localhost para evitar bloqueios file://", "warn");
+      return;
+    }
+    if (res.status===401 || res.status===403) {
+      write("Diagnóstico: chave inválida ou sem permissão (401/403).", "err");
+    } else if (res.status===404) {
+      write("Diagnóstico: modelo/endpoint incorreto (404).", "err");
+    } else if (res.ok) {
+      try {
+        const body = res.body_sample || "";
+        const json = JSON.parse(body);
+        const txt = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+        write("Gemini resposta parsable. Extract:\n"+txt, "ok");
+      } catch(e) {
+        write("Resposta não JSON ou parse falhou. Corpo parcial acima.", "warn");
+      }
+    }
+  }
+
+  // -------- bind UI --------
+  $("#btn-env").addEventListener("click", testEnv);
+  $("#btn-console").addEventListener("click", testConsole);
+  $("#btn-error").addEventListener("click", testError);
+  $("#btn-timer").addEventListener("click", testTimer);
+  $("#btn-storage").addEventListener("click", testStorage);
+  $("#btn-cookie").addEventListener("click", testCookie);
+  $("#btn-import").addEventListener("click", testImport);
+  $("#btn-dup").addEventListener("click", testDupIdentifier);
+  $("#btn-fetch").addEventListener("click", testFetchUrl);
+  $("#btn-cors").addEventListener("click", testPreflight);
+  $("#btn-gemini").addEventListener("click", testGemini);
+  $("#btn-clear").addEventListener("click", ()=>{ logBox.innerHTML=""; });
+
+  $("#btn-all").addEventListener("click", async ()=>{
+    write("==== Rodar Tudo ====");
+    await testEnv();
+    testConsole();
+    testError();
+    await testTimer();
+    testStorage();
+    testCookie();
+    await testDupIdentifier();
+    await testFetchUrl();
+    await sleep(100);
+    await testPreflight();
+    write("==== Fim ====");
+  });
+
+})();
+</script>
+</body>
+</html>
