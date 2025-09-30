@@ -218,52 +218,6 @@ async function processarDenunciaComIA(container, modelo) {
 
 
 /**
- * Função para chamar a API Gemini - VERSÃO CORRETA PARA AUDIENCIA.JS
- */
-async function chamarGeminiAPI(textoCompleto) {
-  let response = null;
-  try {
-    console.log('Chamando API Gemini com a URL correta (v1)...');
-    
-    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s"; // Sua chave
-    const prompt = `...seu prompt aqui...`; // Mantenha seu prompt como está
-
-    // AQUI ESTÁ A CORREÇÃO:
-    response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `...seu prompt de sistema aqui...\n\n${prompt}` }] }],
-        generationConfig: {
-          temperature: 0.0,
-          maxOutputTokens: 2500
-        }
-      })
-    });
-    
-    console.log('Response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API Gemini`);
-    }
-    
-    const data = await response.json();
-    const resposta = data.candidates[0].content.parts[0].text;
-    
-    let jsonString = resposta.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    
-    return JSON.parse(jsonString);
-
-  } catch (error) {
-    console.error("Erro na API Gemini:", error);
-    throw new Error(`Falha ao processar texto: ${error.message}`);
-  } finally {
-    response = null;
-  }
-}
-
-/**
  * Função para chamar a API Gemini - VERSÃO CORRETA FINAL
  */
 async function chamarGeminiAPI(textoCompleto) {
