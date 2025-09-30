@@ -5,128 +5,83 @@ let contadorReu = 0;
 let contadorVitima = 0;
 let contadorAssistente = 0;
 let contadorPolicial = 0;
+let _audienciaBootstrapped = false;
+const _listeners = [];
 
-// Função de inicialização do módulo
+
 export function initialize(container) {
+  if (_audienciaBootstrapped) return;
+  _audienciaBootstrapped = true;
+
   console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
-  
-  // Resetar contadores ao inicializar o módulo
+
   contadorTestemunhaMP = 0;
   contadorTestemunhaDefesa = 0;
   contadorReu = 0;
   contadorVitima = 0;
   contadorAssistente = 0;
   contadorPolicial = 0;
-  
-  // Configurar os event listeners
-  
-  // Assistente de Acusação
-  const addAssistenteBtn = container.querySelector('[id="addAssistenteBtn"], [onclick*="addAssistenteAcusacao"]');
-  if (addAssistenteBtn) {
-    addAssistenteBtn.addEventListener('click', function() {
-      addAssistenteAcusacao(container);
-    });
-  }
-  
-  // Vítima
-  const addVitimaBtn = container.querySelector('[id="addVitimaBtn"], [onclick*="addVitima"]');
-  if (addVitimaBtn) {
-    addVitimaBtn.addEventListener('click', function() {
-      addVitima(container);
-    });
-  }
-  
-  // Testemunha MP
-  const addTestemunhaMpBtn = container.querySelector('#addTestemunhaMpBtn, [onclick*="addTestemunha(\'mp\')"]');
-  if (addTestemunhaMpBtn) {
-    addTestemunhaMpBtn.addEventListener('click', function() {
-      addTestemunha(container, 'mp');
-    });
-  }
-  
-  // Policial
-  const addPolicialBtn = container.querySelector('#addPolicialBtn, [onclick*="addPolicial"]');
-  if (addPolicialBtn) {
-    addPolicialBtn.addEventListener('click', function() {
-      addPolicial(container);
-    });
-  }
-  
-  // Réu
-  const addReuBtn = container.querySelector('#addReuBtn, [onclick*="addReu"]');
-  if (addReuBtn) {
-    addReuBtn.addEventListener('click', function() {
-      addReu(container);
-    });
-  }
-  
-  // Testemunha Defesa
-  const addTestemunhaDefesaBtn = container.querySelector('#addTestemunhaDefesaBtn, [onclick*="addTestemunha(\'defesa\')"]');
-  if (addTestemunhaDefesaBtn) {
-    addTestemunhaDefesaBtn.addEventListener('click', function() {
-      addTestemunha(container, 'defesa');
-    });
-  }
-  
-  // Salvar
-  const salvarBtn = container.querySelector('#salvarBtn, [onclick*="salvarDados"]');
-  if (salvarBtn) {
-    salvarBtn.addEventListener('click', function() {
-      salvarDados();
-    });
-  }
-  
-  // Limpar
-  const limparBtn = container.querySelector('#limparBtn, [onclick*="limparFormulario"]');
-  if (limparBtn) {
-    limparBtn.addEventListener('click', function() {
-      limparFormulario(container);
-    });
+
+  function on(el, ev, fn){
+    if (!el) return;
+    el.addEventListener(ev, fn);
+    _listeners.push({el, ev, fn});
   }
 
-  // Event listener para botão "DeepSeek" - PROCESSAMENTO DEEPSEEK COMPLETO
+  const addAssistenteBtn = container.querySelector('[id="addAssistenteBtn"], [onclick*="addAssistenteAcusacao"]');
+  on(addAssistenteBtn, 'click', () => addAssistenteAcusacao(container));
+
+  const addVitimaBtn = container.querySelector('[id="addVitimaBtn"], [onclick*="addVitima"]');
+  on(addVitimaBtn, 'click', () => addVitima(container));
+
+  const addTestemunhaMpBtn = container.querySelector('#addTestemunhaMpBtn, [onclick*="addTestemunha(\'mp\')"]');
+  on(addTestemunhaMpBtn, 'click', () => addTestemunha(container, 'mp'));
+
+  const addPolicialBtn = container.querySelector('#addPolicialBtn, [onclick*="addPolicial"]');
+  on(addPolicialBtn, 'click', () => addPolicial(container));
+
+  const addReuBtn = container.querySelector('#addReuBtn, [onclick*="addReu"]');
+  on(addReuBtn, 'click', () => addReu(container));
+
+  const addTestemunhaDefesaBtn = container.querySelector('#addTestemunhaDefesaBtn, [onclick*="addTestemunha(\'defesa\')"]');
+  on(addTestemunhaDefesaBtn, 'click', () => addTestemunha(container, 'defesa'));
+
+  const salvarBtn = container.querySelector('#salvarBtn, [onclick*="salvarDados"]');
+  on(salvarBtn, 'click', salvarDados);
+
+  const limparBtn = container.querySelector('#limparBtn, [onclick*="limparFormulario"]');
+  on(limparBtn, 'click', () => limparFormulario(container));
+
   const processarDeepSeekBtn = container.querySelector('#processarDeepSeek');
   if (processarDeepSeekBtn) {
-    processarDeepSeekBtn.addEventListener('click', function() {
-      processarDenunciaComIA(container, 'deepseek');
-    });
+    if (typeof window.chamarDeepSeekAPI !== 'function') {
+      processarDeepSeekBtn.disabled = true; // evita ReferenceError
+    } else {
+      on(processarDeepSeekBtn, 'click', () => processarDenunciaComIA(container, 'deepseek'));
+    }
   }
 
-  // Event listener para botão "Gemini" - PROCESSAMENTO GEMINI COMPLETO
   const processarGeminiBtn = container.querySelector('#processarGemini');
-  if (processarGeminiBtn) {
-    processarGeminiBtn.addEventListener('click', function() {
-      processarDenunciaComIA(container, 'gemini');
-    });
-  }
+  on(processarGeminiBtn, 'click', () => processarDenunciaComIA(container, 'gemini'));
 
-  // Event listener para botão "Branco" - Limpar observações MP
   const limparObservacoesMPBtn = container.querySelector('#limparObservacoesMP');
-  if (limparObservacoesMPBtn) {
-    limparObservacoesMPBtn.addEventListener('click', function() {
-      if (confirm('Tem certeza que deseja limpar as observações do MP?')) {
-        const campoObservacoes = container.querySelector('#observacoes-mp');
-        if (campoObservacoes) {
-          // CORREÇÃO: Funciona tanto com textarea (.value) quanto com contenteditable (.textContent)
-          if (campoObservacoes.tagName === 'TEXTAREA') {
-            campoObservacoes.value = '';
-          } else {
-            campoObservacoes.textContent = '';
-          }
-          mostrarMensagem(container, 'Observações do MP limpas', 'info');
-        }
-      }
-    });
-  }
-  
-  // Registrar eventos de remoção para elementos existentes
+  on(limparObservacoesMPBtn, 'click', () => {
+    if (!confirm('Tem certeza que deseja limpar as observações do MP?')) return;
+    const campoObservacoes = container.querySelector('#observacoes-mp');
+    if (!campoObservacoes) return;
+    if (campoObservacoes.tagName === 'TEXTAREA') campoObservacoes.value = '';
+    else campoObservacoes.textContent = '';
+    mostrarMensagem(container, 'Observações do MP limpas', 'info');
+  });
+
   setupRemoveButtons(container);
-  
-  // Adicionar classe ao contentor principal para o estilo específico da função
-  container.closest('.main-content').classList.add('audiencia-mode');
-  
+  container.closest('.main-content')?.classList.add('audiencia-mode');
+
   console.log('Módulo de Audiência pronto para uso');
 }
+
+
+
 
 // ============================================
 // 🔍 FUNÇÃO PRINCIPAL DEEPSEEK - PROCESSAMENTO DE DENÚNCIA
@@ -209,110 +164,73 @@ async function processarDenunciaComIA(container, modelo) {
   } finally {
     // Restaurar botão original com verificação de segurança
     if (botao) {
-      const nomeModelo = modelo === 'deepseek' ? 'Ds' : 'Ge';
-      botao.innerHTML = `Modelo ${nomeModelo}`;
+      botao.innerHTML = textoOriginalBtn;
       botao.disabled = false;
     }
   }
 }
 
 
-
 async function chamarGeminiAPI(textoCompleto) {
-  let response = null;
-  
-  try {
-    console.log('Chamando API Gemini...');
-    
-    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s";
-    
-    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
+  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'SUA_CHAVE_AQUI'; // mova p/ backend
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
+  const prompt = `Analise o texto da denúncia judicial abaixo e extraia dados estruturados em JSON.
+INSTRUÇÕES:
+1) Réus: monte qualificação completa; 2) Vítimas/Testemunhas gerais idem quando possível;
+3) Telefone obrigatório p/ réus, vítimas, testemunhas gerais; exceção policiais;
+4) Se faltar dado use "não informado";
+5) Policiais: "NOME COMPLETO / MATRÍCULA" + tipo(livre) + lotação(opc).
+Retorne APENAS JSON válido.
 
-1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
-   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
-   
-2. Para VÍTIMAS e TESTEMUNHAS: mesmo formato, mas pode ter menos informações
-   
-3. **TELEFONE OBRIGATÓRIO**: Busque SEMPRE telefones no texto para réus, vítimas e testemunhas gerais
-   Formatos: (87) 99999-9999, 87 99999-9999, 8799999999, etc.
-   Incluir na qualificação: "...nascido em DD/MM/AAAA, telefone (87) 99999-9999"
-   ⚠️ EXCEÇÃO: Testemunhas policiais NÃO precisam de telefone, apenas nome e matrícula
-   
-4. Se alguma informação não existir, use "não informado" (será limpo depois)
-
-5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA" (SEM telefone)
-
-FORMATO DE SAÍDA OBRIGATÓRIO:
-{
-  "reus": [{"qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE", "endereco": "Endereço completo + situação prisional atual", "telefone": "(87) 99999-9999"}],
-  "vitimas": [{"qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", "endereco": "Endereço (buscar no rol de testemunhas)", "telefone": "(87) 99999-9999"}],
-  "testemunhasGerais": [{"qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", "endereco": "Endereço se disponível", "telefone": "(87) 99999-9999"}],
-  "testemunhasPoliciais": [{"qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA", "tipo": "PM|PC|PF|PRF", "lotacao": "Local de trabalho (ex: 4º BPM)"}],
-  "testemunhasDefesa": [],
-  "procuradorRequerido": [],
-  "outros": [{"nome": "Pessoa sem qualificação completa", "motivo": "Razão pela qual está em outros"}],
-  "observacoesImportantes": ["Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"],
-  "estatisticas": {"totalMencionados": 0, "totalQualificados": 0, "naoQualificados": 0, "telefonesEncontrados": 0}
-}
-
-TEXTO DA DENÚNCIA:
+TEXTO:
 ${textoCompleto}`;
-    
-    // ✅ MODELO CORRETO: gemini-2.5-flash
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído e busque telefones para réus, vítimas e testemunhas gerais (NÃO para testemunhas policiais). Retorne APENAS JSON válido, sem texto adicional ou formatação markdown.\n\n${prompt}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.0,
-          maxOutputTokens: 2500
-        }
-      })
-    });
-    
-    console.log('Response status:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API Gemini`);
+
+  const body = {
+    contents: [{ parts: [{ text: `Você é um assistente jurídico. Retorne APENAS JSON válido.\n\n${prompt}` }]}],
+    generationConfig: { temperature: 0.0, maxOutputTokens: 4096 }
+  };
+
+  const maxTentativas = 3;
+  for (let i = 0; i < maxTentativas; i++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), signal: ctrl.signal });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+        let s = String(raw).trim();
+        if (/^```/m.test(s)) s = s.replace(/^```json?\s*/i,'').replace(/```$/,'').trim();
+        try { return JSON.parse(s); } catch { throw new Error('Resposta não-JSON da API Gemini'); }
+      }
+
+      if (resp.status === 429) {
+        const ra = resp.headers.get('Retry-After');
+        const waitMs = ra ? Number(ra) * 1000 : (1000 * (2 ** i));
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+
+      let msg = `Erro ${resp.status}: Falha na API Gemini`;
+      try { const err = await resp.json(); msg = err?.error?.message || msg; } catch {}
+      throw new Error(msg);
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        if (i < maxTentativas - 1) continue;
+        throw new Error('Timeout na API Gemini');
+      }
+      if (i < maxTentativas - 1) continue;
+      throw e;
+    } finally {
+      clearTimeout(t);
     }
-    
-    const data = await response.json();
-    const resposta = data.candidates[0].content.parts[0].text;
-    
-    console.log('Resposta bruta da API Gemini:', resposta);
-    
-    let jsonString = resposta.trim();
-    
-    if (jsonString.startsWith('```json')) {
-      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (jsonString.startsWith('```')) {
-      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    console.log('JSON limpo:', jsonString);
-    
-    const dados = JSON.parse(jsonString);
-    
-    console.log('Dados parseados:', dados);
-    return dados;
-    
-  } catch (error) {
-    console.error("Erro na API Gemini:", error);
-    throw new Error(`Falha ao processar texto: ${error.message}`);
-  } finally {
-    response = null;
   }
+  throw new Error('Limite temporário excedido. Tente novamente depois.');
 }
+
+
 
 
 // ============================================
@@ -323,94 +241,38 @@ ${textoCompleto}`;
  * Função para extrair telefones do texto original da denúncia
  * Busca vários formatos de telefone comuns
  */
+
+
 function extrairTelefonesDaOrigemTexto(textoCompleto, nomePessoa) {
   if (!textoCompleto || !nomePessoa) return '';
-  
-  console.log('📞 Buscando telefone para:', nomePessoa);
-  
-  // Padrões de telefone mais comuns no Brasil
-  const padroesTelefone = [
-    // (87) 99999-9999 ou (87)99999-9999
-    /\(\d{2}\)\s?\d{4,5}-?\d{4}/g,
-    // 87 99999-9999 ou 87 99999 9999
-    /\d{2}\s\d{4,5}[-\s]?\d{4}/g,
-    // 8799999999 (11 dígitos seguidos)
-    /\d{11}/g,
-    // 87999999999 (formato sem separação)
-    /\d{2}9\d{8}/g
+  const padroes = [
+    /\(\d{2}\)\s?(?:9?\d{4})-?\d{4}\b/g,
+    /\b\d{2}\s(?:9?\d{4})[-\s]?\d{4}\b/g,
+    /\b\d{2}9\d{8}\b/g
   ];
-  
-  // Normalizar nome para busca (remover acentos, etc.)
-  const nomeNormalizado = nomePessoa
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-  
-  // Buscar seção do texto que menciona a pessoa
+  const alvo = nomePessoa.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const linhas = textoCompleto.split('\n');
-  let telefoneEncontrado = '';
-  
-  // Procurar em linhas que contenham o nome da pessoa
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-    const linhaNormalizada = linha
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-    
-    if (linhaNormalizada.includes(nomeNormalizado)) {
-      console.log('📱 Linha encontrada:', linha);
-      
-      // Buscar telefone na linha atual e nas próximas 2 linhas
-      for (let j = i; j < Math.min(i + 3, linhas.length); j++) {
-        const linhaAnalise = linhas[j];
-        
-        // Testar cada padrão de telefone
-        for (const padrao of padroesTelefone) {
-          const matches = linhaAnalise.match(padrao);
-          if (matches) {
-            for (const match of matches) {
-              const telefoneValidado = validarEFormatarTelefone(match);
-              if (telefoneValidado) {
-                console.log('✅ Telefone encontrado:', telefoneValidado);
-                return telefoneValidado;
-              }
-            }
-          }
-        }
+  for (let i=0;i<linhas.length;i++){
+    const ln = linhas[i].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if (!ln.includes(alvo)) continue;
+    for (let j=i;j<Math.min(i+3, linhas.length);j++){
+      for (const p of padroes){
+        const m = linhas[j].match(p);
+        if (m) for (const cand of m){ const t = validarEFormatarTelefone(cand); if (t) return t; }
       }
     }
   }
-  
-  console.log('❌ Nenhum telefone encontrado para:', nomePessoa);
   return '';
 }
 
-/**
- * Valida e formata telefone encontrado
- */
 function validarEFormatarTelefone(telefone) {
-  if (!telefone) return '';
-  
-  // Limpar telefone (manter apenas números)
-  const apenasNumeros = telefone.replace(/\D/g, '');
-  
-  // Validar se tem 10 ou 11 dígitos (formato brasileiro)
-  if (apenasNumeros.length < 10 || apenasNumeros.length > 11) {
-    return '';
-  }
-  
-  // Formatar telefone
-  if (apenasNumeros.length === 11) {
-    // Celular: (87) 99999-9999
-    return `(${apenasNumeros.substring(0, 2)}) ${apenasNumeros.substring(2, 7)}-${apenasNumeros.substring(7)}`;
-  } else if (apenasNumeros.length === 10) {
-    // Fixo: (87) 9999-9999
-    return `(${apenasNumeros.substring(0, 2)}) ${apenasNumeros.substring(2, 6)}-${apenasNumeros.substring(6)}`;
-  }
-  
+  const n = String(telefone||'').replace(/\D/g,'');
+  if (n.length === 11) return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;
+  if (n.length === 10) return `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`;
   return '';
 }
+
+
 
 /**
  * Função CORRIGIDA para limpeza inteligente de qualificação
@@ -483,54 +345,20 @@ function limparQualificacaoInteligente(qualificacaoCompleta, textoOriginal = '',
 /**
  * Extrair nome base da qualificação (função melhorada)
  */
-function extrairNomeBase(qualificacaoCompleta) {
-  if (!qualificacaoCompleta) return '';
-  
-  // Pega até a primeira vírgula (que geralmente é o nome completo)
-  const partes = qualificacaoCompleta.split(',');
-  let nomeBase = partes[0].trim();
-  
-  // Limpar possíveis sujeiras do nome
-  nomeBase = nomeBase
-    .replace(/^[^\w\s]+/, '')  // Remove caracteres especiais no início
-    .replace(/[^\w\s]+$/, '')  // Remove caracteres especiais no final
-    .trim();
-  
-  // Verifica se o nome tem pelo menos 3 caracteres e não é "não informado"
-  if (nomeBase.length > 2 && !nomeBase.toLowerCase().includes('não informad')) {
-    return nomeBase;
-  }
-  
-  return '';
+
+
+function extrairNomeBase(q) {
+  if (!q) return '';
+  const nome = q.split(',')[0].trim().replace(/^[^\w\s]+/,'').replace(/[^\w\s]+$/,'').trim();
+  return (nome.length>2 && !nome.toLowerCase().includes('não informad')) ? nome : '';
 }
 
-/**
- * Função para separar nome e matrícula de testemunhas policiais
- */
-function separarNomeMatricula(qualificacaoCompleta) {
-  if (!qualificacaoCompleta) return { nome: '', matricula: '' };
-  
-  // Exemplo: "SOLDADO JOÃO CARLOS PEREIRA / MATRÍCULA 123456"
-  const partes = qualificacaoCompleta.split(' / ');
-  
-  if (partes.length >= 2) {
-    const nome = partes[0].trim();
-    const matriculaParte = partes[1].trim();
-    
-    // Extrair apenas os números da matrícula
-    const matricula = matriculaParte.replace(/\D/g, ''); // Remove não-dígitos
-    
-    return {
-      nome: nome,
-      matricula: matricula
-    };
-  }
-  
-  // Se não conseguir separar, retorna tudo como nome
-  return {
-    nome: qualificacaoCompleta.trim(),
-    matricula: ''
-  };
+
+function separarNomeMatricula(q) {
+  if (!q) return {nome:'', matricula:''};
+  const [nomeParte, resto=''] = q.split(' / ');
+  const m = resto.match(/\b(matr(í|i)cula|matr\.?|rg)\s*[:#-]?\s*(\w+)\b/i);
+  return { nome:(nomeParte||'').trim(), matricula: m ? m[4].replace(/[^\w]/g,'') : '' };
 }
 
 
@@ -547,240 +375,109 @@ function separarNomeMatricula(qualificacaoCompleta) {
  * @param {Array} [config.addFuncaoArgs] - Argumentos extras para a função de adicionar.
  * @returns {number} - O número de campos preenchidos.
  */
+
+
 function processarPessoasUI(container, pessoas, textoOriginal, config) {
-  if (!pessoas || pessoas.length === 0) {
-    return 0;
-  }
-
-  let camposPreenchidosLocal = 0;
-  console.log(`${config.logIcon} Processando ${config.tipoPessoa}(s):`, pessoas.length);
-
-  pessoas.forEach((pessoa, index) => {
-    try {
-      console.log(`🔍 ${config.tipoPessoa} ${index + 1} original:`, pessoa.qualificacaoCompleta);
-
-      const nomeBase = extrairNomeBase(pessoa.qualificacaoCompleta);
-      const qualificacaoLimpa = limparQualificacaoInteligente(
-        pessoa.qualificacaoCompleta,
-        textoOriginal,
-        nomeBase
-      );
-
-      if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-        // Chama a função 'add' específica para este tipo de pessoa
-        config.addFuncao(container, ...(config.addFuncaoArgs || []));
-        
-        const ultimoElemento = container.querySelector(config.containerSelector).lastElementChild;
-
-        if (ultimoElemento) {
-          const nomeInput = ultimoElemento.querySelector('input[placeholder="Nome"]');
-          const enderecoInput = ultimoElemento.querySelector('input[placeholder="Endereço"]');
-
-          if (nomeInput && !nomeInput.value) {
-            nomeInput.value = qualificacaoLimpa;
-            camposPreenchidosLocal++;
-            console.log(`✅ ${config.tipoPessoa} preenchido:`, qualificacaoLimpa);
-          }
-
-          if (enderecoInput && !enderecoInput.value && pessoa.endereco && pessoa.endereco.trim() !== '') {
-            enderecoInput.value = pessoa.endereco;
-            camposPreenchidosLocal++;
-          }
-        }
-      } else {
-        console.log(`❌ ${config.tipoPessoa} rejeitado - qualificação insuficiente:`, qualificacaoLimpa);
-      }
-    } catch (error) {
-      console.error(`💥 Erro ao processar ${config.tipoPessoa} ${index + 1}:`, error);
-    }
+  if (!pessoas || pessoas.length === 0) return 0;
+  let n = 0;
+  pessoas.forEach(p => {
+    const nomeBase = extrairNomeBase(p?.qualificacaoCompleta || '');
+    const qual = limparQualificacaoInteligente(p?.qualificacaoCompleta || '', textoOriginal, nomeBase);
+    if (!qual) return;
+    config.addFuncao(container, ...(config.addFuncaoArgs || []));
+    const el = container.querySelector(config.containerSelector)?.lastElementChild;
+    if (!el) return;
+    const nome = el.querySelector('input[placeholder="Nome"]');
+    const end = el.querySelector('input[placeholder="Endereço"]');
+    if (nome && !nome.value) { nome.value = qual; n++; }
+    if (end && !end.value && p?.endereco && p.endereco.trim()) { end.value = p.endereco; n++; }
   });
-
-  return camposPreenchidosLocal;
+  return n;
 }
 
+function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
+  let k = 0;
+  k += processarPessoasUI(container, dados.reus, textoOriginal, { tipoPessoa:'Réu', containerSelector:'#reus-container', addFuncao: addReu });
+  k += processarPessoasUI(container, dados.vitimas, textoOriginal, { tipoPessoa:'Vítima', containerSelector:'#vitimas-container', addFuncao: addVitima });
+  k += processarPessoasUI(container, dados.testemunhasGerais, textoOriginal, { tipoPessoa:'Testemunha', containerSelector:'#testemunhas-mp-container', addFuncao: addTestemunha, addFuncaoArgs:['mp'] });
 
-/**
- * FUNÇÃO REATORADA - Distribui dados nos campos da UI de forma mais limpa.
- */
-function distribuirDadosNosCampos(container, dados, textoOriginal = '') {
-  let camposPreenchidos = 0;
-  
-  try {
-    console.log('🎯 Distribuindo dados recebidos da IA:', dados);
-    
-    // Processar réus
-    camposPreenchidos += processarPessoasUI(container, dados.reus, textoOriginal, {
-        tipoPessoa: 'Réu',
-        logIcon: '👤',
-        containerSelector: '#reus-container',
-        addFuncao: addReu
+  if (Array.isArray(dados.testemunhasPoliciais)) {
+    dados.testemunhasPoliciais.forEach(pol => {
+      const qual = (pol?.qualificacaoCompleta || '')
+        .replace(/,\s*conhecid[oa]\s+como\s+['"]não\s+informad[oa]['"]?/gi,'')
+        .replace(/,\s*CPF\s+não\s+informado/gi,'')
+        .replace(/,\s*filh[oa]\s+de\s+não\s+informad[oa]/gi,'')
+        .replace(/,\s*nascid[oa]\s+em\s+não\s+informad[oa]/gi,'')
+        .replace(/,\s*,+/g,',').replace(/,\s*$/,'').replace(/^\s*,+/,'').trim();
+      if (!qual) return;
+      addPolicial(container);
+      const el = container.querySelector('#policiais-container')?.lastElementChild;
+      if (!el) return;
+      const sel = el.querySelector('select');
+      const nome = el.querySelector('input[placeholder="Nome"]');
+      const mat = el.querySelector('input[placeholder="Matrícula/RG"]');
+      if (sel && pol?.tipo && ['pm','pc','pf','prf'].includes(pol.tipo.toLowerCase())) { sel.value = pol.tipo.toLowerCase(); k++; }
+      const {nome:nm, matricula} = separarNomeMatricula(qual);
+      if (nome && !nome.value && nm) { nome.value = nm; k++; }
+      if (mat && !mat.value && matricula) { mat.value = matricula; k++; }
     });
-
-    // Processar vítimas
-    camposPreenchidos += processarPessoasUI(container, dados.vitimas, textoOriginal, {
-        tipoPessoa: 'Vítima',
-        logIcon: '👥',
-        containerSelector: '#vitimas-container',
-        addFuncao: addVitima
-    });
-
-    // Processar testemunhas de acusação (gerais)
-    camposPreenchidos += processarPessoasUI(container, dados.testemunhasGerais, textoOriginal, {
-        tipoPessoa: 'Testemunha',
-        logIcon: '👓',
-        containerSelector: '#testemunhas-mp-container',
-        addFuncao: addTestemunha,
-        addFuncaoArgs: ['mp']
-    });
-    
-    // Processar testemunhas policiais (lógica específica, mantida separada)
-    if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-      console.log('👮 Processando testemunhas policiais:', dados.testemunhasPoliciais.length);
-      dados.testemunhasPoliciais.forEach((policial) => {
-        const nomeBase = extrairNomeBase(policial.qualificacaoCompleta);
-        
-        // Para policiais, não buscar telefone - apenas limpeza básica
-        const qualificacaoLimpa = policial.qualificacaoCompleta
-          .replace(/,\s*conhecid[oa]\s+como\s+['"]não\s+informad[oa]['"]?/gi, '')
-          .replace(/,\s*CPF\s+não\s+informado/gi, '')
-          .replace(/,\s*filh[oa]\s+de\s+não\s+informad[oa]/gi, '')
-          .replace(/,\s*nascid[oa]\s+em\s+não\s+informad[oa]/gi, '')
-          .replace(/,\s*,+/g, ',')
-          .replace(/,\s*$/g, '')
-          .replace(/^\s*,+/g, '')
-          .trim();
-        
-        if (qualificacaoLimpa && qualificacaoLimpa.length > 2) {
-          addPolicial(container);
-          const ultimoPolicial = container.querySelector('#policiais-container').lastElementChild;
-          
-          if (ultimoPolicial) {
-            const tipoSelect = ultimoPolicial.querySelector('select');
-            const nomeInput = ultimoPolicial.querySelector('input[placeholder="Nome"]');
-            const matriculaInput = ultimoPolicial.querySelector('input[placeholder="Matrícula/RG"]');
-            
-            if (tipoSelect && policial.tipo) {
-              const tipoLower = policial.tipo.toLowerCase();
-              if (['pm', 'pc', 'pf', 'prf'].includes(tipoLower)) {
-                tipoSelect.value = tipoLower;
-                camposPreenchidos++;
-              }
-            }
-            
-            // Separar nome e matrícula corretamente
-            const { nome, matricula } = separarNomeMatricula(qualificacaoLimpa);
-            
-            if (nomeInput && !nomeInput.value && nome) {
-              nomeInput.value = nome;
-              camposPreenchidos++;
-              console.log('✅ Policial nome preenchido:', nome);
-            }
-            
-            if (matriculaInput && !matriculaInput.value && matricula) {
-              matriculaInput.value = matricula;
-              camposPreenchidos++;
-              console.log('✅ Policial matrícula preenchida:', matricula);
-            }
-          }
-        }
-      });
-    }
-    
-    console.log(`🎯 TOTAL de campos preenchidos: ${camposPreenchidos}`);
-    
-  } catch (error) {
-    console.error('💥 Erro ao distribuir dados:', error);
   }
-  
-  return camposPreenchidos;
+  return k;
 }
+
+
+
 
 /**
  * Criar relatório do processamento - CORRIGIDO COM QUEBRAS DE LINHA + MODELO
  */
-function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo = 'IA') {
-  const timestamp = new Date().toLocaleString();
-  
-  let relatorio = `PROCESSAMENTO - ${timestamp}\n\n`;
-  
-  // Estatísticas
-  if (dados.estatisticas) {
-    relatorio += `📊 ESTATÍSTICAS:\n`;
-    relatorio += `• ${dados.estatisticas.totalMencionados || 0} pessoas mencionadas\n`;
-    relatorio += `• ${dados.estatisticas.totalQualificados || 0} qualificadas\n`;
-    relatorio += `• ${dados.estatisticas.telefonesEncontrados || 0} telefones encontrados\n`;
-    relatorio += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
+
+
+function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo='IA') {
+  const t = new Date().toLocaleString();
+  let r = `PROCESSAMENTO - ${t}\n\n`;
+  if (dados?.estatisticas) {
+    r += `📊 ESTATÍSTICAS:\n`;
+    r += `• ${dados.estatisticas.totalMencionados || 0} pessoas mencionadas\n`;
+    r += `• ${dados.estatisticas.totalQualificados || 0} qualificadas\n`;
+    r += `• ${dados.estatisticas.telefonesEncontrados || 0} telefones encontrados\n`;
+    r += `• ${camposPreenchidos} campos preenchidos automaticamente\n\n`;
   }
-  
-  // RÉUS - USANDO qualificacaoCompleta
-  if (dados.reus && dados.reus.length > 0) {
-    relatorio += `RÉUS (${dados.reus.length}):\n`;
-    dados.reus.forEach((reu, index) => {
-      relatorio += `${index + 1}. ${reu.qualificacaoCompleta}\n`;
-      if (reu.endereco && reu.endereco.trim() !== '') {
-        relatorio += `   Endereço: ${reu.endereco}\n`;
-      }
+  const seção = (titulo, arr) => {
+    if (!Array.isArray(arr) || arr.length===0) return;
+    r += `${titulo.toUpperCase()} (${arr.length}):\n`;
+    arr.forEach((it, i) => {
+      r += `${i+1}. ${it.qualificacaoCompleta || it.nome || ''}\n`;
+      if (it.endereco && String(it.endereco).trim()) r += `   Endereço: ${it.endereco}\n`;
     });
-    relatorio += '\n';
-  }
-  
-  // VÍTIMAS - USANDO qualificacaoCompleta
-  if (dados.vitimas && dados.vitimas.length > 0) {
-    relatorio += `VÍTIMAS (${dados.vitimas.length}):\n`;
-    dados.vitimas.forEach((vitima, index) => {
-      relatorio += `${index + 1}. ${vitima.qualificacaoCompleta}\n`;
-      if (vitima.endereco && vitima.endereco.trim() !== '') {
-        relatorio += `   Endereço: ${vitima.endereco}\n`;
-      }
+    r += '\n';
+  };
+  seção('Réus', dados?.reus);
+  seção('Vítimas', dados?.vitimas);
+  seção('Testemunhas Acusação', dados?.testemunhasGerais);
+  if (Array.isArray(dados?.testemunhasPoliciais) && dados.testemunhasPoliciais.length) {
+    r += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
+    dados.testemunhasPoliciais.forEach((p, i) => {
+      let l = `${i+1}. ${p.qualificacaoCompleta || ''}`;
+      if (p.tipo) l += ` - ${p.tipo.toUpperCase()}`;
+      if (p.lotacao) l += ` (${p.lotacao})`;
+      r += `${l}\n`;
     });
-    relatorio += '\n';
+    r += '\n';
   }
-  
-  // TESTEMUNHAS GERAIS - USANDO qualificacaoCompleta
-  if (dados.testemunhasGerais && dados.testemunhasGerais.length > 0) {
-    relatorio += `TESTEMUNHAS ACUSAÇÃO (${dados.testemunhasGerais.length}):\n`;
-    dados.testemunhasGerais.forEach((testemunha, index) => {
-      relatorio += `${index + 1}. ${testemunha.qualificacaoCompleta}\n`;
-      if (testemunha.endereco && testemunha.endereco.trim() !== '') {
-        relatorio += `   Endereço: ${testemunha.endereco}\n`;
-      }
-    });
-    relatorio += '\n';
+  if (Array.isArray(dados?.observacoesImportantes) && dados.observacoesImportantes.length) {
+    r += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
+    dados.observacoesImportantes.forEach(o => r += `• ${o}\n`);
+    r += '\n';
   }
-  
-  // TESTEMUNHAS POLICIAIS - USANDO qualificacaoCompleta (sem telefone)
-  if (dados.testemunhasPoliciais && dados.testemunhasPoliciais.length > 0) {
-    relatorio += `TESTEMUNHAS POLICIAIS (${dados.testemunhasPoliciais.length}):\n`;
-    dados.testemunhasPoliciais.forEach((policial, index) => {
-      relatorio += `${index + 1}. ${policial.qualificacaoCompleta}`;
-      if (policial.tipo) relatorio += ` - ${policial.tipo.toUpperCase()}`;
-      if (policial.lotacao) relatorio += ` (${policial.lotacao})`;
-      relatorio += '\n';
-    });
-    relatorio += '\n';
+  if (Array.isArray(dados?.outros) && dados.outros.length) {
+    r += `⚠️ NÃO QUALIFICADOS (${dados.outros.length}):\n`;
+    dados.outros.forEach((o,i)=>{ r += `${i+1}. ${o.nome}${o.motivo?` (${o.motivo})`:''}\n`; });
   }
-  
-  // OBSERVAÇÕES IMPORTANTES
-  if (dados.observacoesImportantes && dados.observacoesImportantes.length > 0) {
-    relatorio += `📋 OBSERVAÇÕES IMPORTANTES:\n`;
-    dados.observacoesImportantes.forEach((obs, index) => {
-      relatorio += `• ${obs}\n`;
-    });
-    relatorio += '\n';
-  }
-  
-  // OUTROS (não qualificados)
-  if (dados.outros && dados.outros.length > 0) {
-    relatorio += `⚠️ NÃO QUALIFICADOS (${dados.outros.length}):\n`;
-    dados.outros.forEach((pessoa, index) => {
-      relatorio += `${index + 1}. ${pessoa.nome}`;
-      if (pessoa.motivo) relatorio += ` (${pessoa.motivo})`;
-      relatorio += '\n';
-    });
-  }
-  
-  return relatorio;
+  return r;
 }
+
+
 
 // ============================================
 // 🔍 FUNÇÕES DE UI (CRIAÇÃO E MANIPULAÇÃO DE ELEMENTOS)
@@ -1062,20 +759,16 @@ function addReu(container) {
 
 // Registrar event listeners para botões de remover
 function setupRemoveButtons(container) {
-  container.querySelectorAll('.remove-btn').forEach(button => {
-    button.addEventListener('click', function() {
-      const linha = this.closest('.linha, .d-flex');
-      if (linha) {
-        linha.remove();
-      } else {
-        const reuItem = this.closest('.reu-item');
-        if (reuItem) {
-          reuItem.remove();
-        }
-      }
-    });
-  });
+  const handler = (e) => {
+    const btn = e.target.closest('.remove-btn');
+    if (!btn) return;
+    const linha = btn.closest('.linha, .d-flex, .reu-item');
+    if (linha) linha.remove();
+  };
+  container.addEventListener('click', handler);
+  _listeners.push({ el: container, ev: 'click', fn: handler });
 }
+
 
 // Função para salvar dados (imprimir)
 function salvarDados() {
@@ -1390,14 +1083,14 @@ switch (tipo) {
 
 // Função de limpeza
 export function cleanup() {
-  console.log('Limpando recursos do módulo audiencia.js');
-  
-  // Remover estilos de impressão se existirem
+  console.log('audiencia.cleanup()');
+  for (const {el, ev, fn} of _listeners) {
+    try { el.removeEventListener(ev, fn); } catch {}
+  }
+  _listeners.length = 0;
+  _audienciaBootstrapped = false;
+
   document.getElementById('print-styles')?.remove();
-  
-  // Remover qualquer mensagem de status
   document.querySelector('.status-message')?.remove();
-  
-  // Remover classe específica do modo audiência
   document.querySelector('.main-content')?.classList.remove('audiencia-mode');
 }
