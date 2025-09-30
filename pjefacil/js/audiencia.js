@@ -263,20 +263,17 @@ async function chamarGeminiAPI(textoCompleto) {
   }
 }
 
-
 /**
- * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM TELEFONE
+ * Função para chamar a API Gemini - VERSÃO CORRETA FINAL
  */
-async function chamarDeepSeekAPI(textoCompleto) {
+async function chamarGeminiAPI(textoCompleto) {
   let response = null;
-  
   try {
-    console.log('Chamando API DeepSeek...');
+    console.log('✅ Executando a versão CORRETA da função chamarGeminiAPI...');
     
-    // Chave da API DeepSeek
-    const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
+    // ATENÇÃO: Mesmo para testes, é um risco de segurança manter a chave aqui.
+    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s"; 
     
-    // Prompt CORRIGIDO com instruções para TELEFONE
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
 INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
@@ -295,130 +292,52 @@ INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
 
 5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA" (SEM telefone)
 
-EXEMPLO DE EXTRAÇÃO COM TELEFONE:
-Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, telefone (87) 98765-4321, filho de Maria Silva"
-
-Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, filho de Maria Silva, telefone (87) 98765-4321"
-
-⚠️ IMPORTANTE: SEMPRE buscar telefones no texto para réus, vítimas e testemunhas gerais. 
-Testemunhas policiais: apenas nome e matrícula, SEM telefone!
-
-FORMATO DE SAÍDA OBRIGATÓRIO:
-{
-  "reus": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE",
-      "endereco": "Endereço completo + situação prisional atual",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "vitimas": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", 
-      "endereco": "Endereço (buscar no rol de testemunhas)",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "testemunhasGerais": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE",
-      "endereco": "Endereço se disponível",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "testemunhasPoliciais": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
-      "tipo": "PM|PC|PF|PRF",
-      "lotacao": "Local de trabalho (ex: 4º BPM)"
-    }
-  ],
-  "testemunhasDefesa": [],
-  "procuradorRequerido": [],
-  "outros": [
-    {
-      "nome": "Pessoa sem qualificação completa",
-      "motivo": "Razão pela qual está em outros"
-    }
-  ],
-  "observacoesImportantes": [
-    "Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"
-  ],
-  "estatisticas": {
-    "totalMencionados": 0,
-    "totalQualificados": 0,
-    "naoQualificados": 0,
-    "telefonesEncontrados": 0
-  }
-}
-
-TEXTO DA DENÚNCIA:
-${textoCompleto}`;
+FORMATO DE SAÍDA OBRIGATÓRIO: JSON VÁLIDO.`;
     
-    // Fazer a requisição para a API
-    response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    // =========================================================================
+    // AQUI ESTÁ A CORREÇÃO: A URL agora usa "v1" e não "v1beta"
+    // =========================================================================
+    const urlCorreta = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    console.log('Tentando conectar com a URL:', urlCorreta);
+    
+    response = await fetch(urlCorreta, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído e busque telefones para réus, vítimas e testemunhas gerais (NÃO para testemunhas policiais). Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.0,
-        max_tokens: 2500
+        contents: [{ parts: [{ text: `${prompt}\n\nTEXTO DA DENÚNCIA:\n${textoCompleto}` }] }],
+        generationConfig: {
+          temperature: 0.0,
+          maxOutputTokens: 4096 // Aumentado para mais flexibilidade
+        }
       })
     });
     
-    console.log('Response status:', response.status);
-    
-    // Verificar resposta
+    console.log('Resposta da API recebida. Status:', response.status, response.statusText);
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API`);
+      // Lança o erro para ser pego pelo bloco catch
+      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API Gemini`);
     }
     
-    // Extrair o resultado
     const data = await response.json();
-    const resposta = data.choices[0].message.content;
+    const resposta = data.candidates[0].content.parts[0].text;
     
-    console.log('Resposta bruta da API:', resposta);
+    // Limpa o JSON de forma robusta
+    let jsonString = resposta.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
     
-    // Limpar JSON removendo markdown
-    let jsonString = resposta.trim();
-    
-    // Remover markdown code blocks se existirem
-    if (jsonString.startsWith('```json')) {
-      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (jsonString.startsWith('```')) {
-      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    console.log('JSON limpo:', jsonString);
-    
-    // Fazer o parse do JSON limpo
-    const dados = JSON.parse(jsonString);
-    
-    console.log('Dados parseados:', dados);
-    return dados;
-    
+    return JSON.parse(jsonString);
+
   } catch (error) {
-    console.error("Erro na API DeepSeek:", error);
+    console.error("ERRO DETALHADO em chamarGeminiAPI:", error);
+    // Propaga o erro para a função que chamou, para que a UI seja atualizada
     throw new Error(`Falha ao processar texto: ${error.message}`);
-  } finally {
-    // Cleanup: liberar referências se necessário
-    response = null;
   }
 }
+
+
+
 
 // ============================================
 // 🔍 FUNÇÕES CORRIGIDAS - LIMPEZA E TELEFONE
