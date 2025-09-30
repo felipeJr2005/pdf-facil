@@ -172,7 +172,7 @@ async function processarDenunciaComIA(container, modelo) {
 
 
 async function chamarGeminiAPI(textoCompleto) {
-  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'SUA_CHAVE_AQUI'; // mova p/ backend
+  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s'; // mova p/ backend
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `Analise o texto da denúncia judicial abaixo e extraia dados estruturados em JSON.
