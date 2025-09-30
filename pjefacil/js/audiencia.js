@@ -216,109 +216,24 @@ async function processarDenunciaComIA(container, modelo) {
   }
 }
 
+
 /**
- * Função para chamar a API Gemini - NOVA
+ * Função para chamar a API Gemini - VERSÃO CORRETA PARA AUDIENCIA.JS
  */
 async function chamarGeminiAPI(textoCompleto) {
   let response = null;
-  
   try {
-    console.log('Chamando API Gemini...');
+    console.log('Chamando API Gemini com a URL correta (v1)...');
     
-    // Chave da API Gemini
-    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s";
-    
-    // Prompt IGUAL ao DeepSeek (reutilizando)
-    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
+    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s"; // Sua chave
+    const prompt = `...seu prompt aqui...`; // Mantenha seu prompt como está
 
-INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
-
-1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
-   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
-   
-2. Para VÍTIMAS e TESTEMUNHAS: mesmo formato, mas pode ter menos informações
-   
-3. **TELEFONE OBRIGATÓRIO**: Busque SEMPRE telefones no texto para réus, vítimas e testemunhas gerais
-   Formatos: (87) 99999-9999, 87 99999-9999, 8799999999, etc.
-   Incluir na qualificação: "...nascido em DD/MM/AAAA, telefone (87) 99999-9999"
-   ⚠️ EXCEÇÃO: Testemunhas policiais NÃO precisam de telefone, apenas nome e matrícula
-   
-4. Se alguma informação não existir, use "não informado" (será limpo depois)
-
-5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA" (SEM telefone)
-
-EXEMPLO DE EXTRAÇÃO COM TELEFONE:
-Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, telefone (87) 98765-4321, filho de Maria Silva"
-
-Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, filho de Maria Silva, telefone (87) 98765-4321"
-
-⚠️ IMPORTANTE: SEMPRE buscar telefones no texto para réus, vítimas e testemunhas gerais. 
-Testemunhas policiais: apenas nome e matrícula, SEM telefone!
-
-FORMATO DE SAÍDA OBRIGATÓRIO:
-{
-  "reus": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE",
-      "endereco": "Endereço completo + situação prisional atual",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "vitimas": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", 
-      "endereco": "Endereço (buscar no rol de testemunhas)",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "testemunhasGerais": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE",
-      "endereco": "Endereço se disponível",
-      "telefone": "(87) 99999-9999"
-    }
-  ],
-  "testemunhasPoliciais": [
-    {
-      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
-      "tipo": "PM|PC|PF|PRF",
-      "lotacao": "Local de trabalho (ex: 4º BPM)"
-    }
-  ],
-  "testemunhasDefesa": [],
-  "procuradorRequerido": [],
-  "outros": [
-    {
-      "nome": "Pessoa sem qualificação completa",
-      "motivo": "Razão pela qual está em outros"
-    }
-  ],
-  "observacoesImportantes": [
-    "Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"
-  ],
-  "estatisticas": {
-    "totalMencionados": 0,
-    "totalQualificados": 0,
-    "naoQualificados": 0,
-    "telefonesEncontrados": 0
-  }
-}
-
-TEXTO DA DENÚNCIA:
-${textoCompleto}`;
-    
-    // Fazer a requisição para a API Gemini
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // AQUI ESTÁ A CORREÇÃO:
+    response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído e busque telefones para réus, vítimas e testemunhas gerais (NÃO para testemunhas policiais). Retorne APENAS JSON válido, sem texto adicional ou formatação markdown.\n\n${prompt}`
-          }]
-        }],
+        contents: [{ parts: [{ text: `...seu prompt de sistema aqui...\n\n${prompt}` }] }],
         generationConfig: {
           temperature: 0.0,
           maxOutputTokens: 2500
@@ -327,45 +242,27 @@ ${textoCompleto}`;
     });
     
     console.log('Response status:', response.status);
-    
-    // Verificar resposta
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API Gemini`);
     }
     
-    // Extrair o resultado
     const data = await response.json();
     const resposta = data.candidates[0].content.parts[0].text;
     
-    console.log('Resposta bruta da API Gemini:', resposta);
+    let jsonString = resposta.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
     
-    // Limpar JSON removendo markdown (reutilizando lógica)
-    let jsonString = resposta.trim();
-    
-    // Remover markdown code blocks se existirem
-    if (jsonString.startsWith('```json')) {
-      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (jsonString.startsWith('```')) {
-      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    console.log('JSON limpo:', jsonString);
-    
-    // Fazer o parse do JSON limpo
-    const dados = JSON.parse(jsonString);
-    
-    console.log('Dados parseados:', dados);
-    return dados;
-    
+    return JSON.parse(jsonString);
+
   } catch (error) {
     console.error("Erro na API Gemini:", error);
     throw new Error(`Falha ao processar texto: ${error.message}`);
   } finally {
-    // Cleanup: liberar referências se necessário
     response = null;
   }
 }
+
 
 /**
  * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM TELEFONE
