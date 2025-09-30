@@ -216,20 +216,19 @@ async function processarDenunciaComIA(container, modelo) {
   }
 }
 
-
 /**
- * Função para chamar a API Gemini - VERSÃO CORRIGIDA E ÚNICA
+ * Função para chamar a API Gemini - NOVA
  */
 async function chamarGeminiAPI(textoCompleto) {
   let response = null;
   
   try {
-    console.log('Chamando API Gemini com a URL correta (v1)...');
+    console.log('Chamando API Gemini...');
     
     // Chave da API Gemini
-    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s"; // Lembre-se do risco de segurança de ter a chave aqui
+    const apiKey = "AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s";
     
-    // Prompt (pode manter o seu, está bom)
+    // Prompt IGUAL ao DeepSeek (reutilizando)
     const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
 INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
@@ -248,26 +247,68 @@ INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
 
 5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA" (SEM telefone)
 
+EXEMPLO DE EXTRAÇÃO COM TELEFONE:
+Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, telefone (87) 98765-4321, filho de Maria Silva"
+
+Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, filho de Maria Silva, telefone (87) 98765-4321"
+
+⚠️ IMPORTANTE: SEMPRE buscar telefones no texto para réus, vítimas e testemunhas gerais. 
+Testemunhas policiais: apenas nome e matrícula, SEM telefone!
+
 FORMATO DE SAÍDA OBRIGATÓRIO:
 {
-  "reus": [{"qualificacaoCompleta": "...", "endereco": "...", "telefone": "..."}],
-  "vitimas": [{"qualificacaoCompleta": "...", "endereco": "...", "telefone": "..."}],
-  "testemunhasGerais": [{"qualificacaoCompleta": "...", "endereco": "...", "telefone": "..."}],
-  "testemunhasPoliciais": [{"qualificacaoCompleta": "...", "tipo": "...", "lotacao": "..."}],
+  "reus": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE",
+      "endereco": "Endereço completo + situação prisional atual",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "vitimas": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", 
+      "endereco": "Endereço (buscar no rol de testemunhas)",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "testemunhasGerais": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE",
+      "endereco": "Endereço se disponível",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "testemunhasPoliciais": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
+      "tipo": "PM|PC|PF|PRF",
+      "lotacao": "Local de trabalho (ex: 4º BPM)"
+    }
+  ],
   "testemunhasDefesa": [],
   "procuradorRequerido": [],
-  "outros": [{"nome": "...", "motivo": "..."}],
-  "observacoesImportantes": ["..."],
-  "estatisticas": {"totalMencionados": 0, "totalQualificados": 0, "naoQualificados": 0, "telefonesEncontrados": 0}
+  "outros": [
+    {
+      "nome": "Pessoa sem qualificação completa",
+      "motivo": "Razão pela qual está em outros"
+    }
+  ],
+  "observacoesImportantes": [
+    "Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"
+  ],
+  "estatisticas": {
+    "totalMencionados": 0,
+    "totalQualificados": 0,
+    "naoQualificados": 0,
+    "telefonesEncontrados": 0
+  }
 }
 
 TEXTO DA DENÚNCIA:
 ${textoCompleto}`;
     
-    // =========================================================================
-    // AQUI ESTÁ A CORREÇÃO PRINCIPAL: URL com "v1" e o nome do modelo correto
-    // =========================================================================
-    response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // Fazer a requisição para a API Gemini
+    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -299,8 +340,10 @@ ${textoCompleto}`;
     
     console.log('Resposta bruta da API Gemini:', resposta);
     
-    // Limpar JSON removendo markdown
+    // Limpar JSON removendo markdown (reutilizando lógica)
     let jsonString = resposta.trim();
+    
+    // Remover markdown code blocks se existirem
     if (jsonString.startsWith('```json')) {
       jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     } else if (jsonString.startsWith('```')) {
@@ -319,13 +362,166 @@ ${textoCompleto}`;
     console.error("Erro na API Gemini:", error);
     throw new Error(`Falha ao processar texto: ${error.message}`);
   } finally {
+    // Cleanup: liberar referências se necessário
     response = null;
   }
 }
 
+/**
+ * Função para chamar a API DeepSeek - VERSÃO CORRIGIDA COM TELEFONE
+ */
+async function chamarDeepSeekAPI(textoCompleto) {
+  let response = null;
+  
+  try {
+    console.log('Chamando API DeepSeek...');
+    
+    // Chave da API DeepSeek
+    const apiKey = "sk-0a164d068ee643099f9d3fc508e4e612";
+    
+    // Prompt CORRIGIDO com instruções para TELEFONE
+    const prompt = `Analise o texto da denúncia judicial abaixo e extraia os dados estruturados em formato JSON.
 
+INSTRUÇÕES CRÍTICAS - QUALIFICAÇÃO COMPLETA + TELEFONE:
 
+1. Para RÉUS: extraia nome, alcunha, CPF, mãe, nascimento e monte a qualificação COMPLETA
+   Formato EXATO: "NOME COMPLETO, conhecido como 'ALCUNHA', CPF NUMERO, filho de NOME_MÃE, nascido em DD/MM/AAAA"
+   
+2. Para VÍTIMAS e TESTEMUNHAS: mesmo formato, mas pode ter menos informações
+   
+3. **TELEFONE OBRIGATÓRIO**: Busque SEMPRE telefones no texto para réus, vítimas e testemunhas gerais
+   Formatos: (87) 99999-9999, 87 99999-9999, 8799999999, etc.
+   Incluir na qualificação: "...nascido em DD/MM/AAAA, telefone (87) 99999-9999"
+   ⚠️ EXCEÇÃO: Testemunhas policiais NÃO precisam de telefone, apenas nome e matrícula
+   
+4. Se alguma informação não existir, use "não informado" (será limpo depois)
 
+5. Para TESTEMUNHAS POLICIAIS: "NOME COMPLETO / MATRÍCULA" (SEM telefone)
+
+EXEMPLO DE EXTRAÇÃO COM TELEFONE:
+Texto: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, telefone (87) 98765-4321, filho de Maria Silva"
+
+Deve retornar: "JOANDERSON DA SILVA GOMES, conhecido como 'JO', CPF 123.456.789-00, filho de Maria Silva, telefone (87) 98765-4321"
+
+⚠️ IMPORTANTE: SEMPRE buscar telefones no texto para réus, vítimas e testemunhas gerais. 
+Testemunhas policiais: apenas nome e matrícula, SEM telefone!
+
+FORMATO DE SAÍDA OBRIGATÓRIO:
+{
+  "reus": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO COM TODOS OS DADOS + TELEFONE",
+      "endereco": "Endereço completo + situação prisional atual",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "vitimas": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE", 
+      "endereco": "Endereço (buscar no rol de testemunhas)",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "testemunhasGerais": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO MONTADO + TELEFONE",
+      "endereco": "Endereço se disponível",
+      "telefone": "(87) 99999-9999"
+    }
+  ],
+  "testemunhasPoliciais": [
+    {
+      "qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA",
+      "tipo": "PM|PC|PF|PRF",
+      "lotacao": "Local de trabalho (ex: 4º BPM)"
+    }
+  ],
+  "testemunhasDefesa": [],
+  "procuradorRequerido": [],
+  "outros": [
+    {
+      "nome": "Pessoa sem qualificação completa",
+      "motivo": "Razão pela qual está em outros"
+    }
+  ],
+  "observacoesImportantes": [
+    "Situação prisional, histórico criminal, detalhes relevantes, telefones encontrados"
+  ],
+  "estatisticas": {
+    "totalMencionados": 0,
+    "totalQualificados": 0,
+    "naoQualificados": 0,
+    "telefonesEncontrados": 0
+  }
+}
+
+TEXTO DA DENÚNCIA:
+${textoCompleto}`;
+    
+    // Fazer a requisição para a API
+    response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content: "Você é um assistente jurídico especializado em extrair dados estruturados de denúncias judiciais. Monte a qualificação completa conforme instruído e busque telefones para réus, vítimas e testemunhas gerais (NÃO para testemunhas policiais). Retorne APENAS JSON válido, sem texto adicional ou formatação markdown."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.0,
+        max_tokens: 2500
+      })
+    });
+    
+    console.log('Response status:', response.status);
+    
+    // Verificar resposta
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || `Erro ${response.status}: Falha na API`);
+    }
+    
+    // Extrair o resultado
+    const data = await response.json();
+    const resposta = data.choices[0].message.content;
+    
+    console.log('Resposta bruta da API:', resposta);
+    
+    // Limpar JSON removendo markdown
+    let jsonString = resposta.trim();
+    
+    // Remover markdown code blocks se existirem
+    if (jsonString.startsWith('```json')) {
+      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonString.startsWith('```')) {
+      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('JSON limpo:', jsonString);
+    
+    // Fazer o parse do JSON limpo
+    const dados = JSON.parse(jsonString);
+    
+    console.log('Dados parseados:', dados);
+    return dados;
+    
+  } catch (error) {
+    console.error("Erro na API DeepSeek:", error);
+    throw new Error(`Falha ao processar texto: ${error.message}`);
+  } finally {
+    // Cleanup: liberar referências se necessário
+    response = null;
+  }
+}
 
 // ============================================
 // 🔍 FUNÇÕES CORRIGIDAS - LIMPEZA E TELEFONE
