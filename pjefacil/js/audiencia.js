@@ -246,14 +246,6 @@ async function processarDenunciaComIA(container, modelo) {
   }
 }
 
-
-
-
-
-
-
-
-
 // substitua sua chamarGeminiAPI por ESTA
 async function chamarGeminiAPI(textoCompleto) {
   const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s';
