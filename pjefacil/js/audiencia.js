@@ -1,4 +1,4 @@
-// Contadores para IDs previsíveis
+/ Contadores para IDs previsíveis
 let contadorTestemunhaMP = 0;
 let contadorTestemunhaDefesa = 0;
 let contadorReu = 0;
@@ -6,8 +6,36 @@ let contadorVitima = 0;
 let contadorAssistente = 0;
 let contadorPolicial = 0;
 let _audienciaBootstrapped = false;
+let _geminiBusy = false;
+let _geminiTimer = null;
 const _listeners = [];
 
+// === item 2: memoização por entrada ===
+const _geminiCache = new Map(); // key: hash(texto), value: JSON
+
+function _hashTexto(s) {
+  s = String(s || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return String(h >>> 0);
+}
+// === fim item 2 ===
+
+function _countdownButton(btn, ms) {
+  if (!btn) return;
+  try { clearInterval(_geminiTimer); } catch {}
+  const end = Date.now() + Math.max(0, ms||0);
+  btn.disabled = true;
+  _geminiTimer = setInterval(() => {
+    const left = Math.max(0, end - Date.now());
+    const s = Math.ceil(left / 1000);
+    btn.textContent = s > 0 ? `Modelo Ge • aguarde ${s}s` : 'Modelo Ge';
+    if (left <= 0) {
+      clearInterval(_geminiTimer);
+      btn.disabled = false;
+    }
+  }, 250);
+}
 
 export function initialize(container) {
   if (_audienciaBootstrapped) return;
@@ -80,156 +108,153 @@ export function initialize(container) {
   console.log('Módulo de Audiência pronto para uso');
 }
 
-
-
-
 // ============================================
 // 🔍 FUNÇÃO PRINCIPAL DEEPSEEK - PROCESSAMENTO DE DENÚNCIA
-// ============================================
-
+// =====================
 /**
  * Função GENÉRICA para processar denúncia com qualquer IA - REFATORADA
  */
+
 async function processarDenunciaComIA(container, modelo) {
   const botao = container.querySelector(`#processar${modelo === 'deepseek' ? 'DeepSeek' : 'Gemini'}`);
   const campoObservacoes = container.querySelector('#observacoes-mp');
-  
+
   if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados:', {
-      botao: !!botao, 
-      campoObservacoes: !!campoObservacoes,
-      container: container
-    });
+    console.error('Elementos não encontrados:', { botao: !!botao, campoObservacoes: !!campoObservacoes, container });
     mostrarMensagem(container, 'Erro: Elementos necessários não encontrados', 'error');
     return;
   }
-  
-  // Verificar se há texto para processar
+
   const textoOriginal = (campoObservacoes.value || campoObservacoes.textContent || '').trim();
   if (!textoOriginal) {
-    mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
+    mostrarMensagem(container, 'Não há texto para processar. Cole o texto da denúncia.', 'warning');
     return;
   }
-  
-  // Salvar estado original do botão
+
+  // evita concorrência no Gemini
+  if (modelo === 'gemini' && _geminiBusy) {
+    mostrarMensagem(container, 'Já existe um processamento Gemini em andamento.', 'warning');
+    return;
+  }
+
+  const nomeModelo = modelo === 'deepseek' ? 'DeepSeek' : 'Gemini';
   const textoOriginalBtn = botao.innerHTML;
-  
+
   try {
-    // Indicador de processamento no botão
+    if (modelo === 'gemini') _geminiBusy = true;
+
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
     botao.disabled = true;
-    
-    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek' : 'Gemini';
-    console.log(`Iniciando processamento de denúncia com ${nomeModelo} + Telefone (exceto policiais)`);
-    
-    // Chamar API específica baseada no modelo
-    const dadosEstruturados = modelo === 'deepseek' ? 
-      await chamarDeepSeekAPI(textoOriginal) : 
-      await chamarGeminiAPI(textoOriginal);
-    
+    console.log(`Iniciando processamento de denúncia com ${nomeModelo}`);
+
+    let dadosEstruturados;
+    if (modelo === 'gemini') {
+      // memoização por conteúdo
+      const key = _hashTexto(textoOriginal);
+      if (_geminiCache.has(key)) {
+        dadosEstruturados = _geminiCache.get(key);
+        console.log('Cache Gemini HIT para esta entrada.');
+      } else {
+        dadosEstruturados = await chamarGeminiAPI(textoOriginal);
+        _geminiCache.set(key, dadosEstruturados);
+        console.log('Cache Gemini MISS. Resultado salvo.');
+      }
+    } else {
+      // deepseek sem cache aqui
+      dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
+    }
+
     console.log('Dados estruturados recebidos:', dadosEstruturados);
-    
-    // Distribuir os dados nos campos (com texto original para busca de telefone)
+
     const camposPreenchidos = distribuirDadosNosCampos(container, dadosEstruturados, textoOriginal);
-    
-    // Criar relatório para as observações
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos, nomeModelo);
-    
-    // Colocar relatório nas observações com quebras de linha
+
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = relatorio;
     } else {
-      // Para contenteditable, usar innerHTML com <br> para quebras de linha
       campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
     }
-    
-    // Mostrar mensagem de sucesso
-    mostrarMensagem(container, `✅ Processamento ${nomeModelo} concluído! ${camposPreenchidos} campos preenchidos (telefones para réus, vítimas e testemunhas gerais).`, 'success');
-    
+
+    mostrarMensagem(container, `✅ Processamento ${nomeModelo} concluído. ${camposPreenchidos} campos preenchidos.`, 'success');
+
   } catch (error) {
     console.error(`Erro no processamento ${modelo}:`, error);
-    
-    // Colocar erro nas observações
+
+    // countdown se a mensagem indicar retry (429)
+    if (modelo === 'gemini') {
+  // tenta extrair do corpo OU do header
+  const m = String(error?.message || '').match(/retry in (\d+(?:\.\d+)?)s/i);
+  const ms = (typeof error?.retryAfterMs === 'number' && error.retryAfterMs > 0)
+    ? error.retryAfterMs
+    : (m ? Math.ceil(parseFloat(m[1]) * 1000) : 0);
+  if (ms && botao) _countdownButton(botao, ms);
+}
+
+
     const mensagemErro = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = mensagemErro;
     } else {
       campoObservacoes.innerHTML = mensagemErro.replace(/\n/g, '<br>');
     }
-    
-    // Mostrar mensagem de erro
-    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek' : 'Gemini';
     mostrarMensagem(container, `❌ Erro no processamento ${nomeModelo}: ${error.message}`, 'error');
-    
+
   } finally {
-    // Restaurar botão original com verificação de segurança
+    if (modelo === 'gemini') _geminiBusy = false;
     if (botao) {
-      botao.innerHTML = textoOriginalBtn;
-      botao.disabled = false;
+      botao.innerHTML = textoOriginalBtn || `Modelo ${modelo === 'deepseek' ? 'Ds' : 'Ge'}`;
+      // se _countdownButton não estiver ativo, reabilita agora
+      if (!_geminiTimer) botao.disabled = false;
     }
   }
 }
 
 
+
+
+// substitua sua chamarGeminiAPI por ESTA
 async function chamarGeminiAPI(textoCompleto) {
-  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s'; // mova p/ backend
+  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s';
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-  const prompt = `Analise o texto da denúncia judicial abaixo e extraia dados estruturados em JSON.
-INSTRUÇÕES:
-1) Réus: monte qualificação completa; 2) Vítimas/Testemunhas gerais idem quando possível;
-3) Telefone obrigatório p/ réus, vítimas, testemunhas gerais; exceção policiais;
-4) Se faltar dado use "não informado";
-5) Policiais: "NOME COMPLETO / MATRÍCULA" + tipo(livre) + lotação(opc).
-Retorne APENAS JSON válido.
-
-TEXTO:
-${textoCompleto}`;
-
+  const prompt = `Analise o texto... (mesmo conteúdo) ...\n\nTEXTO DA DENÚNCIA:\n${textoCompleto}`;
   const body = {
-    contents: [{ parts: [{ text: `Você é um assistente jurídico. Retorne APENAS JSON válido.\n\n${prompt}` }]}],
+    contents: [{ parts: [{ text: `Você é um assistente jurídico... Retorne APENAS JSON válido.\n\n${prompt}` }]}],
     generationConfig: { temperature: 0.0, maxOutputTokens: 4096 }
   };
 
-  const maxTentativas = 3;
-  for (let i = 0; i < maxTentativas; i++) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 20000);
-    try {
-      const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), signal: ctrl.signal });
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-        let s = String(raw).trim();
-        if (/^```/m.test(s)) s = s.replace(/^```json?\s*/i,'').replace(/```$/,'').trim();
-        try { return JSON.parse(s); } catch { throw new Error('Resposta não-JSON da API Gemini'); }
-      }
-
-      if (resp.status === 429) {
-        const ra = resp.headers.get('Retry-After');
-        const waitMs = ra ? Number(ra) * 1000 : (1000 * (2 ** i));
-        await new Promise(r => setTimeout(r, waitMs));
-        continue;
-      }
-
-      let msg = `Erro ${resp.status}: Falha na API Gemini`;
-      try { const err = await resp.json(); msg = err?.error?.message || msg; } catch {}
-      throw new Error(msg);
-    } catch (e) {
-      if (e.name === 'AbortError') {
-        if (i < maxTentativas - 1) continue;
-        throw new Error('Timeout na API Gemini');
-      }
-      if (i < maxTentativas - 1) continue;
-      throw e;
-    } finally {
-      clearTimeout(t);
+    if (resp.ok) {
+      const data = await resp.json();
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      let jsonString = raw.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
+      try { return JSON.parse(jsonString); } catch { throw new Error('Resposta não-JSON da API Gemini'); }
     }
+
+    // 429: respeita Retry-After e retorna info para a UI
+    if (resp.status === 429) {
+      const ra = resp.headers.get('Retry-After');
+      const waitMs = ra ? Math.max(0, Number(ra) * 1000) : (1000 * (2 ** tentativa));
+      if (tentativa < 2) await new Promise(r => setTimeout(r, waitMs));
+      else {
+        const errJson = await resp.json().catch(()=> ({}));
+        const e = new Error(errJson.error?.message || 'Quota excedida');
+        e.code = 429;
+        e.retryAfterMs = waitMs;
+        throw e;
+      }
+      continue;
+    }
+
+    // outros erros: detalha
+    const errJson = await resp.json().catch(()=> ({}));
+    throw new Error(errJson.error?.message || `Erro ${resp.status}: Falha na API Gemini`);
   }
+
   throw new Error('Limite temporário excedido. Tente novamente depois.');
 }
-
 
 
 
@@ -1084,11 +1109,18 @@ switch (tipo) {
 // Função de limpeza
 export function cleanup() {
   console.log('audiencia.cleanup()');
+
+  // desmonta ouvintes
   for (const {el, ev, fn} of _listeners) {
     try { el.removeEventListener(ev, fn); } catch {}
   }
   _listeners.length = 0;
   _audienciaBootstrapped = false;
+
+  // encerra countdown do botão Gemini
+  try { clearInterval(_geminiTimer); } catch {}
+  _geminiTimer = null;
+   _geminiBusy = false;
 
   document.getElementById('print-styles')?.remove();
   document.querySelector('.status-message')?.remove();
