@@ -1,4 +1,3 @@
-/ Contadores para IDs previsíveis
 let contadorTestemunhaMP = 0;
 let contadorTestemunhaDefesa = 0;
 let contadorReu = 0;
@@ -21,21 +20,20 @@ function _hashTexto(s) {
 }
 // === fim item 2 ===
 
-function _countdownButton(btn, ms) {
+function _countdownButton(btn, ms, label='Modelo') {
   if (!btn) return;
   try { clearInterval(_geminiTimer); } catch {}
   const end = Date.now() + Math.max(0, ms||0);
+  const base = btn.textContent || label;
   btn.disabled = true;
   _geminiTimer = setInterval(() => {
     const left = Math.max(0, end - Date.now());
     const s = Math.ceil(left / 1000);
-    btn.textContent = s > 0 ? `Modelo Ge • aguarde ${s}s` : 'Modelo Ge';
-    if (left <= 0) {
-      clearInterval(_geminiTimer);
-      btn.disabled = false;
-    }
+    btn.textContent = s > 0 ? `${base} • aguarde ${s}s` : base;
+    if (left <= 0) { clearInterval(_geminiTimer); btn.disabled = false; }
   }, 250);
 }
+
 
 export function initialize(container) {
   if (_audienciaBootstrapped) return;
@@ -92,6 +90,10 @@ export function initialize(container) {
   const processarGeminiBtn = container.querySelector('#processarGemini');
   on(processarGeminiBtn, 'click', () => processarDenunciaComIA(container, 'gemini'));
 
+  // Botão Groq
+const processarGroqBtn = container.querySelector('#processarGroq');
+on(processarGroqBtn, 'click', () => processarDenunciaComIA(container, 'groq'));
+
   const limparObservacoesMPBtn = container.querySelector('#limparObservacoesMP');
   on(limparObservacoesMPBtn, 'click', () => {
     if (!confirm('Tem certeza que deseja limpar as observações do MP?')) return;
@@ -115,58 +117,85 @@ export function initialize(container) {
  * Função GENÉRICA para processar denúncia com qualquer IA - REFATORADA
  */
 
+// == FUNÇÃO ATUALIZADA ==
 async function processarDenunciaComIA(container, modelo) {
-  const botao = container.querySelector(`#processar${modelo === 'deepseek' ? 'DeepSeek' : 'Gemini'}`);
+  // Mapeia cada botão pelo modelo
+  const idMap = {
+    deepseek: '#processarDeepSeek',
+    gemini:   '#processarGemini',
+    groq:     '#processarGroq'
+  };
+
+  const botao = container.querySelector(idMap[modelo]);
   const campoObservacoes = container.querySelector('#observacoes-mp');
 
   if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados:', { botao: !!botao, campoObservacoes: !!campoObservacoes, container });
+    console.error('Elementos não encontrados:', {
+      botao: !!botao, 
+      campoObservacoes: !!campoObservacoes,
+      container
+    });
     mostrarMensagem(container, 'Erro: Elementos necessários não encontrados', 'error');
     return;
   }
 
+  // Texto de entrada
   const textoOriginal = (campoObservacoes.value || campoObservacoes.textContent || '').trim();
   if (!textoOriginal) {
-    mostrarMensagem(container, 'Não há texto para processar. Cole o texto da denúncia.', 'warning');
+    mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
     return;
   }
 
-  // evita concorrência no Gemini
+  // Busy-guard para Gemini (evita concorrência simultânea do mesmo provedor)
   if (modelo === 'gemini' && _geminiBusy) {
-    mostrarMensagem(container, 'Já existe um processamento Gemini em andamento.', 'warning');
+    mostrarMensagem(container, 'Modelo Ge está em uso. Aguarde terminar.', 'warning');
     return;
   }
 
-  const nomeModelo = modelo === 'deepseek' ? 'DeepSeek' : 'Gemini';
-  const textoOriginalBtn = botao.innerHTML;
+  const htmlOriginal = botao.innerHTML;
+  let dadosEstruturados = null;
 
   try {
-    if (modelo === 'gemini') _geminiBusy = true;
-
+    // UI: loading
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
     botao.disabled = true;
-    console.log(`Iniciando processamento de denúncia com ${nomeModelo}`);
 
-    let dadosEstruturados;
-    if (modelo === 'gemini') {
-      // memoização por conteúdo
-      const key = _hashTexto(textoOriginal);
-      if (_geminiCache.has(key)) {
+    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek'
+                      : modelo === 'gemini'   ? 'Gemini'
+                      : modelo === 'groq'     ? 'Groq'
+                      : modelo;
+
+    console.log(`Iniciando processamento de denúncia com ${nomeModelo} + Telefone (exceto policiais)`);
+
+    // === Seleção do motor ===
+    if (modelo === 'deepseek') {
+      dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
+
+    } else if (modelo === 'gemini') {
+      _geminiBusy = true; // trava até finalizar
+      const key = _hashTexto(textoOriginal); // <- memoização (ITEM 3)
+      if (_geminiCache && _geminiCache.has(key)) {
         dadosEstruturados = _geminiCache.get(key);
-        console.log('Cache Gemini HIT para esta entrada.');
       } else {
         dadosEstruturados = await chamarGeminiAPI(textoOriginal);
-        _geminiCache.set(key, dadosEstruturados);
-        console.log('Cache Gemini MISS. Resultado salvo.');
+        try { _geminiCache.set(key, dadosEstruturados); } catch {}
       }
+
+    } else if (modelo === 'groq') {
+      // cooldown visual opcional (30s) antes da chamada
+      try { _countdownButton(botao, 30_000); } catch {}
+      dadosEstruturados = await chamarGroqAPI(textoOriginal);
+
     } else {
-      // deepseek sem cache aqui
-      dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
+      throw new Error(`Modelo não suportado: ${modelo}`);
     }
 
     console.log('Dados estruturados recebidos:', dadosEstruturados);
 
+    // Distribuir dados na UI
     const camposPreenchidos = distribuirDadosNosCampos(container, dadosEstruturados, textoOriginal);
+
+    // Relatório para observações
     const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos, nomeModelo);
 
     if (campoObservacoes.tagName === 'TEXTAREA') {
@@ -175,39 +204,52 @@ async function processarDenunciaComIA(container, modelo) {
       campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
     }
 
-    mostrarMensagem(container, `✅ Processamento ${nomeModelo} concluído. ${camposPreenchidos} campos preenchidos.`, 'success');
+    mostrarMensagem(
+      container,
+      `✅ Processamento ${nomeModelo} concluído! ${camposPreenchidos} campos preenchidos (telefones para réus, vítimas e testemunhas gerais).`,
+      'success'
+    );
 
   } catch (error) {
     console.error(`Erro no processamento ${modelo}:`, error);
 
-    // countdown se a mensagem indicar retry (429)
-    if (modelo === 'gemini') {
-  // tenta extrair do corpo OU do header
-  const m = String(error?.message || '').match(/retry in (\d+(?:\.\d+)?)s/i);
-  const ms = (typeof error?.retryAfterMs === 'number' && error.retryAfterMs > 0)
-    ? error.retryAfterMs
-    : (m ? Math.ceil(parseFloat(m[1]) * 1000) : 0);
-  if (ms && botao) _countdownButton(botao, ms);
-}
+    // Se for 429 (rate limit) tentar extrair Retry-After (em segundos) da mensagem e aplicar cooldown visual
+    if (modelo === 'gemini' || modelo === 'groq') {
+      const m = String(error?.message || '').match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+      const waitMs = m ? Math.ceil(parseFloat(m[1]) * 1000) : 30_000;
+      try { _countdownButton(botao, waitMs); } catch {}
+    }
 
+    const mensagemErro =
+      `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\n` +
+      `Erro: ${error.message}\n\n` +
+      `Texto original:\n${textoOriginal}`;
 
-    const mensagemErro = `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\nErro: ${error.message}\n\nTexto original:\n${textoOriginal}`;
     if (campoObservacoes.tagName === 'TEXTAREA') {
       campoObservacoes.value = mensagemErro;
     } else {
       campoObservacoes.innerHTML = mensagemErro.replace(/\n/g, '<br>');
     }
+
+    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek'
+                      : modelo === 'gemini'   ? 'Gemini'
+                      : modelo === 'groq'     ? 'Groq'
+                      : modelo;
+
     mostrarMensagem(container, `❌ Erro no processamento ${nomeModelo}: ${error.message}`, 'error');
 
   } finally {
+    // restore UI
+    botao.innerHTML = htmlOriginal || `Modelo ${modelo === 'deepseek' ? 'Ds' : modelo === 'gemini' ? 'Ge' : 'Gq'}`;
+    botao.disabled = false;
     if (modelo === 'gemini') _geminiBusy = false;
-    if (botao) {
-      botao.innerHTML = textoOriginalBtn || `Modelo ${modelo === 'deepseek' ? 'Ds' : 'Ge'}`;
-      // se _countdownButton não estiver ativo, reabilita agora
-      if (!_geminiTimer) botao.disabled = false;
-    }
   }
 }
+
+
+
+
+
 
 
 
@@ -255,6 +297,93 @@ async function chamarGeminiAPI(textoCompleto) {
 
   throw new Error('Limite temporário excedido. Tente novamente depois.');
 }
+
+
+// === 3ª IA: Groq (OpenAI-compatible) ===
+// Produção: mova a key para backend/proxy
+
+
+// == NOVA FUNÇÃO GROQ (com chave provisória) ==
+async function chamarGroqAPI(textoCompleto) {
+  const apiKey = (window.GROQ_API_KEY || "Ssd32fasdfaes21r+635w453w451461321zg6r41 6645656I").trim();
+  if (!apiKey) throw new Error("GROQ_API_KEY ausente");
+
+  // Modelos comuns: "llama-3.1-8b-instant" | "llama-3.1-70b-versatile"
+  const model = (window.GROQ_MODEL || "llama-3.1-8b-instant").trim();
+
+  const prompt = `Analise o texto da denúncia judicial abaixo e retorne APENAS JSON válido no formato:
+
+{
+  "reus": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
+  "vitimas": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
+  "testemunhasGerais": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
+  "testemunhasPoliciais": [{"qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA", "tipo": "PM|PC|PF|PRF", "lotacao": ""}],
+  "testemunhasDefesa": [],
+  "procuradorRequerido": [],
+  "outros": [{"nome": "", "motivo": ""}],
+  "observacoesImportantes": [],
+  "estatisticas": {"totalMencionados": 0, "totalQualificados": 0, "naoQualificados": 0, "telefonesEncontrados": 0}
+}
+
+Regras:
+- Montar "qualificacaoCompleta" (nome, alcunha, CPF, mãe, nascimento).
+- Adicionar telefone quando houver (réus, vítimas, testemunhas gerais). Policiais não precisam de telefone, apenas "NOME COMPLETO / MATRÍCULA".
+- Se faltar dado, usar "não informado".
+- Responda SOMENTE com JSON.
+
+TEXTO:
+${textoCompleto}`;
+
+  const url = "https://api.groq.com/openai/v1/chat/completions";
+  const body = {
+    model,
+    messages: [
+      { role: "system", content: "Você extrai dados estruturados de denúncias e retorna somente JSON válido." },
+      { role: "user", content: prompt }
+    ],
+    temperature: 0.0,
+    max_tokens: 2048
+  };
+
+  // backoff simples p/ 429/5xx
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const raw = data?.choices?.[0]?.message?.content ?? "";
+      let txt = String(raw).trim();
+      if (/^```/m.test(txt)) txt = txt.replace(/^```json?\s*/i, "").replace(/```$/,"").trim();
+      try {
+        return JSON.parse(txt);
+      } catch {
+        throw new Error("Resposta não-JSON da API Groq");
+      }
+    }
+
+    if (resp.status === 429 || resp.status >= 500) {
+      const ra = resp.headers.get("Retry-After");
+      const waitMs = ra ? Number(ra) * 1000 : (1000 * (2 ** tentativa));
+      await new Promise(r => setTimeout(r, waitMs));
+      continue;
+    }
+
+    const err = await resp.json().catch(()=> ({}));
+    throw new Error(err.error?.message || `Erro ${resp.status}: Falha na API Groq`);
+  }
+
+  throw new Error("Limite temporário excedido na API Groq. Tente novamente depois.");
+}
+
+
+
 
 
 
@@ -957,7 +1086,8 @@ function salvarDados() {
       });
       
       // Mostrar mensagem de sucesso após a impressão
-      mostrarMensagem(document.querySelector('#content-container'), 'Documento salvo com sucesso!', 'success');
+      mostrarMensagem(document.body, 'Documento salvo com sucesso!', 'success');
+
     }, 1000);
   }, 500);
 }
@@ -1117,12 +1247,14 @@ export function cleanup() {
   _listeners.length = 0;
   _audienciaBootstrapped = false;
 
-  // encerra countdown do botão Gemini
+  // encerra timers e flags
   try { clearInterval(_geminiTimer); } catch {}
   _geminiTimer = null;
-   _geminiBusy = false;
+  _geminiBusy = false;
 
+  // remove artefatos de UI
   document.getElementById('print-styles')?.remove();
   document.querySelector('.status-message')?.remove();
   document.querySelector('.main-content')?.classList.remove('audiencia-mode');
 }
+
