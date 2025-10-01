@@ -305,7 +305,7 @@ async function chamarGeminiAPI(textoCompleto) {
 
 // == NOVA FUNÇÃO GROQ (com chave provisória) ==
 async function chamarGroqAPI(textoCompleto) {
-  const apiKey = (window.GROQ_API_KEY || "Ssd32fasdfaes21r+635w453w451461321zg6r41 6645656I").trim();
+  const apiKey = (window.GROQ_API_KEY || "sd32fasdfaes").trim();
   if (!apiKey) throw new Error("GROQ_API_KEY ausente");
 
   // Modelos comuns: "llama-3.1-8b-instant" | "llama-3.1-70b-versatile"
