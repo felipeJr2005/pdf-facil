@@ -388,6 +388,103 @@ function separarNomeMatricula(q) {
  */
 
 
+function normalizarTipoDefesa(tipo, advogadoNome = '') {
+  const t = String(tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const adv = String(advogadoNome || '').trim();
+  if (/particular|advogad|oab/.test(t)) return 'particular';
+  if (/defensor/.test(t)) return 'defensoria';
+  if (adv && /oab|advogad|representante\s+legal/i.test(adv) && !/defensor\s*p[uú]blic/i.test(adv)) {
+    return 'particular';
+  }
+  if (adv && !/defensor/i.test(adv)) return 'particular';
+  return 'defensoria';
+}
+
+function formatarNomeAdvogado(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return '';
+  const oab = s.match(/OAB\s*\/?\s*[A-Z]{2}\s*[\d.]+/i);
+  let nome = s
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/,?\s*OAB\s*\/?\s*[A-Z]{2}\s*[\d.]+/ig, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,;\-\s]+|[,;\-\s]+$/g, '')
+    .trim();
+  if (nome && oab) return `${nome}, ${oab[0].replace(/\s+/g, ' ').toUpperCase()}`;
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+function pareceAdvogadoOuDefensor(texto) {
+  return /oab|advogad|representante\s+legal|defensor(?:ia|\s*p[uú]blic)?/i.test(String(texto || ''));
+}
+
+function aplicarDefesaNoReu(el, pessoa = {}) {
+  if (!el) return 0;
+  let n = 0;
+  const sel = el.querySelector('.tipo-defesa');
+  const advInput = el.querySelector('.nome-advogado');
+  if (!sel) return 0;
+
+  const tipo = normalizarTipoDefesa(pessoa.tipoDefesa, pessoa.advogado || pessoa.nomeAdvogado);
+  const nomeAdv = formatarNomeAdvogado(pessoa.advogado || pessoa.nomeAdvogado || '');
+
+  sel.value = tipo;
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  n++;
+
+  if (tipo === 'particular' && advInput) {
+    advInput.style.display = 'block';
+    if (nomeAdv && !advInput.value) {
+      advInput.value = nomeAdv;
+      n++;
+    }
+  } else if (advInput) {
+    advInput.style.display = 'none';
+    advInput.value = '';
+  }
+  return n;
+}
+
+function resgatarDefesaDeOutros(container, dados = {}) {
+  let n = 0;
+  const reusEls = [...(container.querySelectorAll('#reus-container .reu-item') || [])];
+  if (!reusEls.length) return 0;
+
+  const candidatos = [];
+
+  if (Array.isArray(dados.outros)) {
+    const restantes = [];
+    dados.outros.forEach((o) => {
+      const texto = `${o?.nome || ''} ${o?.motivo || ''}`.trim();
+      if (pareceAdvogadoOuDefensor(texto)) candidatos.push(texto);
+      else restantes.push(o);
+    });
+    dados.outros = restantes;
+  }
+
+  if (Array.isArray(dados.procuradorRequerido)) {
+    dados.procuradorRequerido.forEach((p) => {
+      const texto = p?.qualificacaoCompleta || p?.nome || '';
+      if (pareceAdvogadoOuDefensor(texto)) candidatos.push(texto);
+    });
+  }
+
+  candidatos.forEach((texto, i) => {
+    const el = reusEls[Math.min(i, reusEls.length - 1)];
+    if (!el) return;
+    const advInput = el.querySelector('.nome-advogado');
+    if (advInput?.value?.trim()) return;
+
+    const isDefensor = /defensor(?:ia|\s*p[uú]blic)/i.test(texto) && !/oab/i.test(texto);
+    n += aplicarDefesaNoReu(el, {
+      tipoDefesa: isDefensor ? 'defensoria' : 'particular',
+      advogado: isDefensor ? '' : texto,
+    });
+  });
+
+  return n;
+}
+
 function processarPessoasUI(container, pessoas, textoOriginal, config) {
   if (!pessoas || pessoas.length === 0) return 0;
   let n = 0;
@@ -402,6 +499,7 @@ function processarPessoasUI(container, pessoas, textoOriginal, config) {
     const end = el.querySelector('input[placeholder="Endereço"]');
     if (nome && !nome.value) { nome.value = qual; n++; }
     if (end && !end.value && p?.endereco && p.endereco.trim()) { end.value = p.endereco; n++; }
+    if (config.tipoPessoa === 'Réu') n += aplicarDefesaNoReu(el, p);
   });
   return n;
 }
@@ -445,12 +543,14 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
       }
       const parsed = separarNomeMatricula(qual);
       const nm = parsed.nome;
-      // Preferir campo explícito da IA, senão o parse de "NOME / Mat. XXX"
       const matricula = String(pol?.matricula || parsed.matricula || '').trim();
       if (nome && !nome.value && nm) { nome.value = nm; k++; }
       if (mat && !mat.value && matricula) { mat.value = matricula; k++; }
     });
   }
+
+  // Resgate: advogado/defensor que a IA mandou em "outros"
+  k += resgatarDefesaDeOutros(container, dados);
   return k;
 }
 
@@ -478,6 +578,15 @@ function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo='IA') 
     arr.forEach((it, i) => {
       r += `${i+1}. ${it.qualificacaoCompleta || it.nome || ''}\n`;
       if (it.endereco && String(it.endereco).trim()) r += `   Endereço: ${it.endereco}\n`;
+      if (titulo === 'Réus') {
+        const tipo = normalizarTipoDefesa(it.tipoDefesa, it.advogado || it.nomeAdvogado);
+        if (tipo === 'particular') {
+          const adv = formatarNomeAdvogado(it.advogado || it.nomeAdvogado || '');
+          r += `   Defesa: Advogado Particular${adv ? ` — ${adv}` : ''}\n`;
+        } else {
+          r += `   Defesa: Defensoria Pública\n`;
+        }
+      }
     });
     r += '\n';
   };
