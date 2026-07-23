@@ -53,4 +53,4 @@ export function getProvider(modelo) {
 }
 
 export { TIPOS_POLICIAL } from './prompt-denuncia.js';
-export { setSessionKey, getDeepInfraKey } from './config.js';
+export { setSessionKey, getDeepInfraKey, maskSecret, ensureDeepInfraKey } from './config.js';

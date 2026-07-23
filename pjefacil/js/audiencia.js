@@ -1,4 +1,4 @@
-import { getProvider, IA_PROVIDERS, TIPOS_POLICIAL } from './ia/index.js';
+import { getProvider, IA_PROVIDERS, TIPOS_POLICIAL, setSessionKey, getDeepInfraKey, maskSecret } from './ia/index.js';
 
 let contadorTestemunhaMP = 0;
 let contadorTestemunhaDefesa = 0;
@@ -91,6 +91,22 @@ export function initialize(container) {
     }
     on(btn, 'click', () => processarDenunciaComIA(container, provider.id));
   }
+
+  const configDiKeyBtn = container.querySelector('#configDeepInfraKey');
+  on(configDiKeyBtn, 'click', () => {
+    const atual = getDeepInfraKey();
+    const msg = atual
+      ? `Chave atual: ${maskSecret(atual)}\n\nCole a nova chave DeepInfra (ou deixe em branco para remover):`
+      : 'Cole a chave DeepInfra (fica só neste navegador):';
+    const pasted = window.prompt(msg, '');
+    if (pasted === null) return;
+    setSessionKey('deepinfra', pasted);
+    if (String(pasted).trim()) {
+      mostrarMensagem(container, `Chave DeepInfra salva (${maskSecret(pasted.trim())}).`, 'success');
+    } else {
+      mostrarMensagem(container, 'Chave DeepInfra removida deste navegador.', 'info');
+    }
+  });
 
   const limparObservacoesMPBtn = container.querySelector('#limparObservacoesMP');
   on(limparObservacoesMPBtn, 'click', () => {

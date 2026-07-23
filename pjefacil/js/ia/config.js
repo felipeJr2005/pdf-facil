@@ -1,7 +1,7 @@
 /**
  * Configuração de chaves/modelos.
- * Prioridade: window.* → sessionStorage → fallback de teste (revogar após testes).
- * Nunca logar o valor completo da chave.
+ * Prioridade: window.* → localStorage → sessionStorage.
+ * Nunca commitada no git (push protection).
  */
 
 const SS = {
@@ -10,16 +10,14 @@ const SS = {
   groq: 'pjefacil.groq.key',
 };
 
-/**
- * Chave DeepInfra NÃO fica no git (push protection).
- * No console da página de produção, uma vez por sessão:
- *   setPjeFacilKey('deepinfra', 'SUA_CHAVE')
- * ou: window.DEEPINFRA_API_KEY = 'SUA_CHAVE'
- */
 function readKey(windowKey, storageKey, fallback = '') {
   try {
     const fromWindow = window[windowKey];
     if (fromWindow && String(fromWindow).trim()) return String(fromWindow).trim();
+  } catch {}
+  try {
+    const fromLs = localStorage.getItem(storageKey);
+    if (fromLs && fromLs.trim()) return fromLs.trim();
   } catch {}
   try {
     const fromSs = sessionStorage.getItem(storageKey);
@@ -46,17 +44,37 @@ export function getGroqKey() {
   return readKey('GROQ_API_KEY', SS.groq, '');
 }
 
-/** Persiste chave só na sessão do browser (não vai para disco/git). */
+/** Persiste no navegador (localStorage). Não vai para o git. */
 export function setSessionKey(provider, value) {
   const map = { deepinfra: SS.deepinfra, gemini: SS.gemini, groq: SS.groq };
   const key = map[provider];
   if (!key) throw new Error(`Provider inválido: ${provider}`);
   const v = String(value || '').trim();
   if (!v) {
+    try { localStorage.removeItem(key); } catch {}
     try { sessionStorage.removeItem(key); } catch {}
     return;
   }
+  try { localStorage.setItem(key, v); } catch {}
   try { sessionStorage.setItem(key, v); } catch {}
+}
+
+/**
+ * Garante chave DeepInfra: se ausente, pede no prompt do browser.
+ * @returns {string} chave ou string vazia se cancelado
+ */
+export function ensureDeepInfraKey() {
+  let key = getDeepInfraKey();
+  if (key) return key;
+
+  const pasted = window.prompt(
+    'Chave DeepInfra ausente neste navegador.\n\nCole a API key (fica só neste PC/navegador, não no GitHub):'
+  );
+  if (!pasted || !String(pasted).trim()) return '';
+
+  key = String(pasted).trim();
+  setSessionKey('deepinfra', key);
+  return key;
 }
 
 export const DEEPINFRA = {

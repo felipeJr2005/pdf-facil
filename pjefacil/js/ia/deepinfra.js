@@ -1,10 +1,10 @@
-import { DEEPINFRA, getDeepInfraKey } from './config.js';
+import { DEEPINFRA, ensureDeepInfraKey } from './config.js';
 import { chamarOpenAICompatible } from './openai-compatible.js';
 
 async function chamarDeepInfra(textoCompleto, modelId, label) {
-  const apiKey = getDeepInfraKey();
+  const apiKey = ensureDeepInfraKey();
   if (!apiKey) {
-    throw new Error('DEEPINFRA_API_KEY ausente. Defina window.DEEPINFRA_API_KEY ou setPjeFacilKey("deepinfra", "...").');
+    throw new Error('DEEPINFRA_API_KEY ausente. Cole a chave quando solicitado ou use Atualizar → Chave Di…');
   }
 
   return chamarOpenAICompatible({
