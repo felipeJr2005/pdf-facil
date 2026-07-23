@@ -6,9 +6,15 @@ export const SYSTEM_DENUNCIA =
   'Você extrai dados estruturados de denúncias judiciais e retorna SOMENTE JSON válido, sem markdown.';
 
 export function buildPromptDenuncia(textoCompleto) {
-  return `Analise o texto da denúncia judicial abaixo e retorne APENAS JSON válido no formato:
+  return `Analise o texto judicial/resumo de audiência abaixo e retorne APENAS JSON válido no formato:
 
 {
+  "audiencia": {
+    "data": "DD/MM/AAAA",
+    "horario": "HH:MM",
+    "dataHora": "DD/MM/AAAA HH:MM",
+    "link": "https://..."
+  },
   "reus": [{
     "qualificacaoCompleta": "...",
     "endereco": "",
@@ -27,14 +33,18 @@ export function buildPromptDenuncia(textoCompleto) {
 }
 
 Regras:
+- AUDIÊNCIA (obrigatório quando houver no texto):
+  - Extrair Data e Horário → preencher "data", "horario" e "dataHora" no formato "DD/MM/AAAA HH:MM" (ex: "03/09/2026 09:00").
+  - Extrair Link (Teams/Meet/Zoom/URL) → campo "link" completo, sem truncar.
 - Montar "qualificacaoCompleta" (nome, alcunha, CPF, mãe, nascimento).
 - Adicionar telefone quando houver (réus, vítimas, testemunhas gerais). Policiais: sem telefone.
-- Policiais: qualificacaoCompleta no formato "NOME COMPLETO / Mat. 000.000-0" E preencher "matricula" só com o número (ex: "121.687-2", "9807306").
-- tipo policial: PM (militar), PC (civil), PF (federal), PRF (rodoviária), GM (guarda municipal), PP (policial de presídio / penal).
-- DEFESA DO RÉU (obrigatório quando houver menção):
-  - Se Defensor Público / Defensoria Pública → tipoDefesa="defensoria" e advogado="".
-  - Se advogado particular / representante legal / OAB → tipoDefesa="particular" e advogado="NOME COMPLETO, OAB/UF 00.000".
-  - NÃO coloque advogado nem defensor em "outros". Vincule sempre ao réu correspondente (se houver um réu, vincule a ele).
+- Policiais: quem tiver Mat./matrícula/PM/PC/PF/PRF/GM/PP → testemunhasPoliciais, com qualificacaoCompleta "NOME / Mat. XXX" e "matricula".
+- Testemunhas civis → testemunhasGerais.
+- tipo policial: PM|PC|PF|PRF|GM|PP.
+- DEFESA DO RÉU:
+  - Defensor Público / Defensoria → tipoDefesa="defensoria", advogado="".
+  - Advogado / OAB / Representação legal → tipoDefesa="particular", advogado="NOME, OAB/UF 00.000".
+  - NÃO coloque advogado/defensor em "outros".
 - Se faltar dado, usar "não informado".
 - Responda SOMENTE com JSON.
 

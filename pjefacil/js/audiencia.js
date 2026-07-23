@@ -516,6 +516,62 @@ function normalizarTipoPolicial(tipo) {
   return '';
 }
 
+function extrairAudienciaDoTexto(texto = '') {
+  const t = String(texto || '');
+  const data = (t.match(/(?:^|\n)\s*Data:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1] || '';
+  const horario = (t.match(/(?:^|\n)\s*Hor[aá]rio:\s*(\d{1,2}:\d{2})/i) || [])[1] || '';
+  const link = (t.match(/(?:^|\n)\s*Link:\s*(https?:\/\/\S+)/i) || [])[1]
+    || (t.match(/(https?:\/\/(?:teams\.microsoft\.com|meet\.google\.com|zoom\.us)\S+)/i) || [])[1]
+    || '';
+  return {
+    data,
+    horario: horario ? horario.padStart(5, '0') : '',
+    link: String(link || '').replace(/[)\].,;]+$/g, '').trim(),
+  };
+}
+
+function montarDataHoraAudiencia(aud = {}, textoOriginal = '') {
+  const fallback = extrairAudienciaDoTexto(textoOriginal);
+  const data = String(aud.data || fallback.data || '').trim();
+  let horario = String(aud.horario || fallback.horario || '').trim();
+  let dataHora = String(aud.dataHora || aud.data_hora || '').trim();
+  const link = String(aud.link || aud.url || fallback.link || '').trim();
+
+  if (!dataHora && data && horario) {
+    if (/^\d:\d{2}$/.test(horario)) horario = `0${horario}`;
+    dataHora = `${data} ${horario}`;
+  }
+  if (!dataHora && data) dataHora = data;
+
+  // Normaliza "03/09/2026 as 09:00" → "03/09/2026 09:00"
+  dataHora = dataHora
+    .replace(/\s+às\s+/i, ' ')
+    .replace(/\s+as\s+/i, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return { dataHora, link };
+}
+
+function preencherCamposAudiencia(container, dados = {}, textoOriginal = '') {
+  let n = 0;
+  const aud = dados.audiencia || dados.dadosAudiencia || {};
+  const { dataHora, link } = montarDataHoraAudiencia(aud, textoOriginal);
+
+  const inputData = container.querySelector('#audiencia-data');
+  const inputLink = container.querySelector('#audiencia-link');
+
+  if (inputData && dataHora) {
+    inputData.value = dataHora;
+    n++;
+  }
+  if (inputLink && link) {
+    inputLink.value = link;
+    n++;
+  }
+  return n;
+}
+
 function resetarContadoresPessoas() {
   contadorTestemunhaMP = 0;
   contadorTestemunhaDefesa = 0;
@@ -546,6 +602,8 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
   limparContainersDinamicos(container);
 
   let k = 0;
+  // IDs fixos do Text Blaze — nunca renomear #audiencia-data / #audiencia-link
+  k += preencherCamposAudiencia(container, dados, textoOriginal);
   k += processarPessoasUI(container, dados.reus, textoOriginal, { tipoPessoa:'Réu', containerSelector:'#reus-container', addFuncao: addReu });
   k += processarPessoasUI(container, dados.vitimas, textoOriginal, { tipoPessoa:'Vítima', containerSelector:'#vitimas-container', addFuncao: addVitima });
   k += processarPessoasUI(container, dados.testemunhasGerais, textoOriginal, { tipoPessoa:'Testemunha', containerSelector:'#testemunhas-mp-container', addFuncao: addTestemunha, addFuncaoArgs:['mp'] });
@@ -593,6 +651,17 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
 function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo='IA') {
   const t = new Date().toLocaleString();
   let r = `PROCESSAMENTO - ${t}\n\n`;
+  const aud = dados?.audiencia || {};
+  if (aud.data || aud.horario || aud.dataHora || aud.link) {
+    r += `📅 AUDIÊNCIA:\n`;
+    if (aud.dataHora) r += `• Data/Hora: ${aud.dataHora}\n`;
+    else {
+      if (aud.data) r += `• Data: ${aud.data}\n`;
+      if (aud.horario) r += `• Horário: ${aud.horario}\n`;
+    }
+    if (aud.link) r += `• Link: ${aud.link}\n`;
+    r += '\n';
+  }
   if (dados?.estatisticas) {
     r += `📊 ESTATÍSTICAS:\n`;
     r += `• ${dados.estatisticas.totalMencionados || 0} pessoas mencionadas\n`;
