@@ -516,26 +516,70 @@ function normalizarTipoPolicial(tipo) {
   return '';
 }
 
+function linkAudienciaValido(valor) {
+  const s = String(valor || '').trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) return s.replace(/[)\].,;]+$/g, '').trim();
+  return '';
+}
+
+function isPlaceholderLink(valor) {
+  const s = String(valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!s) return true;
+  return /^(nao se aplica|n\/a|na|nao informado|sem link|inexistente|-|—|–)$/i.test(s)
+    || /nao se aplica|sem link|nao ha link|nao existe link/i.test(s);
+}
+
+/** Extrai a melhor URL de audiência do texto (ignora "não se aplica"). */
+function extrairLinkAudienciaDoTexto(texto = '') {
+  const t = String(texto || '');
+
+  // Prioridade: link após "substituído pelo" / "link contingencial"
+  const prioridade = [
+    /substitu[ií]do pelo link(?: contingencial)?\s+(https?:\/\/\S+)/i,
+    /link contingencial[^:\n]*:\s*(https?:\/\/\S+)/i,
+    /link contingencial\s+(https?:\/\/\S+)/i,
+    /(?:^|\n)\s*Link:\s*(https?:\/\/\S+)/i,
+  ];
+  for (const re of prioridade) {
+    const m = t.match(re);
+    const url = linkAudienciaValido(m?.[1]);
+    if (url) return url;
+  }
+
+  // Todas as URLs de reunião — prefira a última (geralmente a redesignação)
+  const todas = [...t.matchAll(/https?:\/\/(?:teams\.microsoft\.com|meet\.google\.com|zoom\.us)[^\s)\]>"']+/gi)]
+    .map((m) => linkAudienciaValido(m[0]))
+    .filter(Boolean);
+  if (todas.length) return todas[todas.length - 1];
+
+  return '';
+}
+
 function extrairAudienciaDoTexto(texto = '') {
   const t = String(texto || '');
   const data = (t.match(/(?:^|\n)\s*Data:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1] || '';
   const horario = (t.match(/(?:^|\n)\s*Hor[aá]rio:\s*(\d{1,2}:\d{2})/i) || [])[1] || '';
-  const link = (t.match(/(?:^|\n)\s*Link:\s*(https?:\/\/\S+)/i) || [])[1]
-    || (t.match(/(https?:\/\/(?:teams\.microsoft\.com|meet\.google\.com|zoom\.us)\S+)/i) || [])[1]
-    || '';
   return {
     data,
-    horario: horario ? horario.padStart(5, '0') : '',
-    link: String(link || '').replace(/[)\].,;]+$/g, '').trim(),
+    horario: horario ? (horario.length === 4 ? `0${horario}` : horario) : '',
+    link: extrairLinkAudienciaDoTexto(t),
   };
 }
 
-function montarDataHoraAudiencia(aud = {}, textoOriginal = '') {
+function montarDataHoraAudiencia(aud = {}, textoOriginal = '', observacoes = []) {
   const fallback = extrairAudienciaDoTexto(textoOriginal);
   const data = String(aud.data || fallback.data || '').trim();
   let horario = String(aud.horario || fallback.horario || '').trim();
   let dataHora = String(aud.dataHora || aud.data_hora || '').trim();
-  const link = String(aud.link || aud.url || fallback.link || '').trim();
+
+  // Link da IA só vale se for URL real — nunca "não se aplica"
+  let link = linkAudienciaValido(aud.link || aud.url || '');
+  if (!link) link = fallback.link;
+  if (!link && Array.isArray(observacoes)) {
+    link = extrairLinkAudienciaDoTexto(observacoes.join('\n'));
+  }
+  if (!link) link = extrairLinkAudienciaDoTexto(textoOriginal);
 
   if (!dataHora && data && horario) {
     if (/^\d:\d{2}$/.test(horario)) horario = `0${horario}`;
@@ -543,7 +587,6 @@ function montarDataHoraAudiencia(aud = {}, textoOriginal = '') {
   }
   if (!dataHora && data) dataHora = data;
 
-  // Normaliza "03/09/2026 as 09:00" → "03/09/2026 09:00"
   dataHora = dataHora
     .replace(/\s+às\s+/i, ' ')
     .replace(/\s+as\s+/i, ' ')
@@ -556,7 +599,11 @@ function montarDataHoraAudiencia(aud = {}, textoOriginal = '') {
 function preencherCamposAudiencia(container, dados = {}, textoOriginal = '') {
   let n = 0;
   const aud = dados.audiencia || dados.dadosAudiencia || {};
-  const { dataHora, link } = montarDataHoraAudiencia(aud, textoOriginal);
+  const { dataHora, link } = montarDataHoraAudiencia(
+    aud,
+    textoOriginal,
+    dados.observacoesImportantes || []
+  );
 
   const inputData = container.querySelector('#audiencia-data');
   const inputLink = container.querySelector('#audiencia-link');
@@ -565,9 +612,14 @@ function preencherCamposAudiencia(container, dados = {}, textoOriginal = '') {
     inputData.value = dataHora;
     n++;
   }
-  if (inputLink && link) {
-    inputLink.value = link;
-    n++;
+  if (inputLink) {
+    // Nunca gravar placeholder; se não houver URL, deixa em branco
+    if (link && !isPlaceholderLink(link)) {
+      inputLink.value = link;
+      n++;
+    } else if (isPlaceholderLink(inputLink.value) || !String(inputLink.value || '').trim()) {
+      inputLink.value = '';
+    }
   }
   return n;
 }
@@ -659,7 +711,8 @@ function criarRelatorioProcessamento(dados, camposPreenchidos, nomeModelo='IA') 
       if (aud.data) r += `• Data: ${aud.data}\n`;
       if (aud.horario) r += `• Horário: ${aud.horario}\n`;
     }
-    if (aud.link) r += `• Link: ${aud.link}\n`;
+    const linkRel = linkAudienciaValido(aud.link);
+    if (linkRel) r += `• Link: ${linkRel}\n`;
     r += '\n';
   }
   if (dados?.estatisticas) {

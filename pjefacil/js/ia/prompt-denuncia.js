@@ -34,8 +34,10 @@ export function buildPromptDenuncia(textoCompleto) {
 
 Regras:
 - AUDIÊNCIA (obrigatório quando houver no texto):
-  - Extrair Data e Horário → preencher "data", "horario" e "dataHora" no formato "DD/MM/AAAA HH:MM" (ex: "03/09/2026 09:00").
-  - Extrair Link (Teams/Meet/Zoom/URL) → campo "link" completo, sem truncar.
+  - Extrair Data e Horário → "data", "horario" e "dataHora" no formato "DD/MM/AAAA HH:MM" (ex: "03/09/2026 10:00").
+  - Campo "link": SOMENTE URL real (https://...). NUNCA retorne "não se aplica", "n/a" ou texto sem URL.
+  - Se em "DADOS DA AUDIÊNCIA" estiver "Link: não se aplica", mas no LOG houver Teams/Meet (ex: "substituído pelo link contingencial https://teams..."), USE essa URL no campo "link".
+  - Se não existir nenhuma URL no texto inteiro, retorne "link": "".
 - Montar "qualificacaoCompleta" (nome, alcunha, CPF, mãe, nascimento).
 - Adicionar telefone quando houver (réus, vítimas, testemunhas gerais). Policiais: sem telefone.
 - Policiais: quem tiver Mat./matrícula/PM/PC/PF/PRF/GM/PP → testemunhasPoliciais, com qualificacaoCompleta "NOME / Mat. XXX" e "matricula".
