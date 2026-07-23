@@ -516,7 +516,35 @@ function normalizarTipoPolicial(tipo) {
   return '';
 }
 
+function resetarContadoresPessoas() {
+  contadorTestemunhaMP = 0;
+  contadorTestemunhaDefesa = 0;
+  contadorReu = 0;
+  contadorVitima = 0;
+  contadorAssistente = 0;
+  contadorPolicial = 0;
+}
+
+/** Limpa só os blocos dinâmicos para o autofill recriar IDs 1..N (Text Blaze). */
+function limparContainersDinamicos(container) {
+  [
+    'assistente-acusacao-container',
+    'vitimas-container',
+    'testemunhas-mp-container',
+    'policiais-container',
+    'reus-container',
+    'testemunhas-defesa-container',
+  ].forEach((id) => {
+    const el = container.querySelector(`#${id}`);
+    if (el) el.innerHTML = '';
+  });
+  resetarContadoresPessoas();
+}
+
 function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
+  // Garante #policial-1, #policial-matricula-1, .active:nth-child(1) etc. estáveis p/ Text Blaze
+  limparContainersDinamicos(container);
+
   let k = 0;
   k += processarPessoasUI(container, dados.reus, textoOriginal, { tipoPessoa:'Réu', containerSelector:'#reus-container', addFuncao: addReu });
   k += processarPessoasUI(container, dados.vitimas, textoOriginal, { tipoPessoa:'Vítima', containerSelector:'#vitimas-container', addFuncao: addVitima });
@@ -534,9 +562,9 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
       addPolicial(container);
       const el = container.querySelector('#policiais-container')?.lastElementChild;
       if (!el) return;
-      const sel = el.querySelector('select');
-      const nome = el.querySelector('input[placeholder="Nome"]');
-      const mat = el.querySelector('input[placeholder="Matrícula/RG"]');
+      const sel = el.querySelector('select.tipo-policial, select');
+      const nome = el.querySelector('input.nome, input[placeholder="Nome"]');
+      const mat = el.querySelector('input.matricula, input[placeholder="Matrícula/RG"]');
       if (sel && pol?.tipo) {
         const tipoNorm = normalizarTipoPolicial(pol.tipo);
         if (tipoNorm) { sel.value = tipoNorm; k++; }
@@ -633,7 +661,10 @@ function addElement(container, config) {
   const targetContainer = container.querySelector(config.containerSelector);
   if (targetContainer) {
     const element = config.createElementFn();
-    
+
+    // Text Blaze: #policiais-container .active:nth-child(N) — active deve existir já no DOM
+    element.classList.add('active');
+
     const removeBtn = element.querySelector('.remove-btn');
     if (removeBtn) {
       removeBtn.addEventListener('click', () => element.remove());
@@ -644,10 +675,6 @@ function addElement(container, config) {
     }
 
     targetContainer.appendChild(element);
-
-    setTimeout(() => {
-      element.classList.add('active');
-    }, 10);
   }
 }
 
@@ -655,7 +682,7 @@ function addElement(container, config) {
 
 function criarLinhaAssistenteAcusacao() {
   const linha = document.createElement('div');
-  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100 active';
   
   contadorAssistente++;
   const currentIndex = contadorAssistente;
@@ -684,7 +711,7 @@ function criarLinhaAssistenteAcusacao() {
 
 function criarLinhaVitima() {
   const linha = document.createElement('div');
-  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100 active';
   
   contadorVitima++;
   const currentIndex = contadorVitima;
@@ -713,7 +740,7 @@ function criarLinhaVitima() {
 
 function criarLinhaTestemunhaMP() {
   const linha = document.createElement('div');
-  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100 active';
   
   contadorTestemunhaMP++;
   const currentIndex = contadorTestemunhaMP;
@@ -742,7 +769,7 @@ function criarLinhaTestemunhaMP() {
 
 function criarLinhaTestemunhaDefesa() {
   const linha = document.createElement('div');
-  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100 active';
 
   contadorTestemunhaDefesa++;
   const currentIndex = contadorTestemunhaDefesa;
@@ -780,7 +807,7 @@ function criarLinhaPolicial() {
   const intimadoId = `policial-intimado-${currentIndex}`;
   
   const linha = document.createElement('div');
-  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100';
+  linha.className = 'd-flex align-items-center gap-2 mb-2 w-100 active';
   linha.id = itemId;
   linha.setAttribute('data-index', currentIndex);
   
@@ -811,7 +838,7 @@ function criarLinhaReu() {
     const currentIndex = contadorReu;
     
     const reuContainer = document.createElement('div');
-    reuContainer.className = 'reu-item mb-3';
+    reuContainer.className = 'reu-item mb-3 active';
     reuContainer.id = `reu-${currentIndex}`;
     reuContainer.setAttribute('data-index', currentIndex);
     
@@ -1093,12 +1120,7 @@ function limparFormulario(container) {
     }
     
     // Resetar contadores ao limpar o formulário
-    contadorTestemunhaMP = 0;
-    contadorTestemunhaDefesa = 0;
-    contadorReu = 0;
-    contadorVitima = 0;
-    contadorAssistente = 0;
-    contadorPolicial = 0;
+    resetarContadoresPessoas();
     
     // Limpar os containers dinâmicos com animação
     ['assistente-acusacao-container', 'vitimas-container', 'testemunhas-mp-container', 
