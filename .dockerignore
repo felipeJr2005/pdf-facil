@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+*.md
+.env
+.env.*
+**/*.local.js
+"PLATAFORMA ANTIGA.html"
+pjefacil/js/audiencia - Copia.js
+pjefacil/js/audiencia - 1627.js
+pjefacil/js/audiencia - 1862.js
