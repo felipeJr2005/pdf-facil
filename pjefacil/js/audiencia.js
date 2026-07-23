@@ -337,10 +337,23 @@ function extrairNomeBase(q) {
 
 
 function separarNomeMatricula(q) {
-  if (!q) return {nome:'', matricula:''};
-  const [nomeParte, resto=''] = q.split(' / ');
-  const m = resto.match(/\b(matr(í|i)cula|matr\.?|rg)\s*[:#-]?\s*(\w+)\b/i);
-  return { nome:(nomeParte||'').trim(), matricula: m ? m[4].replace(/[^\w]/g,'') : '' };
+  if (!q) return { nome: '', matricula: '' };
+
+  // Formatos: "NOME / Mat. 121.687-2" | "NOME / Matrícula 9807306" | "NOME / 121.687-2"
+  const parts = String(q).split(/\s*\/\s*/);
+  const nome = (parts[0] || '').trim();
+  let resto = (parts.slice(1).join(' / ') || '').trim();
+  if (!resto) return { nome, matricula: '' };
+
+  // Remove rótulo (Mat., Matrícula, RG...) e sufixos tipo "- PM"
+  resto = resto
+    .replace(/^(matr[ií]cula|matr?\.?|reg\.?|rg)\s*[:#.\-]?\s*/i, '')
+    .split(/\s+-\s+/)[0]
+    .trim();
+
+  // Matrículas reais têm dígitos, ponto e hífen (ex: 121.687-2) — \w+ quebrava nisso
+  const m = resto.match(/[0-9][0-9.\-\/]*/);
+  return { nome, matricula: m ? m[0] : '' };
 }
 
 
@@ -414,7 +427,10 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
         const tipoNorm = normalizarTipoPolicial(pol.tipo);
         if (tipoNorm) { sel.value = tipoNorm; k++; }
       }
-      const {nome:nm, matricula} = separarNomeMatricula(qual);
+      const parsed = separarNomeMatricula(qual);
+      const nm = parsed.nome;
+      // Preferir campo explícito da IA, senão o parse de "NOME / Mat. XXX"
+      const matricula = String(pol?.matricula || parsed.matricula || '').trim();
       if (nome && !nome.value && nm) { nome.value = nm; k++; }
       if (mat && !mat.value && matricula) { mat.value = matricula; k++; }
     });
