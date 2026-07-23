@@ -8,5 +8,5 @@ RUN chmod +x /usr/local/bin/start.sh \
     && a2dismod mpm_worker 2>/dev/null || true \
     && a2enmod mpm_prefork
 
-EXPOSE 80
+# Railway usa a variável PORT em runtime (não a EXPOSE)
 CMD ["/usr/local/bin/start.sh"]
