@@ -1,0 +1,5 @@
+# Chaves locais (nunca commitar)
+pjefacil/js/ia/keys.local.js
+*.local.js
+.env
+.env.*

@@ -1,3 +1,5 @@
+import { getProvider, IA_PROVIDERS, TIPOS_POLICIAL } from './ia/index.js';
+
 let contadorTestemunhaMP = 0;
 let contadorTestemunhaDefesa = 0;
 let contadorReu = 0;
@@ -8,6 +10,7 @@ let _audienciaBootstrapped = false;
 let _geminiBusy = false;
 let _geminiTimer = null;
 const _listeners = [];
+const _busyByProvider = new Set();
 
 // === item 2: memoização por entrada ===
 const _geminiCache = new Map(); // key: hash(texto), value: JSON
@@ -39,7 +42,7 @@ export function initialize(container) {
   if (_audienciaBootstrapped) return;
   _audienciaBootstrapped = true;
 
-  console.log('Módulo audiencia.js inicializado com IDs para Text Blaze + DeepSeek COMPLETO');
+  console.log('Módulo audiencia.js inicializado (IA desacoplada + Text Blaze)');
 
   contadorTestemunhaMP = 0;
   contadorTestemunhaDefesa = 0;
@@ -78,21 +81,16 @@ export function initialize(container) {
   const limparBtn = container.querySelector('#limparBtn, [onclick*="limparFormulario"]');
   on(limparBtn, 'click', () => limparFormulario(container));
 
-  const processarDeepSeekBtn = container.querySelector('#processarDeepSeek');
-  if (processarDeepSeekBtn) {
-    if (typeof window.chamarDeepSeekAPI !== 'function') {
-      processarDeepSeekBtn.disabled = true; // evita ReferenceError
-    } else {
-      on(processarDeepSeekBtn, 'click', () => processarDenunciaComIA(container, 'deepseek'));
+  for (const provider of Object.values(IA_PROVIDERS)) {
+    const btn = container.querySelector(provider.buttonSelector);
+    if (!btn) continue;
+    if (typeof provider.requires === 'function' && !provider.requires()) {
+      btn.disabled = true;
+      btn.title = `${provider.label} indisponível (use DiP/DiF ou configure a API)`;
+      continue;
     }
+    on(btn, 'click', () => processarDenunciaComIA(container, provider.id));
   }
-
-  const processarGeminiBtn = container.querySelector('#processarGemini');
-  on(processarGeminiBtn, 'click', () => processarDenunciaComIA(container, 'gemini'));
-
-  // Botão Groq
-const processarGroqBtn = container.querySelector('#processarGroq');
-on(processarGroqBtn, 'click', () => processarDenunciaComIA(container, 'groq'));
 
   const limparObservacoesMPBtn = container.querySelector('#limparObservacoesMP');
   on(limparObservacoesMPBtn, 'click', () => {
@@ -110,268 +108,106 @@ on(processarGroqBtn, 'click', () => processarDenunciaComIA(container, 'groq'));
   console.log('Módulo de Audiência pronto para uso');
 }
 
-// ============================================
-// 🔍 FUNÇÃO PRINCIPAL DEEPSEEK - PROCESSAMENTO DE DENÚNCIA
-// =====================
+function lerTextoObservacoes(el) {
+  if (!el) return '';
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return (el.value || '').trim();
+  return (el.innerText || el.textContent || '').trim();
+}
+
+function escreverTextoObservacoes(el, texto) {
+  if (!el) return;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = texto;
+  else el.innerHTML = String(texto).replace(/\n/g, '<br>');
+}
+
 /**
- * Função GENÉRICA para processar denúncia com qualquer IA - REFATORADA
+ * Orquestra UI + provedor IA (chamada real fica em ./ia/).
  */
-
-// == FUNÇÃO ATUALIZADA ==
 async function processarDenunciaComIA(container, modelo) {
-  // Mapeia cada botão pelo modelo
-  const idMap = {
-    deepseek: '#processarDeepSeek',
-    gemini:   '#processarGemini',
-    groq:     '#processarGroq'
-  };
+  let provider;
+  try {
+    provider = getProvider(modelo);
+  } catch (e) {
+    mostrarMensagem(container, e.message, 'error');
+    return;
+  }
 
-  const botao = container.querySelector(idMap[modelo]);
+  const botao = container.querySelector(provider.buttonSelector);
   const campoObservacoes = container.querySelector('#observacoes-mp');
 
   if (!botao || !campoObservacoes) {
-    console.error('Elementos não encontrados:', {
-      botao: !!botao, 
-      campoObservacoes: !!campoObservacoes,
-      container
-    });
     mostrarMensagem(container, 'Erro: Elementos necessários não encontrados', 'error');
     return;
   }
 
-  // Texto de entrada
-  const textoOriginal = (campoObservacoes.value || campoObservacoes.textContent || '').trim();
+  const textoOriginal = lerTextoObservacoes(campoObservacoes);
   if (!textoOriginal) {
     mostrarMensagem(container, 'Não há texto para processar. Por favor, cole o texto da denúncia.', 'warning');
     return;
   }
 
-  // Busy-guard para Gemini (evita concorrência simultânea do mesmo provedor)
-  if (modelo === 'gemini' && _geminiBusy) {
-    mostrarMensagem(container, 'Modelo Ge está em uso. Aguarde terminar.', 'warning');
+  if (_busyByProvider.has(modelo) || (modelo === 'gemini' && _geminiBusy)) {
+    mostrarMensagem(container, `${provider.shortLabel} está em uso. Aguarde terminar.`, 'warning');
     return;
   }
 
   const htmlOriginal = botao.innerHTML;
-  let dadosEstruturados = null;
+  _busyByProvider.add(modelo);
+  if (modelo === 'gemini') _geminiBusy = true;
 
   try {
-    // UI: loading
     botao.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processando...';
     botao.disabled = true;
 
-    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek'
-                      : modelo === 'gemini'   ? 'Gemini'
-                      : modelo === 'groq'     ? 'Groq'
-                      : modelo;
+    console.log(`Iniciando processamento com ${provider.label}`);
 
-    console.log(`Iniciando processamento de denúncia com ${nomeModelo} + Telefone (exceto policiais)`);
-
-    // === Seleção do motor ===
-    if (modelo === 'deepseek') {
-      dadosEstruturados = await chamarDeepSeekAPI(textoOriginal);
-
-    } else if (modelo === 'gemini') {
-      _geminiBusy = true; // trava até finalizar
-      const key = _hashTexto(textoOriginal); // <- memoização (ITEM 3)
-      if (_geminiCache && _geminiCache.has(key)) {
+    let dadosEstruturados;
+    if (modelo === 'gemini') {
+      const key = _hashTexto(textoOriginal);
+      if (_geminiCache.has(key)) {
         dadosEstruturados = _geminiCache.get(key);
       } else {
-        dadosEstruturados = await chamarGeminiAPI(textoOriginal);
+        dadosEstruturados = await provider.call(textoOriginal);
         try { _geminiCache.set(key, dadosEstruturados); } catch {}
       }
-
-    } else if (modelo === 'groq') {
-      // cooldown visual opcional (30s) antes da chamada
-      try { _countdownButton(botao, 30_000); } catch {}
-      dadosEstruturados = await chamarGroqAPI(textoOriginal);
-
     } else {
-      throw new Error(`Modelo não suportado: ${modelo}`);
+      dadosEstruturados = await provider.call(textoOriginal);
     }
 
     console.log('Dados estruturados recebidos:', dadosEstruturados);
 
-    // Distribuir dados na UI
     const camposPreenchidos = distribuirDadosNosCampos(container, dadosEstruturados, textoOriginal);
-
-    // Relatório para observações
-    const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos, nomeModelo);
-
-    if (campoObservacoes.tagName === 'TEXTAREA') {
-      campoObservacoes.value = relatorio;
-    } else {
-      campoObservacoes.innerHTML = relatorio.replace(/\n/g, '<br>');
-    }
+    const relatorio = criarRelatorioProcessamento(dadosEstruturados, camposPreenchidos, provider.label);
+    escreverTextoObservacoes(campoObservacoes, relatorio);
 
     mostrarMensagem(
       container,
-      `✅ Processamento ${nomeModelo} concluído! ${camposPreenchidos} campos preenchidos (telefones para réus, vítimas e testemunhas gerais).`,
+      `✅ Processamento ${provider.label} concluído! ${camposPreenchidos} campos preenchidos.`,
       'success'
     );
-
   } catch (error) {
     console.error(`Erro no processamento ${modelo}:`, error);
 
-    // Se for 429 (rate limit) tentar extrair Retry-After (em segundos) da mensagem e aplicar cooldown visual
-    if (modelo === 'gemini' || modelo === 'groq') {
-      const m = String(error?.message || '').match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+    const m = String(error?.message || '').match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+    if (m || /429|rate|quota|limite/i.test(String(error?.message || ''))) {
       const waitMs = m ? Math.ceil(parseFloat(m[1]) * 1000) : 30_000;
-      try { _countdownButton(botao, waitMs); } catch {}
+      try { _countdownButton(botao, waitMs, provider.shortLabel); } catch {}
     }
 
-    const mensagemErro =
+    escreverTextoObservacoes(
+      campoObservacoes,
       `ERRO NO PROCESSAMENTO - ${new Date().toLocaleString()}\n\n` +
       `Erro: ${error.message}\n\n` +
-      `Texto original:\n${textoOriginal}`;
+      `Texto original:\n${textoOriginal}`
+    );
 
-    if (campoObservacoes.tagName === 'TEXTAREA') {
-      campoObservacoes.value = mensagemErro;
-    } else {
-      campoObservacoes.innerHTML = mensagemErro.replace(/\n/g, '<br>');
-    }
-
-    const nomeModelo = modelo === 'deepseek' ? 'DeepSeek'
-                      : modelo === 'gemini'   ? 'Gemini'
-                      : modelo === 'groq'     ? 'Groq'
-                      : modelo;
-
-    mostrarMensagem(container, `❌ Erro no processamento ${nomeModelo}: ${error.message}`, 'error');
-
+    mostrarMensagem(container, `❌ Erro no processamento ${provider.label}: ${error.message}`, 'error');
   } finally {
-    // restore UI
-    botao.innerHTML = htmlOriginal || `Modelo ${modelo === 'deepseek' ? 'Ds' : modelo === 'gemini' ? 'Ge' : 'Gq'}`;
-    botao.disabled = false;
+    botao.innerHTML = htmlOriginal || `Modelo ${provider.shortLabel}`;
+    if (!botao.textContent.includes('aguarde')) botao.disabled = false;
+    _busyByProvider.delete(modelo);
     if (modelo === 'gemini') _geminiBusy = false;
   }
-}
-
-// substitua sua chamarGeminiAPI por ESTA
-async function chamarGeminiAPI(textoCompleto) {
-  const apiKey = (typeof G_API_KEY !== 'undefined' && G_API_KEY) ? G_API_KEY : 'AIzaSyDm3k3ABMfK8qm73alwDK8GWgJhE368w-s';
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const prompt = `Analise o texto... (mesmo conteúdo) ...\n\nTEXTO DA DENÚNCIA:\n${textoCompleto}`;
-  const body = {
-    contents: [{ parts: [{ text: `Você é um assistente jurídico... Retorne APENAS JSON válido.\n\n${prompt}` }]}],
-    generationConfig: { temperature: 0.0, maxOutputTokens: 4096 }
-  };
-
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
-    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-
-    if (resp.ok) {
-      const data = await resp.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      let jsonString = raw.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
-      try { return JSON.parse(jsonString); } catch { throw new Error('Resposta não-JSON da API Gemini'); }
-    }
-
-    // 429: respeita Retry-After e retorna info para a UI
-    if (resp.status === 429) {
-      const ra = resp.headers.get('Retry-After');
-      const waitMs = ra ? Math.max(0, Number(ra) * 1000) : (1000 * (2 ** tentativa));
-      if (tentativa < 2) await new Promise(r => setTimeout(r, waitMs));
-      else {
-        const errJson = await resp.json().catch(()=> ({}));
-        const e = new Error(errJson.error?.message || 'Quota excedida');
-        e.code = 429;
-        e.retryAfterMs = waitMs;
-        throw e;
-      }
-      continue;
-    }
-
-    // outros erros: detalha
-    const errJson = await resp.json().catch(()=> ({}));
-    throw new Error(errJson.error?.message || `Erro ${resp.status}: Falha na API Gemini`);
-  }
-
-  throw new Error('Limite temporário excedido. Tente novamente depois.');
-}
-
-
-// === 3ª IA: Groq (OpenAI-compatible) ===
-// Produção: mova a key para backend/proxy
-
-
-// == NOVA FUNÇÃO GROQ (com chave provisória) ==
-async function chamarGroqAPI(textoCompleto) {
-  const apiKey = (window.GROQ_API_KEY || "sd32fasdfaes").trim();
-  if (!apiKey) throw new Error("GROQ_API_KEY ausente");
-
-  // Modelos comuns: "llama-3.1-8b-instant" | "llama-3.1-70b-versatile"
-  const model = (window.GROQ_MODEL || "llama-3.1-8b-instant").trim();
-
-  const prompt = `Analise o texto da denúncia judicial abaixo e retorne APENAS JSON válido no formato:
-
-{
-  "reus": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
-  "vitimas": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
-  "testemunhasGerais": [{"qualificacaoCompleta": "...", "endereco": "", "telefone": ""}],
-  "testemunhasPoliciais": [{"qualificacaoCompleta": "NOME COMPLETO / MATRÍCULA", "tipo": "PM|PC|PF|PRF", "lotacao": ""}],
-  "testemunhasDefesa": [],
-  "procuradorRequerido": [],
-  "outros": [{"nome": "", "motivo": ""}],
-  "observacoesImportantes": [],
-  "estatisticas": {"totalMencionados": 0, "totalQualificados": 0, "naoQualificados": 0, "telefonesEncontrados": 0}
-}
-
-Regras:
-- Montar "qualificacaoCompleta" (nome, alcunha, CPF, mãe, nascimento).
-- Adicionar telefone quando houver (réus, vítimas, testemunhas gerais). Policiais não precisam de telefone, apenas "NOME COMPLETO / MATRÍCULA".
-- Se faltar dado, usar "não informado".
-- Responda SOMENTE com JSON.
-
-TEXTO:
-${textoCompleto}`;
-
-  const url = "https://api.groq.com/openai/v1/chat/completions";
-  const body = {
-    model,
-    messages: [
-      { role: "system", content: "Você extrai dados estruturados de denúncias e retorna somente JSON válido." },
-      { role: "user", content: prompt }
-    ],
-    temperature: 0.0,
-    max_tokens: 2048
-  };
-
-  // backoff simples p/ 429/5xx
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (resp.ok) {
-      const data = await resp.json();
-      const raw = data?.choices?.[0]?.message?.content ?? "";
-      let txt = String(raw).trim();
-      if (/^```/m.test(txt)) txt = txt.replace(/^```json?\s*/i, "").replace(/```$/,"").trim();
-      try {
-        return JSON.parse(txt);
-      } catch {
-        throw new Error("Resposta não-JSON da API Groq");
-      }
-    }
-
-    if (resp.status === 429 || resp.status >= 500) {
-      const ra = resp.headers.get("Retry-After");
-      const waitMs = ra ? Number(ra) * 1000 : (1000 * (2 ** tentativa));
-      await new Promise(r => setTimeout(r, waitMs));
-      continue;
-    }
-
-    const err = await resp.json().catch(()=> ({}));
-    throw new Error(err.error?.message || `Erro ${resp.status}: Falha na API Groq`);
-  }
-
-  throw new Error("Limite temporário excedido na API Groq. Tente novamente depois.");
 }
 
 
@@ -541,6 +377,18 @@ function processarPessoasUI(container, pessoas, textoOriginal, config) {
   return n;
 }
 
+function normalizarTipoPolicial(tipo) {
+  const t = String(tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (TIPOS_POLICIAL.includes(t)) return t;
+  if (/\bgm\b|guarda\s*municipal/.test(t)) return 'gm';
+  if (/\bpp\b|presidio|penitenci|policial\s*penal|agente\s*penitenci/.test(t)) return 'pp';
+  if (/\bprf\b|rodoviaria/.test(t)) return 'prf';
+  if (/\bpf\b|federal/.test(t)) return 'pf';
+  if (/\bpc\b|civil/.test(t)) return 'pc';
+  if (/\bpm\b|militar/.test(t)) return 'pm';
+  return '';
+}
+
 function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
   let k = 0;
   k += processarPessoasUI(container, dados.reus, textoOriginal, { tipoPessoa:'Réu', containerSelector:'#reus-container', addFuncao: addReu });
@@ -562,7 +410,10 @@ function distribuirDadosNosCampos(container, dados = {}, textoOriginal = '') {
       const sel = el.querySelector('select');
       const nome = el.querySelector('input[placeholder="Nome"]');
       const mat = el.querySelector('input[placeholder="Matrícula/RG"]');
-      if (sel && pol?.tipo && ['pm','pc','pf','prf'].includes(pol.tipo.toLowerCase())) { sel.value = pol.tipo.toLowerCase(); k++; }
+      if (sel && pol?.tipo) {
+        const tipoNorm = normalizarTipoPolicial(pol.tipo);
+        if (tipoNorm) { sel.value = tipoNorm; k++; }
+      }
       const {nome:nm, matricula} = separarNomeMatricula(qual);
       if (nome && !nome.value && nm) { nome.value = nm; k++; }
       if (mat && !mat.value && matricula) { mat.value = matricula; k++; }
@@ -798,6 +649,8 @@ function criarLinhaPolicial() {
       <option value="pc">PC</option>
       <option value="pf">PF</option>
       <option value="prf">PRF</option>
+      <option value="gm">GM</option>
+      <option value="pp">PP</option>
     </select>
     <input type="text" placeholder="Nome" class="form-control nome" id="${nomeId}" data-textblaze-policial="${currentIndex}">
     <input type="text" placeholder="Matrícula/RG" class="form-control matricula" id="${matriculaId}" data-textblaze-policial-matricula="${currentIndex}">
@@ -1243,6 +1096,7 @@ export function cleanup() {
   try { clearInterval(_geminiTimer); } catch {}
   _geminiTimer = null;
   _geminiBusy = false;
+  _busyByProvider.clear();
 
   // remove artefatos de UI
   document.getElementById('print-styles')?.remove();
